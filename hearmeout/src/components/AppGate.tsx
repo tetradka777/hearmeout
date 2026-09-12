@@ -14,17 +14,9 @@ import { LogoMark } from './ui/Icons';
 // mismatch; phrases[0] is what SSR/first paint always shows.
 const LOADING_PHRASES = [
   'Tuning up…',
-  'Dropping the needle…',
-  'Warming up the speakers…',
-  'Finding the beat…',
-  'Cueing the next track…',
   'Chasing the bassline…',
   'Reading your reviews…',
-  'Digging through the crates…',
-  'Syncing the setlist…',
-  'Checking the volume…',
   'Untangling the headphones…',
-  'Counting the beats per minute…',
 ];
 
 function useLoadingPhrase() {
