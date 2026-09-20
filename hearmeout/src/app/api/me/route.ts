@@ -6,6 +6,7 @@ import { getUserProfile, fetchIsOpenProfile } from '@/lib/userProfile';
 import { slugifyHandle } from '@/lib/slug';
 import type { ApiUser, Me } from '@/lib/types';
 import { isThemeId, isToxicity } from '@/lib/themes';
+import { isInternalEmail } from '@/lib/authInternalEmail';
 
 export async function GET() {
   const userId = await getCurrentUserId();
@@ -33,7 +34,8 @@ export async function GET() {
   let email: string | null = null;
   if (prefs?.auth_user_id) {
     const { data: authUser } = await admin.auth.admin.getUserById(prefs.auth_user_id as string);
-    email = authUser.user?.email ?? null;
+    const realEmail = authUser.user?.email ?? null;
+    email = isInternalEmail(realEmail) ? null : realEmail;
   }
 
   const me: Me = {

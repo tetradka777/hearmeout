@@ -5,8 +5,6 @@ import { useApp } from '@/lib/AppContext';
 import type { TranslationKey } from '@/lib/i18n';
 
 const ERROR_KEY: Record<string, TranslationKey> = {
-  email_taken: 'register.emailTaken',
-  invalid_email: 'register.invalidEmail',
   weak_password: 'register.weakPassword',
   name_required: 'register.nameRequired',
   invalid_credentials: 'login.invalidCredentials',
@@ -17,7 +15,7 @@ export function RegisterModal() {
   const { t, registerWithPassword, loginWithPassword } = useApp();
   const [mode, setMode] = useState<'register' | 'login'>('register');
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [handle, setHandle] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -30,16 +28,16 @@ export function RegisterModal() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (mode === 'register' && !name.trim()) { setError(t('register.nameRequired')); return; }
-    if (!email.trim()) { setError(t('register.emailRequired')); return; }
+    if (mode === 'login' && !handle.trim()) { setError(t('login.handleRequired')); return; }
     if (!password) { setError(t('register.passwordRequired')); return; }
 
     setSubmitting(true);
     setError(null);
     try {
       if (mode === 'register') {
-        await registerWithPassword(name.trim(), email.trim(), password);
+        await registerWithPassword(name.trim(), password);
       } else {
-        await loginWithPassword(email.trim(), password);
+        await loginWithPassword(handle.trim(), password);
       }
     } catch (err) {
       setError(mapError(err, mode === 'register' ? 'register.failed' : 'login.failed'));
@@ -56,7 +54,7 @@ export function RegisterModal() {
         <div className="eyebrow">{t('register.welcome')}</div>
         <h1 className="page-title" style={{ marginBottom: 14 }}>{mode === 'register' ? t('register.question') : t('login.title')}</h1>
 
-        {mode === 'register' && (
+        {mode === 'register' ? (
           <input
             className="name-input"
             style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px', marginBottom: 10, fontSize: 16, width: '100%' }}
@@ -65,15 +63,16 @@ export function RegisterModal() {
             placeholder={t('register.namePlaceholder')}
             autoFocus
           />
+        ) : (
+          <input
+            className="name-input"
+            style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px', marginBottom: 10, fontSize: 16, width: '100%' }}
+            value={handle}
+            onChange={(e) => setHandle(e.target.value)}
+            placeholder={t('login.handlePlaceholder')}
+            autoFocus
+          />
         )}
-        <input
-          type="email"
-          className="name-input"
-          style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px', marginBottom: 10, fontSize: 16, width: '100%' }}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder={t('register.emailPlaceholder')}
-        />
         <input
           type="password"
           className="name-input"

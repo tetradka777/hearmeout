@@ -180,9 +180,9 @@ type AppContextValue = {
   setRatingDraftText: (t: string) => void;
   publishRating: (albumId: string, stars: number, review: string, tags?: string[]) => Promise<void>;
   ensureRecap: (userId: string, period: RecapPeriod, seasonKey?: string | null) => void;
-  registerWithPassword: (name: string, email: string, password: string) => Promise<void>;
+  registerWithPassword: (name: string, password: string) => Promise<void>;
   dismissOnboarding: () => void;
-  loginWithPassword: (email: string, password: string) => Promise<void>;
+  loginWithPassword: (handle: string, password: string) => Promise<void>;
   claimAccount: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   deleteAccount: () => Promise<boolean>;
@@ -408,11 +408,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .catch(() => {});
   }, [state.authStatus, showToast, t, refreshMe]);
 
-  const registerWithPassword = useCallback(async (name: string, email: string, password: string) => {
+  const registerWithPassword = useCallback(async (name: string, password: string) => {
     const res = await fetch('/api/auth/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({ name, password }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: null }));
@@ -424,11 +424,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const dismissOnboarding = useCallback(() => patch({ justRegistered: false }), [patch]);
 
-  const loginWithPassword = useCallback(async (email: string, password: string) => {
+  const loginWithPassword = useCallback(async (handle: string, password: string) => {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ handle, password }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: null }));
