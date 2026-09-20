@@ -15,4 +15,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping the live site
-        run: curl -fsS --max-time 60 -o /dev/null -w "HTTP %{http_code} in %{time_total}s\n" https://hearmeout-7zlh.onrender.com/
+        run: curl -fsS --max-time 60 -o /dev/null -w "HTTP %{http_code} in %{time_total}s\n" https://hearmeoutt.art/

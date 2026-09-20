@@ -21,9 +21,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 // The live URL — used to build absolute Open Graph/Twitter image URLs.
-// hearmeout-7zlh.onrender.com per the current Render service name; update
-// this if the service is ever renamed or moved to a custom domain.
-const SITE_URL = "https://hearmeout-7zlh.onrender.com";
+const SITE_URL = "https://hearmeoutt.art";
 const SITE_DESCRIPTION = "Rate albums, compare music taste with friends, and find what to listen to next.";
 
 export const metadata: Metadata = {
