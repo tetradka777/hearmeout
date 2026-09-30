@@ -5,17 +5,11 @@ import { fetchAllRows } from '@/lib/supabasePaginate';
 
 type Row = { played_at: string; duration_ms: number | null };
 
-// Real server-side gate, not just a hidden UI — a non-premium request gets
-// nothing computed for it, matching the user's own "never update this data
-// for non-premium users" instruction.
 export async function GET() {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
 
   const admin = supabaseAdmin();
-  const { data: prefs } = await admin.from('users').select('is_premium').eq('id', userId).maybeSingle();
-  if (!prefs?.is_premium) return NextResponse.json({ error: 'premium_required' }, { status: 403 });
-
   const since = new Date();
   since.setFullYear(since.getFullYear() - 1);
 

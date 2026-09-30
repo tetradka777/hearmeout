@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
   // came back with only 1000 rows (the oldest, since sorted ascending),
   // which is why "4 weeks"/"6 months"/"this year" all showed nothing while
   // "all time" looked fine. Paginating with .range() gets the real count.
-  const [{ rows: all, error }, { data: ratings }, { data: prefs }] = await Promise.all([
+  const [{ rows: all, error }, { data: ratings }] = await Promise.all([
     fetchAllRows<Row>((from, to) =>
       admin
         .from('listening_events')
@@ -53,9 +53,7 @@ export async function GET(request: NextRequest) {
         .range(from, to)
     ),
     admin.from('ratings').select('stars').eq('user_id', targetUserId),
-    admin.from('users').select('is_premium').eq('id', viewerId).maybeSingle(),
   ]);
-  const isPremium = !!prefs?.is_premium;
   if (error) return NextResponse.json({ error }, { status: 500 });
   const inRange = since ? all.filter((r) => new Date(r.played_at) >= since) : all;
   const artistKey = (r: Row) => r.artist_id || r.artist || '';
@@ -118,16 +116,9 @@ export async function GET(request: NextRequest) {
     .slice(0, 8)
     .map((r) => ({ title: r.track_title || '', artist: r.artist || '', cover: r.cover_url, playedAt: r.played_at, trackId: r.track_id }));
 
-  // "Hours per week" and the 24h "when you listen" heatmap are premium-only
-  // (per the user's own instruction: never send the real computed data to a
-  // non-premium request, not just hide it client-side) — peakHour stays free
-  // since it's a single summary stat, not the detailed breakdown.
   const stats: StatsData = {
     range, hours, trackCount, artistCount, newArtistCount, avgRating, peakHour,
-    hoursPerWeek: isPremium ? hoursPerWeek : [],
-    topArtists,
-    heatmap: isPremium ? hourCounts : new Array(24).fill(0),
-    genreSplit, recentPlays,
+    hoursPerWeek, topArtists, heatmap: hourCounts, genreSplit, recentPlays,
   };
   return NextResponse.json(stats);
 }
