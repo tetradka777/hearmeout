@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, Inter, IBM_Plex_Mono } from "next/font/google";
 import "@/styles/fonts.css";
 import "@/styles/tokens.css";
+import "@/styles/components.css";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
