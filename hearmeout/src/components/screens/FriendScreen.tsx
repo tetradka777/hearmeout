@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device, PublicProfile, StatsData } from '@/lib/types';
-import { userAvatarStyle, starsText } from '@/lib/format';
+import { userAvatarStyle } from '@/lib/format';
+import { Stars } from '../redesign/Stars';
 import { RecapOpenButton, Top4Grid } from '../ProfileBlocks';
 import { CoverArt } from '../ui/CoverArt';
-import { accentMix } from '@/lib/accentGradient';
 import { toLocale } from '@/lib/i18n';
 import { drawBlendPoster } from '@/lib/posterCanvas';
 import { isDemoAccountId } from '@/lib/demoAccounts';
@@ -37,7 +37,7 @@ function BlendButton({ me, friend, friendName, matchPct }: { me: string; friend:
 
   return (
     <>
-      <button className="btn-ghost" style={{ marginTop: 10 }} onClick={download}>{t('friend.downloadBlend')}</button>
+      <button className="btn ghost" onClick={download}>{t('friend.downloadBlend')}</button>
       <canvas ref={canvasRef} style={{ display: 'none' }} />
     </>
   );
@@ -50,59 +50,39 @@ function FriendRatingRow({ rating, myScore }: { rating: NonNullable<PublicProfil
   const cover = spotifyCovers[a.id] || a.cover;
   const disagree = myScore != null && Math.abs(myScore - rating.stars) >= 1.5;
   return (
-    <div className="history-row" onClick={() => openAlbum(a.id)}>
-      <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="art-sm" />
-      <div className="hr-info">
-        <div className="hr-title">{a.title}</div>
-        <div className="hr-artist">{a.artist}</div>
-      </div>
-      <span className={`friend-your-score ${disagree ? 'disagree' : ''}`}>
-        {myScore != null ? t('friend.yourScoreValue', { value: myScore.toFixed(1) }) : t('friend.notRatedByYou')}
-      </span>
-      <div className="history-score">
-        <span className="stars-dot" style={{ color: accentMix(rating.stars / 5) }}>{starsText(rating.stars)}</span>
-        <span className="num">{rating.stars.toFixed(1)}</span>
-      </div>
-    </div>
+    <button className={`row${disagree ? ' gapbig' : ''}`} onClick={() => openAlbum(a.id)} style={{ cursor: 'pointer' }}>
+      <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: 44, height: 44 }} />
+      <div className="g"><b>{a.title}</b><div className="muted">{a.artist}</div></div>
+      <small className="muted">{myScore != null ? t('friend.yourScoreValue', { value: myScore.toFixed(1) }) : t('friend.notRatedByYou')}</small>
+      <Stars value={rating.stars} size={14} />
+    </button>
   );
 }
 
-function MutualFriendRow({ user }: { user: NonNullable<PublicProfile['friends']>[number] }) {
+function PersonListRow({ user, action }: { user: NonNullable<PublicProfile['friends']>[number]; action?: ReactNode }) {
   const { viewFriend } = useApp();
   return (
-    <div className="friend-row">
-      <div className="avatar-sm" style={userAvatarStyle(user)} />
-      <div className="info" onClick={() => viewFriend(user.id)}>
-        <div className="n">{user.name}</div>
-        <div className="h">{user.handle}</div>
-      </div>
+    <div className="row">
+      <button className="rowlink" onClick={() => viewFriend(user.id)}>
+        <div className="dot" style={userAvatarStyle(user)}>{user.name[0]}</div>
+        <div className="g"><b>{user.name}</b><div className="muted">{user.handle}</div></div>
+      </button>
+      {action}
     </div>
   );
 }
 
 function FriendsOfFriendRow({ user }: { user: NonNullable<PublicProfile['friends']>[number] }) {
-  const { t, me, friendRequests, addFriend, viewFriend } = useApp();
+  const { t, me, friendRequests, addFriend } = useApp();
   if (!me) return null;
-
   const isMe = user.id === me.id;
   const isFriend = me.friends.some((fr) => fr.id === user.id);
   const isPending = friendRequests.outgoing.some((r) => r.user.id === user.id);
-
   return (
-    <div className="friend-row">
-      <div className="avatar-sm" style={userAvatarStyle(user)} />
-      <div className="info" onClick={() => viewFriend(user.id)}>
-        <div className="n">{user.name}</div>
-        <div className="h">{user.handle}</div>
-      </div>
-      {isMe ? null : isFriend ? (
-        <span className="chip" style={{ opacity: 0.6 }}>{t('friend.alreadyFriend')}</span>
-      ) : isPending ? (
-        <span className="chip" style={{ opacity: 0.6 }}>{t('friend.requestSent')}</span>
-      ) : (
-        <button onClick={() => addFriend(user.handle)}>{t('friend.addThem')}</button>
-      )}
-    </div>
+    <PersonListRow user={user} action={
+      isMe ? null : isFriend ? <span className="tag">{t('friend.alreadyFriend')}</span> : isPending ? <span className="tag">{t('friend.requestSent')}</span> :
+      <button className="chip" onClick={() => addFriend(user.handle)}>{t('friend.addThem')}</button>
+    } />
   );
 }
 
@@ -125,9 +105,6 @@ export function FriendScreen({ device }: { device: Device }) {
         .then((data) => { if (!cancelled) { setF(data); setLoading(false); } });
     };
     load(true);
-    // Only "now playing" actually goes stale on its own — re-fetching the
-    // whole profile every 30s while this screen is open is the simplest way
-    // to keep that one field honest without a dedicated polling endpoint.
     const interval = setInterval(() => load(false), 30_000);
     return () => { cancelled = true; clearInterval(interval); };
   }, [state.viewingUserId]);
@@ -149,6 +126,8 @@ export function FriendScreen({ device }: { device: Device }) {
     if (!shared.length) return null;
     return [...shared].sort((a, b) => Math.abs(b.mine - b.theirs) - Math.abs(a.mine - a.theirs))[0];
   }, [shared]);
+  const avgGap = useMemo(() => shared.length ? shared.reduce((s, x) => s + Math.abs(x.mine - x.theirs), 0) / shared.length : null, [shared]);
+  const agreeCount = useMemo(() => shared.filter((x) => Math.abs(x.mine - x.theirs) <= 0.5).length, [shared]);
 
   const mutualFriends = useMemo(() => {
     if (!f?.friends || !me) return [];
@@ -167,11 +146,6 @@ export function FriendScreen({ device }: { device: Device }) {
     return denom > 0 ? Math.round((overlap.reduce((s, o) => s + Math.min(o.me, o.friend), 0) / denom) * 100) : null;
   }, [overlap]);
 
-  // Opportunistic snapshot: no cron/background job exists in this app, so
-  // the "match % over time" trend only ever has real data points — one per
-  // real visit to a friend's profile, recorded here whenever a live score
-  // is actually computed. Fire-and-forget; a failed write just means one
-  // fewer data point, never a crash.
   useEffect(() => {
     if (!f || f.locked || matchScore == null) return;
     fetch('/api/match/snapshot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ friendId: f.id, pct: matchScore }) }).catch(() => {});
@@ -194,42 +168,43 @@ export function FriendScreen({ device }: { device: Device }) {
     return () => { cancelled = true; };
   }, [f?.id]);
 
-  if (loading) return <div className="archive-loading">{t('friend.loadingProfile')}</div>;
+  if (loading) return <div className="muted">{t('friend.loadingProfile')}</div>;
   if (!f || !me) {
     return (
       <>
-        <button className="back-btn" onClick={() => goBack('profile')}>{t('friend.back')}</button>
-        <div className="empty-state">{t('friend.notFound')}</div>
+        <button className="crumb" onClick={() => goBack('profile')}>‹ {t('friend.back')}</button>
+        <div className="tile empty"><p>{t('friend.notFound')}</p></div>
       </>
     );
   }
 
   const isFriend = me.friends.some((fr) => fr.id === f.id);
   const isPending = friendRequests.outgoing.some((r) => r.user.id === f.id);
-  const isFullView = !!f.recentRatings; // server only sends this for self / accepted friends
+  const isFullView = !!f.recentRatings;
+
+  const statusButton = isDemoAccountId(f.id) ? (
+    <span className="tag">{t('friend.demoLabel')}</span>
+  ) : isFriend ? (
+    <span className="tag">{t('friend.alreadyFriend')}</span>
+  ) : isPending ? (
+    <span className="tag">{t('friend.requestSent')}</span>
+  ) : (
+    <button className="btn" onClick={() => addFriend(f.handle)}>{t('friend.addThem')}</button>
+  );
 
   if (f.locked) {
     return (
       <>
-        <button className="back-btn" onClick={() => goBack('profile')}>{t('friend.back')}</button>
-        <div className="friend-band">
-          <div className="friend-band-avatar" style={userAvatarStyle(f)} />
-          <div className="friend-band-mid">
-            <h1>{f.name}</h1>
-            <div className="friend-band-meta">{f.handle}</div>
-            <div className="album-actions">
-              {isPending ? (
-                <span className="action-chip">{t('friend.requestSent')}</span>
-              ) : (
-                <button className="action-chip primary" onClick={() => addFriend(f.handle)}>{t('friend.addThem')}</button>
-              )}
-            </div>
-          </div>
+        <button className="crumb" onClick={() => goBack('profile')}>‹ {t('friend.back')}</button>
+        <div className="tile t-ink hero">
+          <div className="dot" style={{ ...userAvatarStyle(f), width: 76, height: 76, fontSize: 28 }}>{f.name[0]}</div>
+          <h1>{f.name}</h1>
+          <p className="muted">{f.handle}</p>
+          <div className="acts">{statusButton}</div>
         </div>
-        <div className="closed-profile-notice">
-          <span className="closed-profile-lock">🔒</span>
-          <div className="closed-profile-title">{t('friend.closedProfileTitle')}</div>
-          <div className="closed-profile-sub">{t('friend.lockedHint')}</div>
+        <div className="tile empty" style={{ marginTop: 14 }}>
+          <p>🔒 {t('friend.closedProfileTitle')}</p>
+          <p className="muted">{t('friend.lockedHint')}</p>
         </div>
       </>
     );
@@ -237,151 +212,126 @@ export function FriendScreen({ device }: { device: Device }) {
 
   return (
     <>
-      <button className="back-btn" onClick={() => goBack('profile')}>{t('friend.back')}</button>
+      <button className="crumb" onClick={() => goBack('profile')}>‹ {t('friend.back')}</button>
 
-      <div className="friend-band">
-        <div className="friend-band-avatar" style={userAvatarStyle(f)} />
-        <div className="friend-band-mid">
-          <h1>{f.name}</h1>
-          <div className="friend-band-meta">{f.handle}</div>
-          {f.nowPlaying && (
-            <div style={{ fontSize: 12.5, color: 'var(--lime)', marginTop: 4 }}>
-              🎧 {t('friend.nowPlaying', { title: f.nowPlaying.title, artist: f.nowPlaying.artist })}
-            </div>
-          )}
-          <div className="album-actions">
-            {isDemoAccountId(f.id) ? (
-              <span className="action-chip">{t('friend.demoLabel')}</span>
-            ) : isFriend ? (
-              <span className="action-chip added">{t('friend.alreadyFriend')}</span>
-            ) : isPending ? (
-              <span className="action-chip">{t('friend.requestSent')}</span>
-            ) : (
-              <button className="action-chip primary" onClick={() => addFriend(f.handle)}>{t('friend.addThem')}</button>
+      <div className="tile t-ink hero">
+        <div className="duel" style={{ alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div className="dot" style={{ ...userAvatarStyle(f), width: 76, height: 76, fontSize: 28 }}>{f.name[0]}</div>
+            <h1 style={{ marginTop: 14 }}>{f.name}</h1>
+            <p className="muted">{f.handle}</p>
+            {f.nowPlaying && (
+              <div className="nowl"><span className="eq"><b /><b /><b /></span>{t('friend.nowPlaying', { title: f.nowPlaying.title, artist: f.nowPlaying.artist })}</div>
             )}
+            <div className="acts">{statusButton}</div>
           </div>
-        </div>
-        <div className="friend-band-score">
-          {matchScore != null ? (
-            <>
-              <div className="num">{matchScore}%</div>
-              <div className="rd">{t('friend.matchScore')}</div>
-            </>
-          ) : (
-            <div className="rd">{t('friend.notEnoughCompare')}</div>
-          )}
-          <div className="friend-band-stats">
-            <div><span className="v">{f.stats.ratings}</span><span className="l">{t('profile.ratings')}</span></div>
-            <div><span className="v">{f.stats.avg || '—'}</span><span className="l">{t('profile.avg')}</span></div>
+          <div style={{ textAlign: 'right' }}>
+            {matchScore != null ? (
+              <><span className="pcts">{matchScore}%</span><div className="muted">{t('friend.matchScore')}</div></>
+            ) : <div className="muted">{t('friend.notEnoughCompare')}</div>}
           </div>
         </div>
       </div>
 
-      <BlendButton me={me.id} friend={f.id} friendName={f.name.split(' ')[0]} matchPct={matchScore} />
-
-      {matchHistory && matchHistory.length >= 2 && (
-        <>
-          <div className="section-head" style={{ marginTop: 22 }}><h2>{t('friend.matchTrend')}</h2></div>
-          <div className="rating-dist-chart" style={{ marginBottom: 6 }}>
-            {matchHistory.map((h, i) => (
-              <div
-                key={i}
-                className="rating-dist-bar"
-                style={{ height: `${Math.max(6, h.pct)}%`, background: accentMix(h.pct / 100) }}
-                title={`${new Date(h.date).toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short' })}: ${h.pct}%`}
-              />
-            ))}
-          </div>
-          <div className="rating-dist-axis" style={{ marginBottom: 22 }}>
-            <span>{new Date(matchHistory[0].date).toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short' })}</span>
-            <span>{new Date(matchHistory[matchHistory.length - 1].date).toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short' })}</span>
-          </div>
-        </>
-      )}
+      <div className="acts" style={{ marginTop: 14, marginBottom: 14 }}>
+        <BlendButton me={me.id} friend={f.id} friendName={f.name.split(' ')[0]} matchPct={matchScore} />
+        <RecapOpenButton userId={f.id} label={t('friend.recapOf', { name: f.name.split(' ')[0] })} />
+      </div>
 
       {isFullView && shared.length > 0 && (
-        <div className="friend-both-band">
-          <span className="friend-both-label">{t('friend.bothLabel')}</span>
-          <span>{t('friend.sharedRatings', { count: shared.length })}</span>
-          {biggestGap && (
-            <span>· {t('friend.biggestGap')}: {t('friend.gapDetail', { mine: biggestGap.mine.toFixed(1), theirs: biggestGap.theirs.toFixed(1) })}</span>
-          )}
+        <div className="stats3">
+          <div className="tile"><span className="num">{shared.length}</span><small className="muted">{t('friend.sharedRatings', { count: shared.length })}</small></div>
+          <div className="tile"><span className="num">{avgGap?.toFixed(1) ?? '—'}</span><small className="muted">avg gap</small></div>
+          <div className="tile"><span className="num">{agreeCount}</span><small className="muted">you agree</small></div>
         </div>
       )}
 
-      {overlap.length > 0 && (
-        <div className="compare-block">
-          {overlap.map((o) => (
-            <div className="compare-row" key={o.g}>
-              <div className="g">{o.g}</div>
-              <div className="bars">
-                <div className="b me"><i style={{ width: `${o.me}%` }} /></div>
-                <div className="b fr"><i style={{ width: `${o.friend}%` }} /></div>
-              </div>
+      <div className="bento b3">
+        {isFullView && shared.length > 0 && (
+          <div className="tile s2">
+            <h3>{t('friend.bothLabel')}</h3>
+            {biggestGap && (
+              <p className="muted">{t('friend.biggestGap')}: {t('friend.gapDetail', { mine: biggestGap.mine.toFixed(1), theirs: biggestGap.theirs.toFixed(1) })}</p>
+            )}
+            <div className="stack" style={{ marginTop: 10 }}>
+              {isFullView && f.recentRatings!.map((r) => <FriendRatingRow key={r.albumId} rating={r} myScore={myScoreByAlbum.get(r.albumId) ?? null} />)}
             </div>
-          ))}
-          <div className="compare-legend">
-            <span><i style={{ background: 'var(--lime)' }} />{t('friend.you')}</span>
-            <span><i style={{ background: 'var(--muted)' }} />{f.name.split(' ')[0]}</span>
           </div>
-        </div>
-      )}
+        )}
 
-      {myStats && friendStats && (myStats.topArtists.length > 0 || friendStats.topArtists.length > 0) && (
-        <>
-          <div className="section-head" style={{ marginTop: 22 }}><h2>{t('friend.chartCompare')}</h2></div>
-          <div style={{ display: 'grid', gridTemplateColumns: device === 'desktop' ? '1fr 1fr' : '1fr', gap: 20, marginBottom: 24 }}>
-            {[{ label: t('friend.you'), stats: myStats }, { label: f.name.split(' ')[0], stats: friendStats }].map(({ label, stats }, side) => {
-              const top = stats.topArtists.slice(0, 5);
-              const max = Math.max(1, ...top.map((a) => a.hours));
-              return (
-                <div key={side}>
-                  <div className="lib-subhead">{label}</div>
-                  {top.length ? top.map((a) => (
-                    <div key={a.id || a.name} style={{ marginBottom: 8 }}>
-                      <div style={{ fontSize: 12, marginBottom: 3 }}>{a.name}</div>
-                      <div className="track" style={{ height: 5 }}>
-                        <div className="fill" style={{ width: `${(a.hours / max) * 100}%`, background: accentMix(a.hours / max) }} />
+        {matchHistory && matchHistory.length >= 2 && (
+          <div className="tile">
+            <h3>{t('friend.matchTrend')}</h3>
+            <div className="bars" style={{ marginTop: 10 }}>
+              {matchHistory.map((h, i) => <i key={i} style={{ height: `${Math.max(6, h.pct)}%` }} title={`${new Date(h.date).toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short' })}: ${h.pct}%`} />)}
+            </div>
+            <div className="axis">
+              <span>{new Date(matchHistory[0].date).toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short' })}</span>
+              <span>{new Date(matchHistory[matchHistory.length - 1].date).toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short' })}</span>
+            </div>
+          </div>
+        )}
+
+        {overlap.length > 0 && (
+          <div className="tile">
+            <h3>{t('friend.chartCompare')}</h3>
+            {overlap.map((o) => (
+              <div className="gap" key={o.g}>
+                <div className="hd"><b>{o.g}</b></div>
+                <div className="cmpb"><i className="a" style={{ width: `${o.me}%` }} /><i className="b" style={{ width: `${o.friend}%` }} /></div>
+              </div>
+            ))}
+            <div className="acts" style={{ marginTop: 10 }}>
+              <span><i className="lg1" />{t('friend.you')}</span>
+              <span><i className="lg2" />{f.name.split(' ')[0]}</span>
+            </div>
+          </div>
+        )}
+
+        {myStats && friendStats && (myStats.topArtists.length > 0 || friendStats.topArtists.length > 0) && (
+          <div className="tile s2">
+            <h3>{t('friend.chartCompare')}</h3>
+            <div className="two" style={{ marginTop: 10 }}>
+              {[{ label: t('friend.you'), stats: myStats }, { label: f.name.split(' ')[0], stats: friendStats }].map(({ label, stats }, side) => {
+                const top = stats.topArtists.slice(0, 5);
+                const max = Math.max(1, ...top.map((a) => a.hours));
+                return (
+                  <div key={side}>
+                    <b>{label}</b>
+                    {top.length ? top.map((a) => (
+                      <div className="row" key={a.id || a.name}>
+                        <div className="g"><b>{a.name}</b></div>
+                        <div className="meter"><i style={{ width: `${(a.hours / max) * 100}%` }} /></div>
                       </div>
-                    </div>
-                  )) : <div className="empty-state">{t('stats.notEnough')}</div>}
-                </div>
-              );
-            })}
+                    )) : <p className="muted">{t('stats.notEnough')}</p>}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </>
-      )}
+        )}
 
-      <div className="section-head"><h2>{t('friend.recap')}</h2><span>{t('profile.recapPeriods')}</span></div>
-      <div style={{ marginBottom: 24 }}><RecapOpenButton userId={f.id} label={t('friend.recapOf', { name: f.name.split(' ')[0] })} /></div>
+        <div className="tile s2">
+          <h3>{t('friend.top4')}</h3>
+          <div style={{ marginTop: 10 }}><Top4Grid ids={f.top4Albums} /></div>
+        </div>
 
-      <div className="section-head"><h2>{t('friend.top4')}</h2><span>{t('friend.byRatings')}</span></div>
-      <div style={{ marginBottom: 24 }}><Top4Grid ids={f.top4Albums} /></div>
+        {isFullView && mutualFriends.length > 0 && (
+          <div className="tile">
+            <h3>{t('friend.mutualFriends')}</h3>
+            <div className="stack" style={{ marginTop: 10 }}>{mutualFriends.map((u) => <PersonListRow key={u.id} user={u} />)}</div>
+          </div>
+        )}
 
-      {isFullView && (
-        <>
-          <div className="section-head"><h2>{t('friend.history')}</h2><span>{f.recentRatings!.length}</span></div>
-          {f.recentRatings!.length ? f.recentRatings!.map((r) => (
-            <FriendRatingRow key={r.albumId} rating={r} myScore={myScoreByAlbum.get(r.albumId) ?? null} />
-          )) : <div className="empty-state">{t('history.emptyLine1')}</div>}
-        </>
-      )}
-
-      {isFullView && mutualFriends.length > 0 && (
-        <>
-          <div className="section-head" style={{ marginTop: 22 }}><h2>{t('friend.mutualFriends')}</h2><span>{mutualFriends.length}</span></div>
-          {mutualFriends.map((u) => <MutualFriendRow key={u.id} user={u} />)}
-        </>
-      )}
-
-      {isFullView && f.friends && (
-        <>
-          <div className="section-head" style={{ marginTop: 22 }}><h2>{t('friend.friendsOf', { name: f.name.split(' ')[0] })}</h2><span>{f.friends.length}</span></div>
-          {f.friends.length ? f.friends.map((u) => (
-            <FriendsOfFriendRow key={u.id} user={u} />
-          )) : <div className="empty-state">{t('friend.noFriends')}</div>}
-        </>
-      )}
+        {isFullView && f.friends && (
+          <div className="tile s2">
+            <h3>{t('friend.friendsOf', { name: f.name.split(' ')[0] })}</h3>
+            <div className="stack" style={{ marginTop: 10 }}>
+              {f.friends.length ? f.friends.map((u) => <FriendsOfFriendRow key={u.id} user={u} />) : <p className="muted">{t('friend.noFriends')}</p>}
+            </div>
+          </div>
+        )}
+      </div>
     </>
   );
 }

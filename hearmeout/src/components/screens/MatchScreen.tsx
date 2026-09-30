@@ -46,61 +46,69 @@ export function MatchScreen(_props: { device: Device }) {
   return (
     <>
       <div className="eyebrow">{t('match.eyebrow')}</div>
-      <h1 className="page-title">{t('match.title')}</h1>
+      <h1 className="big">{t('match.title')}</h1>
 
-      {!me.friends.length ? (
-        <div className="empty-state">
-          {t('friends.empty')}
-          <div style={{ marginTop: 10 }}><button className="btn-primary" style={{ margin: '0 auto' }} onClick={() => showScreen('profile')}>{t('friends.addFriendsTile')}</button></div>
+      <div className="two">
+        <div className="tile">
+          <h3>{t('match.title')}</h3>
+          {!me.friends.length ? (
+            <div className="empty" style={{ marginTop: 10 }}>
+              <p>{t('friends.empty')}</p>
+              <button className="btn" onClick={() => showScreen('profile')}>{t('friends.addFriendsTile')}</button>
+            </div>
+          ) : (
+            <div className="stack" style={{ marginTop: 10 }}>
+              {sorted.map((f) => (
+                <button className="row" key={f.id} onClick={() => viewFriend(f.id)} style={{ cursor: 'pointer' }}>
+                  <div className="dot" style={userAvatarStyle(f)}>{f.name[0]}</div>
+                  <div className="g"><b>{f.name}</b><div className="muted">{f.handle}</div></div>
+                  <span className="num" style={{ fontSize: 22 }}>{scores[f.id] != null ? `${scores[f.id]}%` : '—'}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-      ) : (
-        sorted.map((f) => (
-          <div className="match-row" key={f.id} onClick={() => viewFriend(f.id)}>
-            <div className="avatar-sm" style={userAvatarStyle(f)} />
-            <div className="info">
-              <div className="n">{f.name}</div>
-              <div className="h">{f.handle}</div>
-            </div>
-            <div className="match-pct">
-              {scores[f.id] != null ? `${scores[f.id]}%` : '—'}
+
+        {discover !== null && discover.length > 0 && (
+          <div className="tile">
+            <h3>{t('match.discoverTitle')}</h3>
+            <p className="muted">{t('match.discoverSubtitle')}</p>
+            <div className="stack" style={{ marginTop: 10 }}>
+              {discover.map((p) => (
+                <div className="row" key={p.id}>
+                  <button className="rowlink" onClick={() => viewFriend(p.id)}>
+                    <div className="dot" style={userAvatarStyle(p)}>{p.name[0]}</div>
+                    <div className="g"><b>{p.name}</b><div className="muted">{t('match.sharedAlbums', { count: p.sharedAlbums })}</div></div>
+                  </button>
+                  <span className="num" style={{ fontSize: 18 }}>{p.score}%</span>
+                  <button className="chip" onClick={() => addFriend(p.handle)}>{t('friend.addThem')}</button>
+                </div>
+              ))}
             </div>
           </div>
-        ))
-      )}
+        )}
+      </div>
 
-      {discover !== null && discover.length > 0 && (
-        <>
-          <div className="section-head" style={{ marginTop: 26 }}><h2>{t('match.discoverTitle')}</h2><span>{t('match.discoverSubtitle')}</span></div>
-          {discover.map((p) => (
-            <div className="match-row" key={p.id}>
-              <div className="avatar-sm" style={userAvatarStyle(p)} onClick={() => viewFriend(p.id)} />
-              <div className="info" onClick={() => viewFriend(p.id)}>
-                <div className="n">{p.name}</div>
-                <div className="h">{t('match.sharedAlbums', { count: p.sharedAlbums })}</div>
-              </div>
-              <div className="match-pct">{p.score}%</div>
-              <button className="chip" onClick={() => addFriend(p.handle)}>{t('friend.addThem')}</button>
-            </div>
-          ))}
-        </>
-      )}
-
-      <div className="section-head" style={{ marginTop: 26 }}><h2>{t('nav.groups')}</h2><span>{groups?.length ?? ''}</span></div>
-      {groups === null ? (
-        <div className="archive-loading">{t('groups.loading')}</div>
-      ) : !groups.length ? (
-        <div className="empty-state">{t('groups.noneYet')}</div>
-      ) : (
-        groups.slice(0, 3).map((g) => (
-          <div className="friend-row" key={g.id} onClick={() => showScreen('groups')}>
-            <div className="info">
-              <div className="n">{g.name}</div>
-              <div className="h">{t('groups.memberCount', { count: g.memberCount })}</div>
-            </div>
+      <div className="sec">
+        <div className="setrow" style={{ border: 0, padding: 0 }}>
+          <h2 style={{ marginBottom: 0 }}>{t('nav.groups')}</h2>
+          <button className="btn ghost" onClick={() => showScreen('groups')}>{t('groups.openAll')}</button>
+        </div>
+        {groups === null ? (
+          <p className="muted">{t('groups.loading')}</p>
+        ) : !groups.length ? (
+          <div className="tile empty"><p>{t('groups.noneYet')}</p></div>
+        ) : (
+          <div className="bento b3">
+            {groups.slice(0, 3).map((g) => (
+              <button className="tile" key={g.id} onClick={() => showScreen('groups')} style={{ textAlign: 'left', cursor: 'pointer' }}>
+                <h3>{g.name}</h3>
+                <p className="muted">{t('groups.memberCount', { count: g.memberCount })}</p>
+              </button>
+            ))}
           </div>
-        ))
-      )}
-      <button className="btn-ghost" style={{ width: '100%', marginTop: 10 }} onClick={() => showScreen('groups')}>{t('groups.openAll')}</button>
+        )}
+      </div>
     </>
   );
 }
