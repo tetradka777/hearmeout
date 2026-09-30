@@ -162,6 +162,8 @@ const ru = {
   'settings.menuProfile': 'Профиль',
   'settings.menuSettings': 'Настройки',
   'settings.menuSignOut': 'Выйти',
+  'settings.modeLight': 'Включить светлый режим',
+  'settings.modeDark': 'Включить тёмный режим',
 
   'onboarding.stepLabel': 'шаг {step} из {total}',
   'onboarding.connectLabel': 'Начнём',
@@ -702,6 +704,8 @@ const en: Dict = {
   'settings.menuProfile': 'Profile',
   'settings.menuSettings': 'Settings',
   'settings.menuSignOut': 'Sign out',
+  'settings.modeLight': 'Switch to light mode',
+  'settings.modeDark': 'Switch to dark mode',
 
   'onboarding.stepLabel': 'step {step} of {total}',
   'onboarding.connectLabel': "Let's start",
@@ -1240,6 +1244,8 @@ const fr: Dict = {
   'settings.menuProfile': 'Profil',
   'settings.menuSettings': 'Paramètres',
   'settings.menuSignOut': 'Se déconnecter',
+  'settings.modeLight': 'Passer en mode clair',
+  'settings.modeDark': 'Passer en mode sombre',
 
   'onboarding.stepLabel': 'étape {step} sur {total}',
   'onboarding.connectLabel': 'Commençons',
@@ -1778,6 +1784,8 @@ const es: Dict = {
   'settings.menuProfile': 'Perfil',
   'settings.menuSettings': 'Ajustes',
   'settings.menuSignOut': 'Cerrar sesión',
+  'settings.modeLight': 'Cambiar a modo claro',
+  'settings.modeDark': 'Cambiar a modo oscuro',
 
   'onboarding.stepLabel': 'paso {step} de {total}',
   'onboarding.connectLabel': 'Empecemos',
@@ -2316,6 +2324,8 @@ const de: Dict = {
   'settings.menuProfile': 'Profil',
   'settings.menuSettings': 'Einstellungen',
   'settings.menuSignOut': 'Abmelden',
+  'settings.modeLight': 'Zum hellen Modus wechseln',
+  'settings.modeDark': 'Zum dunklen Modus wechseln',
 
   'onboarding.stepLabel': 'Schritt {step} von {total}',
   'onboarding.connectLabel': "Los geht's",
