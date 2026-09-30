@@ -32,8 +32,6 @@ export async function GET() {
   return NextResponse.json(summaries);
 }
 
-const FREE_GROUP_LIMIT = 3;
-
 export async function POST(request: NextRequest) {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
@@ -43,14 +41,6 @@ export async function POST(request: NextRequest) {
   if (!name) return NextResponse.json({ error: 'invalid_payload' }, { status: 400 });
 
   const admin = supabaseAdmin();
-
-  const [{ data: prefs }, { count: memberCount }] = await Promise.all([
-    admin.from('users').select('is_premium').eq('id', userId).maybeSingle(),
-    admin.from('group_members').select('*', { count: 'exact', head: true }).eq('user_id', userId),
-  ]);
-  if (!prefs?.is_premium && (memberCount ?? 0) >= FREE_GROUP_LIMIT) {
-    return NextResponse.json({ error: 'group_limit_reached' }, { status: 403 });
-  }
 
   const { data: group, error } = await admin.from('groups').insert({ name, created_by: userId }).select('id, name').single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

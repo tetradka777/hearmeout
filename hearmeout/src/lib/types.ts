@@ -136,6 +136,7 @@ export type ScreenName =
   | 'match'
   | 'stats'
   | 'groups'
+  | 'group'
   | 'discover'
   | 'settings';
 

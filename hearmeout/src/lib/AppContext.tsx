@@ -58,7 +58,7 @@ type AuthStatus = 'loading' | 'anonymous' | 'ready';
 // history entry and URL, so the browser's own back/forward buttons work
 // everywhere on the site, not just on "content" pages.
 const ALL_SCREENS = new Set<ScreenName>([
-  'catalog', 'album', 'rate', 'history', 'recap', 'profile', 'artist', 'friend', 'match', 'stats', 'groups', 'discover', 'settings',
+  'catalog', 'album', 'rate', 'history', 'recap', 'profile', 'artist', 'friend', 'match', 'stats', 'groups', 'group', 'discover', 'settings',
 ]);
 
 // What's stored as `history.state` for one entry — enough to restore that
@@ -71,6 +71,7 @@ type ScreenSnapshot = {
   hmoDepth: number;
   currentAlbumId?: string;
   viewingUserId?: string;
+  viewingGroupId?: string;
   recapViewUserId?: string;
   recapOrigin?: ScreenName;
   rateOrigin?: RateOrigin;
@@ -90,6 +91,7 @@ function urlForSnapshot(snap: Omit<ScreenSnapshot, 'hmoDepth'>): string {
     case 'album': return `/?screen=album&id=${encodeURIComponent(snap.currentAlbumId || '')}`;
     case 'rate': return `/?screen=rate&id=${encodeURIComponent(snap.currentAlbumId || '')}`;
     case 'friend': return `/?screen=friend&id=${encodeURIComponent(snap.viewingUserId || '')}`;
+    case 'group': return `/?screen=group&id=${encodeURIComponent(snap.viewingGroupId || '')}`;
     case 'recap': return `/?screen=recap&id=${encodeURIComponent(snap.recapViewUserId || '')}`;
     case 'artist': return `/?screen=artist&id=${encodeURIComponent(snap.artistId || '')}&source=${snap.artistSource}&name=${encodeURIComponent(snap.artistName || '')}`;
     default: return `/?screen=${snap.activeScreen}`;
@@ -126,6 +128,7 @@ type AppState = {
   navAction: 'push' | 'pop';
   currentAlbumId: string;
   viewingUserId: string;
+  viewingGroupId: string;
   recapPeriod: RecapPeriod;
   recapSeasonKey: string | null;
   recapViewUserId: string;
@@ -170,6 +173,7 @@ type AppContextValue = {
   openAlbum: (id: string) => void;
   openRateFor: (id: string, origin: RateOrigin) => void;
   viewFriend: (id: string) => void;
+  viewGroup: (id: string) => void;
   openRecap: (userId: string) => void;
   closeRecap: () => void;
   setSearchQuery: (q: string) => void;
@@ -226,6 +230,7 @@ const initialState: AppState = {
   navAction: 'push',
   currentAlbumId: ALBUMS[0]?.id ?? '',
   viewingUserId: '',
+  viewingGroupId: '',
   recapPeriod: 'day',
   recapSeasonKey: null,
   recapViewUserId: 'me',
@@ -539,6 +544,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const viewFriend = useCallback((id: string) => {
     patch({ viewingUserId: id, activeScreen: 'friend', navAction: 'push' });
     pushScreenHistory({ activeScreen: 'friend', viewingUserId: id });
+  }, [patch]);
+  const viewGroup = useCallback((id: string) => {
+    patch({ viewingGroupId: id, activeScreen: 'group', navAction: 'push' });
+    pushScreenHistory({ activeScreen: 'group', viewingGroupId: id });
   }, [patch]);
   const openRecap = useCallback((userId: string) => {
     const origin = stateRef.current.activeScreen;
@@ -863,6 +872,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         activeScreen: snap.activeScreen,
         currentAlbumId: snap.currentAlbumId ?? s.currentAlbumId,
         viewingUserId: snap.viewingUserId ?? s.viewingUserId,
+        viewingGroupId: snap.viewingGroupId ?? s.viewingGroupId,
         recapViewUserId: snap.recapViewUserId ?? s.recapViewUserId,
         recapOrigin: snap.recapOrigin ?? s.recapOrigin,
         rateOrigin: snap.rateOrigin ?? s.rateOrigin,
@@ -887,6 +897,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           hmoDepth: 0,
           currentAlbumId: id,
           viewingUserId: id,
+          viewingGroupId: id,
           recapViewUserId: id,
           artistId: id,
           artistName: params.get('name') ?? undefined,
@@ -915,7 +926,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AppContextValue>(() => ({
     state, language: state.language, t, albums: ALBUMS, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds,
     spotifyObscure, spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, friendRequests, recapCache, reviewsVersion,
-    showScreen, goBack, openAlbum, openRateFor, viewFriend, openRecap, closeRecap,
+    showScreen, goBack, openAlbum, openRateFor, viewFriend, viewGroup, openRecap, closeRecap,
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, recapSeasons,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
@@ -924,7 +935,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyObscure,
     spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, friendRequests, recapCache, reviewsVersion, showScreen, goBack, openAlbum, openRateFor,
     setRecapSeasonKey, recapSeasons,
-    viewFriend, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
+    viewFriend, viewGroup, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
     updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateAccentTheme, updateAccentToxicity, updateLanguage, updateRegion, updateOpenProfile, updateAppearance, updatePrivacy,

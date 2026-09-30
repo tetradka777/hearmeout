@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
 
-const FREE_GROUP_LIMIT = 3;
-
 export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
@@ -23,14 +21,6 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
 
   const { data: existing } = await admin.from('group_members').select('user_id').eq('group_id', id).eq('user_id', target.id).maybeSingle();
   if (existing) return NextResponse.json({ error: 'already_member' }, { status: 409 });
-
-  const [{ data: targetPrefs }, { count: targetGroupCount }] = await Promise.all([
-    admin.from('users').select('is_premium').eq('id', target.id).maybeSingle(),
-    admin.from('group_members').select('*', { count: 'exact', head: true }).eq('user_id', target.id),
-  ]);
-  if (!targetPrefs?.is_premium && (targetGroupCount ?? 0) >= FREE_GROUP_LIMIT) {
-    return NextResponse.json({ error: 'group_limit_reached' }, { status: 403 });
-  }
 
   const { error } = await admin.from('group_members').insert({ group_id: id, user_id: target.id });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

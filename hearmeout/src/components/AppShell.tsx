@@ -17,6 +17,7 @@ import { FriendScreen } from './screens/FriendScreen';
 import { StatsScreen } from './screens/StatsScreen';
 import { MatchScreen } from './screens/MatchScreen';
 import { GroupsScreen } from './screens/GroupsScreen';
+import { GroupScreen } from './screens/GroupScreen';
 import { DiscoverScreen } from './screens/DiscoverScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 
@@ -38,6 +39,7 @@ const SCREENS: { name: ScreenName; Component: ComponentType<{ device: Device }> 
   { name: 'stats', Component: StatsScreen },
   { name: 'match', Component: MatchScreen },
   { name: 'groups', Component: GroupsScreen },
+  { name: 'group', Component: GroupScreen },
   { name: 'discover', Component: DiscoverScreen },
   { name: 'settings', Component: SettingsScreen },
 ];
