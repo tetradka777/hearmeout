@@ -7,6 +7,7 @@ import { CoverArt } from '../ui/CoverArt';
 import { userAvatarStyle, formatRelative } from '@/lib/format';
 import { computeMatch } from '@/lib/matchScore';
 import { FriendsRow } from '../FriendsRow';
+import { OnThisDayTeaser } from './OnThisDayTeaser';
 import { StarIcon } from '../ui/Icons';
 
 // Home feed (redesign spec 6.1). Replaces the old Home = catalog-browser
@@ -242,6 +243,7 @@ export function HomeScreen(_props: { device: Device }) {
       <div className="bento b3">
         <HeroTile />
         <RecapTile />
+        <OnThisDayTeaser />
       </div>
 
       <div className="sec">
