@@ -7,6 +7,7 @@ import { slugifyHandle } from '@/lib/slug';
 import type { ApiUser, Me } from '@/lib/types';
 import { isThemeId, isToxicity } from '@/lib/themes';
 import { isInternalEmail } from '@/lib/authInternalEmail';
+import { isDesign, isMode, isPaletteId } from '@/lib/palettes';
 
 export async function GET() {
   const userId = await getCurrentUserId();
@@ -15,7 +16,7 @@ export async function GET() {
   const admin = supabaseAdmin();
   const [profile, { data: prefs }, { data: conns }, { data: friendRows }, isOpenProfile] = await Promise.all([
     getUserProfile(admin, userId, userId),
-    admin.from('users').select('language, region, auth_user_id, is_premium, banner_url, accent_theme, accent_toxicity').eq('id', userId).maybeSingle(),
+    admin.from('users').select('language, region, auth_user_id, is_premium, banner_url, accent_theme, accent_toxicity, design, mode, palette, ticker_enabled, motion_enabled, time_format, week_start, ratings_visible, share_live, public_reviews, discoverable').eq('id', userId).maybeSingle(),
     admin.from('connections').select('provider').eq('user_id', userId),
     admin.from('friendships').select('friend:friend_id(id, name, handle, avatar_url, is_premium)').eq('user_id', userId),
     fetchIsOpenProfile(admin, userId),
@@ -51,6 +52,17 @@ export async function GET() {
     accentTheme: (prefs?.accent_theme as string | null) ?? null,
     accentToxicity: (prefs?.accent_toxicity as string | null) ?? null,
     isOpenProfile,
+    design: (prefs?.design as Me['design']) || 'cream-pop',
+    mode: (prefs?.mode as Me['mode']) || 'light',
+    palette: (prefs?.palette as Me['palette']) || 'lemons',
+    tickerEnabled: prefs?.ticker_enabled !== false,
+    motionEnabled: prefs?.motion_enabled !== false,
+    timeFormat: (prefs?.time_format as Me['timeFormat']) || '24',
+    weekStart: (prefs?.week_start as Me['weekStart']) || 'mon',
+    ratingsVisible: prefs?.ratings_visible !== false,
+    shareLive: prefs?.share_live !== false,
+    publicReviews: prefs?.public_reviews !== false,
+    discoverable: prefs?.discoverable !== false,
   };
   return NextResponse.json(me);
 }
@@ -67,22 +79,26 @@ export async function PATCH(request: NextRequest) {
     patch.handle = `@${slugifyHandle(body.handle.replace(/^@/, ''))}`;
   }
   if (typeof body?.avatarUrl === 'string') patch.avatar_url = body.avatarUrl;
-  // Banner + accent theme/toxicity are premium features — real gate, not
-  // just a hidden button: a direct PATCH from a non-premium account is
-  // dropped silently rather than trusting the client to have hidden the UI.
-  const wantsAccentTheme = typeof body?.accentTheme === 'string' && isThemeId(body.accentTheme);
-  const wantsAccentToxicity = typeof body?.accentToxicity === 'string' && isToxicity(body.accentToxicity);
-  if (typeof body?.bannerUrl === 'string' || wantsAccentTheme || wantsAccentToxicity) {
-    const { data: prefs } = await admin.from('users').select('is_premium').eq('id', userId).maybeSingle();
-    if (prefs?.is_premium) {
-      if (typeof body.bannerUrl === 'string') patch.banner_url = body.bannerUrl;
-      if (wantsAccentTheme) patch.accent_theme = body.accentTheme;
-      if (wantsAccentToxicity) patch.accent_toxicity = body.accentToxicity;
-    }
-  }
+  // Premium removed: no accounts are gated any more, so these (soon to be
+  // replaced by the redesign's own appearance settings below) are plain,
+  // ungated fields like any other.
+  if (typeof body?.bannerUrl === 'string') patch.banner_url = body.bannerUrl;
+  if (typeof body?.accentTheme === 'string' && isThemeId(body.accentTheme)) patch.accent_theme = body.accentTheme;
+  if (typeof body?.accentToxicity === 'string' && isToxicity(body.accentToxicity)) patch.accent_toxicity = body.accentToxicity;
   if (typeof body?.language === 'string' && ['ru', 'en', 'fr', 'es', 'de'].includes(body.language)) patch.language = body.language;
   if ('region' in (body ?? {})) patch.region = typeof body.region === 'string' && body.region ? body.region : null;
   if (typeof body?.isOpenProfile === 'boolean') patch.is_open_profile = body.isOpenProfile;
+  if (typeof body?.design === 'string' && isDesign(body.design)) patch.design = body.design;
+  if (typeof body?.mode === 'string' && isMode(body.mode)) patch.mode = body.mode;
+  if (typeof body?.palette === 'string' && isPaletteId(body.palette)) patch.palette = body.palette;
+  if (typeof body?.tickerEnabled === 'boolean') patch.ticker_enabled = body.tickerEnabled;
+  if (typeof body?.motionEnabled === 'boolean') patch.motion_enabled = body.motionEnabled;
+  if (typeof body?.timeFormat === 'string' && (body.timeFormat === '24' || body.timeFormat === '12')) patch.time_format = body.timeFormat;
+  if (typeof body?.weekStart === 'string' && (body.weekStart === 'mon' || body.weekStart === 'sun')) patch.week_start = body.weekStart;
+  if (typeof body?.ratingsVisible === 'boolean') patch.ratings_visible = body.ratingsVisible;
+  if (typeof body?.shareLive === 'boolean') patch.share_live = body.shareLive;
+  if (typeof body?.publicReviews === 'boolean') patch.public_reviews = body.publicReviews;
+  if (typeof body?.discoverable === 'boolean') patch.discoverable = body.discoverable;
   if (!Object.keys(patch).length) return NextResponse.json({ ok: true });
 
   const { error } = await admin.from('users').update(patch).eq('id', userId);

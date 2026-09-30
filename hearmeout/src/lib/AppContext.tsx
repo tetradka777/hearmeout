@@ -9,6 +9,7 @@ import type {
 } from './types';
 import type { AlbumDetail, CatalogAlbum, CatalogArtist } from './spotifyCatalog';
 import { THEME_PAIRS, isThemeId, isToxicity, onAccentFor, type Toxicity } from './themes';
+import { resolveMode, type Design, type Mode, type PaletteId, type TimeFormat, type WeekStart } from './palettes';
 
 const GENRE_BUCKETS = ['Rock', 'Hip-Hop', 'Electronic', 'R&B', 'Pop', 'Latin'];
 
@@ -195,6 +196,13 @@ type AppContextValue = {
   updateLanguage: (language: Language) => Promise<void>;
   updateRegion: (region: string | null) => Promise<void>;
   updateOpenProfile: (isOpenProfile: boolean) => Promise<void>;
+  updateAppearance: (updates: Partial<{
+    design: Design; mode: Mode; palette: PaletteId; tickerEnabled: boolean; motionEnabled: boolean;
+    timeFormat: TimeFormat; weekStart: WeekStart;
+  }>) => Promise<void>;
+  updatePrivacy: (updates: Partial<{
+    ratingsVisible: boolean; shareLive: boolean; publicReviews: boolean; discoverable: boolean;
+  }>) => Promise<void>;
   addFriend: (handle: string) => Promise<void>;
   respondToFriendRequest: (requestId: number, action: 'accept' | 'decline') => Promise<void>;
   syncSpotify: () => Promise<void>;
@@ -385,6 +393,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
       root.style.removeProperty('--on-accent');
     }
   }, [me?.isPremium, me?.accentTheme, me?.accentToxicity]);
+
+  // Redesign appearance: applies as soon as `me` loads (the layout's inline
+  // script already applied the cached values before hydration, so there's
+  // no flash — this effect just keeps the root in sync with the account's
+  // real settings and re-applies live when "system" mode's OS preference
+  // changes while the app is open).
+  useEffect(() => {
+    if (!me) return;
+    const root = document.documentElement;
+    root.dataset.design = me.design;
+    root.dataset.palette = me.palette;
+    root.dataset.mode = resolveMode(me.mode);
+    if (!me.motionEnabled) root.dataset.motion = 'off'; else delete root.dataset.motion;
+    try {
+      localStorage.setItem('hmo-appearance', JSON.stringify({
+        design: me.design, mode: me.mode, palette: me.palette, motionEnabled: me.motionEnabled,
+      }));
+    } catch { /* ignore */ }
+    if (me.mode !== 'system') return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = () => { root.dataset.mode = resolveMode('system'); };
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, [me]);
+
   useEffect(() => { if (state.authStatus === 'ready') refreshFriendRequests(); }, [state.authStatus, refreshFriendRequests]);
 
   // Completes an invite-link visit (see app/invite/[id]/page.tsx) that
@@ -620,6 +653,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateOpenProfile = useCallback(async (isOpenProfile: boolean) => {
     setMe((prev) => (prev ? { ...prev, isOpenProfile } : prev));
     await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isOpenProfile }) });
+  }, []);
+
+  const updateAppearance = useCallback(async (updates: Partial<{
+    design: Design; mode: Mode; palette: PaletteId; tickerEnabled: boolean; motionEnabled: boolean;
+    timeFormat: TimeFormat; weekStart: WeekStart;
+  }>) => {
+    setMe((prev) => (prev ? { ...prev, ...updates } : prev));
+    await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) });
+  }, []);
+
+  const updatePrivacy = useCallback(async (updates: Partial<{
+    ratingsVisible: boolean; shareLive: boolean; publicReviews: boolean; discoverable: boolean;
+  }>) => {
+    setMe((prev) => (prev ? { ...prev, ...updates } : prev));
+    await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) });
   }, []);
 
   const addFriend = useCallback(async (handle: string) => {
@@ -868,7 +916,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, recapSeasons,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
-    updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateAccentTheme, updateAccentToxicity, updateLanguage, updateRegion, updateOpenProfile,
+    updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateAccentTheme, updateAccentToxicity, updateLanguage, updateRegion, updateOpenProfile, updateAppearance, updatePrivacy,
     addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyObscure,
     spotifyGenreArtists, myRatings, lovedItems, toggleLoved, friendRequests, recapCache, reviewsVersion, showScreen, goBack, openAlbum, openRateFor,
@@ -876,7 +924,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     viewFriend, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
-    updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateAccentTheme, updateAccentToxicity, updateLanguage, updateRegion, updateOpenProfile,
+    updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateAccentTheme, updateAccentToxicity, updateLanguage, updateRegion, updateOpenProfile, updateAppearance, updatePrivacy,
     addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

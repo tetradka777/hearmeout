@@ -84,6 +84,22 @@ export type Me = PublicProfile & {
   accentToxicity: string | null;
   isOpenProfile: boolean;
   email: string | null;
+  // Redesign appearance settings (persisted on the account; see
+  // src/lib/palettes.ts for the types and src/lib/AppContext.tsx for the
+  // local-cache-then-account persistence pattern).
+  design: import('./palettes').Design;
+  mode: import('./palettes').Mode;
+  palette: import('./palettes').PaletteId;
+  tickerEnabled: boolean;
+  motionEnabled: boolean;
+  timeFormat: import('./palettes').TimeFormat;
+  weekStart: import('./palettes').WeekStart;
+  // Redesign privacy switches (settings 7.1). isOpenProfile above is
+  // "Private profile" (inverted).
+  ratingsVisible: boolean;
+  shareLive: boolean;
+  publicReviews: boolean;
+  discoverable: boolean;
 };
 
 export type FriendRequest = { id: number; user: ApiUser; createdAt: string };

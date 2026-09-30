@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, Inter, IBM_Plex_Mono } from "next/font/google";
+import "@/styles/fonts.css";
+import "@/styles/tokens.css";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -56,6 +58,18 @@ try {
   var t = localStorage.getItem('hmo-theme');
   document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark';
 } catch (e) {}
+try {
+  var a = JSON.parse(localStorage.getItem('hmo-appearance') || 'null');
+  var root = document.documentElement;
+  if (a && a.design) root.dataset.design = a.design;
+  if (a && a.palette) root.dataset.palette = a.palette;
+  var mode = a && a.mode;
+  if (mode === 'system' || !mode) {
+    mode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  root.dataset.mode = mode;
+  if (a && a.motionEnabled === false) root.dataset.motion = 'off';
+} catch (e) {}
 `;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -63,6 +77,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       data-theme="dark"
+      data-design="cream-pop"
+      data-mode="light"
+      data-palette="lemons"
       suppressHydrationWarning
       className={`${spaceGrotesk.variable} ${inter.variable} ${ibmPlexMono.variable}`}
     >

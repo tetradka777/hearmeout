@@ -1,0 +1,42 @@
+/* Redesign design tokens — spec section 2.2 and Appendix C.
+   13 palettes x { design: cream-pop | toxic } x { mode: light | dark }.
+   Put data-palette, data-design and data-mode on <html>. "system" mode is
+   resolved to light/dark in JS (prefers-color-scheme) before first paint. */
+
+:root {
+  --cream: #F6EFE0;
+  --font-display: 'Bricolage Grotesque', 'Figtree', system-ui, sans-serif;
+  --font-body: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+[data-palette="lemons"]{--ink:#294074;--ac:#D72E33;--on:#FFFFFF;--pop:#FDEDA3;--scl:#D72E33;--hi:#FFE45C}
+[data-palette="idea"]{--ink:#264F9E;--ac:#D8237A;--on:#FFFFFF;--pop:#E1E6CF;--scl:#C81F6E;--hi:#FF4FA3}
+[data-palette="bloom"]{--ink:#3E1A4F;--ac:#EAD0A9;--on:#3E1A4F;--pop:#F1DDBE;--scl:#3E1A4F;--hi:#EAD0A9}
+[data-palette="autumn"]{--ink:#A04740;--ac:#EDA04A;--on:#3A1E10;--pop:#F4DFC6;--scl:#A04740;--hi:#FF9F45}
+[data-palette="rude-olive"]{--ink:#3C408D;--ac:#7A1F33;--on:#FFFFFF;--pop:#F8DDC1;--scl:#7A1F33;--hi:#FF6B86}
+[data-palette="periwinkle"]{--ink:#3F4285;--ac:#5E61A5;--on:#FBF1D0;--pop:#FBF1D0;--scl:#5E61A5;--hi:#A5A9FF}
+[data-palette="moss"]{--ink:#5B5325;--ac:#D9A441;--on:#3A2E08;--pop:#F4EBD3;--scl:#5B5325;--hi:#E3C74E}
+[data-palette="forest"]{--ink:#4E604A;--ac:#D63A2F;--on:#FFFFFF;--pop:#F5F4F4;--scl:#D33A2F;--hi:#FF5A4D}
+[data-palette="sky"]{--ink:#2F4A6B;--ac:#B9CEDF;--on:#2F4A6B;--pop:#E3EFF1;--scl:#2F4A6B;--hi:#9FD0FF}
+[data-palette="coffee"]{--ink:#645143;--ac:#D62F45;--on:#FFFFFF;--pop:#F4E0C4;--scl:#D62F45;--hi:#FF4D6A}
+[data-palette="acid"]{--ink:#15150F;--ac:#C8FF3C;--on:#15150F;--pop:#EEF6C9;--scl:#4E6B00;--hi:#C8FF3C}
+[data-palette="grape"]{--ink:#21103F;--ac:#B892FF;--on:#21103F;--pop:#F0E6FF;--scl:#6A3FD0;--hi:#B892FF}
+[data-palette="cherry"]{--ink:#1A1210;--ac:#FF3D5A;--on:#1A1210;--pop:#FFE1E5;--scl:#CF1D37;--hi:#FF4D68}
+
+/* Design x mode. Resolve "system" mode to light/dark in JS before setting
+   data-mode (prefers-color-scheme), so first paint never flashes wrong. */
+[data-design],[data-design] *{box-sizing:border-box}
+[data-design]{--acc:var(--ac);--onacc:var(--on);--acct:var(--scl);--bb:var(--fg);--bf:var(--bg);--chr-bg:var(--ink);--chr-fg:var(--cream);--chr-hi:var(--hi);--chr-act-bg:var(--cream);--chr-act-fg:var(--ink);--focus:var(--fg);--onl:var(--cream);--tk-bg:var(--ink);--tk-fg:var(--cream);--tk-b:var(--pop)}
+
+[data-design="cream-pop"][data-mode="light"]{--bg:var(--cream);--paper:#FFFBF1;--paper2:#FFFBF1;--fg:color-mix(in srgb,var(--ink) 88%,#000);--tb:var(--ink);--bw:2px;--r:24px;--soft2:color-mix(in srgb,var(--pop) 50%,var(--paper))}
+[data-design="cream-pop"][data-mode="dark"]{--bg:color-mix(in srgb,var(--ink) 20%,#15120F);--paper:color-mix(in srgb,var(--ink) 24%,#1C1814);--paper2:color-mix(in srgb,var(--ink) 32%,#211C17);--fg:var(--cream);--tb:color-mix(in srgb,var(--cream) 72%,transparent);--bw:2px;--r:24px;--soft2:color-mix(in srgb,var(--pop) 14%,var(--paper));--acct:var(--hi);--onl:#0E0E0C;--focus:var(--cream)}
+[data-design="toxic"][data-mode="dark"]{--bg:color-mix(in srgb,var(--ink) 9%,#0A0A09);--paper:color-mix(in srgb,var(--ink) 18%,#121210);--paper2:color-mix(in srgb,var(--ink) 27%,#161614);--fg:var(--cream);--bb:var(--hi);--bf:#0E0E0C;--tb:transparent;--bw:0px;--r:22px;--acc:var(--hi);--onacc:#0E0E0C;--acct:var(--hi);--soft2:var(--paper);--chr-bg:var(--paper2);--tk-bg:var(--paper2);--tk-b:var(--hi);--chr-act-bg:var(--hi);--chr-act-fg:#0E0E0C;--focus:var(--hi);--onl:#0E0E0C}
+[data-design="toxic"][data-mode="light"]{--bg:color-mix(in srgb,var(--pop) 30%,#F3F1EA);--paper:#FFFFFF;--paper2:color-mix(in srgb,var(--pop) 42%,#FFFFFF);--fg:color-mix(in srgb,var(--ink) 88%,#000);--bb:var(--hi);--bf:#0E0E0C;--tb:color-mix(in srgb,var(--ink) 14%,transparent);--bw:1.5px;--r:22px;--acc:var(--hi);--onacc:#0E0E0C;--acct:var(--scl);--soft2:color-mix(in srgb,var(--hi) 14%,#FFFFFF);--chr-bg:color-mix(in srgb,var(--ink) 22%,#121210);--tk-bg:color-mix(in srgb,var(--ink) 22%,#121210);--tk-b:var(--hi);--chr-act-bg:var(--hi);--chr-act-fg:#0E0E0C;--focus:var(--fg);--onl:var(--cream)}
+
+/* data-motion="off" (Settings -> Animations, or the OS reduced-motion
+   preference resolved in JS) stops every decorative animation. */
+[data-motion="off"] *, [data-motion="off"] *::before, [data-motion="off"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}

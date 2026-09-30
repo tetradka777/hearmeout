@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: 'What we store — HearMeOut' };
 // being logged in, so it shouldn't depend on client-side auth state.
 export default function PrivacyPage() {
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)', padding: '48px 20px' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-legacy)', color: 'var(--text)', padding: '48px 20px' }}>
       <div style={{ maxWidth: 560, margin: '0 auto' }}>
         <div style={{ fontFamily: 'var(--font-space-grotesk),sans-serif', fontSize: 24, fontWeight: 700, marginBottom: 20 }}>
           What we store

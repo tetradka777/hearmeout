@@ -57,7 +57,7 @@ export default function InvitePage({ params }: { params: Promise<{ id: string }>
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-legacy)', color: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div style={{ maxWidth: 380, width: '100%', textAlign: 'center' }}>
         <div style={{ marginBottom: 22, display: 'flex', justifyContent: 'center' }}><LogoMark size={44} /></div>
 

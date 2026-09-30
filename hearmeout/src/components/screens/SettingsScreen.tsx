@@ -81,7 +81,7 @@ function ThemeSection({ device }: { device: Device }) {
                 onClick={() => updateAccentTheme(id)}
                 style={{
                   border: selected ? '1px solid var(--accent-border)' : '1px solid var(--line)',
-                  background: selected ? 'var(--accent-bg)' : 'var(--bg)',
+                  background: selected ? 'var(--accent-bg)' : 'var(--bg-legacy)',
                   borderRadius: 12, padding: 11, display: 'flex', flexDirection: 'column', gap: 9,
                   cursor: 'pointer', textAlign: 'left',
                 }}

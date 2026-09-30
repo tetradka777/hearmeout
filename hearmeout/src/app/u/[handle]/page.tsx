@@ -34,7 +34,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 
   if (!profile) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', color: 'var(--text)' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-legacy)', color: 'var(--text)' }}>
         <div style={{ textAlign: 'center' }}>
           <p style={{ fontSize: 15, color: 'var(--muted)' }}>User not found</p>
           <a href="/" style={{ color: 'var(--lime)' }}>HearMeOut →</a>
@@ -48,7 +48,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
     .filter((a): a is (typeof ALBUMS)[number] => !!a);
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)', padding: '40px 20px' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-legacy)', color: 'var(--text)', padding: '40px 20px' }}>
       <div style={{ maxWidth: 480, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <div
