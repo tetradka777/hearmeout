@@ -6,7 +6,7 @@ import type { Device, RatingRecord } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
 import { starsText } from '@/lib/format';
 import { toLocale } from '@/lib/i18n';
-import { SearchIcon } from './CatalogScreen';
+import { SearchIcon } from '../ui/Icons';
 import { PremiumLock } from '../ui/PremiumLock';
 import { accentMix } from '@/lib/accentGradient';
 

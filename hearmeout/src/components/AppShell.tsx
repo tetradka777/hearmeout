@@ -6,7 +6,7 @@ import type { Device, ScreenName } from '@/lib/types';
 import { Toast } from './ui/Toast';
 import { DockedPlayerDesktop, DockedPlayerMobile } from './DockedPlayer';
 import { RedesignShell } from './redesign/Shell';
-import { CatalogScreen } from './screens/CatalogScreen';
+import { HomeScreen } from './screens/HomeScreen';
 import { AlbumScreen } from './screens/AlbumScreen';
 import { RateScreen } from './screens/RateScreen';
 import { HistoryScreen } from './screens/HistoryScreen';
@@ -27,7 +27,7 @@ import { SettingsScreen } from './screens/SettingsScreen';
 // the surrounding chrome (RedesignShell) is the new design for now. They
 // get migrated to the new components one at a time (spec section 12).
 const SCREENS: { name: ScreenName; Component: ComponentType<{ device: Device }> }[] = [
-  { name: 'catalog', Component: CatalogScreen },
+  { name: 'catalog', Component: HomeScreen },
   { name: 'album', Component: AlbumScreen },
   { name: 'rate', Component: RateScreen },
   { name: 'history', Component: HistoryScreen },

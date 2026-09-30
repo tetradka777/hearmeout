@@ -1,8 +1,6 @@
 'use client';
 
 import { useApp } from '@/lib/AppContext';
-import { RecapTeaser } from './screens/RecapTeaser';
-import { OnThisDayTeaser } from './screens/OnThisDayTeaser';
 import { DEMO_PROFILES } from '@/lib/demoAccounts';
 
 function FriendTile({ friend }: { friend: { id: string; name: string; avatarUrl: string | null } }) {
@@ -69,8 +67,6 @@ export function FriendsRow() {
     <>
       {hasNoFriends && <InviteFriendBanner />}
       <div className="friends-row">
-        <RecapTeaser />
-        <OnThisDayTeaser />
         {hasNoFriends && DEMO_PROFILES.map((p) => <FriendTile key={p.id} friend={p} />)}
         {me.friends.map((f) => <FriendTile key={f.id} friend={f} />)}
         <button className="add-friend-tile" onClick={() => showScreen('profile')}>

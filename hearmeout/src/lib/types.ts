@@ -104,6 +104,16 @@ export type Me = PublicProfile & {
 
 export type FriendRequest = { id: number; user: ApiUser; createdAt: string };
 
+// Home feed (redesign spec 6.1, 8 "Feed events"). Album/track metadata is
+// resolved on the client from the catalog (same convention as ratings.
+// album_id everywhere else in this app) — the server only returns ids.
+export type FeedFirstPlayEvent = { type: 'first_play'; user: ApiUser; trackTitle: string; artist: string; at: string };
+export type FeedRatingEvent = { type: 'rating_review'; user: ApiUser; albumId: string; stars: number; review: string; at: string };
+export type FeedSessionEvent = { type: 'session'; plays: number; minutes: number; at: string };
+export type FeedEvent = FeedFirstPlayEvent | FeedRatingEvent | FeedSessionEvent;
+export type FeedDisagreement = { friend: ApiUser; albumId: string; mine: number; theirs: number; at: string };
+export type FeedResponse = { hero: FeedDisagreement | null; events: FeedEvent[]; recentAlbumIds: string[] };
+
 export type RatingRecord = {
   albumId: string;
   stars: number;

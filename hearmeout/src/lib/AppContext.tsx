@@ -5,7 +5,7 @@ import { ALBUMS } from './data';
 import { supabase } from './supabaseClient';
 import { translate, type Language, type TranslationKey } from './i18n';
 import type {
-  Album, AlbumRatingInfo, ArtistState, Device, FriendRequest, LovedItem, LovedItemType, Me, RatingRecord, RecapData, RecapPeriod, ScreenName, SeasonOption,
+  Album, AlbumRatingInfo, ArtistState, Device, FeedResponse, FriendRequest, LovedItem, LovedItemType, Me, RatingRecord, RecapData, RecapPeriod, ScreenName, SeasonOption,
 } from './types';
 import type { AlbumDetail, CatalogAlbum, CatalogArtist } from './spotifyCatalog';
 import { THEME_PAIRS, isThemeId, isToxicity, onAccentFor, type Toxicity } from './themes';
@@ -158,6 +158,8 @@ type AppContextValue = {
   spotifyObscure: Record<string, CatalogAlbum[] | 'error'>;
   spotifyGenreArtists: Record<string, CatalogArtist[] | 'error'>;
   myRatings: RatingRecord[];
+  feed: FeedResponse | null;
+  setFeed: (feed: FeedResponse | null) => void;
   lovedItems: LovedItem[];
   toggleLoved: (type: LovedItemType, title: string, artist?: string | null, itemId?: string | null, cover?: string | null) => Promise<void>;
   friendRequests: { incoming: FriendRequest[]; outgoing: FriendRequest[] };
@@ -248,6 +250,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [spotifyObscure, setSpotifyObscure] = useState<Record<string, CatalogAlbum[] | 'error'>>({});
   const [spotifyGenreArtists, setSpotifyGenreArtists] = useState<Record<string, CatalogArtist[] | 'error'>>({});
   const [myRatings, setMyRatings] = useState<RatingRecord[]>([]);
+  const [feed, setFeed] = useState<FeedResponse | null>(null);
   const [lovedItems, setLovedItems] = useState<LovedItem[]>([]);
   const [friendRequests, setFriendRequests] = useState<{ incoming: FriendRequest[]; outgoing: FriendRequest[] }>({ incoming: [], outgoing: [] });
   const [recapCache, setRecapCache] = useState<Record<string, RecapData>>({});
@@ -911,7 +914,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AppContextValue>(() => ({
     state, language: state.language, t, albums: ALBUMS, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds,
-    spotifyObscure, spotifyGenreArtists, myRatings, lovedItems, toggleLoved, friendRequests, recapCache, reviewsVersion,
+    spotifyObscure, spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, friendRequests, recapCache, reviewsVersion,
     showScreen, goBack, openAlbum, openRateFor, viewFriend, openRecap, closeRecap,
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, recapSeasons,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
@@ -919,7 +922,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateAccentTheme, updateAccentToxicity, updateLanguage, updateRegion, updateOpenProfile, updateAppearance, updatePrivacy,
     addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyObscure,
-    spotifyGenreArtists, myRatings, lovedItems, toggleLoved, friendRequests, recapCache, reviewsVersion, showScreen, goBack, openAlbum, openRateFor,
+    spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, friendRequests, recapCache, reviewsVersion, showScreen, goBack, openAlbum, openRateFor,
     setRecapSeasonKey, recapSeasons,
     viewFriend, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,

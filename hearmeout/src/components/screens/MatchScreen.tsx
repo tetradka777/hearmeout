@@ -4,12 +4,7 @@ import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device, DiscoverMatchPerson, GroupSummary, PublicProfile } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
-
-function computeMatch(mine: PublicProfile['genres'], theirs: PublicProfile['genres']): number | null {
-  const overlap = mine.map((mg) => ({ me: mg.pct, friend: theirs.find((x) => x.g === mg.g)?.pct ?? 0 }));
-  const denom = overlap.reduce((s, o) => s + Math.max(o.me, o.friend), 0);
-  return denom > 0 ? Math.round((overlap.reduce((s, o) => s + Math.min(o.me, o.friend), 0) / denom) * 100) : null;
-}
+import { computeMatch } from '@/lib/matchScore';
 
 export function MatchScreen(_props: { device: Device }) {
   const { t, me, viewFriend, showScreen, addFriend } = useApp();
