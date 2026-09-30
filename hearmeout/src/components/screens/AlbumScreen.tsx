@@ -4,23 +4,66 @@ import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
-import { StarsAvg } from '../ui/StarsAvg';
-import { PlayIcon } from '../ui/Icons';
-import { pluralForKey, toLocale } from '@/lib/i18n';
-import { usePlayer, type QueueTrack } from '@/lib/PlayerContext';
-import { TransportRing } from '../DockedPlayer';
+import { Stars } from '../redesign/Stars';
+import { PreviewButton } from '../redesign/PreviewButton';
+import { pluralForKey } from '@/lib/i18n';
+import type { QueueTrack } from '@/lib/PlayerContext';
+import { usePlayer } from '@/lib/PlayerContext';
+import { supabase } from '@/lib/supabaseClient';
+import { userAvatarStyle } from '@/lib/format';
 import { AlbumReviews } from '../AlbumReviews';
 import { AlbumRatingDistribution } from '../AlbumRatingDistribution';
 import { AlbumTagsSummary } from '../AlbumTagsSummary';
 
+type FriendRating = { id: string; name: string; avatarUrl: string | null; stars: number };
+
+// "Friends who rated" (spec 6.2) — not previously in this app: which of the
+// viewer's friends rated this exact album, most recent first.
+function FriendsWhoRated({ albumId }: { albumId: string }) {
+  const { t, me } = useApp();
+  const [rows, setRows] = useState<FriendRating[] | null>(null);
+
+  useEffect(() => {
+    if (!me || !me.friends.length) { setRows([]); return; }
+    let cancelled = false;
+    const friendIds = me.friends.map((f) => f.id);
+    const byId = new Map(me.friends.map((f) => [f.id, f]));
+    supabase.from('ratings').select('user_id, stars').eq('album_id', albumId).in('user_id', friendIds)
+      .then(({ data }) => {
+        if (cancelled) return;
+        setRows((data || []).map((r) => {
+          const f = byId.get(r.user_id as string);
+          return { id: r.user_id as string, name: f?.name || '?', avatarUrl: f?.avatarUrl ?? null, stars: Number(r.stars) };
+        }));
+      });
+    return () => { cancelled = true; };
+  }, [albumId, me]);
+
+  return (
+    <div className="tile">
+      <h3>{t('album.friendsWhoRated')}</h3>
+      {rows === null ? null : rows.length ? (
+        <div className="stack" style={{ marginTop: 10 }}>
+          {rows.map((r) => (
+            <div className="row" key={r.id}>
+              <div className="dot" style={userAvatarStyle({ avatarUrl: r.avatarUrl })}>{r.name[0]}</div>
+              <div className="g"><b>{r.name}</b></div>
+              <Stars value={r.stars} size={14} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="muted">{t('album.friendsWhoRatedEmpty')}</p>
+      )}
+    </div>
+  );
+}
+
 export function AlbumScreen({ device }: { device: Device }) {
-  const { state, t, language, albums, liveAlbums, failedAlbumIds, albumRatings, myRatings, spotifyCovers, reviewsVersion, goBack, openRateFor, openSpotifyArtist, ensureLiveAlbum, lovedItems, toggleLoved } = useApp();
-  const { currentTrack, playQueue } = usePlayer();
+  const { state, t, language, albums, liveAlbums, failedAlbumIds, albumRatings, myRatings, spotifyCovers, reviewsVersion, goBack, openRateFor, openSpotifyArtist, ensureLiveAlbum, lovedItems, toggleLoved, me } = useApp();
+  const { playQueue, currentTrack, playing } = usePlayer();
   const staticMatch = albums.find((x) => x.id === state.currentAlbumId);
   const enriched = liveAlbums[state.currentAlbumId];
-  // No `|| albums[0]` fallback here on purpose: silently substituting an
-  // unrelated album when enrichment fails (e.g. Spotify rate-limited) is
-  // exactly what looked like clicking one album but landing on another.
   const a = enriched || staticMatch;
 
   useEffect(() => {
@@ -31,12 +74,25 @@ export function AlbumScreen({ device }: { device: Device }) {
   const [wishlisted, setWishlisted] = useState(false);
   useEffect(() => { setWishlisted(false); }, [a?.id]);
 
+  const [circleAvg, setCircleAvg] = useState<{ avg: number; n: number } | null>(null);
+  useEffect(() => {
+    if (!a || !me) return;
+    let cancelled = false;
+    const ids = [me.id, ...me.friends.map((f) => f.id)];
+    supabase.from('ratings').select('stars').eq('album_id', a.id).in('user_id', ids).then(({ data }) => {
+      if (cancelled || !data?.length) { if (!cancelled) setCircleAvg(null); return; }
+      const avg = data.reduce((s, r) => s + Number(r.stars), 0) / data.length;
+      setCircleAvg({ avg, n: data.length });
+    });
+    return () => { cancelled = true; };
+  }, [a, me]);
+
   if (!a) {
     const failed = !!failedAlbumIds[state.currentAlbumId];
     return (
       <>
-        <button className="back-btn" onClick={() => goBack('catalog')}>{t('album.backToCatalog')}</button>
-        <div className="empty-state">{failed ? t('album.loadError') : t('album.loading')}</div>
+        <button className="crumb" onClick={() => goBack('catalog')}>‹ {t('nav.home')}</button>
+        <div className="tile empty"><p>{failed ? t('album.loadError') : t('album.loading')}</p></div>
       </>
     );
   }
@@ -44,156 +100,90 @@ export function AlbumScreen({ device }: { device: Device }) {
   const ratingInfo = albumRatings[a.id];
   const myStars = myRatings.find((r) => r.albumId === a.id)?.stars ?? null;
   const cover = spotifyCovers[a.id] || a.cover;
-
-  const heroArt = (
-    <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="art-lg" />
-  );
-
-  const artistLabel = a.artistId ? (
-    <span style={{ cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'var(--line)' }} onClick={() => openSpotifyArtist(a.artistId!)}>
-      {a.artist}
-    </span>
-  ) : a.artist;
-
-  const albumIsCurrent = currentTrack?.albumId === a.id;
   const trackQueue: QueueTrack[] = a.tracklist.map((tr) => ({ title: tr, artist: a.artist, cover, albumId: a.id, spotifyId: a.spotifyId }));
-
-  const tracklist = a.tracklist.length ? (
-    a.tracklist.map((tr, i) => {
-      const isRowCurrent = albumIsCurrent && currentTrack?.title === tr;
-      return (
-        <div className={`list-row ${isRowCurrent ? 'playing' : ''}`} key={tr} onClick={() => playQueue(trackQueue, i)}>
-          <span className="n">{String(i + 1).padStart(2, '0')}</span>
-          <div className="info"><div className="t">{tr}</div></div>
-        </div>
-      );
-    })
-  ) : (
-    <div className="empty-state">{t('album.tracklistEmpty')}</div>
-  );
-
-  const headerPlayBtn = !a.tracklist.length ? null : albumIsCurrent ? (
-    <TransportRing size={52} />
-  ) : (
-    <button className="header-play-btn" onClick={() => playQueue(trackQueue, 0)} aria-label={t('album.rateAlbum')}>
-      <PlayIcon size={20} />
-    </button>
-  );
 
   const openSpotifyUrl = a.spotifyId ? `https://open.spotify.com/album/${a.spotifyId}` : null;
   const albumLoved = lovedItems.some((li) => li.type === 'album' && li.title === a.title && li.artist === a.artist);
 
-  const actions = (justify: 'center' | undefined) => (
-    <div className={`album-actions ${justify === 'center' ? 'center' : ''}`}>
-      <button className="action-chip primary" onClick={() => openRateFor(a.id, 'album')}>{t('album.rateAlbum')}</button>
-      <button className={`action-chip ${wishlisted ? 'added' : ''}`} onClick={() => setWishlisted((v) => !v)}>
-        {wishlisted ? t('album.inWishlist') : t('album.addWishlist')}
-      </button>
-      <button
-        className={`action-chip ${albumLoved ? 'added' : ''}`}
-        onClick={() => toggleLoved('album', a.title, a.artist, a.spotifyId ?? null, spotifyCovers[a.id] || a.cover || null)}
-      >
-        ♥ {albumLoved ? t('album.loved') : t('album.love')}
-      </button>
-      {openSpotifyUrl && (
-        <a className="action-chip" href={openSpotifyUrl} target="_blank" rel="noreferrer">{t('album.openInSpotify')}</a>
-      )}
+  const tracklist = a.tracklist.length ? (
+    <div className="stack">
+      {a.tracklist.map((tr, i) => {
+        const isRowCurrent = currentTrack?.albumId === a.id && currentTrack?.title === tr;
+        return (
+          <button className={`trk row${isRowCurrent ? ' cur' : ''}`} key={tr} onClick={() => playQueue(trackQueue, i)}>
+            <span className="muted" style={{ width: 24 }}>{String(i + 1).padStart(2, '0')}</span>
+            <b>{tr}</b>
+            {isRowCurrent && playing && <span className="eq"><b /><b /><b /></span>}
+          </button>
+        );
+      })}
     </div>
+  ) : (
+    <p className="muted">{t('album.tracklistEmpty')}</p>
   );
-
-  const metaMono = [a.genre, a.year || null].filter(Boolean).join(' · ');
-
-  const distSection = ratingInfo && (
-    <>
-      <div className="section-head" style={{ marginTop: 22 }}><h2>{t('album.ratingDistribution')}</h2></div>
-      <AlbumRatingDistribution albumId={a.id} refreshToken={reviewsVersion} />
-      <AlbumTagsSummary albumId={a.id} refreshToken={reviewsVersion} />
-    </>
-  );
-
-  if (device === 'mobile') {
-    return (
-      <>
-        <button className="back-btn" onClick={() => goBack('catalog')}>{t('album.backToCatalog')}</button>
-        <div className="album-hero">
-          {metaMono && <div className="meta-mono">{metaMono}</div>}
-          {heroArt}
-          <h1>{a.title}</h1>
-          <span className="artist-link">{artistLabel}</span>
-          {headerPlayBtn && (
-            <div className="album-title-row" style={{ justifyContent: 'center', marginTop: 14 }}>
-              {headerPlayBtn}
-              <span className="preview-label">{t('album.preview30s')}</span>
-            </div>
-          )}
-        </div>
-        <div className="avg-rating">
-          {ratingInfo ? (
-            <>
-              <div>
-                <div className="num">{ratingInfo.avg.toFixed(1)}</div>
-                <div className="rd">{ratingInfo.count.toLocaleString(toLocale(language))} {pluralForKey(language, ratingInfo.count, 'album.ratingOne', 'album.ratingFew', 'album.ratingMany')}</div>
-              </div>
-              <StarsAvg rating={ratingInfo.avg} />
-            </>
-          ) : (
-            <div className="rd">{t('album.noRatings')}</div>
-          )}
-        </div>
-        {myStars != null && ratingInfo && (
-          <div className="rd" style={{ textAlign: 'center', marginTop: -10, marginBottom: 14 }}>
-            {t('album.yourVsAvg', { mine: myStars.toFixed(1), avg: ratingInfo.avg.toFixed(1) })}
-          </div>
-        )}
-        {actions('center')}
-        {distSection}
-        <div className="section-head" style={{ marginTop: 22 }}><h2>{t('album.tracklist')}</h2><span>{a.tracklist.length ? `${a.tracklist.length} ${t('album.tracksCount')}` : ''}</span></div>
-        <div style={{ marginBottom: 22 }}>{tracklist}</div>
-        <div className="section-head"><h2>{t('album.reviews')}</h2></div>
-        <AlbumReviews albumId={a.id} refreshToken={reviewsVersion} />
-      </>
-    );
-  }
 
   return (
     <>
-      <button className="back-btn" onClick={() => goBack('catalog')}>{t('album.backToCatalog')}</button>
-      <div className="album-band">
-        {heroArt}
-        <div className="album-band-mid">
-          {metaMono && <div className="meta-mono">{metaMono}</div>}
-          <div className="album-title-row">
-            <h1>{a.title}</h1>
-            {headerPlayBtn}
-            {headerPlayBtn && <span className="preview-label">{t('album.preview30s')}</span>}
-          </div>
-          <span className="artist-link">{artistLabel}</span>
-          {actions(undefined)}
+      <button className="crumb" onClick={() => goBack('catalog')}>‹ {t('nav.home')}</button>
+      <div className="two">
+        <div className="stack">
+          <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: '100%', aspectRatio: '1' }} />
+          <FriendsWhoRated albumId={a.id} />
         </div>
-        <div className="album-band-score">
-          {ratingInfo ? (
-            <>
-              <div className="num">{ratingInfo.avg.toFixed(1)}</div>
-              <StarsAvg rating={ratingInfo.avg} />
-              <div className="rd">{ratingInfo.count.toLocaleString(toLocale(language))} {pluralForKey(language, ratingInfo.count, 'album.ratingOne', 'album.ratingFew', 'album.ratingMany')}</div>
-              {myStars != null && (
-                <div className="rd" style={{ marginTop: 4 }}>{t('album.yourVsAvg', { mine: myStars.toFixed(1), avg: ratingInfo.avg.toFixed(1) })}</div>
-              )}
-            </>
-          ) : (
-            <div className="rd">{t('album.noRatings')}</div>
+        <div className="stack">
+          <div className="eyebrow">
+            {a.artistId ? <span className="link" style={{ cursor: 'pointer' }} onClick={() => openSpotifyArtist(a.artistId!)}>{a.artist}</span> : a.artist}
+            {a.genre ? ` · ${a.genre}` : ''}{a.year ? ` · ${a.year}` : ''}
+          </div>
+          <h1 className="big">{a.title}</h1>
+          <div className="acts">
+            <button className={`btn ${wishlisted ? '' : 'ghost'}`} onClick={() => setWishlisted((v) => !v)}>
+              {wishlisted ? `✓ ${t('album.inWishlist')}` : t('album.addWishlist')}
+            </button>
+            <button className={`btn ${albumLoved ? '' : 'ghost'}`} onClick={() => toggleLoved('album', a.title, a.artist, a.spotifyId ?? null, spotifyCovers[a.id] || a.cover || null)}>
+              ♥ {albumLoved ? t('album.loved') : t('album.love')}
+            </button>
+            {openSpotifyUrl && <a className="btn ghost" href={openSpotifyUrl} target="_blank" rel="noreferrer">{t('album.openInSpotify')}</a>}
+          </div>
+          {a.tracklist.length > 0 && (
+            <div className="pvw">
+              <PreviewButton tracks={trackQueue} />
+              <div>
+                <b>{t('album.preview30s')}</b>
+              </div>
+            </div>
           )}
+          <div className="stats3">
+            <div className="tile">
+              {circleAvg ? <span className="num">{circleAvg.avg.toFixed(1)}</span> : <span className="num">—</span>}
+              <small className="muted">{t('album.yourCircle')}</small>
+            </div>
+            <div className="tile">
+              {ratingInfo ? <span className="num">{ratingInfo.avg.toFixed(1)}</span> : <span className="num">—</span>}
+              <small className="muted">{ratingInfo ? `${ratingInfo.count} ${pluralForKey(language, ratingInfo.count, 'album.ratingOne', 'album.ratingFew', 'album.ratingMany')}` : t('album.noRatings')}</small>
+            </div>
+            <div className="tile">
+              <span className="num">{myStars != null ? myStars.toFixed(1) : '–'}</span>
+              <small className="muted">{t('rate.yourRating')}</small>
+            </div>
+          </div>
+          <button className="btn lg" onClick={() => openRateFor(a.id, 'album')}>{t('album.rateAlbum')}</button>
         </div>
       </div>
-      {distSection}
-      <div className="d-two-col">
-        <div>
-          <div className="section-head"><h2>{t('album.tracklist')}</h2><span>{a.tracklist.length ? `${a.tracklist.length} ${t('album.tracksCount')}` : ''}</span></div>
-          {tracklist}
+
+      <div className="bento b3">
+        <div className="tile s2">
+          <h3>{t('album.tracklist')}</h3>
+          <div style={{ marginTop: 10 }}>{tracklist}</div>
         </div>
-        <div>
-          <div className="section-head"><h2>{t('album.reviews')}</h2></div>
-          <AlbumReviews albumId={a.id} refreshToken={reviewsVersion} />
+        <div className="tile">
+          <h3>{t('album.ratingDistribution')}</h3>
+          <div style={{ marginTop: 10 }}><AlbumRatingDistribution albumId={a.id} refreshToken={reviewsVersion} /></div>
+          <AlbumTagsSummary albumId={a.id} refreshToken={reviewsVersion} />
+        </div>
+        <div className="tile s3">
+          <h3>{t('album.reviews')}</h3>
+          <div style={{ marginTop: 10 }}><AlbumReviews albumId={a.id} refreshToken={reviewsVersion} /></div>
         </div>
       </div>
     </>

@@ -44,13 +44,13 @@ export function AlbumTagsSummary({ albumId, refreshToken }: { albumId: string; r
   if (!counts || !counts.length) return null;
 
   return (
-    <>
-      <div className="section-head" style={{ marginTop: 22 }}><h2>{t('album.tagsTitle')}</h2></div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 22 }}>
+    <div className="sec">
+      <h3>{t('album.tagsTitle')}</h3>
+      <div className="chips" style={{ marginTop: 10 }}>
         {counts.map(({ id, count }) => (
           <span key={id} className="chip" style={{ cursor: 'default' }}>{t(REVIEW_TAG_LABEL_KEY[id])} · {count}</span>
         ))}
       </div>
-    </>
+    </div>
   );
 }

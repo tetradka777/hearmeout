@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import { supabase } from '@/lib/supabaseClient';
-import { accentMix } from '@/lib/accentGradient';
 
 // Ratings are stored in 0.1 steps (see StarPicker), so the real possible
 // values are 0.1..5.0 — one bucket per exact value, 50 in total.
@@ -38,29 +37,20 @@ export function AlbumRatingDistribution({ albumId, refreshToken }: { albumId: st
   if (counts === null) return null;
 
   const total = counts.reduce((a, b) => a + b, 0);
-  if (!total) return <div className="rating-dist-empty">{t('album.noRatings')}</div>;
+  if (!total) return <div className="muted">{t('album.noRatings')}</div>;
 
   const max = Math.max(...counts);
 
   return (
-    <div className="rating-dist">
-      <div className="rating-dist-chart">
+    <>
+      <div className="h50" role="img" aria-label={t('album.ratingDistribution')}>
         {counts.map((n, i) => {
           const value = (i + 1) / 10;
           const pct = n ? Math.max(6, Math.round((n / max) * 100)) : 0;
-          return (
-            <div
-              key={i}
-              className="rating-dist-bar"
-              style={{ height: `${pct}%`, background: accentMix((i + 1) / 50) }}
-              title={n ? `${value.toFixed(1)} ★ · ${n}` : undefined}
-            />
-          );
+          return <i key={i} style={{ height: `${pct}%` }} title={n ? `${value.toFixed(1)} ★ · ${n}` : undefined} />;
         })}
       </div>
-      <div className="rating-dist-axis">
-        <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
-      </div>
-    </div>
+      <div className="h50ax"><span>0.1</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+    </>
   );
 }

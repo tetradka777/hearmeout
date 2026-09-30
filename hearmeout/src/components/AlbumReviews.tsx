@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import { supabase } from '@/lib/supabaseClient';
-import { starsText, userAvatarStyle, formatRelative } from '@/lib/format';
-import { accentMix } from '@/lib/accentGradient';
+import { userAvatarStyle, formatRelative } from '@/lib/format';
 import type { AlbumReview } from '@/lib/types';
+import { Stars } from './redesign/Stars';
 
 type Row = { stars: number; review: string | null; created_at: string; users: { name: string; handle: string; avatar_url: string | null } | null };
 type ReviewWithTime = AlbumReview & { createdAt: string };
@@ -40,26 +40,22 @@ export function AlbumReviews({ albumId, refreshToken }: { albumId: string; refre
     return () => { cancelled = true; };
   }, [albumId, refreshToken]);
 
-  if (reviews === null) return <div className="archive-loading">{t('reviews.loading')}</div>;
-  if (!reviews.length) return <div className="empty-state">{t('reviews.empty')}</div>;
+  if (reviews === null) return <div className="muted">{t('reviews.loading')}</div>;
+  if (!reviews.length) return <div className="tile empty"><p>{t('reviews.empty')}</p></div>;
 
   return (
-    <>
+    <div className="stack">
       {reviews.map((r, i) => (
-        <div className="review-card" key={i}>
-          <div className="head">
-            <div className="user">
-              <div className="avatar" style={userAvatarStyle(r.user)} />
-              <div className="uname">{r.user.handle}</div>
-            </div>
-            <div className="review-card-meta">
-              <span className="stars-dot" style={{ color: accentMix(r.stars / 5) }}>{starsText(r.stars)}</span>
-              <span className="review-card-time">{formatRelative(r.createdAt, language)}</span>
-            </div>
+        <div className="tile t-soft2" key={i}>
+          <div className="ft top" style={{ marginBottom: 10 }}>
+            <div className="dot" style={userAvatarStyle(r.user)}>{r.user.name[0]}</div>
+            <div className="who"><b>{r.user.handle}</b></div>
+            <Stars value={r.stars} size={14} />
+            <small className="muted" style={{ marginLeft: 'auto' }}>{formatRelative(r.createdAt, language)}</small>
           </div>
-          <p>{r.review}</p>
+          <p className="quote">&ldquo;{r.review}&rdquo;</p>
         </div>
       ))}
-    </>
+    </div>
   );
 }
