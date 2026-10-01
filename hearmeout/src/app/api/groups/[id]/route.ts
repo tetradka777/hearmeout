@@ -23,7 +23,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
   const [{ data: ratingsRows }, { data: eventsRows }, { data: allRatingsRows }] = await Promise.all([
-    admin.from('ratings').select('user_id, album_id, stars, review, created_at').in('user_id', memberIds).order('created_at', { ascending: false }).limit(60),
+    admin.from('ratings').select('user_id, album_id, stars, review, created_at, is_private').in('user_id', memberIds).order('created_at', { ascending: false }).limit(60),
     admin.from('listening_events').select('user_id, played_at, duration_ms, genre').in('user_id', memberIds).gte('played_at', monthAgo).limit(6000),
     // Full rating history per member (not just the last 60 across the whole
     // group) — needed for a real longest-streak count, which the capped
@@ -34,7 +34,8 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   // Activity feed: recent ratings by any member, album title/artist resolved
   // client-side (same convention as everywhere else — ratings.album_id has
   // no FK to the catalog, so the client already knows how to look it up).
-  const activity = (ratingsRows || []).slice(0, 20).map((r) => ({
+  // "Keep private" ratings never show up in a group's shared activity feed.
+  const activity = (ratingsRows || []).filter((r) => !r.is_private).slice(0, 20).map((r) => ({
     type: (r.review ? 'review' : 'rating') as 'review' | 'rating',
     user: userById.get(r.user_id as string) || { id: r.user_id as string, name: '?', handle: '', avatarUrl: null },
     albumId: r.album_id as string,

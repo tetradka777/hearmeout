@@ -120,6 +120,8 @@ export type RatingRecord = {
   review: string | null;
   tags: string[];
   createdAt: string;
+  isPrivate: boolean;
+  previousStars: number | null;
 };
 
 export type Device = 'mobile' | 'desktop';

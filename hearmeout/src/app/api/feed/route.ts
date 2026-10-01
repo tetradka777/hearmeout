@@ -30,8 +30,8 @@ export async function GET() {
       ? admin.from('users').select('id, name, handle, avatar_url, is_premium').in('id', friendIds)
       : Promise.resolve({ data: [] as { id: string; name: string; handle: string; avatar_url: string | null; is_premium: boolean | null }[] }),
     friendIds.length
-      ? admin.from('ratings').select('user_id, album_id, stars, review, created_at').in('user_id', friendIds).gte('created_at', weekAgo).order('created_at', { ascending: false }).limit(20)
-      : Promise.resolve({ data: [] as { user_id: string; album_id: string; stars: number; review: string | null; created_at: string }[] }),
+      ? admin.from('ratings').select('user_id, album_id, stars, review, created_at, is_private').in('user_id', friendIds).gte('created_at', weekAgo).order('created_at', { ascending: false }).limit(20)
+      : Promise.resolve({ data: [] as { user_id: string; album_id: string; stars: number; review: string | null; created_at: string; is_private: boolean | null }[] }),
     admin.from('ratings').select('album_id, stars').eq('user_id', userId),
     friendIds.length
       ? admin.from('listening_events').select('user_id, track_id, track_title, artist, played_at').in('user_id', friendIds).gte('played_at', dayStart.toISOString()).order('played_at', { ascending: false }).limit(300)
@@ -65,8 +65,12 @@ export async function GET() {
     (friendUsers || []).map((u) => [u.id, { id: u.id, name: u.name, handle: u.handle, avatarUrl: u.avatar_url, isPremium: !!u.is_premium }])
   );
 
+  // "Keep private" ratings never leave their owner's own view — not as a
+  // feed event, and not as the hero disagreement below.
+  const visibleFriendRatings = (friendRatings || []).filter((r) => !r.is_private);
+
   // Rating-with-review events: friends' recent written reviews.
-  const ratingEvents: FeedEvent[] = (friendRatings || [])
+  const ratingEvents: FeedEvent[] = visibleFriendRatings
     .filter((r) => !!r.review)
     .map((r) => ({
       type: 'rating_review' as const,
@@ -110,7 +114,7 @@ export async function GET() {
   // recent score on an album both of them rated.
   const myByAlbum = new Map((myRatings || []).map((r) => [r.album_id, Number(r.stars)]));
   let hero: FeedDisagreement | null = null;
-  for (const r of friendRatings || []) {
+  for (const r of visibleFriendRatings) {
     const mine = myByAlbum.get(r.album_id);
     if (mine == null) continue;
     const gap = Math.abs(mine - Number(r.stars));

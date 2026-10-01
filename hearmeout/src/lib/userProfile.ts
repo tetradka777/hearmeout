@@ -60,7 +60,7 @@ export async function getUserProfile(
 
   const [{ data: user, error: userErr }, { data: ratings }, { data: genreRows }, { data: todayRows }, nowPlaying, isOpenProfile] = await Promise.all([
     admin.from('users').select('id, name, handle, avatar_url, created_at').eq('id', userId).maybeSingle(),
-    admin.from('ratings').select('album_id, stars, review, tags, created_at').eq('user_id', userId).order('created_at', { ascending: false }),
+    admin.from('ratings').select('album_id, stars, review, tags, created_at, is_private').eq('user_id', userId).order('created_at', { ascending: false }),
     admin.from('listening_events').select('genre').eq('user_id', userId).not('genre', 'is', null).limit(5000),
     admin.from('listening_events').select('duration_ms').eq('user_id', userId).gte('played_at', startOfDay.toISOString()),
     fetchNowPlaying(admin, userId),
@@ -101,7 +101,11 @@ export async function getUserProfile(
   const ratingsList = ratings || [];
   const avg = ratingsList.length ? ratingsList.reduce((s, r) => s + Number(r.stars), 0) / ratingsList.length : 0;
   const reviewsCount = ratingsList.filter((r) => r.review).length;
-  const top4Albums = [...ratingsList].sort((a, b) => Number(b.stars) - Number(a.stars)).slice(0, 4).map((r) => r.album_id as string);
+  // "Keep private" (spec 6.2/7.4) hides an individual rating/review from
+  // everyone but its owner — it still counts toward the owner's own totals
+  // above, but never surfaces in a list someone else can read through.
+  const visibleRatingsList = isSelf ? ratingsList : ratingsList.filter((r) => !r.is_private);
+  const top4Albums = [...visibleRatingsList].sort((a, b) => Number(b.stars) - Number(a.stars)).slice(0, 4).map((r) => r.album_id as string);
 
   const genreCounts = new Map<string, number>();
   for (const row of genreRows || []) {
@@ -130,12 +134,14 @@ export async function getUserProfile(
   };
 
   if (isOpen) {
-    profile.recentRatings = ratingsList.slice(0, 20).map((r) => ({
+    profile.recentRatings = visibleRatingsList.slice(0, 20).map((r) => ({
       albumId: r.album_id as string,
       stars: Number(r.stars),
       review: r.review as string | null,
       tags: (r.tags as string[] | null) || [],
       createdAt: r.created_at as string,
+      isPrivate: !!r.is_private,
+      previousStars: null,
     }));
     const { data: friendRows } = await admin
       .from('friendships')

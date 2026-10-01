@@ -25,6 +25,8 @@ export function RateScreen({ device }: { device: Device }) {
   const existingTagsKey = (existing?.tags ?? []).join(',');
   const [tags, setTags] = useState<string[]>(existing?.tags ?? []);
   useEffect(() => setTags(existing?.tags ?? []), [state.currentAlbumId, existingTagsKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [isPrivate, setIsPrivate] = useState(existing?.isPrivate ?? false);
+  useEffect(() => setIsPrivate(existing?.isPrivate ?? false), [state.currentAlbumId, existing?.isPrivate]);
   const toggleTag = (id: string) => {
     setTags((cur) => {
       if (cur.includes(id)) return cur.filter((x) => x !== id);
@@ -99,13 +101,23 @@ export function RateScreen({ device }: { device: Device }) {
             />
           </div>
 
+          <div className="tile">
+            <div className="setrow" style={{ border: 0, padding: 0 }}>
+              <div>
+                <b>{t('rate.keepPrivate')}</b>
+                <div><small className="muted">{t('rate.keepPrivateHint')}</small></div>
+              </div>
+              <button className="sw" role="switch" aria-checked={isPrivate} onClick={() => setIsPrivate((p) => !p)}><i /></button>
+            </div>
+          </div>
+
           <div className="acts">
             <button
               className="btn lg"
               disabled={val <= 0}
               onClick={() => {
                 if (val <= 0) { showToast(t('rate.needStars')); return; }
-                publishRating(a.id, val, text.trim(), tags);
+                publishRating(a.id, val, text.trim(), tags, isPrivate);
               }}
             >
               {isEditing ? t('rate.save') : t('rate.publish')}

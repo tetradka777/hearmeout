@@ -7,8 +7,9 @@ import { CoverArt } from '../ui/CoverArt';
 import { Stars } from '../redesign/Stars';
 import { toLocale } from '@/lib/i18n';
 import { SearchIcon } from '../ui/Icons';
+import { REVIEW_TAG_ORDER, REVIEW_TAG_LABEL_KEY } from '@/lib/reviewTags';
 
-type Filter = 'all' | 'high' | 'low' | 'reviewed';
+type Filter = 'all' | 'reviewed' | 'private' | 'high' | 'low';
 type Sort = 'newest' | 'oldest';
 
 function monthKey(iso: string) {
@@ -27,7 +28,9 @@ function HistoryRow({ rating }: { rating: RatingRecord }) {
       <small className="muted" style={{ width: 48 }}>{date.toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short' })}</small>
       <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: 40, height: 40 }} />
       <div className="g"><b>{a.title}</b><div className="muted">{a.artist}</div></div>
+      {rating.isPrivate && <span className="tag">{t('history.privateBadge')}</span>}
       {rating.review && <span className="tag">{t('history.reviewBadge')}</span>}
+      {rating.previousStars != null && <span className="tag">{rating.previousStars.toFixed(1)} → {rating.stars.toFixed(1)}</span>}
       <Stars value={rating.stars} size={14} />
     </button>
   );
@@ -69,7 +72,7 @@ function exportJson(ratings: RatingRecord[], albums: ReturnType<typeof useApp>['
 }
 
 export function HistoryScreen(_props: { device: Device }) {
-  const { state, t, language, me, albums, liveAlbums, myRatings, setHistoryQuery, showScreen } = useApp();
+  const { state, t, language, me, albums, liveAlbums, myRatings, albumRatings, setHistoryQuery, showScreen, openRateFor } = useApp();
   const [filter, setFilter] = useState<Filter>('all');
   const [sort, setSort] = useState<Sort>('newest');
 
@@ -82,9 +85,10 @@ export function HistoryScreen(_props: { device: Device }) {
         return a ? a.title.toLowerCase().includes(q) || a.artist.toLowerCase().includes(q) : false;
       });
     }
-    if (filter === 'high') list = list.filter((r) => r.stars >= 4.5);
-    else if (filter === 'low') list = list.filter((r) => r.stars < 3);
+    if (filter === 'high') list = list.filter((r) => r.stars >= 4);
+    else if (filter === 'low') list = list.filter((r) => r.stars <= 2.5);
     else if (filter === 'reviewed') list = list.filter((r) => !!r.review);
+    else if (filter === 'private') list = list.filter((r) => r.isPrivate);
     return [...list].sort((a, b) => (sort === 'newest' ? 1 : -1) * (new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
   }, [myRatings, albums, state.historyQuery, filter, sort]);
 
@@ -120,13 +124,50 @@ export function HistoryScreen(_props: { device: Device }) {
   }, [myRatings, language]);
   const maxMonthlyAvg = Math.max(1, ...monthlyAvg.map((m) => m.avg));
 
+  const vsEveryone = useMemo(() => {
+    const diffs: number[] = [];
+    for (const r of myRatings) {
+      const info = albumRatings[r.albumId];
+      if (info && info.count > 0) diffs.push(r.stars - info.avg);
+    }
+    return diffs.length ? diffs.reduce((s, n) => s + n, 0) / diffs.length : null;
+  }, [myRatings, albumRatings]);
+
+  const revisedRatings = useMemo(() => myRatings.filter((r) => r.previousStars != null), [myRatings]);
+
+  const highlights = useMemo(() => {
+    if (!myRatings.length) return null;
+    const sorted = [...myRatings].sort((a, b) => b.stars - a.stars);
+    const highest = sorted[0];
+    const lowest = sorted[sorted.length - 1];
+    const changedMind = revisedRatings.length
+      ? [...revisedRatings].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
+      : null;
+    return { highest, lowest, changedMind };
+  }, [myRatings, revisedRatings]);
+
+  const habits = useMemo(() => {
+    const reviewed = myRatings.filter((r) => !!r.review).length;
+    const privateCount = myRatings.filter((r) => r.isPrivate).length;
+    const tagCounts = new Map<string, number>();
+    for (const r of myRatings) for (const tag of r.tags) tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+    const topTags = [...tagCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4);
+    return { reviewed, total: myRatings.length, privateCount, topTags };
+  }, [myRatings]);
+
+  const albumTitle = (albumId: string) => {
+    const a = liveAlbums[albumId] || albums.find((x) => x.id === albumId);
+    return a ? `${a.title} — ${a.artist}` : albumId;
+  };
+
   if (!me) return null;
 
   const FILTERS: { key: Filter; label: string }[] = [
     { key: 'all', label: t('history.filterAll') },
+    { key: 'reviewed', label: t('history.filterReviewed') },
+    { key: 'private', label: t('history.filterPrivate') },
     { key: 'high', label: t('history.filterHigh') },
     { key: 'low', label: t('history.filterLow') },
-    { key: 'reviewed', label: t('history.filterReviewed') },
   ];
 
   return (
@@ -174,6 +215,67 @@ export function HistoryScreen(_props: { device: Device }) {
           <div className="acts">
             <button className="btn ghost" disabled={!myRatings.length} onClick={() => exportCsv(myRatings, albums, liveAlbums)}>{t('history.exportBtn')}</button>
             <button className="btn ghost" disabled={!myRatings.length} onClick={() => exportJson(myRatings, albums, liveAlbums)}>{t('history.exportJsonBtn')}</button>
+          </div>
+        </div>
+
+        <div className="tile">
+          <div className="stack">
+            <div>
+              <h3>{t('history.vsEveryoneTitle')}</h3>
+              {vsEveryone != null ? (
+                <p className="muted">{vsEveryone >= 0 ? '+' : ''}{vsEveryone.toFixed(1)} {t('history.vsEveryoneDesc')}</p>
+              ) : <p className="muted">{t('history.notEnoughForChart')}</p>}
+            </div>
+            <div>
+              <h3>{t('history.revisedTitle')}</h3>
+              <p className="muted">{t('history.revisedCount', { count: revisedRatings.length })}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="tile">
+          <h3>{t('history.highlightsTitle')}</h3>
+          {highlights ? (
+            <div className="stack" style={{ marginTop: 10 }}>
+              <button className="row" style={{ width: '100%', cursor: 'pointer' }} onClick={() => openRateFor(highlights.highest.albumId, 'history')}>
+                <small className="muted">{t('history.highestRated')}</small>
+                <div className="g"><b>{albumTitle(highlights.highest.albumId)}</b></div>
+                <Stars value={highlights.highest.stars} size={14} />
+              </button>
+              <button className="row" style={{ width: '100%', cursor: 'pointer' }} onClick={() => openRateFor(highlights.lowest.albumId, 'history')}>
+                <small className="muted">{t('history.lowestRated')}</small>
+                <div className="g"><b>{albumTitle(highlights.lowest.albumId)}</b></div>
+                <Stars value={highlights.lowest.stars} size={14} />
+              </button>
+              {highlights.changedMind && (
+                <button className="row" style={{ width: '100%', cursor: 'pointer' }} onClick={() => openRateFor(highlights.changedMind!.albumId, 'history')}>
+                  <small className="muted">{t('history.changedMind')}</small>
+                  <div className="g"><b>{albumTitle(highlights.changedMind.albumId)}</b></div>
+                  <span className="tag">{highlights.changedMind.previousStars!.toFixed(1)} → {highlights.changedMind.stars.toFixed(1)}</span>
+                </button>
+              )}
+            </div>
+          ) : <p className="muted">{t('history.notEnoughForChart')}</p>}
+        </div>
+
+        <div className="tile">
+          <h3>{t('history.habitsTitle')}</h3>
+          <div className="stack" style={{ marginTop: 10 }}>
+            <div>
+              <div className="setrow" style={{ border: 0, padding: 0 }}>
+                <small className="muted">{t('history.reviewsWritten')}</small>
+                <small className="muted">{habits.reviewed} / {habits.total}</small>
+              </div>
+              <div className="meter"><i style={{ width: `${habits.total ? (habits.reviewed / habits.total) * 100 : 0}%` }} /></div>
+            </div>
+            <p className="muted">{t('history.keptPrivate', { count: habits.privateCount })}</p>
+            {habits.topTags.length > 0 && (
+              <div className="chips" style={{ marginBottom: 0 }}>
+                {habits.topTags.map(([id, count]) => (
+                  <span key={id} className="chip">{t(REVIEW_TAG_LABEL_KEY[id as keyof typeof REVIEW_TAG_LABEL_KEY])} · {count}</span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

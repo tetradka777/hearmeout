@@ -61,6 +61,7 @@ function SiteReviewsBlock() {
       .from('ratings')
       .select('stars, review, created_at, album_id, users(name, handle, avatar_url)')
       .not('review', 'is', null)
+      .eq('is_private', false)
       .order('created_at', { ascending: false })
       .limit(8)
       .then(({ data }) => {

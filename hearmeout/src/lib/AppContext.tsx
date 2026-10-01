@@ -185,7 +185,7 @@ type AppContextValue = {
   recapSeasons: SeasonOption[] | null;
   setRatingValue: (v: number) => void;
   setRatingDraftText: (t: string) => void;
-  publishRating: (albumId: string, stars: number, review: string, tags?: string[]) => Promise<void>;
+  publishRating: (albumId: string, stars: number, review: string, tags?: string[], isPrivate?: boolean) => Promise<void>;
   ensureRecap: (userId: string, period: RecapPeriod, seasonKey?: string | null) => void;
   registerWithPassword: (name: string, password: string) => Promise<void>;
   dismissOnboarding: () => void;
@@ -598,12 +598,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; };
   }, [state.activeScreen, state.recapPeriod, state.recapViewUserId, me]);
 
-  const publishRating = useCallback(async (albumId: string, stars: number, review: string, tags: string[] = []) => {
+  const publishRating = useCallback(async (albumId: string, stars: number, review: string, tags: string[] = [], isPrivate: boolean = false) => {
     const isEditing = myRatings.some((r) => r.albumId === albumId);
     const res = await fetch('/api/ratings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ albumId, stars, review, tags }),
+      body: JSON.stringify({ albumId, stars, review, tags, isPrivate }),
     });
     if (!res.ok) {
       showToast(t('toast.ratingSaveFailed'));

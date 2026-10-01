@@ -22,6 +22,7 @@ export function AlbumReviews({ albumId, refreshToken }: { albumId: string; refre
       .select('stars, review, created_at, users(name, handle, avatar_url)')
       .eq('album_id', albumId)
       .not('review', 'is', null)
+      .eq('is_private', false)
       .order('created_at', { ascending: false })
       .then(({ data }) => {
         if (cancelled) return;
