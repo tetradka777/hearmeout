@@ -163,23 +163,77 @@ export function TasteFingerprint({ entries }: { entries: { g: string; avg: numbe
   );
 }
 
-export function RecentRatingsGrid({ ratings }: { ratings: RatingRecord[] }) {
-  const { t, albums, liveAlbums, spotifyCovers, openAlbum } = useApp();
+// Row-style list (cover, title/artist, date, stars) for the Profile
+// screen's "ratings" tab (spec 6.8) — distinct from RecentRatingsGrid's
+// cover-grid layout, used elsewhere on the same screen.
+export function RecentRatingsList({ ratings }: { ratings: RatingRecord[] }) {
+  const { t, language, albums, liveAlbums, spotifyCovers, openAlbum } = useApp();
   if (!ratings.length) return <p className="muted">{t('profile.noRatedAlbums')}</p>;
   return (
-    <div className="cgrid">
+    <div className="stack">
       {ratings.map((r) => {
         const a = liveAlbums[r.albumId] || albums.find((x) => x.id === r.albumId);
         if (!a) return null;
         const cover = spotifyCovers[a.id] || a.cover;
         return (
-          <button className="cvw" key={r.albumId} onClick={() => openAlbum(a.id)} style={{ textAlign: 'left', width: '100%' }}>
-            <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: '100%', aspectRatio: '1' }} />
-            <div style={{ marginTop: 6 }}>
-              <b>{a.title}</b>
-              <Stars value={r.stars} size={13} />
-            </div>
+          <button className="row" key={r.albumId} onClick={() => openAlbum(a.id)} style={{ cursor: 'pointer', width: '100%' }}>
+            <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: 40, height: 40 }} />
+            <div className="g"><b>{a.title}</b><div className="muted">{a.artist} · {new Date(r.createdAt).toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short' })}</div></div>
+            <Stars value={r.stars} size={14} />
           </button>
+        );
+      })}
+    </div>
+  );
+}
+
+export function MyReviewsBlock() {
+  const { t, language, myRatings, albums, liveAlbums, spotifyCovers, openAlbum } = useApp();
+  const reviewed = myRatings.filter((r) => !!r.review);
+  if (!reviewed.length) return <p className="muted">{t('profile.noReviews')}</p>;
+  return (
+    <div className="stack">
+      {reviewed.map((r) => {
+        const a = liveAlbums[r.albumId] || albums.find((x) => x.id === r.albumId);
+        if (!a) return null;
+        const cover = spotifyCovers[a.id] || a.cover;
+        return (
+          <button className="row" key={r.albumId} onClick={() => openAlbum(a.id)} style={{ cursor: 'pointer', width: '100%', alignItems: 'flex-start' }}>
+            <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: 40, height: 40 }} />
+            <div className="g">
+              <b>{a.title}</b>
+              <div className="muted">{a.artist} · {new Date(r.createdAt).toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short' })}</div>
+              <p style={{ marginTop: 4 }}>{r.review}</p>
+            </div>
+            <Stars value={r.stars} size={14} />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+export function ListeningRecentBlock() {
+  const { t, language, me, lovedItems, toggleLoved } = useApp();
+  const [plays, setPlays] = useState<{ title: string; artist: string; cover: string | null; playedAt: string; trackId: string | null }[] | null>(null);
+  useEffect(() => {
+    if (!me) return;
+    let cancelled = false;
+    fetch(`/api/stats?period=week&weekStart=${me.weekStart}`).then((r) => (r.ok ? r.json() : null)).then((d) => { if (!cancelled && d) setPlays(d.recentPlays); });
+    return () => { cancelled = true; };
+  }, [me]);
+  if (plays === null) return <p className="muted">{t('stats.loading')}</p>;
+  if (!plays.length) return <p className="muted">{t('profile.notEnoughData')}</p>;
+  return (
+    <div className="stack">
+      {plays.map((p, i) => {
+        const loved = lovedItems.some((li) => li.type === 'track' && li.title === p.title && li.artist === p.artist);
+        return (
+          <div className="row" key={i}>
+            <CoverArt url={p.cover ?? undefined} fallbackLetter={p.artist[0] || '?'} className="cov" style={{ width: 36, height: 36 }} />
+            <div className="g"><b>{p.title}</b><div className="muted">{p.artist} · {new Date(p.playedAt).toLocaleString(toLocale(language), { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div></div>
+            <button className={`ib love${loved ? ' on' : ''}`} onClick={() => toggleLoved('track', p.title, p.artist, p.trackId, p.cover)} aria-label={t('stats.loveTrack')}>♥</button>
+          </div>
         );
       })}
     </div>
