@@ -6,6 +6,7 @@ import type { Device, SpotifyArtistAlbum } from '@/lib/types';
 import { coverArtUrl } from '@/lib/musicbrainz';
 import { CoverArt } from '../ui/CoverArt';
 import { ArtistAvatar } from '../ui/ArtistAvatar';
+import { userAvatarStyle } from '@/lib/format';
 
 function SpotifyAlbumCard({ album, fallbackLetter, onOpen, unreleasedLabel, score }: {
   album: SpotifyArtistAlbum;
@@ -15,22 +16,22 @@ function SpotifyAlbumCard({ album, fallbackLetter, onOpen, unreleasedLabel, scor
   score?: number;
 }) {
   return (
-    <div className="cover" onClick={() => onOpen(album.id)} style={{ cursor: 'pointer' }}>
-      <CoverArt url={album.cover ?? undefined} fallbackLetter={fallbackLetter} className="art">
-        {score != null && <span className="disco-badge">{score.toFixed(1)}</span>}
+    <button className="cvw" onClick={() => onOpen(album.id)} style={{ textAlign: 'left', width: '100%' }}>
+      <CoverArt url={album.cover ?? undefined} fallbackLetter={fallbackLetter} className={`cov${unreleasedLabel ? ' ann' : ''}`} style={{ width: '100%', aspectRatio: '1' }}>
+        {score != null && <span className="bdg">{score.toFixed(1)}</span>}
       </CoverArt>
-      <div className="meta">
-        <div className="t">{album.title}</div>
-        <div className="a">{unreleasedLabel ?? (album.year ?? '—')}</div>
+      <div style={{ marginTop: 8 }}>
+        <b>{album.title}</b>
+        <div className="muted">{unreleasedLabel ?? (album.year ?? '—')}</div>
       </div>
-    </div>
+    </button>
   );
 }
 
 export function ArtistScreen({ device }: { device: Device }) {
   const { t, state, albumRatings, myRatings, goBack, openAlbum, showToast, lovedItems, toggleLoved, viewFriend } = useApp();
   const art = state.currentArtist;
-  const gridClass = device === 'mobile' ? 'grid-cards' : 'd-grid';
+  const gridClass = 'cgrid';
   const [resolvingGroup, setResolvingGroup] = useState<string | null>(null);
 
   const openMbGroup = async (title: string, artistName: string, groupId: string) => {
@@ -88,96 +89,94 @@ export function ArtistScreen({ device }: { device: Device }) {
   if (!art) {
     return (
       <>
-        <button className="back-btn" onClick={() => goBack('catalog')}>{t('artist.back')}</button>
-        <div className="empty-state">{t('artist.notSelected')}</div>
+        <button className="crumb" onClick={() => goBack('catalog')}>‹ {t('artist.back')}</button>
+        <div className="tile empty"><p>{t('artist.notSelected')}</p></div>
       </>
     );
   }
 
+  const isLoved = lovedItems.some((li) => li.type === 'artist' && li.title === art.name);
+
   if (art.source === 'spotify') {
     let body;
     if (art.loading) {
-      body = <div className="archive-loading">{t('artist.loadingAlbums')}</div>;
+      body = <p className="muted">{t('artist.loadingAlbums')}</p>;
     } else if (art.error) {
-      body = <div className="empty-state">{art.error}</div>;
+      body = <div className="tile empty"><p>{art.error}</p></div>;
     } else {
       body = (
         <>
-          <div className="section-head"><h2>{t('artist.releasedAlbums')}</h2><span>{art.releasedAlbums?.length ?? 0}</span></div>
-          {art.releasedAlbums?.length ? (
-            <div className={gridClass}>
-              {art.releasedAlbums.map((al) => (
-                <SpotifyAlbumCard key={al.id} album={al} fallbackLetter={art.name[0] || '?'} onOpen={openAlbum} score={albumRatings[al.id]?.avg} />
-              ))}
-            </div>
-          ) : (
-            <div className="empty-state">{t('artist.notFound')}</div>
-          )}
-          <div className="section-head" style={{ marginTop: 26 }}><h2>{t('artist.upcomingAlbums')}</h2><span>{art.upcomingAlbums?.length ?? 0}</span></div>
-          {art.upcomingAlbums?.length ? (
-            <div className={gridClass}>
-              {art.upcomingAlbums.map((al) => (
-                <SpotifyAlbumCard key={al.id} album={al} fallbackLetter={art.name[0] || '?'} onOpen={openAlbum} unreleasedLabel={t('artist.unreleased')} />
-              ))}
-            </div>
-          ) : (
-            <div className="empty-state">{t('artist.noUpcoming')}</div>
-          )}
+          <div className="sec">
+            <h2>{t('artist.releasedAlbums')}</h2>
+            {art.releasedAlbums?.length ? (
+              <div className={gridClass}>
+                {art.releasedAlbums.map((al) => (
+                  <SpotifyAlbumCard key={al.id} album={al} fallbackLetter={art.name[0] || '?'} onOpen={openAlbum} score={albumRatings[al.id]?.avg} />
+                ))}
+              </div>
+            ) : <p className="muted">{t('artist.notFound')}</p>}
+          </div>
+          <div className="sec">
+            <h2>{t('artist.upcomingAlbums')}</h2>
+            {art.upcomingAlbums?.length ? (
+              <div className={gridClass}>
+                {art.upcomingAlbums.map((al) => (
+                  <SpotifyAlbumCard key={al.id} album={al} fallbackLetter={art.name[0] || '?'} onOpen={openAlbum} unreleasedLabel={t('artist.unreleased')} />
+                ))}
+              </div>
+            ) : <p className="muted">{t('artist.noUpcoming')}</p>}
+          </div>
         </>
       );
     }
 
     return (
       <>
-        <button className="back-btn" onClick={() => goBack('catalog')}>{t('artist.back')}</button>
-        <div className="artist-band">
-          <CoverArt url={art.photo ?? undefined} fallbackLetter={art.name[0] || '?'} className="artist-band-photo" />
-          <div className="artist-band-mid">
-            <div className="meta-mono">{t('artist.subtitleSpotify')}</div>
-            <h1>{art.name}</h1>
-            {!!art.genres?.length && (
-              <div className="tags" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '10px 0 4px' }}>
-                {art.genres.map((g) => <span className="chip" key={g}>{g}</span>)}
+        <button className="crumb" onClick={() => goBack('catalog')}>‹ {t('artist.back')}</button>
+        <div className="tile t-ink hero">
+          <div className="duel" style={{ alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 18, alignItems: 'center' }}>
+              <CoverArt url={art.photo ?? undefined} fallbackLetter={art.name[0] || '?'} className="ph" />
+              <div>
+                <div className="eyebrow">{t('artist.subtitleSpotify')}</div>
+                <h1 style={{ marginBottom: 6 }}>{art.name}</h1>
+                {!!art.genres?.length && (
+                  <div className="chips" style={{ marginBottom: 0 }}>
+                    {art.genres.map((g) => <span className="chip" key={g}>{g}</span>)}
+                  </div>
+                )}
               </div>
-            )}
-            <button
-              className={`action-chip ${lovedItems.some((li) => li.type === 'artist' && li.title === art.name) ? 'added' : ''}`}
-              style={{ marginTop: 10 }}
-              onClick={() => toggleLoved('artist', art.name, null, art.id, art.photo ?? null)}
-            >
-              ♥ {lovedItems.some((li) => li.type === 'artist' && li.title === art.name) ? t('artist.loved') : t('artist.love')}
-            </button>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              {communityScore ? (
+                <><span className="num" style={{ fontSize: 38 }}>{communityScore.avg.toFixed(1)}</span><div className="muted">{t('artist.communityRatings', { count: communityScore.count })}</div></>
+              ) : <div className="muted">{t('album.noRatings')}</div>}
+            </div>
           </div>
-          <div className="album-band-score">
-            {communityScore ? (
-              <>
-                <div className="num">{communityScore.avg.toFixed(1)}</div>
-                <div className="rd">{t('artist.communityRatings', { count: communityScore.count })}</div>
-              </>
-            ) : (
-              <div className="rd">{t('album.noRatings')}</div>
-            )}
+          <div className="acts">
+            <button className={`btn ${isLoved ? '' : 'ghost'}`} onClick={() => toggleLoved('artist', art.name, null, art.id, art.photo ?? null)}>
+              ♥ {isLoved ? t('artist.loved') : t('artist.love')}
+            </button>
           </div>
         </div>
 
         {topFan && (
-          <div className="friend-row" onClick={() => viewFriend(topFan.id)} style={{ cursor: 'pointer', marginBottom: 12 }}>
-            <span style={{ fontSize: 18 }}>🏆</span>
-            <div className="info">
-              <div className="n">{t('artist.topFan', { name: topFan.name })}</div>
-              <div className="h">{t('artist.topFanHours', { hours: topFan.hours })}</div>
+          <button className="tile" onClick={() => viewFriend(topFan.id)} style={{ cursor: 'pointer', marginTop: 14, textAlign: 'left', width: '100%' }}>
+            <div className="row" style={{ border: 0, padding: 0 }}>
+              <div className="dot" style={userAvatarStyle(topFan)}>🏆</div>
+              <div className="g"><b>{t('artist.topFan', { name: topFan.name })}</b><div className="muted">{t('artist.topFanHours', { hours: topFan.hours })}</div></div>
             </div>
-          </div>
+          </button>
         )}
 
         {yourStats && (
-          <div className="rate-card" style={{ marginTop: 0 }}>
-            <div className="rate-card-label">{t('artist.yourAndArtist')}</div>
-            <div className="stat-grid cols-2" style={{ marginBottom: yourStats.topTitle ? 10 : 0 }}>
-              <div className="box"><div className="v">{yourStats.count}</div><div className="l">{t('artist.yourRatedCount')}</div></div>
-              <div className="box"><div className="v">{yourStats.avg.toFixed(1)}</div><div className="l">{t('history.avg')}</div></div>
+          <div className="tile" style={{ marginTop: 14 }}>
+            <h3>{t('artist.yourAndArtist')}</h3>
+            <div className="stats3">
+              <div><span className="num">{yourStats.count}</span><small className="muted">{t('artist.yourRatedCount')}</small></div>
+              <div><span className="num">{yourStats.avg.toFixed(1)}</span><small className="muted">{t('history.avg')}</small></div>
             </div>
-            {yourStats.topTitle && <div style={{ fontSize: 12, color: 'var(--muted)' }}>{t('artist.yourTop', { title: yourStats.topTitle })}</div>}
+            {yourStats.topTitle && <p className="muted">{t('artist.yourTop', { title: yourStats.topTitle })}</p>}
           </div>
         )}
 
@@ -188,45 +187,43 @@ export function ArtistScreen({ device }: { device: Device }) {
 
   let body;
   if (art.loading) {
-    body = <div className="archive-loading">{t('artist.loadingAlbums')}</div>;
+    body = <p className="muted">{t('artist.loadingAlbums')}</p>;
   } else if (art.error) {
-    body = <div className="empty-state">{art.error}</div>;
+    body = <div className="tile empty"><p>{art.error}</p></div>;
   } else if (!art.albums || !art.albums.length) {
-    body = <div className="empty-state">{t('artist.notFound')}</div>;
+    body = <div className="tile empty"><p>{t('artist.notFound')}</p></div>;
   } else {
     body = (
-      <>
-        <div className="section-head"><h2>{t('artist.albums')}</h2><span>{art.albums.length}</span></div>
+      <div className="sec">
+        <h2>{t('artist.albums')}</h2>
         <div className={gridClass}>
           {art.albums.map((g) => {
             const year = g['first-release-date'] ? g['first-release-date'].slice(0, 4) : '—';
             const cover = coverArtUrl(g.id);
             return (
-              <div className="cover" key={g.id} onClick={() => openMbGroup(g.title, art.name, g.id)} style={{ cursor: 'pointer', opacity: resolvingGroup === g.id ? 0.6 : 1 }}>
-                <CoverArt url={cover} fallbackLetter={art.name[0] || '?'} className="art" />
-                <div className="meta"><div className="t">{g.title}</div><div className="a">{year}</div></div>
-              </div>
+              <button className="cvw" key={g.id} onClick={() => openMbGroup(g.title, art.name, g.id)} style={{ textAlign: 'left', width: '100%', opacity: resolvingGroup === g.id ? 0.6 : 1 }}>
+                <CoverArt url={cover} fallbackLetter={art.name[0] || '?'} className="cov" style={{ width: '100%', aspectRatio: '1' }} />
+                <div style={{ marginTop: 8 }}><b>{g.title}</b><div className="muted">{year}</div></div>
+              </button>
             );
           })}
         </div>
-      </>
+      </div>
     );
   }
 
   return (
     <>
-      <button className="back-btn" onClick={() => goBack('catalog')}>{t('artist.back')}</button>
-      <div className="album-hero">
-        <ArtistAvatar name={art.name} className="art-lg" fallbackStyle={{ fontSize: 48 }} />
-        <h1>{art.name}</h1>
-        <div className="sub">{t('artist.subtitle')}</div>
-        <button
-          className={`action-chip ${lovedItems.some((li) => li.type === 'artist' && li.title === art.name) ? 'added' : ''}`}
-          style={{ marginTop: 10 }}
-          onClick={() => toggleLoved('artist', art.name, null, art.id, null)}
-        >
-          ♥ {lovedItems.some((li) => li.type === 'artist' && li.title === art.name) ? t('artist.loved') : t('artist.love')}
-        </button>
+      <button className="crumb" onClick={() => goBack('catalog')}>‹ {t('artist.back')}</button>
+      <div className="tile t-ink hero">
+        <ArtistAvatar name={art.name} className="ph" fallbackStyle={{ fontSize: 32 }} />
+        <h1 style={{ marginTop: 14 }}>{art.name}</h1>
+        <p className="muted">{t('artist.subtitle')}</p>
+        <div className="acts">
+          <button className={`btn ${isLoved ? '' : 'ghost'}`} onClick={() => toggleLoved('artist', art.name, null, art.id, null)}>
+            ♥ {isLoved ? t('artist.loved') : t('artist.love')}
+          </button>
+        </div>
       </div>
       {body}
     </>
