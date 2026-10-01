@@ -45,40 +45,40 @@ export function LiveLibrarySearch({ query }: { query: string }) {
     return () => { cancelled = true; clearTimeout(timer); };
   }, [query, t]);
 
-  if (loading) return <div className="archive-loading">{t('liveSearch.searching', { query })}</div>;
-  if (error) return <div className="empty-state">{error}</div>;
+  if (loading) return <p className="muted">{t('liveSearch.searching', { query })}</p>;
+  if (error) return <p className="muted">{error}</p>;
   if (!result || (!result.artists.length && !result.groups.length)) {
-    return <div className="empty-state">{t('liveSearch.empty')}</div>;
+    return <p className="muted">{t('liveSearch.empty')}</p>;
   }
 
   return (
     <>
       {result.artists.length > 0 && (
         <>
-          <div className="lib-subhead">{t('liveSearch.artists')}</div>
-          <div className="row-scroll">
+          <div className="setrow" style={{ border: 0, padding: 0, marginBottom: 10 }}><h3 style={{ marginBottom: 0 }}>{t('liveSearch.artists')}</h3></div>
+          <div className="hrow">
             {result.artists.map((ar) => (
-              <div className="cover" key={ar.id} onClick={() => openArtist(ar.id, ar.name)}>
-                <ArtistAvatar name={ar.name} />
-                <div className="meta"><div className="t">{ar.name}</div><div className="a">{ar.type || t('liveSearch.artistType')}</div></div>
-              </div>
+              <button className="cvw" key={ar.id} onClick={() => openArtist(ar.id, ar.name)} style={{ textAlign: 'left', width: '100%' }}>
+                <ArtistAvatar name={ar.name} className="cov" />
+                <div style={{ marginTop: 8 }}><b>{ar.name}</b><div className="muted">{ar.type || t('liveSearch.artistType')}</div></div>
+              </button>
             ))}
           </div>
         </>
       )}
       {result.groups.length > 0 && (
         <>
-          <div className="lib-subhead">{t('liveSearch.albums')}</div>
-          <div className="grid-cards">
+          <div className="setrow" style={{ border: 0, padding: 0, marginBottom: 10 }}><h3 style={{ marginBottom: 0 }}>{t('liveSearch.albums')}</h3></div>
+          <div className="fp">
             {result.groups.map((g) => {
               const artist = (g['artist-credit'] || []).map((c) => c.name).join(', ') || t('liveSearch.unknownArtist');
               const year = g['first-release-date'] ? g['first-release-date'].slice(0, 4) : '—';
               const cover = coverArtUrl(g.id);
               return (
-                <div className="cover" key={g.id} onClick={() => openGroup(g.title, artist, g.id)} style={{ cursor: 'pointer', opacity: resolving === g.id ? 0.6 : 1 }}>
-                  <CoverArt url={cover} fallbackLetter={artist[0] || '?'} className="art" />
-                  <div className="meta"><div className="t">{g.title}</div><div className="a">{artist} · {year}</div></div>
-                </div>
+                <button className="cvw" key={g.id} onClick={() => openGroup(g.title, artist, g.id)} style={{ textAlign: 'left', width: '100%', cursor: 'pointer', opacity: resolving === g.id ? 0.6 : 1 }}>
+                  <CoverArt url={cover} fallbackLetter={artist[0] || '?'} className="cov" style={{ width: '100%', aspectRatio: '1' }} />
+                  <div style={{ marginTop: 8 }}><b>{g.title}</b><div className="muted">{artist} · {year}</div></div>
+                </button>
               );
             })}
           </div>

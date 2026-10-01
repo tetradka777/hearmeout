@@ -32,18 +32,17 @@ function PersonRow({ person }: { person: PersonResult }) {
   const isFriend = me.friends.some((f) => f.id === person.id);
   const isPending = friendRequests.outgoing.some((r) => r.user.id === person.id);
   return (
-    <div className="friend-row">
-      <div className="avatar-sm" style={userAvatarStyle(person)} />
-      <div className="info" onClick={() => viewFriend(person.id)}>
-        <div className="n">{person.name}</div>
-        <div className="h">{person.handle}</div>
-      </div>
+    <div className="row">
+      <button className="rowlink" onClick={() => viewFriend(person.id)}>
+        <div className="dot" style={userAvatarStyle(person)}>{person.name[0]}</div>
+        <div className="g"><b>{person.name}</b><div className="muted">{person.handle}</div></div>
+      </button>
       {isMe ? null : isFriend ? (
-        <span className="chip" style={{ opacity: 0.6 }}>{t('friend.alreadyFriend')}</span>
+        <span className="tag">{t('friend.alreadyFriend')}</span>
       ) : isPending ? (
-        <span className="chip" style={{ opacity: 0.6 }}>{t('friend.requestSent')}</span>
+        <span className="tag">{t('friend.requestSent')}</span>
       ) : (
-        <button onClick={() => addFriend(person.handle)}>{t('friend.addThem')}</button>
+        <button className="btn" onClick={() => addFriend(person.handle)}>{t('friend.addThem')}</button>
       )}
     </div>
   );
@@ -76,32 +75,32 @@ function SiteReviewsBlock() {
     return () => { cancelled = true; };
   }, []);
 
-  if (reviews === null) return <div className="archive-loading">{t('reviews.loading')}</div>;
+  if (reviews === null) return <p className="muted">{t('reviews.loading')}</p>;
   const resolved = reviews
     .map((r) => ({ r, a: liveAlbums[r.albumId] || albums.find((x) => x.id === r.albumId) }))
     .filter((x): x is { r: SiteReview; a: NonNullable<typeof x.a> } => !!x.a)
     .slice(0, 5);
-  if (!resolved.length) return <div className="empty-state">{t('reviews.empty')}</div>;
+  if (!resolved.length) return <p className="muted">{t('reviews.empty')}</p>;
 
   return (
-    <>
+    <div className="stack">
       {resolved.map(({ r, a }, i) => (
-        <div className="review-card" key={i} onClick={() => openAlbum(a.id)} style={{ cursor: 'pointer' }}>
-          <div className="head">
-            <div className="user">
-              <div className="avatar" style={userAvatarStyle(r.user)} />
-              <div className="uname">{r.user.handle}</div>
+        <div className="tile" key={i} onClick={() => openAlbum(a.id)} style={{ cursor: 'pointer' }}>
+          <div className="setrow" style={{ border: 0, padding: 0, marginBottom: 8 }}>
+            <div className="row" style={{ padding: 0 }}>
+              <div className="dot" style={userAvatarStyle(r.user)}>{r.user.handle[1]?.toUpperCase()}</div>
+              <b>{r.user.handle}</b>
             </div>
-            <div className="review-card-meta">
-              <span className="stars-dot" style={{ color: accentMix(r.stars / 5) }}>{starsText(r.stars)}</span>
-              <span className="review-card-time">{formatRelative(r.createdAt, language)}</span>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ color: accentMix(r.stars / 5) }}>{starsText(r.stars)}</div>
+              <small className="muted">{formatRelative(r.createdAt, language)}</small>
             </div>
           </div>
           <p style={{ marginBottom: 4 }}>{r.review}</p>
-          <div className="review-card-album">{a.title} — {a.artist}</div>
+          <small className="muted">{a.title} — {a.artist}</small>
         </div>
       ))}
-    </>
+    </div>
   );
 }
 
@@ -109,8 +108,8 @@ export function DiscoverScreen({ device }: { device: Device }) {
   const { t, me, state, albums, albumRatings, setSearchQuery, setActiveGenre, setSortBy } = useApp();
   const [filter, setFilter] = useState<Filter>('all');
   const [people, setPeople] = useState<PersonResult[] | null>(null);
-  const rowClass = device === 'mobile' ? 'row-scroll' : 'd-grid';
-  const gridClass = device === 'mobile' ? 'grid-cards' : 'd-grid';
+  const rowClass = device === 'mobile' ? 'hrow' : 'fp';
+  const gridClass = 'fp';
 
   const query = state.searchQuery;
   const q = query.trim().toLowerCase();
@@ -161,10 +160,10 @@ export function DiscoverScreen({ device }: { device: Device }) {
   return (
     <>
       <div className="eyebrow">{t('discover.eyebrow')}</div>
-      <h1 className="page-title">{t('discover.title')}</h1>
-      <div className="search-bar">
+      <h1 className="big">{t('discover.title')}</h1>
+      <div className="field" style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '14px 0' }}>
         <SearchIcon />
-        <input type="text" placeholder={t('search.placeholder')} value={query} onChange={(e) => setSearchQuery(e.target.value)} />
+        <input style={{ flex: 1, background: 'transparent', border: 0 }} type="text" placeholder={t('search.placeholder')} value={query} onChange={(e) => setSearchQuery(e.target.value)} />
       </div>
       <div className="chips">
         {FILTERS.map((f) => (
@@ -185,29 +184,27 @@ export function DiscoverScreen({ device }: { device: Device }) {
           )}
           {filter !== 'people' && albumResults.length > 0 && (
             <>
-              <div className="section-head"><h2>{t('catalog.inCatalog')}</h2><span>{albumResults.length}</span></div>
+              <div className="setrow" style={{ border: 0, padding: 0, marginBottom: 10 }}><h3 style={{ marginBottom: 0 }}>{t('catalog.inCatalog')}</h3><small className="muted">{albumResults.length}</small></div>
               <div className={gridClass}>{albumResults.map((a) => <AlbumCard key={a.id} album={a} />)}</div>
             </>
           )}
           {filter === 'people' && (
             <>
-              <div className="section-head" style={{ marginTop: 22 }}><h2>{t('discover.people')}</h2></div>
-              {people === null ? <div className="archive-loading">{t('discover.searching')}</div> :
-                people.length ? people.map((p) => <PersonRow key={p.id} person={p} />) : <div className="empty-state">{t('discover.noPeople')}</div>}
+              <div className="setrow" style={{ border: 0, padding: 0, marginTop: 22, marginBottom: 10 }}><h3 style={{ marginBottom: 0 }}>{t('discover.people')}</h3></div>
+              {people === null ? <p className="muted">{t('discover.searching')}</p> :
+                people.length ? <div className="stack">{people.map((p) => <PersonRow key={p.id} person={p} />)}</div> : <p className="muted">{t('discover.noPeople')}</p>}
             </>
           )}
           {filter !== 'people' && filter !== 'albums' && (
             <>
-              <div className="section-head" style={{ marginTop: 22 }}><h2>{t('catalog.openLibrary')}</h2><span>MusicBrainz</span></div>
+              <div className="setrow" style={{ border: 0, padding: 0, marginTop: 22, marginBottom: 10 }}><h3 style={{ marginBottom: 0 }}>{t('catalog.openLibrary')}</h3><small className="muted">MusicBrainz</small></div>
               <LiveLibrarySearch query={query.trim()} />
             </>
           )}
           {filter !== 'people' && !albumResults.length && (
-            <div className="empty-state">
-              {t('catalog.noResults')}
-              <div style={{ marginTop: 10 }}>
-                <button className="btn-ghost" onClick={() => { setSearchQuery(''); setActiveGenre('Всё'); }}>{t('catalog.resetFilters')}</button>
-              </div>
+            <div className="tile empty">
+              <p>{t('catalog.noResults')}</p>
+              <button className="btn ghost" onClick={() => { setSearchQuery(''); setActiveGenre('Всё'); }}>{t('catalog.resetFilters')}</button>
             </div>
           )}
         </>
@@ -221,23 +218,23 @@ export function DiscoverScreen({ device }: { device: Device }) {
             ))}
           </div>
 
-          <div className="section-head"><h2>{t('catalog.popularNow')}</h2><span>{t('catalog.popularNowSubtitle')}</span></div>
+          <div className="setrow" style={{ border: 0, padding: 0, marginBottom: 10 }}><h3 style={{ marginBottom: 0 }}>{t('catalog.popularNow')}</h3><small className="muted">{t('catalog.popularNowSubtitle')}</small></div>
           <PopularNowSection rowClass={rowClass} />
 
           {topRated.length > 0 && (
             <>
-              <div className="section-head" style={{ marginTop: 26 }}><h2>{t('catalog.topRated')}</h2><span>{topRated.length}</span></div>
+              <div className="setrow" style={{ border: 0, padding: 0, marginTop: 26, marginBottom: 10 }}><h3 style={{ marginBottom: 0 }}>{t('catalog.topRated')}</h3><small className="muted">{topRated.length}</small></div>
               <div className={rowClass}>{topRated.map((a) => <AlbumCard key={a.id} album={a} />)}</div>
             </>
           )}
 
-          <div className="section-head" style={{ marginTop: 26 }}><h2><span className="unknown-badge">?</span>{t('catalog.obscureArtists')}</h2><span>{t('catalog.lowPopularity')}</span></div>
+          <div className="setrow" style={{ border: 0, padding: 0, marginTop: 26, marginBottom: 10 }}><h3 style={{ marginBottom: 0 }}><span className="tag" style={{ marginRight: 6 }}>?</span>{t('catalog.obscureArtists')}</h3><small className="muted">{t('catalog.lowPopularity')}</small></div>
           <ObscureAlbums genre="Electronic" rowClass={rowClass} />
 
-          <div className="section-head" style={{ marginTop: 26 }}><h2>{t('catalog.genreTops')}</h2><span>Spotify</span></div>
+          <div className="setrow" style={{ border: 0, padding: 0, marginTop: 26, marginBottom: 10 }}><h3 style={{ marginBottom: 0 }}>{t('catalog.genreTops')}</h3><small className="muted">Spotify</small></div>
           <GenreTopArtists rowClass={rowClass} />
 
-          <div className="section-head" style={{ marginTop: 26 }}><h2>{t('catalog.fullCatalog')}</h2><span>{albums.length}</span></div>
+          <div className="setrow" style={{ border: 0, padding: 0, marginTop: 26, marginBottom: 10 }}><h3 style={{ marginBottom: 0 }}>{t('catalog.fullCatalog')}</h3><small className="muted">{albums.length}</small></div>
           <div className="chips">
             {SORT_OPTIONS.map((s) => (
               <button key={s.key} className={`chip ${state.sortBy === s.key ? 'on' : ''}`} onClick={() => setSortBy(s.key)}>{s.label}</button>
@@ -245,7 +242,7 @@ export function DiscoverScreen({ device }: { device: Device }) {
           </div>
           <div className={gridClass}>{sorted.map((a) => <AlbumCard key={a.id} album={a} />)}</div>
 
-          <div className="section-head" style={{ marginTop: 26 }}><h2>{t('discover.reviewsWorthReading')}</h2></div>
+          <div className="setrow" style={{ border: 0, padding: 0, marginTop: 26, marginBottom: 10 }}><h3 style={{ marginBottom: 0 }}>{t('discover.reviewsWorthReading')}</h3></div>
           <SiteReviewsBlock />
         </>
       )}

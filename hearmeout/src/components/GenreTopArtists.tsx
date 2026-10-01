@@ -11,22 +11,25 @@ function GenreRow({ genre, rowClass }: { genre: string; rowClass: string }) {
 
   return (
     <div>
-      <div className="section-head"><h2>{genre}</h2><span>Spotify</span></div>
+      <div className="setrow" style={{ border: 0, padding: 0, marginBottom: 10 }}>
+        <h3 style={{ marginBottom: 0 }}>{genre}</h3>
+        <small className="muted">Spotify</small>
+      </div>
       {artists === 'error' ? (
-        <div className="empty-state">{t('generic.loadError')}</div>
+        <p className="muted">{t('generic.loadError')}</p>
       ) : !artists ? (
-        <div className="archive-loading">{t('genreTop.loading')}</div>
+        <p className="muted">{t('genreTop.loading')}</p>
       ) : artists.length ? (
         <div className={rowClass}>
           {artists.map((ar) => (
-            <div className="cover" key={ar.id} onClick={() => openSpotifyArtist(ar.id)} style={{ cursor: 'pointer' }}>
-              <CoverArt url={ar.photo ?? undefined} fallbackLetter={ar.name[0] || '?'} className="art artist-art" />
-              <div className="meta"><div className="t">{ar.name}</div></div>
-            </div>
+            <button className="cvw" key={ar.id} onClick={() => openSpotifyArtist(ar.id)} style={{ textAlign: 'left', width: '100%' }}>
+              <CoverArt url={ar.photo ?? undefined} fallbackLetter={ar.name[0] || '?'} className="cov" style={{ width: '100%', aspectRatio: '1', borderRadius: '50%' }} />
+              <div style={{ marginTop: 8 }}><b>{ar.name}</b></div>
+            </button>
           ))}
         </div>
       ) : (
-        <div className="empty-state">{t('recap.noData')}</div>
+        <p className="muted">{t('recap.noData')}</p>
       )}
     </div>
   );
