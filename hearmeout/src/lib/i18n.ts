@@ -191,6 +191,7 @@ const ru = {
 
   'onboarding.stepLabel': 'шаг {step} из {total}',
   'onboarding.connectLabel': 'Начнём',
+  'onboarding.lookTitle': 'Выбери внешний вид',
   'onboarding.connectTitle': 'Подключи свою музыку',
   'onboarding.connectBody': 'Без этого приложение пустое. Подключи Spotify или импортируй историю прослушиваний — это можно сделать позже в настройках.',
   'onboarding.peopleLabel': 'Почти готово',
@@ -782,6 +783,7 @@ const en: Dict = {
 
   'onboarding.stepLabel': 'step {step} of {total}',
   'onboarding.connectLabel': "Let's start",
+  'onboarding.lookTitle': 'Pick your look',
   'onboarding.connectTitle': 'Connect your listening',
   'onboarding.connectBody': "Without this, the app is empty. Connect Spotify or import your listening history — you can always do this later in settings.",
   'onboarding.peopleLabel': 'Almost there',
@@ -1371,6 +1373,7 @@ const fr: Dict = {
 
   'onboarding.stepLabel': 'étape {step} sur {total}',
   'onboarding.connectLabel': 'Commençons',
+  'onboarding.lookTitle': 'Choisis ton style',
   'onboarding.connectTitle': 'Connectez votre musique',
   'onboarding.connectBody': "Sans ça, l'application est vide. Connectez Spotify ou importez votre historique d'écoute — vous pourrez toujours le faire plus tard dans les paramètres.",
   'onboarding.peopleLabel': 'Presque fini',
@@ -1960,6 +1963,7 @@ const es: Dict = {
 
   'onboarding.stepLabel': 'paso {step} de {total}',
   'onboarding.connectLabel': 'Empecemos',
+  'onboarding.lookTitle': 'Elige tu estilo',
   'onboarding.connectTitle': 'Conecta tu música',
   'onboarding.connectBody': 'Sin esto la app está vacía. Conecta Spotify o importa tu historial de escucha — siempre puedes hacerlo después en ajustes.',
   'onboarding.peopleLabel': 'Casi listo',
@@ -2549,6 +2553,7 @@ const de: Dict = {
 
   'onboarding.stepLabel': 'Schritt {step} von {total}',
   'onboarding.connectLabel': "Los geht's",
+  'onboarding.lookTitle': 'Wähle deinen Look',
   'onboarding.connectTitle': 'Verbinde deine Musik',
   'onboarding.connectBody': 'Ohne das ist die App leer. Verbinde Spotify oder importiere deinen Hörverlauf — das kannst du später jederzeit in den Einstellungen nachholen.',
   'onboarding.peopleLabel': 'Fast fertig',
