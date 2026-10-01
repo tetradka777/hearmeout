@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
+import { HeartIcon } from '../ui/Icons';
 import { Stars } from '../redesign/Stars';
 import { PreviewButton } from '../redesign/PreviewButton';
 import { pluralForKey } from '@/lib/i18n';
@@ -137,11 +138,11 @@ export function AlbumScreen({ device }: { device: Device }) {
           </div>
           <h1 className="big">{a.title}</h1>
           <div className="acts">
-            <button className={`btn ${wishlisted ? '' : 'ghost'}`} onClick={() => setWishlisted((v) => !v)}>
-              {wishlisted ? `✓ ${t('album.inWishlist')}` : t('album.addWishlist')}
+            <button className="btn ghost" onClick={() => setWishlisted((v) => !v)}>
+              {wishlisted ? t('album.inWishlist') : t('album.addWishlist')}
             </button>
-            <button className={`btn ${albumLoved ? '' : 'ghost'}`} onClick={() => toggleLoved('album', a.title, a.artist, a.spotifyId ?? null, spotifyCovers[a.id] || a.cover || null)}>
-              ♥ {albumLoved ? t('album.loved') : t('album.love')}
+            <button className={`btn ghost love${albumLoved ? ' on' : ''}`} onClick={() => toggleLoved('album', a.title, a.artist, a.spotifyId ?? null, spotifyCovers[a.id] || a.cover || null)}>
+              <HeartIcon /> {albumLoved ? t('album.loved') : t('album.love')}
             </button>
             {openSpotifyUrl && <a className="btn ghost" href={openSpotifyUrl} target="_blank" rel="noreferrer">{t('album.openInSpotify')}</a>}
           </div>

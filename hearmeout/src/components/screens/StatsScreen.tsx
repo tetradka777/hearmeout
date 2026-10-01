@@ -314,7 +314,7 @@ export function StatsScreen(_props: { device: Device }) {
                       <CoverArt url={p.cover ?? undefined} fallbackLetter={p.artist[0] || '?'} className="cov" style={{ width: 36, height: 36 }} />
                       <div className="g"><b>{p.title}</b><div className="muted">{p.artist} · {new Date(p.playedAt).toLocaleString(toLocale(language), { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div></div>
                       <button className={`ib love${loved ? ' on' : ''}`} onClick={() => toggleLoved('track', p.title, p.artist, p.trackId, p.cover)} aria-label={t('stats.loveTrack')}>
-                        <HeartIcon filled={loved} />
+                        <HeartIcon />
                       </button>
                     </div>
                   );

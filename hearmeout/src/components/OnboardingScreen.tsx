@@ -114,7 +114,7 @@ export function OnboardingScreen() {
       <div className="modalbg">
         <div className="tile modal" style={{ maxWidth: 520, padding: 26 }}>
           <div className="setrow" style={{ border: 0, padding: 0 }}>
-            <div className="logo"><span className="mk" />Hear<span>Me</span>Out</div>
+            <div className="logo"><span className="mk" />hearmeout</div>
             <small className="muted">{t('onboarding.stepLabel', { step, total: 3 })}</small>
           </div>
           <div className="seg" style={{ marginTop: 14 }}>

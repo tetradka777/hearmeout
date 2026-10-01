@@ -5,6 +5,7 @@ import { useApp } from '@/lib/AppContext';
 import type { Device, SpotifyArtistAlbum } from '@/lib/types';
 import { coverArtUrl } from '@/lib/musicbrainz';
 import { CoverArt } from '../ui/CoverArt';
+import { HeartIcon } from '../ui/Icons';
 import { ArtistAvatar } from '../ui/ArtistAvatar';
 import { userAvatarStyle } from '@/lib/format';
 
@@ -154,8 +155,8 @@ export function ArtistScreen({ device }: { device: Device }) {
             </div>
           </div>
           <div className="acts">
-            <button className={`btn ${isLoved ? '' : 'ghost'}`} onClick={() => toggleLoved('artist', art.name, null, art.id, art.photo ?? null)}>
-              ♥ {isLoved ? t('artist.loved') : t('artist.love')}
+            <button className={`btn ghost love${isLoved ? ' on' : ''}`} onClick={() => toggleLoved('artist', art.name, null, art.id, art.photo ?? null)}>
+              <HeartIcon /> {isLoved ? t('artist.loved') : t('artist.love')}
             </button>
           </div>
         </div>
@@ -220,8 +221,8 @@ export function ArtistScreen({ device }: { device: Device }) {
         <h1 style={{ marginTop: 14 }}>{art.name}</h1>
         <p className="muted">{t('artist.subtitle')}</p>
         <div className="acts">
-          <button className={`btn ${isLoved ? '' : 'ghost'}`} onClick={() => toggleLoved('artist', art.name, null, art.id, null)}>
-            ♥ {isLoved ? t('artist.loved') : t('artist.love')}
+          <button className={`btn ghost love${isLoved ? ' on' : ''}`} onClick={() => toggleLoved('artist', art.name, null, art.id, null)}>
+            <HeartIcon /> {isLoved ? t('artist.loved') : t('artist.love')}
           </button>
         </div>
       </div>

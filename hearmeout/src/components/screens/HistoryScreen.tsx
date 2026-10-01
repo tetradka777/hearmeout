@@ -6,7 +6,6 @@ import type { Device, RatingRecord } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
 import { Stars } from '../redesign/Stars';
 import { toLocale } from '@/lib/i18n';
-import { SearchIcon } from '../ui/Icons';
 import { REVIEW_TAG_ORDER, REVIEW_TAG_LABEL_KEY } from '@/lib/reviewTags';
 
 type Filter = 'all' | 'reviewed' | 'private' | 'high' | 'low';
@@ -175,10 +174,7 @@ export function HistoryScreen(_props: { device: Device }) {
       <div className="eyebrow">{t('history.eyebrow')}</div>
       <h1 className="big">{t('history.title')}</h1>
       <p className="muted">{t('history.summary', { count: me.stats.ratings, reviewed: me.stats.reviews })}</p>
-      <div className="field" style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '14px 0' }}>
-        <SearchIcon />
-        <input style={{ flex: 1, background: 'transparent', border: 0 }} placeholder={t('history.searchPlaceholder')} value={state.historyQuery || ''} onChange={(e) => setHistoryQuery(e.target.value)} />
-      </div>
+      <input className="field" type="search" style={{ maxWidth: 420, marginBottom: 12 }} placeholder={t('history.searchPlaceholder')} aria-label={t('history.searchPlaceholder')} value={state.historyQuery || ''} onChange={(e) => setHistoryQuery(e.target.value)} />
 
       <div className="bento b3">
         <div className="tile">

@@ -11,7 +11,6 @@ import { LiveLibrarySearch } from '../LiveLibrarySearch';
 import { PopularNowSection } from '../PopularNowSection';
 import { ObscureAlbums } from '../ObscureAlbums';
 import { GenreTopArtists } from '../GenreTopArtists';
-import { SearchIcon } from '../ui/Icons';
 import { accentMix } from '@/lib/accentGradient';
 
 // Discover: this is where the old Home/catalog-browser content lives now
@@ -161,10 +160,7 @@ export function DiscoverScreen({ device }: { device: Device }) {
     <>
       <div className="eyebrow">{t('discover.eyebrow')}</div>
       <h1 className="big">{t('discover.title')}</h1>
-      <div className="field" style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '14px 0' }}>
-        <SearchIcon />
-        <input style={{ flex: 1, background: 'transparent', border: 0 }} type="text" placeholder={t('search.placeholder')} value={query} onChange={(e) => setSearchQuery(e.target.value)} />
-      </div>
+      <input className="field" type="search" style={{ maxWidth: 520, marginBottom: 16 }} placeholder={t('search.placeholder')} aria-label={t('search.placeholder')} value={query} onChange={(e) => setSearchQuery(e.target.value)} />
       <div className="chips">
         {FILTERS.map((f) => (
           <button key={f.key} className={`chip ${filter === f.key ? 'on' : ''}`} onClick={() => setFilter(f.key)}>{f.label}</button>

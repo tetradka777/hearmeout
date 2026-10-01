@@ -70,7 +70,7 @@ export function RedesignShell({ children }: { children: ReactNode }) {
     <div className={`rd${hasPlayer ? ' hasmp' : ''}${hasNowPlaying ? ' hasnp' : ''}`}>
       {/* Cream Pop desktop top bar */}
       <div className="nav">
-        <div className="logo"><span className="mk" />Hear<span>Me</span>Out</div>
+        <div className="logo"><span className="mk" />hearmeout</div>
         <nav>
           {navItems.map((item) => (
             <button key={item.screen} className={activeGroup === item.screen ? 'on' : ''} onClick={() => showScreen(item.screen)}>
@@ -94,7 +94,7 @@ export function RedesignShell({ children }: { children: ReactNode }) {
 
       {/* Toxic desktop sidebar */}
       <div className="side">
-        <div className="logo"><span className="mk" />Hear<span>Me</span>Out</div>
+        <div className="logo"><span className="mk" />hearmeout</div>
         <nav>
           {navItems.map((item) => (
             <button key={item.screen} className={activeGroup === item.screen ? 'on' : ''} onClick={() => showScreen(item.screen)}>
@@ -118,7 +118,7 @@ export function RedesignShell({ children }: { children: ReactNode }) {
 
       {/* Mobile header (both designs) */}
       <div className="mobtop">
-        <div className="logo"><span className="mk" />Hear<span>Me</span>Out</div>
+        <div className="logo"><span className="mk" />hearmeout</div>
         <div className="topr">
           <QuickModeToggle />
           <AvatarMenu />

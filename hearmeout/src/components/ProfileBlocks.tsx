@@ -5,6 +5,7 @@ import { useApp } from '@/lib/AppContext';
 import { userAvatarStyle } from '@/lib/format';
 import { toLocale } from '@/lib/i18n';
 import { CoverArt } from './ui/CoverArt';
+import { HeartIcon } from './ui/Icons';
 import { Stars } from './redesign/Stars';
 import type { RatingRecord } from '@/lib/types';
 
@@ -232,7 +233,7 @@ export function ListeningRecentBlock() {
           <div className="row" key={i}>
             <CoverArt url={p.cover ?? undefined} fallbackLetter={p.artist[0] || '?'} className="cov" style={{ width: 36, height: 36 }} />
             <div className="g"><b>{p.title}</b><div className="muted">{p.artist} · {new Date(p.playedAt).toLocaleString(toLocale(language), { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div></div>
-            <button className={`ib love${loved ? ' on' : ''}`} onClick={() => toggleLoved('track', p.title, p.artist, p.trackId, p.cover)} aria-label={t('stats.loveTrack')}>♥</button>
+            <button className={`ib love${loved ? ' on' : ''}`} onClick={() => toggleLoved('track', p.title, p.artist, p.trackId, p.cover)} aria-label={t('stats.loveTrack')}><HeartIcon /></button>
           </div>
         );
       })}
@@ -251,7 +252,7 @@ export function LovedTracksBlock() {
         <div className="row" key={li.id}>
           <CoverArt url={li.cover ?? undefined} fallbackLetter={(li.artist || li.title)[0] || '?'} className="cov" style={{ width: 36, height: 36 }} />
           <div className="g"><b>{li.title}</b><div className="muted">{li.artist ? `${li.artist} · ` : ''}{t(LOVED_TYPE_LABEL[li.type] as never)}</div></div>
-          <button className="ib love on" onClick={() => toggleLoved(li.type, li.title, li.artist, li.itemId, li.cover)} aria-label={t('stats.loveTrack')}>♥</button>
+          <button className="ib love on" onClick={() => toggleLoved(li.type, li.title, li.artist, li.itemId, li.cover)} aria-label={t('stats.loveTrack')}><HeartIcon /></button>
         </div>
       ))}
     </div>

@@ -58,20 +58,22 @@ export function PlusIcon() {
   );
 }
 
-// The "retro computer" empty-state mascot (spec 3.13): a 96px SVG that
-// takes its colours from the current palette, not a fixed illustration —
-// --acct fills the screen, currentColor draws the body, so it re-colours
-// automatically with every palette/design/mode change like everything else.
+// The "retro computer" empty-state mascot (spec 3.13) — pixel-exact port
+// of the prototype's MASCOT constant (reference/app.js): viewBox 0 0 96 88,
+// a solid --ink body with a --pop screen, --ink eyes/smile and a --acc
+// base, not a stroke-outlined approximation. Takes its colours from the
+// current palette the same way the prototype's inline fill="var(--ink)"
+// etc. do, so it re-colours with every palette/design/mode change.
 export function MascotIcon() {
   return (
-    <svg viewBox="0 0 96 96" width="96" height="96" fill="none" aria-hidden="true">
-      <rect x="14" y="14" width="68" height="48" rx="8" stroke="currentColor" strokeWidth="3" />
-      <rect x="22" y="22" width="52" height="32" rx="3" fill="var(--acct)" opacity="0.85" />
-      <circle cx="36" cy="38" r="3.2" fill="var(--bg)" />
-      <circle cx="60" cy="38" r="3.2" fill="var(--bg)" />
-      <path d="M38 46q10 7 20 0" stroke="var(--bg)" strokeWidth="2.6" strokeLinecap="round" fill="none" />
-      <path d="M40 62l-4 14M56 62l4 14" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-      <path d="M30 76h36" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    <svg viewBox="0 0 96 88" width="96" height="88" aria-hidden="true">
+      <rect x="10" y="4" width="76" height="60" rx="20" fill="var(--ink)" />
+      <rect x="18" y="12" width="60" height="42" rx="13" fill="var(--pop)" />
+      <circle cx="38" cy="30" r="4" fill="var(--ink)" />
+      <circle cx="58" cy="30" r="4" fill="var(--ink)" />
+      <path d="M38 40q10 8 20 0" stroke="var(--ink)" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+      <rect x="30" y="66" width="36" height="8" rx="4" fill="var(--ink)" />
+      <rect x="20" y="76" width="56" height="9" rx="4.5" fill="var(--acc)" />
     </svg>
   );
 }
