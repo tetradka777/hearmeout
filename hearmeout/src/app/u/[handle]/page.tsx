@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getUserProfile } from '@/lib/userProfile';
 import { ALBUMS } from '@/lib/data';
-import { accentMix } from '@/lib/accentGradient';
 
 // Plain server component, deliberately outside AppProvider/AppGate — this
 // is the one page in the app reachable without logging in, so a rating
@@ -34,10 +33,12 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 
   if (!profile) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-legacy)', color: 'var(--text)' }}>
-        <div style={{ textAlign: 'center' }}>
-          <p style={{ fontSize: 15, color: 'var(--muted)' }}>User not found</p>
-          <a href="/" style={{ color: 'var(--lime)' }}>HearMeOut →</a>
+      <div className="rd">
+        <div className="modalbg" style={{ position: 'fixed', inset: 0 }}>
+          <div className="tile" style={{ textAlign: 'center' }}>
+            <p className="muted">User not found</p>
+            <a href="/" className="link">HearMeOut →</a>
+          </div>
         </div>
       </div>
     );
@@ -48,58 +49,53 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
     .filter((a): a is (typeof ALBUMS)[number] => !!a);
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-legacy)', color: 'var(--text)', padding: '40px 20px' }}>
-      <div style={{ maxWidth: 480, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <div
-            className="avatar-lg"
-            style={{
-              width: 88, height: 88, margin: '0 auto 14px',
-              ...(profile.avatarUrl ? { backgroundImage: `url('${profile.avatarUrl}')`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}),
-            }}
-          />
-          <div style={{ fontFamily: 'var(--font-space-grotesk),sans-serif', fontSize: 22, fontWeight: 700 }}>{profile.name}</div>
-          <div className="profile-joined">{profile.handle}</div>
-        </div>
-
-        <div className="stat-grid" style={{ marginBottom: 26 }}>
-          <div className="box"><div className="v">{profile.stats.ratings}</div><div className="l">RATINGS</div></div>
-          <div className="box"><div className="v">{profile.stats.avg || '—'}</div><div className="l">AVERAGE</div></div>
-          <div className="box"><div className="v">{profile.stats.reviews}</div><div className="l">REVIEWS</div></div>
+    <div className="rd pubwrap">
+      <div className="wrap" style={{ maxWidth: 480, paddingTop: 40 }}>
+        <div className="tile t-ink hero" style={{ textAlign: 'center' }}>
+          <div className="dot" style={{ width: 88, height: 88, fontSize: 32, margin: '0 auto 14px', ...(profile.avatarUrl ? { backgroundImage: `url('${profile.avatarUrl}')`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}) }}>
+            {!profile.avatarUrl && profile.name[0]}
+          </div>
+          <h1 style={{ fontSize: 28 }}>{profile.name}</h1>
+          <p className="muted">{profile.handle}</p>
+          <div className="stats3" style={{ marginTop: 14 }}>
+            <div><span className="num">{profile.stats.ratings}</span><small>ratings</small></div>
+            <div><span className="num">{profile.stats.avg || '—'}</span><small>average</small></div>
+            <div><span className="num">{profile.stats.reviews}</span><small>reviews</small></div>
+          </div>
         </div>
 
         {profile.genres.length > 0 && (
-          <>
-            <div className="section-head"><h2>Favorite genres</h2></div>
-            <div style={{ marginBottom: 26 }}>
+          <div className="tile sec">
+            <h3>Favorite genres</h3>
+            <div className="stack" style={{ marginTop: 10 }}>
               {(() => {
                 const maxPct = Math.max(1, ...profile.genres.map((g) => g.pct));
                 return profile.genres.map((g) => (
-                  <div className="genre-row" key={g.g}>
-                    <div className="name">{g.g}</div>
-                    <div className="track"><div className="fill" style={{ width: `${g.pct}%`, background: accentMix(g.pct / maxPct) }} /></div>
+                  <div className="row" key={g.g}>
+                    <div className="g">{g.g}</div>
+                    <div className="meter"><i style={{ width: `${(g.pct / maxPct) * 100}%` }} /></div>
                   </div>
                 ));
               })()}
             </div>
-          </>
+          </div>
         )}
 
         {top4.length > 0 && (
-          <>
-            <div className="section-head"><h2>Top albums</h2></div>
-            <div className="top4-grid" style={{ marginBottom: 26 }}>
+          <div className="tile sec">
+            <h3>Top albums</h3>
+            <div className="t4" style={{ marginTop: 10 }}>
               {top4.map((a, i) => (
-                <div key={a.id} className="art" style={{ backgroundImage: a.cover ? `url('${a.cover}')` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' }}>
-                  <span className="rank">{String(i + 1).padStart(2, '0')}</span>
+                <div key={a.id} className="cov" style={{ aspectRatio: '1', backgroundImage: a.cover ? `url('${a.cover}')` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' }}>
+                  <span className="bdg">{i + 1}</span>
                 </div>
               ))}
             </div>
-          </>
+          </div>
         )}
 
         <div style={{ textAlign: 'center', marginTop: 30 }}>
-          <a href="/" style={{ color: 'var(--lime)', fontSize: 13, fontFamily: 'var(--font-ibm-plex-mono),monospace' }}>Rate your own music on HearMeOut →</a>
+          <a href="/" className="link">Rate your own music on HearMeOut →</a>
         </div>
       </div>
     </div>

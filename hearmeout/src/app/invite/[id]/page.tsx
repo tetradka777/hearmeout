@@ -1,12 +1,8 @@
 'use client';
 
 import { use, useEffect, useState } from 'react';
-import { LogoMark } from '@/components/ui/Icons';
+import { userAvatarStyle } from '@/lib/format';
 
-// The one place the "pending invite" id waits between visiting this page
-// while logged out and completing signup/login back on "/" — AppContext
-// checks this key once auth resolves and, if present, calls accept-invite
-// itself so the friendship completes without the user doing anything extra.
 export const PENDING_INVITE_KEY = 'hmo_pending_invite';
 
 type InviterInfo = { id: string; name: string; handle: string; avatarUrl: string | null };
@@ -14,6 +10,7 @@ type InviterInfo = { id: string; name: string; handle: string; avatarUrl: string
 // Plain client page, deliberately outside AppProvider/AppGate (same as
 // /u/[handle]) — this is a link handed to someone who may not have an
 // account or an active session yet, so it can't depend on app state.
+// Wrapped in its own .rd scope for the new redesign classes.
 export default function InvitePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [inviter, setInviter] = useState<InviterInfo | null>(null);
@@ -57,43 +54,38 @@ export default function InvitePage({ params }: { params: Promise<{ id: string }>
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-legacy)', color: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <div style={{ maxWidth: 380, width: '100%', textAlign: 'center' }}>
-        <div style={{ marginBottom: 22, display: 'flex', justifyContent: 'center' }}><LogoMark size={44} /></div>
+    <div className="rd">
+      <div className="modalbg" style={{ position: 'fixed', inset: 0 }}>
+        <div className="tile t-ink modal" style={{ maxWidth: 380, width: '100%', textAlign: 'center', padding: 28 }}>
+          {notFound ? (
+            <p className="muted">This invite link isn&apos;t valid anymore.</p>
+          ) : !inviter ? (
+            <p className="muted">Loading…</p>
+          ) : isSelf ? (
+            <p className="muted">This is your own invite link — share it with someone else.</p>
+          ) : (
+            <>
+              <div className="dot" style={{ width: 76, height: 76, fontSize: 28, margin: '0 auto 14px', ...userAvatarStyle(inviter) }}>{inviter.name[0]}</div>
+              <p><b>{inviter.name}</b> invited you to HearMeOut</p>
+              <p className="muted" style={{ marginBottom: 22 }}>Compare your music taste and see how much you agree.</p>
 
-        {notFound ? (
-          <p style={{ fontSize: 14, color: 'var(--muted)' }}>This invite link isn&apos;t valid anymore.</p>
-        ) : !inviter ? (
-          <p style={{ fontSize: 14, color: 'var(--muted)' }}>Loading…</p>
-        ) : isSelf ? (
-          <p style={{ fontSize: 14, color: 'var(--muted)' }}>This is your own invite link — share it with someone else.</p>
-        ) : (
-          <>
-            <div
-              className="avatar-lg"
-              style={{ width: 76, height: 76, margin: '0 auto 14px', ...(inviter.avatarUrl ? { backgroundImage: `url('${inviter.avatarUrl}')`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}) }}
-            />
-            <p style={{ fontSize: 15, marginBottom: 4 }}><strong>{inviter.name}</strong> invited you to HearMeOut</p>
-            <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 22 }}>Compare your music taste and see how much you agree.</p>
+              {authed === false && (
+                <button className="btn lg" style={{ width: '100%' }} onClick={goSignUp}>Sign up to add {inviter.name.split(' ')[0]}</button>
+              )}
+              {authed === true && alreadyFriends && (
+                <p className="muted">You&apos;re already friends with {inviter.name.split(' ')[0]}.</p>
+              )}
+              {authed === true && !alreadyFriends && status !== 'done' && (
+                <button className="btn lg" style={{ width: '100%' }} disabled={status === 'accepting'} onClick={accept}>
+                  {status === 'accepting' ? 'Adding…' : `Add ${inviter.name.split(' ')[0]} as a friend`}
+                </button>
+              )}
+              {status === 'done' && <p>You&apos;re friends now — open HearMeOut to see them.</p>}
+              {status === 'error' && <p className="muted">Something went wrong. Try again.</p>}
+            </>
+          )}
 
-            {authed === false && (
-              <button className="btn-primary" style={{ width: '100%' }} onClick={goSignUp}>Sign up to add {inviter.name.split(' ')[0]}</button>
-            )}
-            {authed === true && alreadyFriends && (
-              <p style={{ fontSize: 13, color: 'var(--muted)' }}>You&apos;re already friends with {inviter.name.split(' ')[0]}.</p>
-            )}
-            {authed === true && !alreadyFriends && status !== 'done' && (
-              <button className="btn-primary" style={{ width: '100%' }} disabled={status === 'accepting'} onClick={accept}>
-                {status === 'accepting' ? 'Adding…' : `Add ${inviter.name.split(' ')[0]} as a friend`}
-              </button>
-            )}
-            {status === 'done' && <p style={{ fontSize: 13, color: 'var(--lime)' }}>You&apos;re friends now — open HearMeOut to see them.</p>}
-            {status === 'error' && <p style={{ fontSize: 13, color: 'var(--muted)' }}>Something went wrong. Try again.</p>}
-          </>
-        )}
-
-        <div style={{ marginTop: 30 }}>
-          <a href="/" style={{ color: 'var(--lime)', fontSize: 13, fontFamily: 'var(--font-ibm-plex-mono),monospace' }}>HearMeOut →</a>
+          <div style={{ marginTop: 24 }}><a href="/" className="link">HearMeOut →</a></div>
         </div>
       </div>
     </div>
