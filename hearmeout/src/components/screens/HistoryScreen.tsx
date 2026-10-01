@@ -4,11 +4,9 @@ import { useMemo, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device, RatingRecord } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
-import { starsText } from '@/lib/format';
+import { Stars } from '../redesign/Stars';
 import { toLocale } from '@/lib/i18n';
 import { SearchIcon } from '../ui/Icons';
-import { PremiumLock } from '../ui/PremiumLock';
-import { accentMix } from '@/lib/accentGradient';
 
 type Filter = 'all' | 'high' | 'low' | 'reviewed';
 type Sort = 'newest' | 'oldest';
@@ -25,19 +23,13 @@ function HistoryRow({ rating }: { rating: RatingRecord }) {
   const cover = spotifyCovers[a.id] || a.cover;
   const date = new Date(rating.createdAt);
   return (
-    <div className="history-row" onClick={() => openRateFor(a.id, 'history')}>
-      <div className="hr-date">{date.toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short' })}</div>
-      <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="art-sm" />
-      <div className="hr-info">
-        <div className="hr-title">{a.title}</div>
-        <div className="hr-artist">{a.artist}</div>
-      </div>
-      {rating.review && <span className="history-badge">{t('history.reviewBadge')}</span>}
-      <div className="history-score">
-        <span className="stars-dot" style={{ color: accentMix(rating.stars / 5) }}>{starsText(rating.stars)}</span>
-        <span className="num">{rating.stars.toFixed(1)}</span>
-      </div>
-    </div>
+    <button className="row" onClick={() => openRateFor(a.id, 'history')} style={{ cursor: 'pointer', width: '100%' }}>
+      <small className="muted" style={{ width: 48 }}>{date.toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short' })}</small>
+      <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: 40, height: 40 }} />
+      <div className="g"><b>{a.title}</b><div className="muted">{a.artist}</div></div>
+      {rating.review && <span className="tag">{t('history.reviewBadge')}</span>}
+      <Stars value={rating.stars} size={14} />
+    </button>
   );
 }
 
@@ -76,7 +68,7 @@ function exportJson(ratings: RatingRecord[], albums: ReturnType<typeof useApp>['
   URL.revokeObjectURL(url);
 }
 
-export function HistoryScreen({ device }: { device: Device }) {
+export function HistoryScreen(_props: { device: Device }) {
   const { state, t, language, me, albums, liveAlbums, myRatings, setHistoryQuery, showScreen } = useApp();
   const [filter, setFilter] = useState<Filter>('all');
   const [sort, setSort] = useState<Sort>('newest');
@@ -107,9 +99,6 @@ export function HistoryScreen({ device }: { device: Device }) {
     return [...map.entries()];
   }, [filtered]);
 
-  // 50 buckets, one per exact tenth-star value (0.1–5.0) — matches the
-  // per-album distribution on the album page, instead of collapsing to
-  // whole stars.
   const scoreBuckets = useMemo(() => {
     const buckets = new Array(50).fill(0);
     for (const r of myRatings) buckets[Math.min(50, Math.max(1, Math.round(r.stars * 10))) - 1]++;
@@ -140,113 +129,94 @@ export function HistoryScreen({ device }: { device: Device }) {
     { key: 'reviewed', label: t('history.filterReviewed') },
   ];
 
-  const rail = (
-    <>
-      <div className="history-side-card">
-        <h3>{t('history.scoreDistTitle')}</h3>
-        {myRatings.length ? (
-          <>
-            <p className="history-chart-caption">{t('history.scoreDistCaption')}</p>
-            <div className="rating-dist-chart" style={{ height: 60 }}>
-              {scoreBuckets.map((n, i) => (
-                <div key={i} className="rating-dist-bar" style={{ height: `${n ? Math.max(6, (n / maxBucket) * 100) : 0}%`, background: accentMix((i + 1) / 50) }} title={`${((i + 1) / 10).toFixed(1)} ★ · ${n}`} />
-              ))}
-            </div>
-            <div className="rating-dist-axis"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
-          </>
-        ) : <div className="empty-state">{t('history.notEnoughForChart')}</div>}
-      </div>
-      <div className="history-side-card">
-        <h3>{t('history.monthlySparkTitle')}</h3>
-        {monthlyAvg.length >= 2 ? (
-          <>
-            <p className="history-chart-caption">{t('history.monthlySparkCaption')}</p>
-            <div className="history-sparkline">
-              {monthlyAvg.map((m, i) => (
-                <div key={i} className="bar" style={{ height: `${Math.max(4, (m.avg / maxMonthlyAvg) * 100)}%`, background: accentMix(m.avg / 5) }} title={`${m.label}: ${m.avg.toFixed(1)} (${m.count})`} />
-              ))}
-            </div>
-            <div className="history-sparkline-labels">{monthlyAvg.map((m, i) => <span key={i}>{m.label}</span>)}</div>
-          </>
-        ) : monthlyAvg.length === 1 ? (
-          <p className="history-chart-caption">{t('history.monthlySparkSingle', { label: monthlyAvg[0].label, avg: monthlyAvg[0].avg.toFixed(1), count: monthlyAvg[0].count })}</p>
-        ) : <div className="empty-state">{t('history.notEnoughForChart')}</div>}
-      </div>
-      <div className="history-side-card">
-        <h3>{t('history.exportTitle')}</h3>
-        <p style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.5, marginBottom: 12 }}>{t('history.exportDesc')}</p>
-        <button className="btn-ghost" style={{ width: '100%', marginBottom: 10 }} disabled={!myRatings.length} onClick={() => exportCsv(myRatings, albums, liveAlbums)}>
-          {t('history.exportBtn')}
-        </button>
-        <PremiumLock label={t('history.exportJsonLocked')}>
-          <button className="btn-ghost" style={{ width: '100%', marginBottom: 0 }} disabled={!myRatings.length} onClick={() => exportJson(myRatings, albums, liveAlbums)}>
-            {t('history.exportJsonBtn')}
-          </button>
-        </PremiumLock>
-      </div>
-    </>
-  );
-
-  const list = (
-    <>
-      <div className="history-toolbar">
-        <div className="chips" style={{ marginBottom: 0 }}>
-          {FILTERS.map((f) => (
-            <button key={f.key} className={`chip ${filter === f.key ? 'on' : ''}`} onClick={() => setFilter(f.key)}>{f.label}</button>
-          ))}
-        </div>
-        <button className="history-sort" onClick={() => setSort((s) => (s === 'newest' ? 'oldest' : 'newest'))}>
-          {sort === 'newest' ? t('history.sortNewest') : t('history.sortOldest')} ▾
-        </button>
-      </div>
-      {filtered.length ? (
-        groups.map(([key, rows]) => {
-          const avg = rows.reduce((s, r) => s + r.stars, 0) / rows.length;
-          const label = new Date(rows[0].createdAt).toLocaleDateString(toLocale(language), { month: 'long', year: 'numeric' });
-          return (
-            <div key={key}>
-              <div className="history-month">
-                <span>{label} · {rows.length}</span>
-                <span>{t('history.monthAvg')} {avg.toFixed(1)}</span>
-              </div>
-              {rows.map((r) => <HistoryRow key={r.albumId} rating={r} />)}
-            </div>
-          );
-        })
-      ) : state.historyQuery ? (
-        <div className="empty-state">
-          {t('history.noResults')}
-          <div style={{ marginTop: 10 }}><button className="btn-ghost" onClick={() => setHistoryQuery('')}>{t('history.clearSearch')}</button></div>
-        </div>
-      ) : (
-        <div className="empty-state">
-          {t('history.emptyLine1')}<br />{t('history.emptyLine2')}
-          <div style={{ marginTop: 10 }}><button className="btn-primary" style={{ margin: '0 auto' }} onClick={() => showScreen('catalog')}>{t('history.emptyCta')}</button></div>
-        </div>
-      )}
-    </>
-  );
-
   return (
     <>
       <div className="eyebrow">{t('history.eyebrow')}</div>
-      <h1 className="page-title">{t('history.title')}</h1>
-      <div className="history-summary">{t('history.summary', { count: me.stats.ratings, reviewed: me.stats.reviews })}</div>
-      <div className="search-bar">
+      <h1 className="big">{t('history.title')}</h1>
+      <p className="muted">{t('history.summary', { count: me.stats.ratings, reviewed: me.stats.reviews })}</p>
+      <div className="field" style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '14px 0' }}>
         <SearchIcon />
-        <input type="text" placeholder={t('history.searchPlaceholder')} value={state.historyQuery || ''} onChange={(e) => setHistoryQuery(e.target.value)} />
+        <input style={{ flex: 1, background: 'transparent', border: 0 }} placeholder={t('history.searchPlaceholder')} value={state.historyQuery || ''} onChange={(e) => setHistoryQuery(e.target.value)} />
       </div>
-      {device === 'desktop' ? (
-        <div className="history-layout">
-          <div className="history-main">{list}</div>
-          <div className="history-rail">{rail}</div>
+
+      <div className="bento b3">
+        <div className="tile">
+          <h3>{t('history.scoreDistTitle')}</h3>
+          {myRatings.length ? (
+            <>
+              <p className="muted">{t('history.scoreDistCaption')}</p>
+              <div className="h50" style={{ marginTop: 10 }}>
+                {scoreBuckets.map((n, i) => <i key={i} style={{ height: n ? `${Math.max(6, (n / maxBucket) * 100)}%` : '2%' }} title={`${((i + 1) / 10).toFixed(1)} ★ · ${n}`} />)}
+              </div>
+              <div className="h50ax"><span>0.1</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+            </>
+          ) : <p className="muted">{t('history.notEnoughForChart')}</p>}
         </div>
-      ) : (
-        <>
-          {list}
-          {rail}
-        </>
-      )}
+
+        <div className="tile">
+          <h3>{t('history.monthlySparkTitle')}</h3>
+          {monthlyAvg.length >= 2 ? (
+            <>
+              <p className="muted">{t('history.monthlySparkCaption')}</p>
+              <div className="bars" style={{ marginTop: 10 }}>
+                {monthlyAvg.map((m, i) => <i key={i} style={{ height: `${Math.max(4, (m.avg / maxMonthlyAvg) * 100)}%` }} title={`${m.label}: ${m.avg.toFixed(1)} (${m.count})`} />)}
+              </div>
+              <div className="axis">{monthlyAvg.map((m, i) => <span key={i}>{m.label}</span>)}</div>
+            </>
+          ) : monthlyAvg.length === 1 ? (
+            <p className="muted">{t('history.monthlySparkSingle', { label: monthlyAvg[0].label, avg: monthlyAvg[0].avg.toFixed(1), count: monthlyAvg[0].count })}</p>
+          ) : <p className="muted">{t('history.notEnoughForChart')}</p>}
+        </div>
+
+        <div className="tile">
+          <h3>{t('history.exportTitle')}</h3>
+          <p className="muted">{t('history.exportDesc')}</p>
+          <div className="acts">
+            <button className="btn ghost" disabled={!myRatings.length} onClick={() => exportCsv(myRatings, albums, liveAlbums)}>{t('history.exportBtn')}</button>
+            <button className="btn ghost" disabled={!myRatings.length} onClick={() => exportJson(myRatings, albums, liveAlbums)}>{t('history.exportJsonBtn')}</button>
+          </div>
+        </div>
+
+        <div className="tile s3">
+          <div className="setrow" style={{ border: 0, padding: 0 }}>
+            <div className="chips" style={{ marginBottom: 0 }}>
+              {FILTERS.map((f) => (
+                <button key={f.key} className={`chip ${filter === f.key ? 'on' : ''}`} onClick={() => setFilter(f.key)}>{f.label}</button>
+              ))}
+            </div>
+            <button className="chip" onClick={() => setSort((s) => (s === 'newest' ? 'oldest' : 'newest'))}>
+              {sort === 'newest' ? t('history.sortNewest') : t('history.sortOldest')} ▾
+            </button>
+          </div>
+          {filtered.length ? (
+            <div className="stack" style={{ marginTop: 14 }}>
+              {groups.map(([key, rows]) => {
+                const avg = rows.reduce((s, r) => s + r.stars, 0) / rows.length;
+                const label = new Date(rows[0].createdAt).toLocaleDateString(toLocale(language), { month: 'long', year: 'numeric' });
+                return (
+                  <div key={key}>
+                    <div className="setrow" style={{ border: 0, padding: '8px 0' }}>
+                      <b>{label} · {rows.length}</b>
+                      <small className="muted">{t('history.monthAvg')} {avg.toFixed(1)}</small>
+                    </div>
+                    <div className="stack">{rows.map((r) => <HistoryRow key={r.albumId} rating={r} />)}</div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : state.historyQuery ? (
+            <div className="tile empty" style={{ marginTop: 14 }}>
+              <p>{t('history.noResults')}</p>
+              <button className="btn ghost" onClick={() => setHistoryQuery('')}>{t('history.clearSearch')}</button>
+            </div>
+          ) : (
+            <div className="tile empty" style={{ marginTop: 14 }}>
+              <p>{t('history.emptyLine1')}<br />{t('history.emptyLine2')}</p>
+              <button className="btn" onClick={() => showScreen('catalog')}>{t('history.emptyCta')}</button>
+            </div>
+          )}
+        </div>
+      </div>
     </>
   );
 }
