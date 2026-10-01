@@ -53,7 +53,7 @@ export type DiscoverMatchPerson = ApiUser & { score: number; sharedAlbums: numbe
 export type LovedItemType = 'track' | 'album' | 'artist';
 export type LovedItem = { id: number; type: LovedItemType; itemId: string | null; title: string; artist: string | null; cover: string | null; createdAt: string };
 
-export type NowPlaying = { title: string; artist: string; cover: string | null; startedAt: string; durationMs: number | null };
+export type NowPlaying = { title: string; artist: string; cover: string | null; startedAt: string; durationMs: number | null; albumId: string | null };
 
 export type PublicProfile = ApiUser & {
   // True when the viewer isn't the account owner or an accepted friend —

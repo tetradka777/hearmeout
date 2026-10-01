@@ -11,6 +11,7 @@ import { Ticker } from './Ticker';
 import { AvatarMenu } from './AvatarMenu';
 import { QuickModeToggle } from './QuickModeToggle';
 import { GlobalPlayer } from '../DockedPlayer';
+import { NowPlayingBar } from './NowPlayingBar';
 import { usePlayer } from '@/lib/PlayerContext';
 
 // The redesign's app shell (spec 3.9, 4, 15.1, 17.1): Cream Pop top pill
@@ -19,12 +20,6 @@ import { usePlayer } from '@/lib/PlayerContext';
 // mobile header, five-tab bar with a quick-rate +, the activity ticker, and
 // the avatar menu. Mounted once around the existing screen-switching logic
 // in AppShell.tsx, so none of this remounts when the active screen changes.
-//
-// Deferred to a follow-up commit: restyling the global preview player
-// (still the existing DockedPlayer/PlayerContext, unchanged) into the
-// redesign's .mplay ring-and-equalizer look, and the Toxic-only "now
-// playing" bar (needs its own now-playing selector for the viewer's own
-// account, not just friends'). Both are additive on top of this shell.
 
 type NavItem = { screen: ScreenName; labelKey: TranslationKey; icon: ReactNode };
 
@@ -68,9 +63,10 @@ export function RedesignShell({ children }: { children: ReactNode }) {
   const activeGroup = NAV_GROUP[state.activeScreen];
   const { currentTrack } = usePlayer();
   const hasPlayer = !!currentTrack;
+  const hasNowPlaying = me?.design === 'toxic' && !!me?.nowPlaying;
 
   return (
-    <div className={`rd${hasPlayer ? ' hasmp' : ''}`}>
+    <div className={`rd${hasPlayer ? ' hasmp' : ''}${hasNowPlaying ? ' hasnp' : ''}`}>
       {/* Cream Pop desktop top bar */}
       <div className="nav">
         <div className="logo"><span className="mk" />Hear<span>Me</span>Out</div>
@@ -145,6 +141,10 @@ export function RedesignShell({ children }: { children: ReactNode }) {
         </button>
       </div>
 
+      {/* The preview mini-player takes priority over the now-playing bar
+          while active (spec 13.17.2) — both live in the same fixed-bottom
+          slot in Toxic, so only one renders at a time. */}
+      {!hasPlayer && <NowPlayingBar />}
       <GlobalPlayer />
     </div>
   );

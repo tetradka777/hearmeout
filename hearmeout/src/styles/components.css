@@ -36,7 +36,7 @@
 
 /* ===== shell ===== */
 .rd .wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px 120px; min-width: 0; }
-[data-design="toxic"] .rd .wrap { padding-bottom: 190px; }
+.rd.hasnp .wrap { padding-bottom: 190px; }
 .rd .logo { display: flex; align-items: center; gap: 8px; font: 800 24px/1 var(--font-display); letter-spacing: -.05em; }
 .rd .logo .mk { width: 26px; height: 26px; border-radius: 50%; background: var(--fg); position: relative; flex: none; }
 .rd .logo .mk::after { content: ''; position: absolute; inset: 7px; border-radius: 50%; background: var(--acc); }

@@ -24,7 +24,7 @@ export async function fetchIsOpenProfile(admin: SupabaseClient, userId: string):
 async function fetchNowPlaying(admin: SupabaseClient, userId: string): Promise<NowPlaying | null> {
   const { data } = await admin
     .from('listening_events')
-    .select('track_title, artist, cover_url, played_at, duration_ms')
+    .select('track_title, artist, cover_url, played_at, duration_ms, album_id')
     .eq('user_id', userId)
     .order('played_at', { ascending: false })
     .limit(1)
@@ -35,7 +35,7 @@ async function fetchNowPlaying(admin: SupabaseClient, userId: string): Promise<N
   const durationMs = (data.duration_ms as number | null) ?? null;
   const stillPlayingWindow = Math.min(durationMs ?? NOW_PLAYING_MAX_AGE_MS, NOW_PLAYING_MAX_AGE_MS);
   if (age < 0 || age > stillPlayingWindow) return null;
-  return { title: data.track_title as string, artist: data.artist as string, cover: (data.cover_url as string | null) ?? null, startedAt: data.played_at as string, durationMs };
+  return { title: data.track_title as string, artist: data.artist as string, cover: (data.cover_url as string | null) ?? null, startedAt: data.played_at as string, durationMs, albumId: (data.album_id as string | null) ?? null };
 }
 
 // `viewerId` is who's asking — friends-of-friends discovery (showing this
