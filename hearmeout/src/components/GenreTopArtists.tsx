@@ -22,7 +22,7 @@ function GenreRow({ genre, rowClass }: { genre: string; rowClass: string }) {
       ) : artists.length ? (
         <div className={rowClass}>
           {artists.map((ar) => (
-            <button className="cvw" key={ar.id} onClick={() => openSpotifyArtist(ar.id)} style={{ textAlign: 'left', width: '100%' }}>
+            <button className="cvw" key={ar.id} onClick={() => openSpotifyArtist(ar.id)} style={{ textAlign: 'left' }}>
               <CoverArt url={ar.photo ?? undefined} fallbackLetter={ar.name[0] || '?'} className="cov" style={{ width: '100%', aspectRatio: '1', borderRadius: '50%' }} />
               <div style={{ marginTop: 8 }}><b>{ar.name}</b></div>
             </button>

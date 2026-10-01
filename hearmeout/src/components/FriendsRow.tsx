@@ -2,19 +2,15 @@
 
 import { useApp } from '@/lib/AppContext';
 import { DEMO_PROFILES } from '@/lib/demoAccounts';
+import { CoverArt } from './ui/CoverArt';
 
 function FriendTile({ friend }: { friend: { id: string; name: string; avatarUrl: string | null } }) {
   const { viewFriend } = useApp();
-  const hasPhoto = !!friend.avatarUrl;
   return (
-    <div
-      className={`friend-tile ${hasPhoto ? '' : 'cover-fallback'}`}
-      style={hasPhoto ? { backgroundImage: `url('${friend.avatarUrl}')` } : undefined}
-      onClick={() => viewFriend(friend.id)}
-    >
-      {!hasPhoto && <span className="fallback-letter">{(friend.name[0] || '?').toUpperCase()}</span>}
-      <div className="ft-name">{friend.name}</div>
-    </div>
+    <button className="cvw" onClick={() => viewFriend(friend.id)} style={{ textAlign: 'center' }}>
+      <CoverArt url={friend.avatarUrl ?? undefined} fallbackLetter={(friend.name[0] || '?').toUpperCase()} className="cov" style={{ width: '100%', aspectRatio: '1', borderRadius: '50%' }} />
+      <div style={{ marginTop: 8 }}><b>{friend.name}</b></div>
+    </button>
   );
 }
 
@@ -46,12 +42,12 @@ function InviteFriendBanner() {
   };
 
   return (
-    <div className="invite-banner">
+    <div className="tile t-ac" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
       <div>
-        <div className="invite-banner-title">{t('friends.inviteBannerTitle')}</div>
-        <div className="invite-banner-sub">{t('friends.inviteBannerSub')}</div>
+        <h3 style={{ marginBottom: 2 }}>{t('friends.inviteBannerTitle')}</h3>
+        <p>{t('friends.inviteBannerSub')}</p>
       </div>
-      <button className="btn-primary" style={{ margin: 0, flexShrink: 0, whiteSpace: 'nowrap' }} onClick={invite}>
+      <button className="btn" style={{ margin: 0, flexShrink: 0, whiteSpace: 'nowrap' }} onClick={invite}>
         {t('friends.inviteBannerBtn')}
       </button>
     </div>
@@ -66,12 +62,12 @@ export function FriendsRow() {
   return (
     <>
       {hasNoFriends && <InviteFriendBanner />}
-      <div className="friends-row">
+      <div className="hrow" style={{ marginTop: hasNoFriends ? 14 : 0 }}>
         {hasNoFriends && DEMO_PROFILES.map((p) => <FriendTile key={p.id} friend={p} />)}
         {me.friends.map((f) => <FriendTile key={f.id} friend={f} />)}
-        <button className="add-friend-tile" onClick={() => showScreen('profile')}>
-          <span className="aft-btn">+</span>
-          <span className="aft-label">{t('friends.addFriendsTile')}</span>
+        <button className="cvw" onClick={() => showScreen('profile')} style={{ textAlign: 'center' }}>
+          <div className="cov" style={{ width: '100%', aspectRatio: '1', borderRadius: '50%', display: 'grid', placeItems: 'center', borderStyle: 'dashed', fontSize: 28 }}>+</div>
+          <div style={{ marginTop: 8 }}><small className="muted">{t('friends.addFriendsTile')}</small></div>
         </button>
       </div>
     </>

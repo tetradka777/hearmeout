@@ -58,7 +58,7 @@ export function LiveLibrarySearch({ query }: { query: string }) {
           <div className="setrow" style={{ border: 0, padding: 0, marginBottom: 10 }}><h3 style={{ marginBottom: 0 }}>{t('liveSearch.artists')}</h3></div>
           <div className="hrow">
             {result.artists.map((ar) => (
-              <button className="cvw" key={ar.id} onClick={() => openArtist(ar.id, ar.name)} style={{ textAlign: 'left', width: '100%' }}>
+              <button className="cvw" key={ar.id} onClick={() => openArtist(ar.id, ar.name)} style={{ textAlign: 'left' }}>
                 <ArtistAvatar name={ar.name} className="cov" />
                 <div style={{ marginTop: 8 }}><b>{ar.name}</b><div className="muted">{ar.type || t('liveSearch.artistType')}</div></div>
               </button>

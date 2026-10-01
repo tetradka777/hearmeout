@@ -9,7 +9,7 @@ export function AlbumCard({ album, rankBadge }: { album: Album; rankBadge?: numb
   const rating = albumRatings[album.id];
   const cover = spotifyCovers[album.id] || album.cover;
   return (
-    <button className="cvw" onClick={() => openAlbum(album.id)} style={{ textAlign: 'left', width: '100%' }}>
+    <button className="cvw" onClick={() => openAlbum(album.id)} style={{ textAlign: 'left' }}>
       <CoverArt url={cover} fallbackLetter={album.artist[0] || '?'} className="cov" style={{ width: '100%', aspectRatio: '1' }}>
         {rankBadge != null && <span className="bdg">#{rankBadge}</span>}
         {album.unknown ? album.artist : ''}
