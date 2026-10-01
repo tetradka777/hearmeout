@@ -142,21 +142,43 @@ export type ScreenName =
   | 'discover'
   | 'settings';
 
-export type StatsRange = '4w' | '6m' | 'year' | 'all';
+// Stats period model (redesign spec 7.5 / Appendix B): only the current and
+// previous week/month, and the started seasons of the current calendar
+// year, are ever selectable — "winterd" is the spec's December slice of
+// winter (shown as its own chip once December starts, distinct from the
+// Jan–Feb slice so winter never spans a year boundary the way it does for
+// Recap's seasons.ts, which is a deliberately different definition).
+export type StatsPeriodType = 'week' | 'month' | 'season';
+export type StatsSeasonKey = 'winter' | 'spring' | 'summer' | 'autumn' | 'winterd';
+export type StatsSeasonChip = { key: StatsSeasonKey; year: number; label: string; sub: string; current: boolean };
+
+export type StatsCalendarDay = { date: string; minutes: number; tracks: number; topArtist: string | null; future: boolean };
 
 export type StatsData = {
-  range: StatsRange;
+  periodType: StatsPeriodType;
+  periodLabel: string;
+  periodSub: string;
+  comparisonPct: number | null;
+  comparisonNote: 'none' | 'first_season' | 'normal';
   hours: number;
   trackCount: number;
   artistCount: number;
   newArtistCount: number;
   avgRating: number;
-  peakHour: number | null;
-  hoursPerWeek: { weekLabel: string; hours: number }[];
   topArtists: { name: string; id: string | null; cover: string | null; hours: number; plays: number }[];
   heatmap: number[]; // 24 buckets (hour of day), play counts
+  peakHour: number | null;
   genreSplit: { genre: string; pct: number }[];
+  bars: { label: string; hours: number; future: boolean }[];
   recentPlays: { title: string; artist: string; cover: string | null; playedAt: string; trackId: string | null }[];
+  calendar: {
+    days: StatsCalendarDay[];
+    activeDays: number;
+    totalDays: number;
+    longestStreak: number;
+    bestDay: { date: string; minutes: number; tracks: number; topArtist: string | null } | null;
+  };
+  seasonChips: StatsSeasonChip[];
 };
 
 export type GroupSummary = { id: string; name: string; memberCount: number; newPlays: number };

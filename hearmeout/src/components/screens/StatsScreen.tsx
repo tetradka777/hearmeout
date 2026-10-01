@@ -1,155 +1,271 @@
 'use client';
 
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
-import type { Device, StatsData, StatsRange } from '@/lib/types';
+import type { Device, StatsCalendarDay, StatsData, StatsPeriodType, StatsSeasonKey } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
 import { HeartIcon } from '../ui/Icons';
 import { toLocale, type Language } from '@/lib/i18n';
 
-const RANGES: StatsRange[] = ['4w', '6m', 'year', 'all'];
-const RANGE_KEY: Record<StatsRange, string> = { '4w': 'stats.range4w', '6m': 'stats.range6m', year: 'stats.rangeYear', all: 'stats.rangeAll' };
+const DN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-function weekLabelText(weekLabel: string, language: Language): string {
-  return new Date(weekLabel).toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short' });
+function durLong(min: number): string {
+  const h = Math.floor(min / 60), m = min % 60;
+  return h ? `${h}h ${m ? m + 'm' : ''}`.trim() : `${m}m`;
+}
+function durShort(min: number): string {
+  if (!min) return '–';
+  const h = Math.floor(min / 60), m = min % 60;
+  return h ? `${h}h${String(m).padStart(2, '0')}` : `${m}m`;
+}
+function level(minutes: number): number {
+  if (minutes === 0) return 0;
+  if (minutes < 60) return 1;
+  if (minutes < 120) return 2;
+  if (minutes < 240) return 3;
+  return 4;
+}
+function parseDay(iso: string): Date {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d));
 }
 
-// Real GitHub-style year grid of listening intensity — free for everyone
-// now (premium removed). Deferred: the redesign's own fit-algorithm
-// listening calendar (spec 7.5, Appendix B) with week/month/season views;
-// this keeps the existing simple year grid for now, just unlocked and
-// restyled onto the new tokens.
-function CalendarHeatmap() {
-  const { t, language } = useApp();
-  const [days, setDays] = useState<{ day: string; minutes: number }[] | null>(null);
+function ListeningCalendar({ data, t, language }: { data: StatsData; t: ReturnType<typeof useApp>['t']; language: Language }) {
+  const { periodType, calendar } = data;
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const calRef = useRef<HTMLDivElement>(null);
+  const [selected, setSelected] = useState<string | null>(null);
+  useEffect(() => setSelected(null), [data.periodLabel, periodType]);
 
+  const todayKey = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const inPeriodToday = calendar.days.some((d) => d.date === todayKey && !d.future);
+  const fallbackReadout = inPeriodToday ? calendar.days.find((d) => d.date === todayKey) : calendar.bestDay;
+  const readoutDay: StatsCalendarDay | { date: string; minutes: number; tracks: number; topArtist: string | null } | null =
+    (selected && calendar.days.find((d) => d.date === selected)) || fallbackReadout || null;
+
+  const weekStart = 'mon'; // grid alignment only; actual period math already uses the account setting server-side
+
+  const fit = () => {
+    const sc = scrollRef.current, cal = calRef.current;
+    if (!sc || !cal) return;
+    const w = Number(sc.dataset.w || 0);
+    if (!w) return;
+    const gap = window.innerWidth < 1000 ? 3 : 4;
+    const mx = Number(sc.dataset.max || 34);
+    const avail = sc.clientWidth;
+    const cs = Math.max(12, Math.min(mx, Math.floor((avail - (w - 1) * gap) / w)));
+    cal.style.setProperty('--cs', `${cs}px`);
+    cal.style.setProperty('--cg', `${gap}px`);
+    cal.classList.toggle('nonum', cs < 26);
+  };
   useEffect(() => {
-    let cancelled = false;
-    fetch('/api/stats/calendar').then((r) => (r.ok ? r.json() : null)).then((d) => { if (!cancelled && d) setDays(d.days); });
-    return () => { cancelled = true; };
-  }, []);
+    fit();
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
-  const byDay = new Map((days || []).map((d) => [d.day, d.minutes]));
-  const maxMinutes = Math.max(1, ...(days || []).map((d) => d.minutes));
-  const cells: { day: string; minutes: number }[] = [];
-  const cursor = new Date();
-  cursor.setFullYear(cursor.getFullYear() - 1);
-  cursor.setDate(cursor.getDate() + 1);
-  for (let i = 0; i < 371; i++) {
-    const key = cursor.toISOString().slice(0, 10);
-    cells.push({ day: key, minutes: byDay.get(key) || 0 });
-    cursor.setDate(cursor.getDate() + 1);
-  }
+  const dayLabel = (d: Date) => `${DN[d.getUTCDay()]} ${d.getUTCDate()} ${MN[d.getUTCMonth()]}`;
+  const dayBtn = (d: StatsCalendarDay, cls: string, inner: React.ReactNode) => (
+    <button
+      key={d.date}
+      className={`cd ${cls} l${level(d.minutes)}${d.date === todayKey ? ' today' : ''}${selected === d.date ? ' sel' : ''}`}
+      onClick={() => setSelected(d.date)}
+      aria-label={`${dayLabel(parseDay(d.date))}: ${d.minutes ? durLong(d.minutes) : t('stats.calNoListening')}`}
+    >
+      {inner}
+    </button>
+  );
 
-  function level(minutes: number) {
-    if (!minutes) return 0;
-    if (minutes < 60) return 1;
-    if (minutes < 120) return 2;
-    if (minutes < 240) return 3;
-    return 4;
+  let gridEl: React.ReactNode;
+  let gridW = 0;
+  let gridMax = 34;
+
+  if (periodType === 'week') {
+    gridEl = (
+      <div className="calweek">
+        {calendar.days.map((d) => {
+          const date = parseDay(d.date);
+          const wd = <><span className="wd">{DN[date.getUTCDay()]}</span><span className="dn">{date.getUTCDate()}</span></>;
+          if (d.future) return <div key={d.date} className="cd cw fut">{wd}<span className="hm">–</span></div>;
+          return dayBtn(d, 'cw', <>{wd}<span className="hm">{durShort(d.minutes)}</span></>);
+        })}
+      </div>
+    );
+  } else {
+    const first = parseDay(calendar.days[0].date);
+    const firstDow = weekStart === 'mon' ? (first.getUTCDay() + 6) % 7 : first.getUTCDay();
+    const leading = firstDow;
+    gridW = Math.ceil((leading + calendar.days.length) / 7);
+    gridMax = periodType === 'month' ? 40 : 34;
+    const months: { col: number; label: string }[] = [];
+    const cells: React.ReactNode[] = [];
+    for (let i = 0; i < leading; i++) cells.push(<i key={`lead-${i}`} className="cd o" />);
+    calendar.days.forEach((d, idx) => {
+      const col = Math.floor((leading + idx) / 7) + 1;
+      const date = parseDay(d.date);
+      if (date.getUTCDate() === 1 && periodType === 'season') months.push({ col, label: MN[date.getUTCMonth()] });
+      if (d.future) { cells.push(<i key={d.date} className="cd fut"><span className="n">{date.getUTCDate()}</span></i>); return; }
+      cells.push(dayBtn(d, '', <span className="n">{date.getUTCDate()}</span>));
+    });
+    gridEl = (
+      <>
+        {months.length > 0 && (
+          <div className="calmonths" style={{ gridTemplateColumns: `repeat(${gridW},var(--cs))` }} aria-hidden="true">
+            {months.map((m, i) => <span key={i} style={{ gridColumn: m.col }}>{m.label}</span>)}
+          </div>
+        )}
+        <div className="calgrid" style={{ gridTemplateColumns: `repeat(${gridW},var(--cs))` }}>{cells}</div>
+      </>
+    );
   }
 
   return (
     <div className="tile s3">
       <h3>{t('stats.calendarTitle')}</h3>
-      <p className="muted">{t('stats.calendarCaption')}</p>
-      <div style={{ overflowX: 'auto', marginTop: 10 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(53,10px)', gridAutoRows: '10px', gap: 3, width: 'max-content' }}>
-          {cells.map((c) => {
-            const dateLabel = new Date(c.day).toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short', year: 'numeric' });
-            return <div key={c.day} className={`cd l${level(c.minutes)}`} style={{ width: 10, height: 10 }} title={`${dateLabel}: ${c.minutes} ${t('recap.minutes')}`} />;
-          })}
+      <p className="muted">{t('stats.calendarHelp')}</p>
+      <div className="cal" ref={calRef} style={{ marginTop: 10 }}>
+        <div className="calstats">
+          <div><span className="num">{calendar.activeDays}<small className="muted" style={{ fontSize: 15, fontWeight: 700 }}> / {calendar.totalDays}</small></span><small>{t('stats.calDaysListened')}</small></div>
+          <div><span className="num">{calendar.longestStreak}</span><small>{t('stats.calLongestStreak')}</small></div>
+          <div><span className="num">{calendar.bestDay ? durLong(calendar.bestDay.minutes) : '–'}</span><small>{calendar.bestDay ? `${t('stats.calBestDay')} · ${dayLabel(parseDay(calendar.bestDay.date))}` : t('stats.calBestDay')}</small></div>
         </div>
-      </div>
-      <div className="callegend" style={{ marginTop: 8 }}>
-        <span>{t('stats.calendarLess')}</span>
-        {[0, 1, 2, 3, 4].map((l) => <div key={l}><i className={`cd l${l}`} /></div>)}
-        <span>{t('stats.calendarMore')}</span>
+        <div className="calscroll" ref={scrollRef} data-w={gridW} data-max={gridMax}>{gridEl}</div>
+        <div className="calread" aria-live="polite">
+          {readoutDay ? (
+            readoutDay.minutes === 0 ? (
+              <><span className="d">{dayLabel(parseDay(readoutDay.date))}</span><span className="muted">{t('stats.calNoListening')}</span></>
+            ) : (
+              <><span className="d">{dayLabel(parseDay(readoutDay.date))}</span><span className="big">{durLong(readoutDay.minutes)}</span><span className="muted">{t('stats.calTracksMostPlayed', { tracks: readoutDay.tracks, artist: readoutDay.topArtist || '—' })}</span></>
+            )
+          ) : <span className="muted">{t('stats.calNoListening')}</span>}
+        </div>
+        <div className="callegend">
+          <span>{t('stats.calLegendLabel')}</span>
+          {[['0', 0], ['<1h', 1], ['1–2h', 2], ['2–4h', 3], ['4h+', 4]].map(([label, l]) => (
+            <div key={l}><i className={`cd l${l}`} />{label}</div>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
 export function StatsScreen(_props: { device: Device }) {
-  const { t, language, me, lovedItems, toggleLoved, showScreen } = useApp();
-  const [range, setRange] = useState<StatsRange>('6m');
+  const { t, language, me, lovedItems, toggleLoved, openRecap } = useApp();
+  const [periodType, setPeriodType] = useState<StatsPeriodType>('week');
+  const [offset, setOffset] = useState(0);
+  const [seasonKey, setSeasonKey] = useState<StatsSeasonKey | null>(null);
   const [data, setData] = useState<StatsData | null>(null);
+
+  useEffect(() => { setOffset(0); setSeasonKey(null); }, [periodType]);
 
   useEffect(() => {
     if (!me) return;
     let cancelled = false;
     setData(null);
-    fetch(`/api/stats?range=${range}`).then((r) => (r.ok ? r.json() : null)).then((d) => { if (!cancelled) setData(d); });
+    const params = new URLSearchParams({ period: periodType, weekStart: me.weekStart });
+    if (periodType === 'season') { if (seasonKey) params.set('season', seasonKey); }
+    else params.set('offset', String(offset));
+    fetch(`/api/stats?${params}`).then((r) => (r.ok ? r.json() : null)).then((d: StatsData | null) => {
+      if (cancelled) return;
+      setData(d);
+      if (d && periodType === 'season' && !seasonKey) {
+        const cur = d.seasonChips.find((c) => c.current) || d.seasonChips[d.seasonChips.length - 1];
+        if (cur) setSeasonKey(cur.key);
+      }
+    });
     return () => { cancelled = true; };
-  }, [range, me]);
+  }, [periodType, offset, seasonKey, me]);
 
   if (!me) return null;
 
-  const maxWeek = Math.max(1, ...(data?.hoursPerWeek.map((w) => w.hours) ?? [1]));
   const maxArtistHours = Math.max(1, ...(data?.topArtists.map((a) => a.hours) ?? [1]));
   const maxHeat = Math.max(1, ...(data?.heatmap ?? [1]));
+  const maxBar = Math.max(1, ...(data?.bars.map((b) => b.hours) ?? [1]));
+
+  const PERIOD_TYPES: { key: StatsPeriodType; label: string }[] = [
+    { key: 'week', label: t('stats.periodWeek') },
+    { key: 'month', label: t('stats.periodMonth') },
+    { key: 'season', label: t('stats.periodSeason') },
+  ];
 
   return (
     <>
       <div className="eyebrow">{t('stats.eyebrow')}</div>
       <h1 className="big">{t('stats.title')}</h1>
       <div className="chips">
-        {RANGES.map((r) => (
-          <button key={r} className={`chip ${range === r ? 'on' : ''}`} onClick={() => setRange(r)}>{t(RANGE_KEY[r] as never)}</button>
+        {PERIOD_TYPES.map((p) => (
+          <button key={p.key} className={`chip ${periodType === p.key ? 'on' : ''}`} onClick={() => setPeriodType(p.key)}>{p.label}</button>
         ))}
       </div>
 
+      {periodType === 'season' ? (
+        data && data.seasonChips.length > 0 && (
+          <div className="chips" style={{ marginTop: 8 }}>
+            {data.seasonChips.map((c) => (
+              <button key={c.key} className={`chip ${seasonKey === c.key ? 'on' : ''}`} onClick={() => setSeasonKey(c.key)}>
+                {t(`season.${c.key === 'winterd' ? 'winter' : c.key}` as never)}{c.current ? ` · ${t('stats.seasonNow')}` : ''}
+              </button>
+            ))}
+          </div>
+        )
+      ) : (
+        <div className="chips" style={{ marginTop: 8 }}>
+          <button className={`chip ${offset === 0 ? 'on' : ''}`} onClick={() => setOffset(0)}>{periodType === 'week' ? t('stats.thisWeek') : t('stats.thisMonth')}</button>
+          <button className={`chip ${offset === -1 ? 'on' : ''}`} onClick={() => setOffset(-1)}>{periodType === 'week' ? t('stats.lastWeek') : t('stats.lastMonth')}</button>
+        </div>
+      )}
+      {data && <p className="muted" style={{ marginTop: 6 }}>{data.periodLabel} · {data.periodSub}</p>}
+
       {!data ? (
         <p className="muted">{t('stats.loading')}</p>
-      ) : data.trackCount === 0 ? (
+      ) : data.trackCount === 0 && data.calendar.activeDays === 0 ? (
         <div className="tile empty">
           <p>{t('stats.empty')}</p>
-          <button className="btn" onClick={() => showScreen('settings')}>{t('stats.emptyCta')}</button>
         </div>
       ) : (
         <>
-          <div className="stats3" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(90px,1fr))' }}>
-            <div className="tile"><span className="num">{data.hours}</span><small className="muted">{t('stats.hours')}</small></div>
-            <div className="tile"><span className="num">{data.trackCount.toLocaleString(toLocale(language))}</span><small className="muted">{t('stats.tracks')}</small></div>
-            <div className="tile"><span className="num">{data.artistCount}</span><small className="muted">{t('stats.artists')}</small></div>
-            <div className="tile"><span className="num">{data.avgRating || '—'}</span><small className="muted">{t('history.avg')}</small></div>
-            <div className="tile t-ac"><span className="num">{data.peakHour != null ? `${String(data.peakHour).padStart(2, '0')}:00` : '—'}</span><small>{t('stats.peakHour')}</small></div>
-          </div>
-
           <div className="bento b3">
-            <div className="tile s2">
-              <h3>{t('stats.hoursPerWeek')}</h3>
-              {data.hoursPerWeek.length >= 2 ? (
+            <div className="tile t-ac s2">
+              <span className="num" style={{ fontSize: 'clamp(36px,6vw,56px)' }}>{data.hours}</span>
+              <p>{t('stats.hoursOfMusic')}{data.comparisonNote === 'first_season' ? ` · ${t('stats.firstSeason')}` : data.comparisonPct != null ? ` · ${data.comparisonPct >= 0 ? '+' : ''}${data.comparisonPct}% ${t('stats.vsLastPeriod')}` : ''}</p>
+            </div>
+            <div className="tile">
+              <div className="stack">
+                <div><span className="num">{data.trackCount.toLocaleString(toLocale(language))}</span><small className="muted">{t('stats.tracks')}</small></div>
+                <div><span className="num">{data.artistCount}</span><small className="muted">{t('stats.artistsNew', { count: data.newArtistCount })}</small></div>
+              </div>
+            </div>
+
+            <div className="tile"><span className="num">{data.avgRating || '—'}</span><small className="muted">{t('history.avg')}</small></div>
+            <div className="tile"><span className="num">{data.peakHour != null ? `${String(data.peakHour).padStart(2, '0')}:00` : '—'}</span><small className="muted">{t('stats.peakHour')}</small></div>
+            <div className="tile"><span className="num">{data.topArtists.length}</span><small className="muted">{t('stats.artistsTracked')}</small></div>
+
+            <ListeningCalendar data={data} t={t} language={language} />
+
+            <div className="tile">
+              <h3>{periodType === 'season' ? t('stats.hoursPerWeek') : t('stats.hoursPerDay')}</h3>
+              {data.bars.length ? (
                 <>
                   <div className="bars" style={{ marginTop: 10 }}>
-                    {data.hoursPerWeek.map((w, i) => (
-                      <i key={i} style={{ height: w.hours ? `${Math.max(6, (w.hours / maxWeek) * 100)}%` : '2%' }} title={`${weekLabelText(w.weekLabel, language)}: ${w.hours}h`} />
-                    ))}
+                    {data.bars.map((b, i) => <i key={i} style={{ height: b.hours ? `${Math.max(6, (b.hours / maxBar) * 100)}%` : '2%', opacity: b.future ? 0.25 : 1 }} title={`${b.label}: ${b.hours}h`} />)}
                   </div>
                   <div className="axis">
-                    {data.hoursPerWeek.map((w, i) => {
-                      const step = data.hoursPerWeek.length > 8 ? 3 : 1;
-                      return <span key={i}>{i % step === 0 || i === data.hoursPerWeek.length - 1 ? weekLabelText(w.weekLabel, language) : ''}</span>;
+                    {data.bars.map((b, i) => {
+                      const step = data.bars.length > 10 ? Math.ceil(data.bars.length / 6) : 1;
+                      return <span key={i}>{i % step === 0 || i === data.bars.length - 1 ? b.label : ''}</span>;
                     })}
                   </div>
                 </>
-              ) : data.hoursPerWeek.length === 1 ? (
-                <p className="muted">{t('stats.hoursPerWeekSingle', { label: weekLabelText(data.hoursPerWeek[0].weekLabel, language), hours: data.hoursPerWeek[0].hours })}</p>
               ) : <p className="muted">{t('stats.notEnough')}</p>}
-            </div>
-
-            <div className="tile">
-              <h3>{t('stats.whenYouListen')}</h3>
-              <div className="tod" style={{ marginTop: 10 }}>
-                {data.heatmap.map((n, h) => <i key={h} className={n === maxHeat && n > 0 ? 'pk' : ''} style={{ height: `${Math.max(4, (n / maxHeat) * 100)}%` }} title={`${h}:00 — ${n}`} />)}
-              </div>
-              <div className="todax"><span>00</span><span>08</span><span>16</span><span>23</span></div>
             </div>
 
             <div className="tile">
               <h3>{t('stats.topArtists')}</h3>
               <div className="stack" style={{ marginTop: 10 }}>
-                {data.topArtists.length ? data.topArtists.map((a, i) => (
+                {data.topArtists.length ? data.topArtists.slice(0, 4).map((a, i) => (
                   <div className="row" key={a.id || a.name}>
                     <span className="muted" style={{ width: 20 }}>{i + 1}</span>
                     <CoverArt url={a.cover ?? undefined} fallbackLetter={a.name[0] || '?'} className="cov" style={{ width: 36, height: 36 }} />
@@ -163,10 +279,17 @@ export function StatsScreen(_props: { device: Device }) {
               </div>
             </div>
 
-            <CalendarHeatmap />
+            <div className="tile">
+              <h3>{t('stats.whenYouListen')}</h3>
+              <div className="tod" style={{ marginTop: 10 }}>
+                {data.heatmap.map((n, h) => <i key={h} className={n === maxHeat && n > 0 ? 'pk' : ''} style={{ height: `${Math.max(4, (n / maxHeat) * 100)}%` }} title={`${h}:00 — ${n}`} />)}
+              </div>
+              <div className="todax"><span>00</span><span>06</span><span>12</span><span>18</span><span>23</span></div>
+              {data.peakHour != null && <p className="muted" style={{ marginTop: 6 }}>{t('stats.peakSentence', { hour: `${String(data.peakHour).padStart(2, '0')}:00` })}</p>}
+            </div>
 
             {data.genreSplit.length > 0 && (
-              <div className="tile s2">
+              <div className="tile s3">
                 <h3>{t('stats.genreSplit')}</h3>
                 <div className="gbar" style={{ marginTop: 10 }}>
                   {data.genreSplit.map((g, i) => (
@@ -184,7 +307,7 @@ export function StatsScreen(_props: { device: Device }) {
             <div className="tile s2">
               <h3>{t('stats.recentPlays')}</h3>
               <div className="stack" style={{ marginTop: 10 }}>
-                {data.recentPlays.map((p, i) => {
+                {data.recentPlays.length ? data.recentPlays.map((p, i) => {
                   const loved = lovedItems.some((li) => li.type === 'track' && li.title === p.title && li.artist === p.artist);
                   return (
                     <div className="row" key={i}>
@@ -195,10 +318,16 @@ export function StatsScreen(_props: { device: Device }) {
                       </button>
                     </div>
                   );
-                })}
+                }) : <p className="muted">{t('stats.notEnough')}</p>}
               </div>
             </div>
           </div>
+
+          <button className="tile t-ac" style={{ textAlign: 'left', width: '100%', marginTop: 14 }} onClick={() => openRecap('me')}>
+            <div className="eyebrow">{t('stats.recapLinkEyebrow')}</div>
+            <h3>{t('stats.recapLinkTitle')}</h3>
+            <p>{t('stats.recapLinkCta')} →</p>
+          </button>
         </>
       )}
     </>
