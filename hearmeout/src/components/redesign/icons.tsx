@@ -13,13 +13,13 @@ function Svg({ children }: { children: ReactNode }) {
   );
 }
 
+// Exact paths from reference/app.js's IC object.
 export function GroupsIcon() {
   return (
     <Svg>
-      <circle cx="8" cy="8" r="3" />
-      <circle cx="17" cy="9" r="2.4" />
-      <path d="M2.5 20c0-3.3 2.5-5.6 5.5-5.6S13.5 16.7 13.5 20" />
-      <path d="M15 20c.2-2.5 1.7-4.3 3.8-5 2.1.6 3.7 2.5 3.7 5" />
+      <circle cx="9" cy="8" r="3.5" />
+      <path d="M2.5 20c.5-4 3-6 6.5-6s6 2 6.5 6" />
+      <circle cx="17.5" cy="9" r="2.5" />
     </Svg>
   );
 }
@@ -27,17 +27,19 @@ export function GroupsIcon() {
 export function SettingsIcon() {
   return (
     <Svg>
-      <circle cx="12" cy="12" r="3.2" />
-      <path d="M19.4 13.5a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V19.6a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.55 13.5a1.7 1.7 0 0 0-1.56-1.04H2.9a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.5 7.4a1.7 1.7 0 0 0-.34-1.87l-.06-.06A2 2 0 1 1 6.93 2.6l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1.04-1.56V1.3a2 2 0 1 1 4 0v.1A1.7 1.7 0 0 0 15 3.5a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.1a1.7 1.7 0 0 0 1.56 1.04h.14a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.56 1.05z" />
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1" />
     </Svg>
   );
 }
 
+// Exact paths from reference/app.js's SUNP/MOONP constants (the quick
+// dark-mode toggle button).
 export function SunIcon() {
   return (
     <Svg>
-      <circle cx="12" cy="12" r="4.2" />
-      <path d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" />
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1" />
     </Svg>
   );
 }
@@ -45,15 +47,7 @@ export function SunIcon() {
 export function MoonIcon() {
   return (
     <Svg>
-      <path d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z" />
-    </Svg>
-  );
-}
-
-export function PlusIcon() {
-  return (
-    <Svg>
-      <path d="M12 5v14M5 12h14" />
+      <path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z" />
     </Svg>
   );
 }

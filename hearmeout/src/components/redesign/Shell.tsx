@@ -6,7 +6,7 @@ import type { ScreenName } from '@/lib/types';
 import type { TranslationKey } from '@/lib/i18n';
 import { HomeIcon, StarIcon, PeopleIcon, BarsIcon, CompassSearchIcon, ProfileIcon } from '../ui/Icons';
 import { userAvatarStyle } from '@/lib/format';
-import { GroupsIcon, SettingsIcon, PlusIcon } from './icons';
+import { GroupsIcon, SettingsIcon } from './icons';
 import { Ticker } from './Ticker';
 import { AvatarMenu } from './AvatarMenu';
 import { QuickModeToggle } from './QuickModeToggle';
@@ -59,7 +59,7 @@ const TAB_ICON: Partial<Record<ScreenName, ReactNode>> = {
 };
 
 export function RedesignShell({ children }: { children: ReactNode }) {
-  const { me, t, state, showScreen, setSearchQuery } = useApp();
+  const { me, t, state, showScreen, setSearchQuery, openRateFor } = useApp();
   const navItems = useNavItems();
   const activeGroup = NAV_GROUP[state.activeScreen];
   const { currentTrack } = usePlayer();
@@ -137,8 +137,16 @@ export function RedesignShell({ children }: { children: ReactNode }) {
             <span>{t(TAB_LABEL[screen]!)}</span>
           </button>
         ))}
-        <button className="fab" onClick={() => showScreen('history')} aria-label={t('nav.rate')}>
-          <PlusIcon />
+        <button
+          className="fab"
+          onClick={() => {
+            const playingId = me?.nowPlaying?.albumId || currentTrack?.albumId;
+            if (playingId) openRateFor(playingId, 'history');
+            else showScreen('history');
+          }}
+          aria-label={t('nav.rate')}
+        >
+          +
         </button>
       </div>
 
