@@ -4,7 +4,6 @@ import { useEffect, type ComponentType } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device, ScreenName } from '@/lib/types';
 import { Toast } from './ui/Toast';
-import { DockedPlayerDesktop, DockedPlayerMobile } from './DockedPlayer';
 import { RedesignShell } from './redesign/Shell';
 import { HomeScreen } from './screens/HomeScreen';
 import { AlbumScreen } from './screens/AlbumScreen';
@@ -63,8 +62,6 @@ export function AppShell() {
           </div>
         ))}
       </RedesignShell>
-      <DockedPlayerDesktop />
-      <DockedPlayerMobile />
     </>
   );
 }

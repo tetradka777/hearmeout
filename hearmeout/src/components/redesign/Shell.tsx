@@ -10,6 +10,8 @@ import { GroupsIcon, SettingsIcon, PlusIcon } from './icons';
 import { Ticker } from './Ticker';
 import { AvatarMenu } from './AvatarMenu';
 import { QuickModeToggle } from './QuickModeToggle';
+import { GlobalPlayer } from '../DockedPlayer';
+import { usePlayer } from '@/lib/PlayerContext';
 
 // The redesign's app shell (spec 3.9, 4, 15.1, 17.1): Cream Pop top pill
 // bar OR Toxic sidebar (both rendered; CSS in components.css decides which
@@ -64,7 +66,8 @@ export function RedesignShell({ children }: { children: ReactNode }) {
   const { me, t, state, showScreen, setSearchQuery } = useApp();
   const navItems = useNavItems();
   const activeGroup = NAV_GROUP[state.activeScreen];
-  const hasPlayer = false; // becomes true once the preview player is restyled into this shell
+  const { currentTrack } = usePlayer();
+  const hasPlayer = !!currentTrack;
 
   return (
     <div className={`rd${hasPlayer ? ' hasmp' : ''}`}>
@@ -141,6 +144,8 @@ export function RedesignShell({ children }: { children: ReactNode }) {
           <PlusIcon />
         </button>
       </div>
+
+      <GlobalPlayer />
     </div>
   );
 }
