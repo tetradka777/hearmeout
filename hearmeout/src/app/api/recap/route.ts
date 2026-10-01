@@ -26,15 +26,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'not_friends' }, { status: 403 });
   }
 
-  // Season recaps are premium-only — gated on the viewer (the one using the
-  // feature), not the target whose data it is, so a premium viewer can still
-  // open a non-premium friend's season recap. Real server-side gate, not
-  // just a hidden UI: a non-premium request never gets the computed data.
-  if (period === 'season') {
-    const { data: viewerPrefs } = await admin.from('users').select('is_premium').eq('id', viewerId).maybeSingle();
-    if (!viewerPrefs?.is_premium) return NextResponse.json({ error: 'premium_required' }, { status: 403 });
-  }
-
   // An explicit ?season=2025-summer picks a real historical window instead
   // of "the last 90 days from now" — parsed to real calendar-month bounds.
   const seasonParam = url.searchParams.get('season');
