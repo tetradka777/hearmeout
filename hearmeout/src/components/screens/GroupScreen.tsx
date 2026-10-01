@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
-import type { Device, GroupDetail } from '@/lib/types';
+import type { Device, GroupDetail, GroupLeaderboardPeriod } from '@/lib/types';
 import { userAvatarStyle, starsText } from '@/lib/format';
 import { CoverArt } from '../ui/CoverArt';
 import { accentMix } from '@/lib/accentGradient';
@@ -18,17 +18,21 @@ const AWARD_LABEL_KEY: Record<string, string> = {
 // Group page (spec 6.6): a real full-screen route reached via viewGroup,
 // with its own back crumb — not a locally-selected panel any more.
 export function GroupScreen({ device }: { device: Device }) {
-  const { t, me, state, goBack, albums, liveAlbums, openAlbum, showToast, viewFriend } = useApp();
+  const { t, me, state, goBack, showScreen, albums, liveAlbums, openAlbum, showToast, viewFriend } = useApp();
   const [detail, setDetail] = useState<GroupDetail | null>(null);
   const [inviteHandle, setInviteHandle] = useState('');
+  const [period, setPeriod] = useState<GroupLeaderboardPeriod>('month');
+  const [leavingConfirm, setLeavingConfirm] = useState(false);
 
   const groupId = state.viewingGroupId;
 
-  const load = () => {
+  const load = (p: GroupLeaderboardPeriod = period) => {
     if (!groupId) return;
-    fetch(`/api/groups/${groupId}`).then((r) => (r.ok ? r.json() : null)).then(setDetail);
+    fetch(`/api/groups/${groupId}?period=${p}`).then((r) => (r.ok ? r.json() : null)).then(setDetail);
   };
-  useEffect(() => { setDetail(null); load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [groupId]);
+  useEffect(() => { setDetail(null); setLeavingConfirm(false); load('month'); setPeriod('month'); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [groupId]);
+
+  const changePeriod = (p: GroupLeaderboardPeriod) => { setPeriod(p); load(p); };
 
   if (!me) return null;
   if (!detail) return (
@@ -38,8 +42,11 @@ export function GroupScreen({ device }: { device: Device }) {
     </>
   );
 
-  const castVote = async (candidateId: string) => {
-    const res = await fetch(`/api/groups/${groupId}/vote`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ candidateId }) });
+  const castVote = async (albumId: string) => {
+    const alreadyMine = detail.vote.myVote === albumId;
+    const res = alreadyMine
+      ? await fetch(`/api/groups/${groupId}/vote`, { method: 'DELETE' })
+      : await fetch(`/api/groups/${groupId}/vote`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ albumId }) });
     if (res.ok) load(); else showToast(t('groups.voteFailed'));
   };
 
@@ -53,8 +60,17 @@ export function GroupScreen({ device }: { device: Device }) {
     }
   };
 
+  const leaveGroup = async () => {
+    const res = await fetch(`/api/groups/${groupId}/leave`, { method: 'POST' });
+    if (res.ok) { showToast(t('groups.leftToast')); showScreen('groups'); }
+  };
+
   const totalHours = detail.leaderboard.reduce((s, r) => s + r.hours, 0);
-  const memberOf = (id: string) => (id === me.id ? undefined : id);
+  const statsByUser = new Map(detail.memberStats.map((s) => [s.userId, s]));
+  const voteTop = Math.max(1, ...detail.vote.candidates.map((c) => c.count));
+  const albumMeta = (id: string) => liveAlbums[id] || albums.find((x) => x.id === id);
+  const recordValue = (r: GroupDetail['records'][number]) =>
+    r.holder ? `${r.holder.name} — ${r.value}` : '—';
 
   return (
     <>
@@ -84,16 +100,23 @@ export function GroupScreen({ device }: { device: Device }) {
 
       <div className="bento b3">
         <div className="tile s2">
-          <h3>{t('groups.leaderboard')}</h3>
-          <div className="stack" style={{ marginTop: 10 }}>
+          <div className="setrow" style={{ border: 0, padding: 0, marginBottom: 10 }}>
+            <h3 style={{ marginBottom: 0 }}>{t('groups.leaderboard')}</h3>
+            <div className="chips" style={{ marginBottom: 0 }}>
+              <button className={`chip ${period === 'week' ? 'on' : ''}`} onClick={() => changePeriod('week')}>{t('stats.thisWeek')}</button>
+              <button className={`chip ${period === 'month' ? 'on' : ''}`} onClick={() => changePeriod('month')}>{t('stats.thisMonth')}</button>
+            </div>
+          </div>
+          <div className="stack">
             {detail.leaderboard.map((row, i) => (
-              <button className="row" key={row.user.id} onClick={() => memberOf(row.user.id) && viewFriend(row.user.id)} style={{ cursor: 'pointer' }}>
+              <button className="row" key={row.user.id} onClick={() => row.user.id !== me.id && viewFriend(row.user.id)} style={{ cursor: 'pointer' }}>
                 <span className="muted" style={{ width: 20 }}>{i + 1}</span>
                 <div className="dot" style={userAvatarStyle(row.user)}>{row.user.name[0]}</div>
                 <div className="g">
                   <b>{row.user.name}{row.user.id === me.id ? ` (${t('friend.you')})` : ''}</b>
                   <div className="meter" style={{ marginTop: 4 }}><i style={{ width: `${totalHours ? (row.hours / totalHours) * 100 : 0}%` }} /></div>
                 </div>
+                {i === 0 && row.hours > 0 && <span className="tag">{t('groups.listenedMostTag')}</span>}
                 <small className="muted">{row.hours}h</small>
               </button>
             ))}
@@ -116,36 +139,92 @@ export function GroupScreen({ device }: { device: Device }) {
         <div className="tile s2">
           <h3>{t('groups.members')}</h3>
           <div className="mgrid" style={{ marginTop: 10 }}>
-            {detail.members.map((m) => (
-              <button className="mcard" key={m.id} onClick={() => m.id !== me.id && viewFriend(m.id)}>
-                <div className="top">
-                  <div className="dot" style={userAvatarStyle(m)}>{m.name[0]}</div>
-                  <b>{m.name}</b>
-                  {m.id === detail.createdBy && <span className="tag">{t('groups.owner')}</span>}
-                </div>
-              </button>
-            ))}
+            {detail.members.map((m) => {
+              const s = statsByUser.get(m.id);
+              return (
+                <button className="mcard" key={m.id} onClick={() => m.id !== me.id && viewFriend(m.id)}>
+                  <div className="top">
+                    <div className="dot" style={userAvatarStyle(m)}>{m.name[0]}</div>
+                    <b>{m.name}</b>
+                    {m.id === detail.createdBy && <span className="tag">{t('groups.owner')}</span>}
+                  </div>
+                  {s && (
+                    <>
+                      <div className="kv"><span className="muted">{t('groups.figHours')}</span><span>{s.hoursMonth}h</span></div>
+                      <div className="kv"><span className="muted">{t('groups.figRatings')}</span><span>{s.ratingsMonth}</span></div>
+                      <div className="kv"><span className="muted">{t('groups.figStreak')}</span><span>{s.streakDays}</span></div>
+                      <div className="kv"><span className="muted">{t('groups.figAvg')}</span><span>{s.avgScore || '—'}</span></div>
+                    </>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="tile">
+          <h3>{t('groups.records')}</h3>
+          <div className="stack" style={{ marginTop: 10 }}>
+            {detail.records.length ? detail.records.map((r, i) => (
+              <div className="row" key={i}>
+                <div className="g"><b>{t(`groups.${r.label}` as never)}</b><div className="muted">{recordValue(r)}</div></div>
+              </div>
+            )) : <p className="muted">{t('stats.notEnough')}</p>}
           </div>
         </div>
 
         <div className="tile s3">
           <h3>{t('groups.voteOpen')}</h3>
           <p className="muted">{t('groups.voteQuestion')}</p>
-          <div className="stack" style={{ marginTop: 10 }}>
-            {detail.vote.counts.map((c) => (
-              <button className="row" key={c.user.id} onClick={() => castVote(c.user.id)} style={{ cursor: 'pointer' }}>
-                <div className="dot" style={userAvatarStyle(c.user)}>{c.user.name[0]}</div>
-                <div className="g">
-                  <b>{c.user.name}</b>
-                  <div className="meter" style={{ marginTop: 4 }}><i style={{ width: `${detail.vote.counts[0]?.count ? (c.count / detail.vote.counts[0].count) * 100 : 0}%` }} /></div>
-                </div>
-                <span className="num" style={{ fontSize: 18 }}>{c.count}</span>
-                {detail.vote.myVote === c.user.id && <span className="tag">✓</span>}
-              </button>
-            ))}
-          </div>
-          <p className="muted" style={{ marginTop: 10 }}>{detail.vote.myVote ? t('groups.voteChangeHint') : t('groups.voteHint')}</p>
+          {detail.vote.candidates.length ? (
+            <div className="stack" style={{ marginTop: 10 }}>
+              {detail.vote.candidates.map((c) => {
+                const a = albumMeta(c.albumId);
+                return (
+                  <button className="row" key={c.albumId} onClick={() => castVote(c.albumId)} style={{ cursor: 'pointer' }}>
+                    <CoverArt url={a?.cover} fallbackLetter={a?.artist[0] || '?'} className="cov" style={{ width: 40, height: 40 }} />
+                    <div className="g">
+                      <b>{a ? a.title : '…'}</b>
+                      <div className="meter" style={{ marginTop: 4 }}><i style={{ width: `${(c.count / voteTop) * 100}%` }} /></div>
+                    </div>
+                    <span className="num" style={{ fontSize: 18 }}>{c.count}</span>
+                    {detail.vote.myVote === c.albumId && <span className="tag">✓</span>}
+                  </button>
+                );
+              })}
+            </div>
+          ) : <p className="muted" style={{ marginTop: 10 }}>{t('groups.noCandidates')}</p>}
+          {detail.vote.candidates.length > 0 && (
+            <p className="muted" style={{ marginTop: 10 }}>{detail.vote.myVote ? t('groups.voteChangeHint') : t('groups.voteHint')}</p>
+          )}
         </div>
+
+        <div className="tile s2">
+          <h3>{t('groups.topAlbumsTitle')}</h3>
+          <div className="stack" style={{ marginTop: 10 }}>
+            {detail.topAlbums.length ? detail.topAlbums.map((row) => {
+              const a = albumMeta(row.albumId);
+              return (
+                <button className="row" key={row.albumId} onClick={() => a && openAlbum(a.id)} style={{ cursor: a ? 'pointer' : 'default' }}>
+                  <CoverArt url={a?.cover} fallbackLetter={a?.artist[0] || '?'} className="cov" style={{ width: 36, height: 36 }} />
+                  <div className="g"><b>{a ? a.title : '…'}</b><div className="muted">{a?.artist}</div></div>
+                  <span style={{ color: accentMix(row.avgScore / 5) }}>{starsText(row.avgScore)}</span>
+                  <small className="muted">{row.count}</small>
+                </button>
+              );
+            }) : <p className="muted">{t('stats.notEnough')}</p>}
+          </div>
+        </div>
+
+        {detail.taste && (
+          <div className="tile t-ac">
+            <h3>{t('groups.tasteTitle')}</h3>
+            <span className="num" style={{ fontSize: 'clamp(32px,5vw,48px)' }}>{detail.taste.avgMatch}%</span>
+            <p>{t('groups.tasteAvg')}</p>
+            {detail.taste.closest && <p className="muted" style={{ marginTop: 8 }}>{t('groups.tasteClosest', { a: detail.taste.closest.a.name, b: detail.taste.closest.b.name, pct: detail.taste.closest.pct })}</p>}
+            {detail.taste.furthest && <p className="muted">{t('groups.tasteFurthest', { a: detail.taste.furthest.a.name, b: detail.taste.furthest.b.name, pct: detail.taste.furthest.pct })}</p>}
+          </div>
+        )}
 
         <div className="tile s2">
           <div className="setrow" style={{ border: 0, padding: 0 }}>
@@ -174,6 +253,21 @@ export function GroupScreen({ device }: { device: Device }) {
               );
             }) : <p className="muted">{t('groups.noActivity')}</p>}
           </div>
+        </div>
+
+        <div className="tile s3">
+          {leavingConfirm ? (
+            <>
+              <h3>{t('groups.leaveConfirmTitle', { name: detail.name })}</h3>
+              <p className="muted">{t('groups.leaveConfirmBody')}</p>
+              <div className="acts" style={{ marginTop: 10 }}>
+                <button className="btn danger" onClick={leaveGroup}>{t('groups.leaveConfirmBtn')}</button>
+                <button className="btn ghost" onClick={() => setLeavingConfirm(false)}>{t('groups.leaveCancel')}</button>
+              </div>
+            </>
+          ) : (
+            <button className="btn ghost" onClick={() => setLeavingConfirm(true)}>{t('groups.leaveGroup')}</button>
+          )}
         </div>
       </div>
     </>

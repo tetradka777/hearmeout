@@ -195,20 +195,37 @@ export type GroupActivityEvent = {
   review: string | null;
   createdAt: string;
 };
+// "Album of the month" candidates (spec 6.6/8): the group's most-rated
+// albums this calendar month, voted on by album id — not by member, which
+// is what the original site's migration_008 actually built ("monthly
+// member voting"). Replaced to match the spec.
+export type GroupVoteCandidate = { albumId: string; count: number };
 export type GroupVoteState = {
   monthKey: string;
   myVote: string | null;
-  counts: { user: ApiUser; count: number }[];
+  candidates: GroupVoteCandidate[];
 };
+
+export type GroupLeaderboardPeriod = 'week' | 'month';
+export type GroupMemberStats = { userId: string; hoursMonth: number; ratingsMonth: number; streakDays: number; avgScore: number };
+export type GroupRecord = { label: string; holder: ApiUser | null; value: string };
+export type GroupTopAlbum = { albumId: string; avgScore: number; count: number };
+export type GroupTastePair = { a: ApiUser; b: ApiUser; pct: number };
+export type GroupTaste = { avgMatch: number | null; closest: GroupTastePair | null; furthest: GroupTastePair | null };
 
 export type GroupDetail = {
   id: string;
   name: string;
   createdBy: string;
   members: GroupMember[];
+  memberStats: GroupMemberStats[];
   awards: GroupAward[];
   activity: GroupActivityEvent[];
   leaderboard: { user: ApiUser; hours: number }[];
+  leaderboardPeriod: GroupLeaderboardPeriod;
+  records: GroupRecord[];
+  topAlbums: GroupTopAlbum[];
+  taste: GroupTaste | null;
   vote: GroupVoteState;
 };
 
