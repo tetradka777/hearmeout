@@ -19,8 +19,8 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   const memberIds = (memberRows || []).map((m) => m.user_id as string);
   if (!memberIds.includes(userId)) return NextResponse.json({ error: 'not_a_member' }, { status: 403 });
 
-  const { data: users } = await admin.from('users').select('id, name, handle, avatar_url, is_premium').in('id', memberIds);
-  const members: ApiUser[] = (users || []).map((u) => ({ id: u.id, name: u.name, handle: u.handle, avatarUrl: u.avatar_url, isPremium: !!u.is_premium }));
+  const { data: users } = await admin.from('users').select('id, name, handle, avatar_url').in('id', memberIds);
+  const members: ApiUser[] = (users || []).map((u) => ({ id: u.id, name: u.name, handle: u.handle, avatarUrl: u.avatar_url }));
   const userById = new Map(members.map((m) => [m.id, m]));
 
   const now = new Date();

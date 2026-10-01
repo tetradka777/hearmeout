@@ -5,7 +5,6 @@ import { getCurrentUserId, IDENTITY_COOKIE } from '@/lib/identity';
 import { getUserProfile, fetchIsOpenProfile } from '@/lib/userProfile';
 import { slugifyHandle } from '@/lib/slug';
 import type { ApiUser, Me } from '@/lib/types';
-import { isThemeId, isToxicity } from '@/lib/themes';
 import { isInternalEmail } from '@/lib/authInternalEmail';
 import { isDesign, isMode, isPaletteId } from '@/lib/palettes';
 
@@ -16,9 +15,9 @@ export async function GET() {
   const admin = supabaseAdmin();
   const [profile, { data: prefs }, { data: conns }, { data: friendRows }, isOpenProfile] = await Promise.all([
     getUserProfile(admin, userId, userId),
-    admin.from('users').select('language, region, auth_user_id, is_premium, banner_url, accent_theme, accent_toxicity, design, mode, palette, ticker_enabled, motion_enabled, time_format, week_start, ratings_visible, share_live, public_reviews, discoverable').eq('id', userId).maybeSingle(),
+    admin.from('users').select('language, region, auth_user_id, banner_url, design, mode, palette, ticker_enabled, motion_enabled, time_format, week_start, ratings_visible, share_live, public_reviews, discoverable').eq('id', userId).maybeSingle(),
     admin.from('connections').select('provider').eq('user_id', userId),
-    admin.from('friendships').select('friend:friend_id(id, name, handle, avatar_url, is_premium)').eq('user_id', userId),
+    admin.from('friendships').select('friend:friend_id(id, name, handle, avatar_url)').eq('user_id', userId),
     fetchIsOpenProfile(admin, userId),
   ]);
 
@@ -27,8 +26,8 @@ export async function GET() {
   const connSet = new Set((conns || []).map((c) => c.provider as string));
   const friends: ApiUser[] = (friendRows || [])
     .map((row): ApiUser | null => {
-      const f = row.friend as unknown as { id: string; name: string; handle: string; avatar_url: string | null; is_premium: boolean | null } | null;
-      return f ? { id: f.id, name: f.name, handle: f.handle, avatarUrl: f.avatar_url, isPremium: !!f.is_premium } : null;
+      const f = row.friend as unknown as { id: string; name: string; handle: string; avatar_url: string | null } | null;
+      return f ? { id: f.id, name: f.name, handle: f.handle, avatarUrl: f.avatar_url } : null;
     })
     .filter((f): f is ApiUser => f !== null);
 
@@ -47,10 +46,7 @@ export async function GET() {
     region: prefs?.region ?? null,
     hasPassword: !!prefs?.auth_user_id,
     email,
-    isPremium: !!prefs?.is_premium,
     bannerUrl: (prefs?.banner_url as string | null) ?? null,
-    accentTheme: (prefs?.accent_theme as string | null) ?? null,
-    accentToxicity: (prefs?.accent_toxicity as string | null) ?? null,
     isOpenProfile,
     design: (prefs?.design as Me['design']) || 'cream-pop',
     mode: (prefs?.mode as Me['mode']) || 'light',
@@ -79,12 +75,7 @@ export async function PATCH(request: NextRequest) {
     patch.handle = `@${slugifyHandle(body.handle.replace(/^@/, ''))}`;
   }
   if (typeof body?.avatarUrl === 'string') patch.avatar_url = body.avatarUrl;
-  // Premium removed: no accounts are gated any more, so these (soon to be
-  // replaced by the redesign's own appearance settings below) are plain,
-  // ungated fields like any other.
   if (typeof body?.bannerUrl === 'string') patch.banner_url = body.bannerUrl;
-  if (typeof body?.accentTheme === 'string' && isThemeId(body.accentTheme)) patch.accent_theme = body.accentTheme;
-  if (typeof body?.accentToxicity === 'string' && isToxicity(body.accentToxicity)) patch.accent_toxicity = body.accentToxicity;
   if (typeof body?.language === 'string' && ['ru', 'en', 'fr', 'es', 'de'].includes(body.language)) patch.language = body.language;
   if ('region' in (body ?? {})) patch.region = typeof body.region === 'string' && body.region ? body.region : null;
   if (typeof body?.isOpenProfile === 'boolean') patch.is_open_profile = body.isOpenProfile;

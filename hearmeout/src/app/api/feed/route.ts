@@ -27,8 +27,8 @@ export async function GET() {
     { data: mySessionRows },
   ] = await Promise.all([
     friendIds.length
-      ? admin.from('users').select('id, name, handle, avatar_url, is_premium').in('id', friendIds)
-      : Promise.resolve({ data: [] as { id: string; name: string; handle: string; avatar_url: string | null; is_premium: boolean | null }[] }),
+      ? admin.from('users').select('id, name, handle, avatar_url').in('id', friendIds)
+      : Promise.resolve({ data: [] as { id: string; name: string; handle: string; avatar_url: string | null }[] }),
     friendIds.length
       ? admin.from('ratings').select('user_id, album_id, stars, review, created_at, is_private').in('user_id', friendIds).gte('created_at', weekAgo).order('created_at', { ascending: false }).limit(20)
       : Promise.resolve({ data: [] as { user_id: string; album_id: string; stars: number; review: string | null; created_at: string; is_private: boolean | null }[] }),
@@ -62,7 +62,7 @@ export async function GET() {
   }
 
   const userById = new Map<string, ApiUser>(
-    (friendUsers || []).map((u) => [u.id, { id: u.id, name: u.name, handle: u.handle, avatarUrl: u.avatar_url, isPremium: !!u.is_premium }])
+    (friendUsers || []).map((u) => [u.id, { id: u.id, name: u.name, handle: u.handle, avatarUrl: u.avatar_url }])
   );
 
   // "Keep private" ratings never leave their owner's own view — not as a

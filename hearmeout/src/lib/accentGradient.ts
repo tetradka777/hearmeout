@@ -1,13 +1,12 @@
-// The site's two accent tokens (--lime, --coral — or whichever palette the
-// account picked, see globals.css [data-accent]) were only ever used as a
-// single color everywhere, with --coral appearing in a handful of gradient
-// backgrounds. This maps a 0..1 ratio onto a real mix of both, so charts
-// and ratings actually use both halves of the palette instead of one.
-// color-mix() reads the CSS variables directly, so it stays correct for
-// every palette (default or premium) with no JS color math involved.
+// Two tokens from the active palette (spec Appendix C: --acct is the
+// accent text/graphics color, --hi is the palette's secondary highlight
+// hue) mixed by ratio, so charts and ratings use a real spread across the
+// palette instead of one flat color repeated. color-mix() reads the CSS
+// variables directly, so it stays correct for every palette with no JS
+// color math involved.
 export function accentMix(ratio: number): string {
   const pct = Math.round(Math.max(0, Math.min(1, ratio)) * 100);
-  return `color-mix(in srgb, var(--coral) ${pct}%, var(--lime))`;
+  return `color-mix(in srgb, var(--hi) ${pct}%, var(--acct))`;
 }
 
 // For a set of values (e.g. one bar chart) — 0 at the smallest value in the

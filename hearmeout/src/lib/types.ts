@@ -46,7 +46,7 @@ export type RecapData = {
   trackCount: number;
 };
 
-export type ApiUser = { id: string; name: string; handle: string; avatarUrl: string | null; isPremium?: boolean };
+export type ApiUser = { id: string; name: string; handle: string; avatarUrl: string | null };
 
 export type DiscoverMatchPerson = ApiUser & { score: number; sharedAlbums: number };
 
@@ -78,10 +78,7 @@ export type Me = PublicProfile & {
   language: import('./i18n').Language;
   region: string | null;
   hasPassword: boolean;
-  isPremium: boolean;
   bannerUrl: string | null;
-  accentTheme: string | null;
-  accentToxicity: string | null;
   isOpenProfile: boolean;
   email: string | null;
   // Redesign appearance settings (persisted on the account; see

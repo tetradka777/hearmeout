@@ -26,29 +26,6 @@
   --text: #2a2521; --muted: #7d7568; --muted-2: #9a9184; --ink-soft: #433d35;
   --tint-amber: #f6e8da; --tint-teal: #e3ebe0; --tint-plum: #ece0ea;
 }
-/* Premium accent palettes — override ONLY the two accent hues (+ the text
-   color that sits on top of them). Everything else (body text, background,
-   --muted, --line) is untouched by design, so no palette choice can ever
-   make the site's actual text unreadable — the risk the user flagged when
-   this was first proposed as a free-RGB-picker feature. --accent-bg/
-   --accent-text/--accent-border derive from --lime via color-mix() instead
-   of being hand-set per palette, so they automatically stay coherent with
-   whichever palette is active in both the dark and light theme. */
-/* :root (not html) so these match the (0,2,0) specificity of the
-   :root[data-theme=...] blocks above — plain `html[data-accent]` lost that
-   specificity fight every time (element+attribute < pseudo-class+attribute)
-   and silently never applied, regardless of source order. */
-/* The actual --lime/--coral/--on-accent values for whichever of the 20
-   themes x 3 toxicity levels is active are set directly as inline styles on
-   <html> from AppContext (see src/lib/themes.ts THEME_PAIRS) — 60 static
-   blocks here would just duplicate that data. This block only derives the
-   generic accent-tinted surface tokens, which stay correct for any --lime
-   value regardless of which of the 60 pairs is active. */
-:root[data-accent] {
-  --accent-bg: color-mix(in srgb, var(--lime) 15%, var(--surface));
-  --accent-text: var(--lime);
-  --accent-border: color-mix(in srgb, var(--lime) 35%, transparent);
-}
 
 *{ box-sizing: border-box; }
 html, body { height: 100%; overflow-x: hidden; overscroll-behavior-x: none; }
