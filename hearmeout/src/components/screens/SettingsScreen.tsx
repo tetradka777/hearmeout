@@ -94,7 +94,7 @@ function ExtrasSection() {
         <div><b>{t('settings.animations') || 'Animations'}</b></div>
         <button className="sw" role="switch" aria-checked={me.motionEnabled} onClick={() => updateAppearance({ motionEnabled: !me.motionEnabled })}><i /></button>
       </div>
-      <button className="btn ghost" style={{ marginTop: 14 }} onClick={() => showScreen('settings')}>{t('settings.viewStates') || 'View loading, empty and error states'}</button>
+      <button className="btn ghost" style={{ marginTop: 14 }} onClick={() => showScreen('states')}>{t('settings.viewStates')}</button>
     </div>
   );
 }

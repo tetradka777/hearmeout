@@ -140,7 +140,8 @@ export type ScreenName =
   | 'groups'
   | 'group'
   | 'discover'
-  | 'settings';
+  | 'settings'
+  | 'states';
 
 // Stats period model (redesign spec 7.5 / Appendix B): only the current and
 // previous week/month, and the started seasons of the current calendar

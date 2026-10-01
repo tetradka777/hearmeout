@@ -57,3 +57,21 @@ export function PlusIcon() {
     </Svg>
   );
 }
+
+// The "retro computer" empty-state mascot (spec 3.13): a 96px SVG that
+// takes its colours from the current palette, not a fixed illustration —
+// --acct fills the screen, currentColor draws the body, so it re-colours
+// automatically with every palette/design/mode change like everything else.
+export function MascotIcon() {
+  return (
+    <svg viewBox="0 0 96 96" width="96" height="96" fill="none" aria-hidden="true">
+      <rect x="14" y="14" width="68" height="48" rx="8" stroke="currentColor" strokeWidth="3" />
+      <rect x="22" y="22" width="52" height="32" rx="3" fill="var(--acct)" opacity="0.85" />
+      <circle cx="36" cy="38" r="3.2" fill="var(--bg)" />
+      <circle cx="60" cy="38" r="3.2" fill="var(--bg)" />
+      <path d="M38 46q10 7 20 0" stroke="var(--bg)" strokeWidth="2.6" strokeLinecap="round" fill="none" />
+      <path d="M40 62l-4 14M56 62l4 14" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+      <path d="M30 76h36" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}

@@ -19,13 +19,11 @@ import { GroupsScreen } from './screens/GroupsScreen';
 import { GroupScreen } from './screens/GroupScreen';
 import { DiscoverScreen } from './screens/DiscoverScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
+import { StatesScreen } from './screens/StatesScreen';
 
 // Every screen mounts once and stays mounted (shown/hidden, not
 // unmounted/remounted) so in-progress state — draft reviews, scroll
-// position, form inputs — survives switching away and back. Each screen
-// component is still the pre-redesign one (old classes, old look); only
-// the surrounding chrome (RedesignShell) is the new design for now. They
-// get migrated to the new components one at a time (spec section 12).
+// position, form inputs — survives switching away and back.
 const SCREENS: { name: ScreenName; Component: ComponentType<{ device: Device }> }[] = [
   { name: 'catalog', Component: HomeScreen },
   { name: 'album', Component: AlbumScreen },
@@ -41,6 +39,7 @@ const SCREENS: { name: ScreenName; Component: ComponentType<{ device: Device }> 
   { name: 'group', Component: GroupScreen },
   { name: 'discover', Component: DiscoverScreen },
   { name: 'settings', Component: SettingsScreen },
+  { name: 'states', Component: StatesScreen },
 ];
 
 export function AppShell() {

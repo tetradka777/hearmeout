@@ -47,6 +47,7 @@ const NAV_GROUP: Record<ScreenName, ScreenName | null> = {
   discover: 'discover',
   profile: null,
   settings: null,
+  states: null,
 };
 
 const TAB_SCREENS: ScreenName[] = ['catalog', 'match', 'discover', 'stats', 'groups'];
