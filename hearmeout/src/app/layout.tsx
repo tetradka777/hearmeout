@@ -69,7 +69,8 @@ try {
     mode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   }
   root.dataset.mode = mode;
-  if (a && a.motionEnabled === false) root.dataset.motion = 'off';
+  var osReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (osReducedMotion || (a && a.motionEnabled === false)) root.dataset.motion = 'off';
 } catch (e) {}
 `;
 

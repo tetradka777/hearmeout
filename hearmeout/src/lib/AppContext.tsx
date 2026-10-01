@@ -385,17 +385,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
     root.dataset.design = me.design;
     root.dataset.palette = me.palette;
     root.dataset.mode = resolveMode(me.mode);
-    if (!me.motionEnabled) root.dataset.motion = 'off'; else delete root.dataset.motion;
     try {
       localStorage.setItem('hmo-appearance', JSON.stringify({
         design: me.design, mode: me.mode, palette: me.palette, motionEnabled: me.motionEnabled,
       }));
     } catch { /* ignore */ }
-    if (me.mode !== 'system') return;
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const onChange = () => { root.dataset.mode = resolveMode('system'); };
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
+
+    // Motion is off when the account setting says so OR the OS asks for
+    // reduced motion — the OS preference always wins over an account that
+    // merely never touched the toggle, and this re-applies live if the OS
+    // setting changes while the app is open (same pattern as the "system"
+    // color-scheme listener below).
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const applyMotion = () => {
+      if (!me.motionEnabled || motionQuery.matches) root.dataset.motion = 'off';
+      else delete root.dataset.motion;
+    };
+    applyMotion();
+    motionQuery.addEventListener('change', applyMotion);
+
+    let colorSchemeQuery: MediaQueryList | null = null;
+    let onColorSchemeChange: (() => void) | null = null;
+    if (me.mode === 'system') {
+      colorSchemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      onColorSchemeChange = () => { root.dataset.mode = resolveMode('system'); };
+      colorSchemeQuery.addEventListener('change', onColorSchemeChange);
+    }
+    return () => {
+      motionQuery.removeEventListener('change', applyMotion);
+      if (colorSchemeQuery && onColorSchemeChange) colorSchemeQuery.removeEventListener('change', onColorSchemeChange);
+    };
   }, [me]);
 
   useEffect(() => { if (state.authStatus === 'ready') refreshFriendRequests(); }, [state.authStatus, refreshFriendRequests]);
