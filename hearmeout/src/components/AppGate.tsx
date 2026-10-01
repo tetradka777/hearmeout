@@ -36,10 +36,12 @@ export function AppGate() {
     // resolves client-side, so it's what a slow connection or a messenger
     // link-preview crawler sees first, not empty text.
     return (
-      <div className="app-splash">
-        <LogoMark size={72} loading />
-        <div className="app-splash-name">Hear<span>Me</span>Out</div>
-        <div className="app-splash-phrase">{loadingPhrase}</div>
+      <div className="rd">
+        <div className="splash">
+          <LogoMark size={72} loading />
+          <div className="logo" style={{ justifyContent: 'center' }}>Hear<span>Me</span>Out</div>
+          <p>{loadingPhrase}</p>
+        </div>
       </div>
     );
   }
