@@ -4,10 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import { userAvatarStyle } from '@/lib/format';
 import { toLocale } from '@/lib/i18n';
-import { accentMix } from '@/lib/accentGradient';
 import { CoverArt } from './ui/CoverArt';
-import { StarsAvg } from './ui/StarsAvg';
-import { PremiumBadge } from './ui/PremiumBadge';
+import { Stars } from './redesign/Stars';
 import type { RatingRecord } from '@/lib/types';
 
 export function AccountBlock() {
@@ -36,53 +34,32 @@ export function AccountBlock() {
   };
 
   return (
-    <>
-      <div className="account-id-row">
+    <div className="tile">
+      <div className="setrow" style={{ border: 0, padding: 0 }}>
         <div>
-          <div className="account-id-label">{t('profile.yourId')}</div>
-          <div className="account-id-value">{me.handle}</div>
+          <b>{t('profile.yourId')}</b>
+          <div className="muted">{me.handle}</div>
         </div>
       </div>
-      <div className="account-id-hint">{t('profile.yourIdHint')}</div>
 
       {me.hasPassword ? (
-        <div className="account-email-row">
-          <span className="chip">{t('profile.hasPasswordBadge')}</span>
-          {me.email && <span className="account-email">{t('profile.emailLabel')}: {me.email}</span>}
+        <div className="acts">
+          <span className="tag">{t('profile.hasPasswordBadge')}</span>
+          {me.email && <small className="muted">{t('profile.emailLabel')}: {me.email}</small>}
         </div>
       ) : claiming ? (
-        <div className="import-history-panel">
-          <div className="import-history-sub">{t('profile.passwordSetHint')}</div>
-          <input
-            type="email"
-            className="name-input"
-            style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px', marginBottom: 10, width: '100%' }}
-            placeholder={t('register.emailPlaceholder')}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <input
-            type="password"
-            className="name-input"
-            style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px', marginBottom: 10, width: '100%' }}
-            placeholder={t('register.passwordPlaceholder')}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <button className="btn-primary" style={{ width: '100%' }} disabled={submitting} onClick={submitClaim}>
-            {t('profile.passwordSetSubmit')}
-          </button>
+        <div style={{ marginTop: 14 }}>
+          <p className="muted">{t('profile.passwordSetHint')}</p>
+          <input type="email" className="field" style={{ width: '100%', marginBottom: 10, marginTop: 10 }} placeholder={t('register.emailPlaceholder')} value={email} onChange={(e) => setEmail(e.target.value)} />
+          <input type="password" className="field" style={{ width: '100%', marginBottom: 10 }} placeholder={t('register.passwordPlaceholder')} value={password} onChange={(e) => setPassword(e.target.value)} />
+          <button className="btn" style={{ width: '100%' }} disabled={submitting} onClick={submitClaim}>{t('profile.passwordSetSubmit')}</button>
         </div>
       ) : (
-        <button className="btn-ghost" style={{ width: '100%' }} onClick={() => setClaiming(true)}>
-          {t('profile.passwordSetTitle')}
-        </button>
+        <button className="btn ghost" style={{ width: '100%', marginTop: 14 }} onClick={() => setClaiming(true)}>{t('profile.passwordSetTitle')}</button>
       )}
 
-      <button className="btn-ghost" style={{ width: '100%', marginTop: 10 }} onClick={() => logout()}>
-        {t('profile.logout')}
-      </button>
-    </>
+      <button className="btn ghost" style={{ width: '100%', marginTop: 10 }} onClick={() => logout()}>{t('profile.logout')}</button>
+    </div>
   );
 }
 
@@ -90,22 +67,13 @@ export function ConnectBlock() {
   const { t, me } = useApp();
   if (!me) return null;
   return (
-    <>
-      <div className="connect-row">
-        <a className={`connect-btn ${me.connections.spotify ? 'on' : ''}`} href="/api/auth/spotify">
-          {me.connections.spotify ? t('profile.spotifyConnected') : t('profile.connectSpotify')}
-        </a>
-        <button className="connect-btn" disabled style={{ opacity: 0.5, cursor: 'default' }}>
-          {t('profile.appleMusicSoon')}
-        </button>
+    <div className="tile">
+      <div className="conn">
+        <a className="btn" href="/api/auth/spotify">{me.connections.spotify ? t('profile.spotifyConnected') : t('profile.connectSpotify')}</a>
+        <button className="btn ghost" disabled>{t('profile.appleMusicSoon')}</button>
       </div>
-      {!me.connections.spotify && (
-        <div className="connect-beta-hint">
-          <span className="chip" style={{ marginRight: 8 }}>{t('profile.connectBetaBadge')}</span>
-          {t('profile.connectBetaHint')}
-        </div>
-      )}
-    </>
+      {!me.connections.spotify && <p className="muted">{t('profile.connectBetaHint')}</p>}
+    </div>
   );
 }
 
@@ -131,42 +99,25 @@ export function ImportHistoryBlock() {
   };
 
   return (
-    <div className="import-history-block">
-      <button className="btn-ghost" style={{ width: '100%' }} onClick={() => setOpen((v) => !v)}>
-        {t('profile.importTitle')}
-      </button>
+    <div className="tile imp">
+      <button className="btn ghost" style={{ width: '100%' }} onClick={() => setOpen((v) => !v)}>{t('profile.importTitle')}</button>
       {open && (
-        <div className="import-history-panel">
-          <div className="import-history-sub">{t('profile.importSubtitle')}</div>
-          <div className="import-history-how">
-            <div className="import-history-how-title">{t('profile.importHowTitle')}</div>
-            <ol>
-              <li>{t('profile.importStep1')}</li>
-              <li>{t('profile.importStep2')}</li>
-              <li>{t('profile.importStep3')}</li>
-              <li>{t('profile.importStep4')}</li>
-              <li>{t('profile.importStep5')}</li>
-            </ol>
-          </div>
-          <input
-            ref={inputRef}
-            type="file"
-            accept=".json,application/json"
-            multiple
-            onChange={(e) => setFiles(Array.from(e.target.files || []))}
-            style={{ marginBottom: 10, width: '100%' }}
-          />
-          <button className="btn-primary" style={{ width: '100%' }} disabled={!files.length || busy} onClick={submit}>
-            {busy ? t('profile.importUploading') : t('profile.importSubmit')}
-          </button>
+        <div style={{ marginTop: 14 }}>
+          <p className="muted">{t('profile.importSubtitle')}</p>
+          <b style={{ display: 'block', marginTop: 10 }}>{t('profile.importHowTitle')}</b>
+          <ol>
+            <li>{t('profile.importStep1')}</li>
+            <li>{t('profile.importStep2')}</li>
+            <li>{t('profile.importStep3')}</li>
+            <li>{t('profile.importStep4')}</li>
+            <li>{t('profile.importStep5')}</li>
+          </ol>
+          <input ref={inputRef} type="file" accept=".json,application/json" multiple onChange={(e) => setFiles(Array.from(e.target.files || []))} style={{ margin: '10px 0', width: '100%' }} />
+          <button className="btn" style={{ width: '100%' }} disabled={!files.length || busy} onClick={submit}>{busy ? t('profile.importUploading') : t('profile.importSubmit')}</button>
           {result && (
-            <div className="import-history-result">
+            <div className="rep">
               {result.imported > 0 ? t('profile.importResult', { count: result.imported }) : t('profile.importResultEmpty')}
-              {result.errors.length > 0 && (
-                <ul style={{ marginTop: 8, paddingLeft: 18, color: 'var(--muted)' }}>
-                  {result.errors.map((e, i) => <li key={i}>{e}</li>)}
-                </ul>
-              )}
+              {result.errors.length > 0 && <ul style={{ marginTop: 8, paddingLeft: 18 }}>{result.errors.map((e, i) => <li key={i}>{e}</li>)}</ul>}
             </div>
           )}
         </div>
@@ -177,38 +128,35 @@ export function ImportHistoryBlock() {
 
 export function RecapOpenButton({ userId, label }: { userId: string; label: string }) {
   const { openRecap } = useApp();
-  return <button className="recap-open-btn" onClick={() => openRecap(userId)}>🎧 {label} →</button>;
+  return <button className="btn ghost" onClick={() => openRecap(userId)}>🎧 {label} →</button>;
 }
 
 export function GenresBlock({ genres }: { genres: { g: string; pct: number }[] }) {
   const { t } = useApp();
-  if (!genres.length) return <div className="empty-state">{t('profile.notEnoughData')}</div>;
-  const maxPct = Math.max(1, ...genres.map((g) => g.pct));
+  if (!genres.length) return <p className="muted">{t('profile.notEnoughData')}</p>;
   return (
-    <>
+    <div className="stack">
       {genres.map((g) => (
-        <div className="genre-row" key={g.g}>
-          <div className="name">{g.g}</div>
-          <div className="track"><div className="fill" style={{ width: `${g.pct}%`, background: accentMix(g.pct / maxPct) }} /></div>
+        <div className="row" key={g.g}>
+          <div className="g"><b>{g.g}</b></div>
+          <div className="meter"><i style={{ width: `${g.pct}%` }} /></div>
+          <small className="muted">{g.pct}%</small>
         </div>
       ))}
-    </>
+    </div>
   );
 }
 
-// Real per-genre average of the user's own ratings (not the listening-time
-// split used by GenresBlock/"favorite genres") — resolves each rating's
-// album genre from the catalog or the live-enriched copy, same lookup the
-// rest of the app uses.
 export function TasteFingerprint({ entries }: { entries: { g: string; avg: number }[] }) {
   const { t } = useApp();
-  if (!entries.length) return <div className="empty-state">{t('profile.notEnoughData')}</div>;
+  if (!entries.length) return <p className="muted">{t('profile.notEnoughData')}</p>;
   return (
-    <div className="taste-tiles">
+    <div className="bento" style={{ gridTemplateColumns: 'repeat(2,minmax(0,1fr))' }}>
       {entries.map((e) => (
-        <div className="taste-tile" key={e.g}>
-          <div className="taste-tile-top"><span className="taste-tile-num">{e.avg.toFixed(1)}</span><span className="taste-tile-g">{e.g}</span></div>
-          <div className="track"><div className="fill" style={{ width: `${(e.avg / 5) * 100}%` }} /></div>
+        <div className="tile" key={e.g}>
+          <span className="num" style={{ fontSize: 28 }}>{e.avg.toFixed(1)}</span>
+          <div className="muted">{e.g}</div>
+          <div className="meter" style={{ marginTop: 8 }}><i style={{ width: `${(e.avg / 5) * 100}%` }} /></div>
         </div>
       ))}
     </div>
@@ -217,19 +165,21 @@ export function TasteFingerprint({ entries }: { entries: { g: string; avg: numbe
 
 export function RecentRatingsGrid({ ratings }: { ratings: RatingRecord[] }) {
   const { t, albums, liveAlbums, spotifyCovers, openAlbum } = useApp();
-  if (!ratings.length) return <div className="empty-state">{t('profile.noRatedAlbums')}</div>;
+  if (!ratings.length) return <p className="muted">{t('profile.noRatedAlbums')}</p>;
   return (
-    <div className="recent-ratings-grid">
+    <div className="cgrid">
       {ratings.map((r) => {
         const a = liveAlbums[r.albumId] || albums.find((x) => x.id === r.albumId);
         if (!a) return null;
         const cover = spotifyCovers[a.id] || a.cover;
         return (
-          <div className="recent-rating-item" key={r.albumId} onClick={() => openAlbum(a.id)}>
-            <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="art" />
-            <div className="t">{a.title}</div>
-            <div className="rr-stars"><StarsAvg rating={r.stars} /><span>{r.stars.toFixed(1)}</span></div>
-          </div>
+          <button className="cvw" key={r.albumId} onClick={() => openAlbum(a.id)} style={{ textAlign: 'left', width: '100%' }}>
+            <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: '100%', aspectRatio: '1' }} />
+            <div style={{ marginTop: 6 }}>
+              <b>{a.title}</b>
+              <Stars value={r.stars} size={13} />
+            </div>
+          </button>
         );
       })}
     </div>
@@ -240,43 +190,35 @@ const LOVED_TYPE_LABEL: Record<string, string> = { track: 'profile.lovedTypeTrac
 
 export function LovedTracksBlock() {
   const { t, lovedItems, toggleLoved } = useApp();
-  if (!lovedItems.length) return <div className="empty-state">{t('profile.noLovedTracks')}</div>;
+  if (!lovedItems.length) return <p className="muted">{t('profile.noLovedTracks')}</p>;
   return (
-    <>
+    <div className="stack">
       {lovedItems.slice(0, 10).map((li) => (
-        <div className="activity-item" key={li.id} style={{ cursor: 'default' }}>
-          <CoverArt url={li.cover ?? undefined} fallbackLetter={(li.artist || li.title)[0] || '?'} className="thumb" />
-          <div className="body">
-            <div><b>{li.title}</b>{li.artist ? ` — ${li.artist}` : ''}</div>
-            <div style={{ fontSize: 10.5, color: 'var(--muted)', fontFamily: 'var(--font-ibm-plex-mono),monospace', textTransform: 'uppercase' }}>{t(LOVED_TYPE_LABEL[li.type] as never)}</div>
-          </div>
-          <button
-            className="heart-toggle"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--coral)', padding: 6, flexShrink: 0 }}
-            onClick={() => toggleLoved(li.type, li.title, li.artist, li.itemId, li.cover)}
-            aria-label={t('stats.loveTrack')}
-          >
-            ♥
-          </button>
+        <div className="row" key={li.id}>
+          <CoverArt url={li.cover ?? undefined} fallbackLetter={(li.artist || li.title)[0] || '?'} className="cov" style={{ width: 36, height: 36 }} />
+          <div className="g"><b>{li.title}</b><div className="muted">{li.artist ? `${li.artist} · ` : ''}{t(LOVED_TYPE_LABEL[li.type] as never)}</div></div>
+          <button className="ib love on" onClick={() => toggleLoved(li.type, li.title, li.artist, li.itemId, li.cover)} aria-label={t('stats.loveTrack')}>♥</button>
         </div>
       ))}
-    </>
+    </div>
   );
 }
 
 export function Top4Grid({ ids }: { ids: string[] }) {
   const { t, albums, liveAlbums, spotifyCovers, openAlbum } = useApp();
-  if (!ids.length) return <div className="empty-state">{t('profile.noRatedAlbums')}</div>;
+  if (!ids.length) return <p className="muted">{t('profile.noRatedAlbums')}</p>;
   return (
-    <div className="top4-grid">
+    <div className="t4">
       {ids.map((id, i) => {
         const a = liveAlbums[id] || albums.find((x) => x.id === id);
         if (!a) return null;
         const cover = spotifyCovers[a.id] || a.cover;
         return (
-          <CoverArt key={id} url={cover} fallbackLetter={a.artist[0] || '?'} className="art" onClick={() => openAlbum(a.id)}>
-            <span className="rank">{String(i + 1).padStart(2, '0')}</span>
-          </CoverArt>
+          <button key={id} className="cvw" onClick={() => openAlbum(a.id)} style={{ width: '100%' }}>
+            <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: '100%', aspectRatio: '1' }}>
+              <span className="bdg">{i + 1}</span>
+            </CoverArt>
+          </button>
         );
       })}
     </div>
@@ -288,39 +230,37 @@ export function FriendRequestsBlock() {
   if (!friendRequests.incoming.length && !friendRequests.outgoing.length) return null;
 
   return (
-    <>
+    <div className="stack">
       {friendRequests.incoming.length > 0 && (
-        <>
-          <div className="section-head"><h2>{t('friends.incomingRequests')}</h2><span>{friendRequests.incoming.length}</span></div>
-          {friendRequests.incoming.map((r) => (
-            <div className="friend-row" key={r.id}>
-              <div className="avatar-sm" style={userAvatarStyle(r.user)} />
-              <div className="info">
-                <div className="n">{r.user.name}</div>
-                <div className="h">{r.user.handle}</div>
+        <div className="tile">
+          <h3>{t('friends.incomingRequests')}</h3>
+          <div className="stack" style={{ marginTop: 10 }}>
+            {friendRequests.incoming.map((r) => (
+              <div className="row" key={r.id}>
+                <div className="dot" style={userAvatarStyle(r.user)}>{r.user.name[0]}</div>
+                <div className="g"><b>{r.user.name}</b><div className="muted">{r.user.handle}</div></div>
+                <button className="btn" onClick={() => respondToFriendRequest(r.id, 'accept')}>{t('friends.accept')}</button>
+                <button className="btn ghost" onClick={() => respondToFriendRequest(r.id, 'decline')}>{t('friends.decline')}</button>
               </div>
-              <button onClick={() => respondToFriendRequest(r.id, 'accept')}>{t('friends.accept')}</button>
-              <button onClick={() => respondToFriendRequest(r.id, 'decline')}>{t('friends.decline')}</button>
-            </div>
-          ))}
-        </>
+            ))}
+          </div>
+        </div>
       )}
       {friendRequests.outgoing.length > 0 && (
-        <>
-          <div className="section-head"><h2>{t('friends.outgoingRequests')}</h2><span>{friendRequests.outgoing.length}</span></div>
-          {friendRequests.outgoing.map((r) => (
-            <div className="friend-row" key={r.id}>
-              <div className="avatar-sm" style={userAvatarStyle(r.user)} />
-              <div className="info">
-                <div className="n">{r.user.name}</div>
-                <div className="h">{r.user.handle}</div>
+        <div className="tile">
+          <h3>{t('friends.outgoingRequests')}</h3>
+          <div className="stack" style={{ marginTop: 10 }}>
+            {friendRequests.outgoing.map((r) => (
+              <div className="row" key={r.id}>
+                <div className="dot" style={userAvatarStyle(r.user)}>{r.user.name[0]}</div>
+                <div className="g"><b>{r.user.name}</b><div className="muted">{r.user.handle}</div></div>
+                <span className="tag">{t('friends.pendingBadge')}</span>
               </div>
-              <span className="chip" style={{ opacity: 0.6 }}>{t('friends.pendingBadge')}</span>
-            </div>
-          ))}
-        </>
+            ))}
+          </div>
+        </div>
       )}
-    </>
+    </div>
   );
 }
 
@@ -360,15 +300,15 @@ function InviteLinkButtons() {
 
   return (
     <>
-      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-        <button className="btn-ghost" style={{ flex: 1 }} onClick={share}>{t('friends.getInviteLink')}</button>
-        <button className="btn-ghost" style={{ flex: 1 }} onClick={toggleQr} disabled={loadingQr}>{t('friends.showQr')}</button>
+      <div className="acts">
+        <button className="btn ghost" onClick={share}>{t('friends.getInviteLink')}</button>
+        <button className="btn ghost" onClick={toggleQr} disabled={loadingQr}>{t('friends.showQr')}</button>
       </div>
       {showQr && qrDataUrl && (
-        <div style={{ textAlign: 'center', marginTop: 12 }}>
+        <div className="qrw">
           {/* eslint-disable-next-line @next/next/no-img-element -- a locally-generated data: URI, not an external/optimizable image */}
-          <img src={qrDataUrl} alt="QR code to add me as a friend" style={{ width: 180, height: 180, borderRadius: 12 }} />
-          <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>{t('friends.qrHint')}</div>
+          <img src={qrDataUrl} alt="QR code to add me as a friend" className="qr" />
+          <div className="muted" style={{ marginTop: 6 }}>{t('friends.qrHint')}</div>
         </div>
       )}
     </>
@@ -382,40 +322,32 @@ export function FriendsBlock() {
   if (!me) return null;
 
   return (
-    <>
-      {me.friends.map((f) => (
-        <div className="friend-row" key={f.id}>
-          <div className="avatar-sm" style={userAvatarStyle(f)} />
-          <div className="info" onClick={() => viewFriend(f.id)}>
-            <div className="n">{f.name}{f.isPremium && <PremiumBadge />}</div>
-            <div className="h">{f.handle}</div>
+    <div>
+      <div className="stack">
+        {me.friends.map((f) => (
+          <div className="row" key={f.id}>
+            <button className="rowlink" onClick={() => viewFriend(f.id)}>
+              <div className="dot" style={userAvatarStyle(f)}>{f.name[0]}</div>
+              <div className="g"><b>{f.name}</b><div className="muted">{f.handle}</div></div>
+            </button>
+            <button className="chip" onClick={() => viewFriend(f.id)}>{t('friends.viewProfile')}</button>
           </div>
-          <button onClick={() => viewFriend(f.id)}>{t('friends.viewProfile')}</button>
-        </div>
-      ))}
-      {!me.friends.length && <div className="empty-state">{t('friends.empty')}</div>}
-      <form
-        style={{ display: 'flex', gap: 8, marginTop: 10 }}
-        onSubmit={async (e) => {
-          e.preventDefault();
-          if (!handle.trim() || submitting) return;
-          setSubmitting(true);
-          await addFriend(handle.trim());
-          setSubmitting(false);
-          setHandle('');
-        }}
-      >
-        <input
-          className="handle-input"
-          style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '8px 10px', flex: 1 }}
-          placeholder={t('friends.handlePlaceholder')}
-          value={handle}
-          onChange={(e) => setHandle(e.target.value)}
-        />
-        <button className="chip" type="submit" disabled={submitting}>{t('friends.add')}</button>
+        ))}
+      </div>
+      {!me.friends.length && <p className="muted">{t('friends.empty')}</p>}
+      <form className="acts" onSubmit={async (e) => {
+        e.preventDefault();
+        if (!handle.trim() || submitting) return;
+        setSubmitting(true);
+        await addFriend(handle.trim());
+        setSubmitting(false);
+        setHandle('');
+      }}>
+        <input className="field" style={{ flex: 1 }} placeholder={t('friends.handlePlaceholder')} value={handle} onChange={(e) => setHandle(e.target.value)} />
+        <button className="btn" type="submit" disabled={submitting}>{t('friends.add')}</button>
       </form>
       <InviteLinkButtons />
-    </>
+    </div>
   );
 }
 
@@ -459,14 +391,14 @@ export function AwardsBlock() {
   }, [me]);
 
   if (!me) return null;
-  if (!me.friends.length) return <div className="empty-state">{t('awards.needFriends')}</div>;
-  if (loading) return <div className="archive-loading">{t('awards.computing')}</div>;
-  if (!mostMinutes || !mostNiche) return <div className="empty-state">{t('awards.notEnough')}</div>;
+  if (!me.friends.length) return <p className="muted">{t('awards.needFriends')}</p>;
+  if (loading) return <p className="muted">{t('awards.computing')}</p>;
+  if (!mostMinutes || !mostNiche) return <p className="muted">{t('awards.notEnough')}</p>;
 
   return (
-    <>
-      <div className="award-row"><span className="award-label">{t('awards.mostMinutes')}</span><span className="award-name">{mostMinutes.name} — {mostMinutes.value.toLocaleString(toLocale(language))} {t('awards.minutesShort')}</span></div>
-      <div className="award-row"><span className="award-label">{t('awards.mostNiche')}</span><span className="award-name">{mostNiche.name} — {mostNiche.value} {t('awards.artistsShort')}</span></div>
-    </>
+    <div className="stack">
+      <div className="row"><div className="g"><b>{t('awards.mostMinutes')}</b></div><small className="muted">{mostMinutes.name} — {mostMinutes.value.toLocaleString(toLocale(language))} {t('awards.minutesShort')}</small></div>
+      <div className="row"><div className="g"><b>{t('awards.mostNiche')}</b></div><small className="muted">{mostNiche.name} — {mostNiche.value} {t('awards.artistsShort')}</small></div>
+    </div>
   );
 }
