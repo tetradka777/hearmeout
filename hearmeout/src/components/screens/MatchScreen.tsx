@@ -8,6 +8,7 @@ import { computeMatch } from '@/lib/matchScore';
 import { toLocale } from '@/lib/i18n';
 import { CoverArt } from '../ui/CoverArt';
 import { MascotIcon } from '../redesign/icons';
+import { BlendButton } from '../BlendButton';
 
 type FriendInfo = { profile: PublicProfile | null; score: number | null; stats6m: StatsData | null; weekHours: number | null };
 
@@ -193,6 +194,15 @@ export function MatchScreen(_props: { device: Device }) {
               </div>
             ) : <p className="muted">{t('match.noSharedArtists')}</p>}
           </div>
+          {active && (
+            <div className="tile t-ac" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+              <div>
+                <h2 style={{ marginBottom: 4 }}>{t('match.yourBlend')}</h2>
+                <p style={{ fontWeight: 700 }}>{t('match.yourBlendSubtitle', { name: active.name })}</p>
+              </div>
+              <BlendButton me={me.id} friend={active.id} friendName={active.name.split(' ')[0]} matchPct={pct} />
+            </div>
+          )}
           <div className="tile">
             <h2>{t('match.weeklyLeaderboard')}</h2>
             <div className="stack" style={{ marginTop: 10 }}>
@@ -251,9 +261,14 @@ export function MatchScreen(_props: { device: Device }) {
         ) : (
           <div className="bento b3">
             {groups.slice(0, 3).map((g) => (
-              <button className="tile" key={g.id} onClick={() => showScreen('groups')} style={{ textAlign: 'left', cursor: 'pointer' }}>
+              <button className="tile gl" key={g.id} onClick={() => showScreen('groups')} style={{ textAlign: 'left', cursor: 'pointer' }}>
                 <h3>{g.name}</h3>
-                <p className="muted">{t('groups.memberCount', { count: g.memberCount })}</p>
+                <div className="hrow" style={{ margin: '12px 0 8px', gap: 6, flexWrap: 'wrap' }}>
+                  {g.members.map((m) => (
+                    <span key={m.id} className="dot" style={{ ...userAvatarStyle(m), width: 28, height: 28, fontSize: 12 }}>{m.name[0]}</span>
+                  ))}
+                </div>
+                <small className="muted">{t('groups.memberCount', { count: g.memberCount })}{g.newPlays > 0 ? ` · ${t('groups.newPlaysTag', { count: g.newPlays })}` : ''}</small>
               </button>
             ))}
           </div>

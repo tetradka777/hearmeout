@@ -54,7 +54,7 @@ export function GroupsScreen(_props: { device: Device }) {
             <button className="tile gl" key={g.id} onClick={() => viewGroup(g.id)} style={{ textAlign: 'left', cursor: 'pointer' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
                 <h3>{g.name}</h3>
-                {g.newPlays > 0 && <span className="tag">{g.newPlays} new</span>}
+                {g.newPlays > 0 && <span className="tag">{t('groups.newPlaysTag', { count: g.newPlays })}</span>}
               </div>
               <div className="hrow" style={{ margin: '14px 0 10px', gap: 6, flexWrap: 'wrap' }}>
                 {g.members.map((m) => (

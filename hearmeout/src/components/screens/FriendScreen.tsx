@@ -1,46 +1,14 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device, PublicProfile, StatsData } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
 import { RecapOpenButton, Top4Grid } from '../ProfileBlocks';
 import { CoverArt } from '../ui/CoverArt';
 import { toLocale, pluralForKey } from '@/lib/i18n';
-import { drawBlendPoster } from '@/lib/posterCanvas';
 import { isDemoAccountId } from '@/lib/demoAccounts';
-
-function BlendButton({ me, friend, friendName, matchPct }: { me: string; friend: string; friendName: string; matchPct: number | null }) {
-  const { t, ensureRecap, recapCache } = useApp();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    ensureRecap('me', 'month');
-    ensureRecap(friend, 'month');
-  }, [friend, ensureRecap]);
-
-  const dataA = recapCache[`${me}:month`];
-  const dataB = recapCache[`${friend}:month`];
-  if (!dataA || !dataB) return null;
-
-  const download = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    drawBlendPoster(canvas, dataA, t('friend.you'), dataB, friendName, matchPct);
-    const url = canvas.toDataURL('image/png');
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'hearmeout-blend.png';
-    link.click();
-  };
-
-  return (
-    <>
-      <button className="btn ghost" onClick={download}>{t('friend.downloadBlend')}</button>
-      <canvas ref={canvasRef} style={{ display: 'none' }} />
-    </>
-  );
-}
+import { BlendButton } from '../BlendButton';
 
 // Shared row style for both "Both scores" (mutually-rated albums only) and
 // "Latest ratings" (friend's own recent ratings, yours alongside if you
