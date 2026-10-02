@@ -52,6 +52,7 @@ function CalibrateStep() {
   return (
     <div className="sec">
       <h3>{t('onboarding.calibrate')}</h3>
+      <p className="muted">{t('onboarding.calibrateHint')}</p>
       <div className="stack" style={{ marginTop: 10 }}>
         {picks.map((a) => {
           const already = myRatings.find((r) => r.albumId === a.id);
@@ -62,8 +63,9 @@ function CalibrateStep() {
               <div className="g">
                 <b>{a.title}</b>
                 <div className="muted">{a.artist}</div>
-                <div style={{ marginTop: 6 }}>
+                <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 10 }}>
                   <StarSlider value={val} onChange={(v) => { setValues((s) => ({ ...s, [a.id]: v })); publishRating(a.id, v, ''); }} size={20} />
+                  <span className="num" style={{ fontSize: 16 }}>{val > 0 ? val.toFixed(1) : '–'}</span>
                 </div>
               </div>
             </div>
@@ -83,7 +85,7 @@ function LookStep() {
   ];
   return (
     <div className="sec">
-      <h3>{t('onboarding.lookTitle') || 'Pick your look'}</h3>
+      <p className="muted">{t('onboarding.lookSubtitle')}</p>
       <div className="optgrid" style={{ marginTop: 10 }}>
         {DESIGNS.map((d) => (
           <button key={d.id} className="optcard" role="radio" aria-checked={me.design === d.id} onClick={() => updateAppearance({ design: d.id })}>
@@ -93,9 +95,19 @@ function LookStep() {
           </button>
         ))}
       </div>
+      <div className="seg" style={{ marginTop: 14 }}>
+        {(['light', 'dark', 'system'] as const).map((m) => (
+          <button key={m} className={me.mode === m ? 'on' : ''} role="radio" aria-checked={me.mode === m} onClick={() => updateAppearance({ mode: m })}>
+            {t(`settings.${m}` as never)}
+          </button>
+        ))}
+      </div>
       <div className="palgrid" style={{ marginTop: 14 }}>
         {PALETTES.map((p) => (
           <button key={p.id} className="palbtn" role="radio" aria-checked={me.palette === p.id} onClick={() => updateAppearance({ palette: p.id })}>
+            <span className="sws" data-palette={p.id}>
+              <i style={{ background: 'var(--ink)' }} /><i style={{ background: 'var(--ac)' }} /><i style={{ background: 'var(--pop)' }} />
+            </span>
             {p.name}
           </button>
         ))}
@@ -132,7 +144,13 @@ export function OnboardingScreen() {
               <div className="sec"><ImportHistoryBlock /></div>
             </>
           )}
-          {step === 2 && <LookStep />}
+          {step === 2 && (
+            <>
+              <div className="eyebrow" style={{ marginTop: 18 }}>{t('onboarding.lookLabel')}</div>
+              <h2>{t('onboarding.lookTitle')}</h2>
+              <LookStep />
+            </>
+          )}
           {step === 3 && (
             <>
               <div className="eyebrow" style={{ marginTop: 18 }}>{t('onboarding.peopleLabel')}</div>
@@ -143,17 +161,13 @@ export function OnboardingScreen() {
           )}
 
           <div className="acts" style={{ marginTop: 20 }}>
+            {step > 1 && <button className="btn ghost" onClick={() => setStep((s) => (s - 1) as 1 | 2 | 3)}>{t('onboarding.back')}</button>}
             {step < 3 ? (
-              <>
-                <button className="btn lg" onClick={() => setStep((s) => (s + 1) as 1 | 2 | 3)}>{t('onboarding.continue')}</button>
-                <button className="btn ghost" onClick={() => setStep(3)}>{t('onboarding.skip')}</button>
-              </>
+              <button className="btn lg" onClick={() => setStep((s) => (s + 1) as 1 | 2 | 3)}>{t('onboarding.continue')}</button>
             ) : (
-              <>
-                <button className="btn lg" onClick={dismissOnboarding}>{t('onboarding.finish')}</button>
-                <button className="btn ghost" onClick={dismissOnboarding}>{t('onboarding.skip')}</button>
-              </>
+              <button className="btn lg" onClick={dismissOnboarding}>{t('onboarding.finish')}</button>
             )}
+            {step === 1 && <button className="btn ghost" onClick={dismissOnboarding}>{t('onboarding.skip')}</button>}
           </div>
         </div>
       </div>
