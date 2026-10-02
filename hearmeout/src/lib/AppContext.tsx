@@ -186,6 +186,7 @@ type AppContextValue = {
   ensureRecap: (userId: string, period: RecapPeriod, seasonKey?: string | null, offset?: number) => void;
   registerWithPassword: (name: string, password: string) => Promise<void>;
   dismissOnboarding: () => void;
+  replayOnboarding: () => void;
   loginWithPassword: (handle: string, password: string) => Promise<void>;
   claimAccount: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -453,7 +454,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     patch({ justRegistered: true });
   }, [refreshMe, patch]);
 
-  const dismissOnboarding = useCallback(() => patch({ justRegistered: false }), [patch]);
+  const dismissOnboarding = useCallback(() => { patch({ justRegistered: false }); showToast(t('onboarding.allSetToast')); }, [patch, showToast, t]);
+  // Settings -> Account's "Replay" row (prototype: data-go="onboarding"
+  // data-ob0="1") — OnboardingScreen's own step state is a plain useState
+  // that starts at 1, so remounting it via justRegistered is enough to
+  // restart from the first step.
+  const replayOnboarding = useCallback(() => patch({ justRegistered: true }), [patch]);
 
   const loginWithPassword = useCallback(async (handle: string, password: string) => {
     const res = await fetch('/api/auth/login', {
@@ -913,7 +919,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     showScreen, goBack, openAlbum, viewFriend, viewGroup, openRecap, closeRecap,
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, setRecapOffset, recapSeasons,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
-    registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
+    registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
     updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateLanguage, updateRegion, updateOpenProfile, updateAppearance, updatePrivacy,
     addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyObscure,
@@ -921,7 +927,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setRecapSeasonKey, setRecapOffset, recapSeasons,
     viewFriend, viewGroup, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,
-    registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
+    registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
     updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateLanguage, updateRegion, updateOpenProfile, updateAppearance, updatePrivacy,
     addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast]);
 

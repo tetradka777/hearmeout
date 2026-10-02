@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
-import { getRegionCodes, regionDisplayName } from '@/lib/i18n';
+import { getRegionCodes, regionDisplayName, LANGUAGES, LANGUAGE_LABEL } from '@/lib/i18n';
 import { PALETTES, type Design, type Mode } from '@/lib/palettes';
 import { AccountBlock, ConnectBlock, ImportHistoryBlock } from '../ProfileBlocks';
 
@@ -112,13 +112,22 @@ function AppearanceSection({ device }: { device: Device }) {
 }
 
 function LanguageRegionSection() {
-  const { t, me, language, updateRegion, updateAppearance } = useApp();
+  const { t, me, language, updateLanguage, updateRegion, updateAppearance } = useApp();
   const regionCodes = useMemo(() => getRegionCodes(), []);
   if (!me) return null;
 
   return (
     <>
-      <h2>{t('profile.region')}</h2>
+      <h2>{t('settings.languageRegion')}</h2>
+      <div className="sec">
+        <h3>{t('settings.language') || 'Language'}</h3>
+        <p className="muted">{t('settings.languageHint')}</p>
+        <div className="chips" style={{ marginTop: 10 }}>
+          {LANGUAGES.map((l) => (
+            <button key={l} className={`chip ${language === l ? 'on' : ''}`} onClick={() => updateLanguage(l)}>{LANGUAGE_LABEL[l]}</button>
+          ))}
+        </div>
+      </div>
       <div className="sec">
         <h3>{t('profile.region')}</h3>
         <select className="field" style={{ marginTop: 10, width: '100%' }} value={me.region ?? ''} onChange={(e) => updateRegion(e.target.value || null)}>
@@ -156,6 +165,21 @@ function ProfileVisibilitySection() {
       <div className="seg" style={{ marginTop: 10 }}>
         <button className={!isOpen ? 'on' : ''} onClick={() => updateOpenProfile(false)}>{t('settings.profileClosed')}</button>
         <button className={isOpen ? 'on' : ''} onClick={() => updateOpenProfile(true)}>{t('settings.profileOpen')}</button>
+      </div>
+    </div>
+  );
+}
+
+function ReplayOnboardingRow() {
+  const { t, replayOnboarding } = useApp();
+  return (
+    <div className="sec">
+      <div className="setrow">
+        <div>
+          <b>{t('settings.replayOnboarding')}</b>
+          <div><small className="muted">{t('settings.replayOnboardingHint')}</small></div>
+        </div>
+        <button className="btn ghost" onClick={replayOnboarding}>{t('settings.replayOnboardingBtn')}</button>
       </div>
     </div>
   );
@@ -201,7 +225,6 @@ function PrivacySection() {
   ];
   return (
     <>
-      <h2>{t('settings.privacy') || 'Privacy'}</h2>
       {rows.map((r) => (
         <div className="setrow" key={r.key}>
           <div><b>{r.label}</b></div>
@@ -233,7 +256,7 @@ export function SettingsScreen({ device }: { device: Device }) {
         <>
           <h2>{t('profile.accountSection')}</h2>
           <AccountBlock />
-          <ProfileVisibilitySection />
+          <ReplayOnboardingRow />
           <DeleteAccountBlock />
         </>
       )}
@@ -245,7 +268,13 @@ export function SettingsScreen({ device }: { device: Device }) {
           <div className="sec"><ImportHistoryBlock /></div>
         </>
       )}
-      {section === 'privacy' && <PrivacySection />}
+      {section === 'privacy' && (
+        <>
+          <h2>{t('settings.privacy')}</h2>
+          <ProfileVisibilitySection />
+          <PrivacySection />
+        </>
+      )}
     </>
   );
 

@@ -41,6 +41,7 @@ export function AccountBlock() {
           <b>{t('profile.yourId')}</b>
           <div className="muted">{me.handle}</div>
         </div>
+        <button className="btn ghost" onClick={() => { navigator.clipboard.writeText(me.handle); showToast(t('profile.handleCopied')); }}>{t('profile.copyHandle')}</button>
       </div>
 
       {me.hasPassword ? (
