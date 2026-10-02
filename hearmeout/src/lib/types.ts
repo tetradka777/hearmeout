@@ -125,7 +125,6 @@ export type Device = 'mobile' | 'desktop';
 
 export type ScreenName =
   | 'catalog'
-  | 'album'
   | 'rate'
   | 'history'
   | 'recap'

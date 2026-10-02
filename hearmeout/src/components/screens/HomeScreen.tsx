@@ -23,7 +23,7 @@ function useAlbum(albumId: string | null) {
 }
 
 function HeroTile() {
-  const { t, feed, openRateFor, viewFriend } = useApp();
+  const { t, feed, openAlbum, viewFriend } = useApp();
   const hero = feed?.hero || null;
   const album = useAlbum(hero?.albumId || null);
 
@@ -46,7 +46,7 @@ function HeroTile() {
         <div className="bub b-pop r"><span className="num">{hero.theirs.toFixed(1)}</span><span className="w">{hero.friend.name}</span></div>
       </div>
       <div className="acts">
-        <button className="btn" onClick={() => openRateFor(album.id, 'album')}>{t('home.defendRating')}</button>
+        <button className="btn" onClick={() => openAlbum(album.id)}>{t('home.defendRating')}</button>
         <button className="btn ghost" onClick={() => viewFriend(hero.friend.id)}>{t('home.compareWith', { friend: hero.friend.name })}</button>
       </div>
     </div>
@@ -74,7 +74,7 @@ function RecapTile() {
 }
 
 function FeedTile({ event }: { event: FeedEvent }) {
-  const { t, language, openRateFor } = useApp();
+  const { t, language, openAlbum } = useApp();
   const albumId = event.type === 'rating_review' ? event.albumId : null;
   const album = useAlbum(albumId);
 
@@ -106,7 +106,7 @@ function FeedTile({ event }: { event: FeedEvent }) {
   // rating_review
   if (!album) return null;
   return (
-    <div className="tile" onClick={() => openRateFor(album.id, 'album')} style={{ cursor: 'pointer' }}>
+    <div className="tile" onClick={() => openAlbum(album.id)} style={{ cursor: 'pointer' }}>
       <div className="ft top">
         <div className="dot" style={userAvatarStyle(event.user)}>{event.user.name[0]}</div>
         <div className="who"><b>{event.user.name}</b><span className="tag">{t('home.filterRated')}</span></div>
@@ -201,11 +201,11 @@ function TasteMatchTile() {
 }
 
 function RateWhatPlayedRow({ albumId }: { albumId: string }) {
-  const { openRateFor } = useApp();
+  const { openAlbum } = useApp();
   const album = useAlbum(albumId);
   if (!album) return null;
   return (
-    <button className="row" onClick={() => openRateFor(album.id, 'album')} style={{ cursor: 'pointer' }}>
+    <button className="row" onClick={() => openAlbum(album.id)} style={{ cursor: 'pointer' }}>
       <CoverArt url={album.cover} fallbackLetter={album.artist[0] || '?'} className="cov" style={{ width: 44, height: 44 }} />
       <div className="g"><b>{album.title}</b><div className="muted">{album.artist}</div></div>
       <StarIcon />

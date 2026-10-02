@@ -8,7 +8,7 @@ import { Stars } from './Stars';
 // entirely in Cream Pop and when nothing has played — the extra bottom
 // padding it needs (.hasnp on the shell root) follows the same rule.
 export function NowPlayingBar() {
-  const { me, t, myRatings, openRateFor } = useApp();
+  const { me, t, myRatings, openAlbum } = useApp();
   const np = me?.nowPlaying;
   if (!np || me?.design !== 'toxic') return null;
 
@@ -30,7 +30,7 @@ export function NowPlayingBar() {
         </div>
       )}
       {np.albumId && (
-        <button className="btn" onClick={() => openRateFor(np.albumId!, 'history')}>
+        <button className="btn" onClick={() => openAlbum(np.albumId!)}>
           {existing ? t('rate.changeRating') : t('player.rateIt')}
         </button>
       )}

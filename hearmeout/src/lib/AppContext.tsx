@@ -50,14 +50,13 @@ function albumDetailToAlbum(d: AlbumDetail, overrideId?: string): Album {
 }
 
 type SortBy = 'year' | 'genre' | 'artist';
-type RateOrigin = 'album' | 'history';
 type AuthStatus = 'loading' | 'anonymous' | 'ready';
 
 // Every screen — the 7 top-level tabs included — gets a real browser-
 // history entry and URL, so the browser's own back/forward buttons work
 // everywhere on the site, not just on "content" pages.
 const ALL_SCREENS = new Set<ScreenName>([
-  'catalog', 'album', 'rate', 'history', 'recap', 'profile', 'artist', 'friend', 'match', 'stats', 'groups', 'group', 'discover', 'settings',
+  'catalog', 'rate', 'history', 'recap', 'profile', 'artist', 'friend', 'match', 'stats', 'groups', 'group', 'discover', 'settings',
 ]);
 
 // What's stored as `history.state` for one entry — enough to restore that
@@ -73,7 +72,6 @@ type ScreenSnapshot = {
   viewingGroupId?: string;
   recapViewUserId?: string;
   recapOrigin?: ScreenName;
-  rateOrigin?: RateOrigin;
   artistId?: string;
   artistName?: string;
   artistSource?: 'spotify' | 'musicbrainz';
@@ -87,7 +85,6 @@ function currentHistoryDepth(): number {
 function urlForSnapshot(snap: Omit<ScreenSnapshot, 'hmoDepth'>): string {
   switch (snap.activeScreen) {
     case 'catalog': return '/';
-    case 'album': return `/?screen=album&id=${encodeURIComponent(snap.currentAlbumId || '')}`;
     case 'rate': return `/?screen=rate&id=${encodeURIComponent(snap.currentAlbumId || '')}`;
     case 'friend': return `/?screen=friend&id=${encodeURIComponent(snap.viewingUserId || '')}`;
     case 'group': return `/?screen=group&id=${encodeURIComponent(snap.viewingGroupId || '')}`;
@@ -138,7 +135,6 @@ type AppState = {
   ratingValue: number;
   ratingDraftText: string;
   historyQuery: string;
-  rateOrigin: RateOrigin;
   currentArtist: ArtistState | null;
   toast: string | null;
   // True for the rest of this session right after a fresh signup, so
@@ -170,7 +166,6 @@ type AppContextValue = {
   showScreen: (name: ScreenName) => void;
   goBack: (name: ScreenName) => void;
   openAlbum: (id: string) => void;
-  openRateFor: (id: string, origin: RateOrigin) => void;
   viewFriend: (id: string) => void;
   viewGroup: (id: string) => void;
   openRecap: (userId: string) => void;
@@ -238,7 +233,6 @@ const initialState: AppState = {
   ratingValue: 0,
   ratingDraftText: '',
   historyQuery: '',
-  rateOrigin: 'album',
   currentArtist: null,
   toast: null,
   justRegistered: false,
@@ -511,25 +505,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (currentHistoryDepth() > 0) window.history.back();
     else patch({ activeScreen: name, navAction: 'pop' });
   }, [patch]);
+  // The prototype has no separate album-browsing screen — vRate() in
+  // reference/app.js is the one page that shows the cover, tracklist,
+  // friends' ratings and community stats alongside the rating widget
+  // itself, always live (no "open the rating form" click-through). Every
+  // "go look at this album" link in the prototype is the same
+  // data-go="rate" data-a="<id>", so there's just one function here too.
   const openAlbum = useCallback((id: string) => {
-    patch({ currentAlbumId: id, activeScreen: 'album', navAction: 'push' });
-    pushScreenHistory({ activeScreen: 'album', currentAlbumId: id });
-  }, [patch]);
-
-  const openRateFor = useCallback((id: string, origin: RateOrigin) => {
     setState((s) => {
       const existing = myRatings.find((r) => r.albumId === id);
       return {
         ...s,
         currentAlbumId: id,
-        rateOrigin: origin,
         ratingValue: existing ? existing.stars : 0,
         ratingDraftText: existing ? existing.review || '' : '',
         activeScreen: 'rate',
         navAction: 'push',
       };
     });
-    pushScreenHistory({ activeScreen: 'rate', currentAlbumId: id, rateOrigin: origin });
+    pushScreenHistory({ activeScreen: 'rate', currentAlbumId: id });
   }, [myRatings]);
 
   const viewFriend = useCallback((id: string) => {
@@ -589,6 +583,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; };
   }, [state.activeScreen, state.recapPeriod, state.recapViewUserId, me]);
 
+  // Posting/saving-privately never navigates away (the prototype's own
+  // post/priv click handlers just re-render the same vRate() page in
+  // place) — the rate screen is a persistent, always-live surface you can
+  // keep revising, not a form that closes on submit.
   const publishRating = useCallback(async (albumId: string, stars: number, review: string, tags: string[] = [], isPrivate: boolean = false) => {
     const isEditing = myRatings.some((r) => r.albumId === albumId);
     const res = await fetch('/api/ratings', {
@@ -602,15 +600,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     await Promise.all([refreshMyRatings(), refreshAlbumRatings(), refreshMe()]);
     setReviewsVersion((v) => v + 1);
-    patch({ ratingValue: 0, ratingDraftText: '' });
-    // Saving and returning is the same "go back to where the rate form was
-    // opened from" as the explicit back button — same history.back() path,
-    // so the rate screen's pushed entry doesn't linger as a dead end you'd
-    // otherwise have to click "back" through twice.
-    if (currentHistoryDepth() > 0) window.history.back();
-    else setState((s) => ({ ...s, activeScreen: s.rateOrigin === 'history' ? 'history' : 'album', navAction: 'pop' }));
-    showToast(isEditing ? t('toast.ratingUpdated') : t('toast.published'));
-  }, [myRatings, refreshMyRatings, refreshAlbumRatings, refreshMe, showToast, t, patch]);
+    showToast(isPrivate ? t('toast.savedPrivately') : isEditing ? t('toast.ratingUpdated') : t('toast.published'));
+  }, [myRatings, refreshMyRatings, refreshAlbumRatings, refreshMe, showToast, t]);
 
   const updateProfileName = useCallback(async (name: string) => {
     await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
@@ -856,7 +847,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         viewingGroupId: snap.viewingGroupId ?? s.viewingGroupId,
         recapViewUserId: snap.recapViewUserId ?? s.recapViewUserId,
         recapOrigin: snap.recapOrigin ?? s.recapOrigin,
-        rateOrigin: snap.rateOrigin ?? s.rateOrigin,
         navAction: 'pop',
       }));
     };
@@ -907,14 +897,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AppContextValue>(() => ({
     state, language: state.language, t, albums: ALBUMS, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds,
     spotifyObscure, spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, friendRequests, recapCache, reviewsVersion,
-    showScreen, goBack, openAlbum, openRateFor, viewFriend, viewGroup, openRecap, closeRecap,
+    showScreen, goBack, openAlbum, viewFriend, viewGroup, openRecap, closeRecap,
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, recapSeasons,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
     updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateLanguage, updateRegion, updateOpenProfile, updateAppearance, updatePrivacy,
     addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyObscure,
-    spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, friendRequests, recapCache, reviewsVersion, showScreen, goBack, openAlbum, openRateFor,
+    spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, friendRequests, recapCache, reviewsVersion, showScreen, goBack, openAlbum,
     setRecapSeasonKey, recapSeasons,
     viewFriend, viewGroup, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,

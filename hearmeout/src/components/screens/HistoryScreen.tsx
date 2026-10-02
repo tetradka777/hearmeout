@@ -17,13 +17,13 @@ function monthKey(iso: string) {
 }
 
 function HistoryRow({ rating }: { rating: RatingRecord }) {
-  const { albums, liveAlbums, spotifyCovers, language, openRateFor, t } = useApp();
+  const { albums, liveAlbums, spotifyCovers, language, openAlbum, t } = useApp();
   const a = liveAlbums[rating.albumId] || albums.find((x) => x.id === rating.albumId);
   if (!a) return null;
   const cover = spotifyCovers[a.id] || a.cover;
   const date = new Date(rating.createdAt);
   return (
-    <button className="row" onClick={() => openRateFor(a.id, 'history')} style={{ cursor: 'pointer', width: '100%' }}>
+    <button className="row" onClick={() => openAlbum(a.id)} style={{ cursor: 'pointer', width: '100%' }}>
       <small className="muted" style={{ width: 48 }}>{date.toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short' })}</small>
       <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: 40, height: 40 }} />
       <div className="g"><b>{a.title}</b><div className="muted">{a.artist}</div></div>
@@ -71,7 +71,7 @@ function exportJson(ratings: RatingRecord[], albums: ReturnType<typeof useApp>['
 }
 
 export function HistoryScreen(_props: { device: Device }) {
-  const { state, t, language, me, albums, liveAlbums, myRatings, albumRatings, setHistoryQuery, showScreen, openRateFor } = useApp();
+  const { state, t, language, me, albums, liveAlbums, myRatings, albumRatings, setHistoryQuery, showScreen, openAlbum } = useApp();
   const [filter, setFilter] = useState<Filter>('all');
   const [sort, setSort] = useState<Sort>('newest');
 
@@ -233,18 +233,18 @@ export function HistoryScreen(_props: { device: Device }) {
           <h3>{t('history.highlightsTitle')}</h3>
           {highlights ? (
             <div className="stack" style={{ marginTop: 10 }}>
-              <button className="row" style={{ width: '100%', cursor: 'pointer' }} onClick={() => openRateFor(highlights.highest.albumId, 'history')}>
+              <button className="row" style={{ width: '100%', cursor: 'pointer' }} onClick={() => openAlbum(highlights.highest.albumId)}>
                 <small className="muted">{t('history.highestRated')}</small>
                 <div className="g"><b>{albumTitle(highlights.highest.albumId)}</b></div>
                 <Stars value={highlights.highest.stars} size={14} />
               </button>
-              <button className="row" style={{ width: '100%', cursor: 'pointer' }} onClick={() => openRateFor(highlights.lowest.albumId, 'history')}>
+              <button className="row" style={{ width: '100%', cursor: 'pointer' }} onClick={() => openAlbum(highlights.lowest.albumId)}>
                 <small className="muted">{t('history.lowestRated')}</small>
                 <div className="g"><b>{albumTitle(highlights.lowest.albumId)}</b></div>
                 <Stars value={highlights.lowest.stars} size={14} />
               </button>
               {highlights.changedMind && (
-                <button className="row" style={{ width: '100%', cursor: 'pointer' }} onClick={() => openRateFor(highlights.changedMind!.albumId, 'history')}>
+                <button className="row" style={{ width: '100%', cursor: 'pointer' }} onClick={() => openAlbum(highlights.changedMind!.albumId)}>
                   <small className="muted">{t('history.changedMind')}</small>
                   <div className="g"><b>{albumTitle(highlights.changedMind.albumId)}</b></div>
                   <span className="tag">{highlights.changedMind.previousStars!.toFixed(1)} → {highlights.changedMind.stars.toFixed(1)}</span>

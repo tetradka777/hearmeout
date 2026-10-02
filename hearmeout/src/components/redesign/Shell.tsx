@@ -35,10 +35,10 @@ function useNavItems(): NavItem[] {
 }
 
 // Which nav item lights up for a given screen — same grouping rule as the
-// current site's TAB_GROUP (album/artist/friend/rate/recap/settings open
-// "from content" and light up nothing, or the screen that leads to them).
+// current site's TAB_GROUP (rate/artist/friend/recap/settings open "from
+// content" and light up nothing, or the screen that leads to them).
 const NAV_GROUP: Record<ScreenName, ScreenName | null> = {
-  catalog: 'catalog', album: null, artist: 'discover',
+  catalog: 'catalog', artist: 'discover',
   history: 'history', rate: null,
   match: 'match', friend: 'match',
   stats: 'stats', recap: null,
@@ -59,7 +59,7 @@ const TAB_ICON: Partial<Record<ScreenName, ReactNode>> = {
 };
 
 export function RedesignShell({ children }: { children: ReactNode }) {
-  const { me, t, state, showScreen, setSearchQuery, openRateFor } = useApp();
+  const { me, t, state, showScreen, setSearchQuery, openAlbum } = useApp();
   const navItems = useNavItems();
   const activeGroup = NAV_GROUP[state.activeScreen];
   const { currentTrack } = usePlayer();
@@ -141,7 +141,7 @@ export function RedesignShell({ children }: { children: ReactNode }) {
           className="fab"
           onClick={() => {
             const playingId = me?.nowPlaying?.albumId || currentTrack?.albumId;
-            if (playingId) openRateFor(playingId, 'history');
+            if (playingId) openAlbum(playingId);
             else showScreen('history');
           }}
           aria-label={t('nav.rate')}

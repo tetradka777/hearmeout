@@ -6,7 +6,6 @@ import type { Device, ScreenName } from '@/lib/types';
 import { Toast } from './ui/Toast';
 import { RedesignShell } from './redesign/Shell';
 import { HomeScreen } from './screens/HomeScreen';
-import { AlbumScreen } from './screens/AlbumScreen';
 import { RateScreen } from './screens/RateScreen';
 import { HistoryScreen } from './screens/HistoryScreen';
 import { RecapScreen } from './screens/RecapScreen';
@@ -26,7 +25,6 @@ import { StatesScreen } from './screens/StatesScreen';
 // position, form inputs — survives switching away and back.
 const SCREENS: { name: ScreenName; Component: ComponentType<{ device: Device }> }[] = [
   { name: 'catalog', Component: HomeScreen },
-  { name: 'album', Component: AlbumScreen },
   { name: 'rate', Component: RateScreen },
   { name: 'history', Component: HistoryScreen },
   { name: 'recap', Component: RecapScreen },
