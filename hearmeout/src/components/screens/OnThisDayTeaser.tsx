@@ -24,8 +24,8 @@ export function OnThisDayTeaser() {
   if (!track) return null;
 
   return (
-    <button className="tile" style={{ textAlign: 'left', width: '100%', cursor: track.albumId ? 'pointer' : 'default' }} onClick={() => track.albumId && openAlbum(track.albumId)}>
-      <div className="eyebrow">🕓 {t('onThisDay.title')}</div>
+    <button className="tile s3" style={{ textAlign: 'left', width: '100%', cursor: track.albumId ? 'pointer' : 'default' }} onClick={() => track.albumId && openAlbum(track.albumId)}>
+      <div className="eyebrow">{t('onThisDay.title')}</div>
       <h3>{track.title}</h3>
       <p className="muted">{track.artist} · {top.year}</p>
     </button>

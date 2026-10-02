@@ -9,6 +9,7 @@ import { computeMatch } from '@/lib/matchScore';
 import { FriendsRow } from '../FriendsRow';
 import { OnThisDayTeaser } from './OnThisDayTeaser';
 import { StarIcon } from '../ui/Icons';
+import { toLocale } from '@/lib/i18n';
 
 // Home feed (redesign spec 6.1). Replaces the old Home = catalog-browser
 // screen; browsing the catalog moved to Discover (spec 13.3). Real data
@@ -121,14 +122,15 @@ function FeedTile({ event }: { event: FeedEvent }) {
 type FeedFilter = 'all' | 'first_play' | 'rating_review' | 'session';
 
 function FeedSection() {
-  const { t, feed } = useApp();
+  const { t, language, feed } = useApp();
   const [filter, setFilter] = useState<FeedFilter>('all');
   const events = feed?.events || [];
   const filtered = filter === 'all' ? events : events.filter((e) => e.type === filter);
+  const today = new Date().toLocaleDateString(toLocale(language), { weekday: 'short', day: '2-digit', month: 'short' });
 
   return (
     <div className="sec">
-      <div className="eyebrow">{t('home.feedLive')}</div>
+      <div className="eyebrow">{t('home.feedLive', { date: today })}</div>
       <h2>{t('home.feedTitle')}</h2>
       <div className="chips">
         <button className={`chip ${filter === 'all' ? 'on' : ''}`} onClick={() => setFilter('all')}>{t('home.filterAll')}</button>
@@ -246,12 +248,9 @@ export function HomeScreen(_props: { device: Device }) {
         <OnThisDayTeaser />
       </div>
 
-      <div className="sec">
-        <div className="eyebrow">{t('home.friendsHeader')}</div>
-        <FriendsRow />
-      </div>
-
       <FeedSection />
+
+      <FriendsRow />
 
       <div className="sec">
         <h2>{t('home.yourCorner')}</h2>
