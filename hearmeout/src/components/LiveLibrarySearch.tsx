@@ -6,7 +6,7 @@ import { searchLibrary, coverArtUrl, type LibraryArtist, type LibraryReleaseGrou
 import { CoverArt } from './ui/CoverArt';
 import { ArtistAvatar } from './ui/ArtistAvatar';
 
-export function LiveLibrarySearch({ query }: { query: string }) {
+export function LiveLibrarySearch({ query, onResult }: { query: string; onResult?: (hasResults: boolean) => void }) {
   const { t, openArtist, openAlbum, showToast } = useApp();
   const [result, setResult] = useState<{ artists: LibraryArtist[]; groups: LibraryReleaseGroup[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -34,15 +34,22 @@ export function LiveLibrarySearch({ query }: { query: string }) {
     setError(null);
     const timer = setTimeout(() => {
       searchLibrary(query)
-        .then((r) => { if (!cancelled) { setResult(r); setLoading(false); } })
+        .then((r) => {
+          if (cancelled) return;
+          setResult(r);
+          setLoading(false);
+          onResult?.(r.artists.length > 0 || r.groups.length > 0);
+        })
         .catch(() => {
           if (cancelled) return;
           const isFileProtocol = typeof location !== 'undefined' && location.protocol === 'file:';
           setError(isFileProtocol ? t('liveSearch.fileProtocolError') : t('liveSearch.error'));
           setLoading(false);
+          onResult?.(false);
         });
     }, 450);
     return () => { cancelled = true; clearTimeout(timer); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, t]);
 
   if (loading) return <p className="muted">{t('liveSearch.searching', { query })}</p>;

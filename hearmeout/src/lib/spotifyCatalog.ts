@@ -110,6 +110,15 @@ export async function resolveSpotifyAlbumId(title: string, artist: string): Prom
   return data.albums?.items?.[0]?.id ?? null;
 }
 
+// Resolves a catalog artist name (our curated albums only know the artist's
+// name, not their Spotify id) to a real Spotify artist id, so Discover's
+// artist search results can open a real artist page instead of a dead click.
+export async function resolveSpotifyArtistId(name: string): Promise<string | null> {
+  const params: Record<string, string> = { q: `artist:${name}`, type: 'artist', limit: '1' };
+  const data = await spotifyGet('/search', params);
+  return data.artists?.items?.[0]?.id ?? null;
+}
+
 export type AlbumTrack = { id: string; title: string; trackNumber: number };
 export type AlbumDetail = {
   id: string;
