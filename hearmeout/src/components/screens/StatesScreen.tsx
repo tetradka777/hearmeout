@@ -19,7 +19,7 @@ export function StatesScreen(_props: { device: Device }) {
 
       <div className="bento b3">
         <div className="tile">
-          <h3>{t('states.loadingTitle')}</h3>
+          <small className="muted" style={{ fontWeight: 800 }}>{t('states.loadingCaption')}</small>
           <div className="row" style={{ marginTop: 14 }}>
             <div className="sk" style={{ width: 88, height: 88, flex: 'none' }} />
             <div className="g" style={{ display: 'grid', gap: 8 }}>
@@ -28,18 +28,20 @@ export function StatesScreen(_props: { device: Device }) {
               <div className="sk" style={{ height: 14, width: '55%' }} />
             </div>
           </div>
-          <div className="sk" style={{ height: 40, width: '100%', marginTop: 14, borderRadius: 99 }} />
+          <div className="sk" style={{ height: 36, width: 120, marginTop: 14, borderRadius: 99 }} />
         </div>
 
-        <div className="tile empty">
+        <div className="tile t-soft2 empty">
+          <small className="muted" style={{ fontWeight: 800 }}>{t('states.emptyCaption')}</small>
           <MascotIcon />
           <h3>{t('states.emptyTitle')}</h3>
           <p className="muted">{t('states.emptyHint')}</p>
           <button className="btn" onClick={() => showScreen('discover')}>{t('states.emptyCta')}</button>
         </div>
 
-        <div className="tile t-pop">
-          <span className="num" style={{ fontSize: 48 }}>!</span>
+        <div className="tile t-pop empty">
+          <small style={{ fontWeight: 800 }}>{t('states.errorCaption')}</small>
+          <span className="num" style={{ fontSize: 54 }}>!</span>
           <h3>{t('states.errorTitle')}</h3>
           <p className="muted">{t('states.errorHint')}</p>
           <button className="btn">{t('states.errorCta')}</button>
