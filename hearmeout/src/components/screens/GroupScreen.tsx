@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device, GroupDetail, GroupLeaderboardPeriod } from '@/lib/types';
 import { userAvatarStyle, starsText } from '@/lib/format';
+import { toLocale } from '@/lib/i18n';
 import { CoverArt } from '../ui/CoverArt';
 import { accentMix } from '@/lib/accentGradient';
 
@@ -18,7 +19,7 @@ const AWARD_LABEL_KEY: Record<string, string> = {
 // Group page (spec 6.6): a real full-screen route reached via viewGroup,
 // with its own back crumb — not a locally-selected panel any more.
 export function GroupScreen({ device }: { device: Device }) {
-  const { t, me, state, goBack, showScreen, albums, liveAlbums, openAlbum, showToast, viewFriend } = useApp();
+  const { t, language, me, state, goBack, showScreen, albums, liveAlbums, openAlbum, showToast, viewFriend } = useApp();
   const [detail, setDetail] = useState<GroupDetail | null>(null);
   const [inviteHandle, setInviteHandle] = useState('');
   const [period, setPeriod] = useState<GroupLeaderboardPeriod>('month');
@@ -126,7 +127,7 @@ export function GroupScreen({ device }: { device: Device }) {
         </div>
 
         {detail.awards.length > 0 && (
-          <div className="tile">
+          <div className="tile t-soft2">
             <h3>{t('groups.awards')}</h3>
             <div className="stack" style={{ marginTop: 10 }}>
               {detail.awards.map((a, i) => (
@@ -164,7 +165,7 @@ export function GroupScreen({ device }: { device: Device }) {
           </div>
         </div>
 
-        <div className="tile">
+        <div className="tile t-pop">
           <h3>{t('groups.records')}</h3>
           <div className="stack" style={{ marginTop: 10 }}>
             {detail.records.length ? detail.records.map((r, i) => (
@@ -175,8 +176,9 @@ export function GroupScreen({ device }: { device: Device }) {
           </div>
         </div>
 
-        <div className="tile s3">
-          <h3>{t('groups.voteOpen')}</h3>
+        <div className="tile t-ink glow s3">
+          <span className="pill">{t('groups.voteOpen')}</span>
+          <h2 style={{ margin: '14px 0 4px' }}>{t('groups.voteForMonth', { month: new Date(`${detail.vote.monthKey}-01`).toLocaleDateString(toLocale(language), { month: 'long' }) })}</h2>
           <p className="muted">{t('groups.voteQuestion')}</p>
           {detail.vote.candidates.length ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 12, marginTop: 10 }}>
