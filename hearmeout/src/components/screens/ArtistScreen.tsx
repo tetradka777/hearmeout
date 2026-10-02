@@ -63,7 +63,7 @@ export function ArtistScreen({ device }: { device: Device }) {
 
   const [topFan, setTopFan] = useState<{ id: string; name: string; handle: string; avatarUrl: string | null; hours: number } | null>(null);
   useEffect(() => {
-    if (!art || art.source !== 'spotify') { setTopFan(null); return; }
+    if (!art) { setTopFan(null); return; }
     let cancelled = false;
     setTopFan(null);
     fetch(`/api/artist/${art.id}/top-fan?name=${encodeURIComponent(art.name)}`)
@@ -71,7 +71,16 @@ export function ArtistScreen({ device }: { device: Device }) {
       .then((d) => { if (!cancelled) setTopFan(d.topFan); });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [art?.id, art?.source]);
+  }, [art?.id, art?.name]);
+
+  const topFanTile = topFan && (
+    <button className="tile" onClick={() => viewFriend(topFan.id)} style={{ cursor: 'pointer', marginTop: 14, textAlign: 'left', width: '100%' }}>
+      <div className="row" style={{ border: 0, padding: 0 }}>
+        <div className="dot" style={userAvatarStyle(topFan)}>🏆</div>
+        <div className="g"><b>{t('artist.topFan', { name: topFan.name })}</b><div className="muted">{t('artist.topFanHours', { hours: topFan.hours })}</div></div>
+      </div>
+    </button>
+  );
 
   const yourStats = useMemo(() => {
     if (!art?.releasedAlbums) return null;
@@ -141,6 +150,13 @@ export function ArtistScreen({ device }: { device: Device }) {
               <div>
                 <div className="eyebrow">{t('artist.subtitleSpotify')}</div>
                 <h1 style={{ marginBottom: 6 }}>{art.name}</h1>
+                {(art.followers != null || art.popularity != null) && (
+                  <p className="muted" style={{ fontWeight: 600, margin: '0 0 6px' }}>
+                    {art.followers != null && t('artist.followersCount', { count: art.followers })}
+                    {art.followers != null && art.popularity != null && ' · '}
+                    {art.popularity != null && t('artist.popularityScore', { score: art.popularity })}
+                  </p>
+                )}
                 {!!art.genres?.length && (
                   <div className="chips" style={{ marginBottom: 0 }}>
                     {art.genres.map((g) => <span className="chip" key={g}>{g}</span>)}
@@ -151,7 +167,7 @@ export function ArtistScreen({ device }: { device: Device }) {
             <div style={{ textAlign: 'right' }}>
               {communityScore ? (
                 <><span className="num" style={{ fontSize: 38 }}>{communityScore.avg.toFixed(1)}</span><div className="muted">{t('artist.communityRatings', { count: communityScore.count })}</div></>
-              ) : <div className="muted">{t('album.noRatings')}</div>}
+              ) : <div className="muted">{t('artist.noRatings')}</div>}
             </div>
           </div>
           <div className="acts">
@@ -161,23 +177,27 @@ export function ArtistScreen({ device }: { device: Device }) {
           </div>
         </div>
 
-        {topFan && (
-          <button className="tile" onClick={() => viewFriend(topFan.id)} style={{ cursor: 'pointer', marginTop: 14, textAlign: 'left', width: '100%' }}>
-            <div className="row" style={{ border: 0, padding: 0 }}>
-              <div className="dot" style={userAvatarStyle(topFan)}>🏆</div>
-              <div className="g"><b>{t('artist.topFan', { name: topFan.name })}</b><div className="muted">{t('artist.topFanHours', { hours: topFan.hours })}</div></div>
-            </div>
-          </button>
-        )}
+        {topFanTile}
 
-        {yourStats && (
-          <div className="tile" style={{ marginTop: 14 }}>
-            <h3>{t('artist.yourAndArtist')}</h3>
-            <div className="stats3">
-              <div><span className="num">{yourStats.count}</span><small className="muted">{t('artist.yourRatedCount')}</small></div>
-              <div><span className="num">{yourStats.avg.toFixed(1)}</span><small className="muted">{t('history.avg')}</small></div>
-            </div>
-            {yourStats.topTitle && <p className="muted">{t('artist.yourTop', { title: yourStats.topTitle })}</p>}
+        {(yourStats || communityScore) && (
+          <div className="bento" style={{ margin: '14px 0', gridTemplateColumns: 'repeat(2,minmax(0,1fr))' }}>
+            {yourStats && (
+              <div className="tile t-soft2">
+                <h3>{t('artist.yourAndArtist')}</h3>
+                <div className="stats3">
+                  <div><span className="num">{yourStats.count}</span><small className="muted">{t('artist.yourRatedCount')}</small></div>
+                  <div><span className="num">{yourStats.avg.toFixed(1)}</span><small className="muted">{t('history.avg')}</small></div>
+                </div>
+                {yourStats.topTitle && <p className="muted">{t('artist.yourTop', { title: yourStats.topTitle })}</p>}
+              </div>
+            )}
+            {communityScore && (
+              <div className="tile t-pop">
+                <h3 style={{ marginBottom: 6 }}>{t('artist.community')}</h3>
+                <span className="num" style={{ fontSize: 48 }}>{communityScore.avg.toFixed(1)}</span>
+                <p style={{ fontWeight: 700 }}>{t('artist.communityAcrossAlbums', { count: communityScore.count, albums: communityScore.albumsWithRatings })}</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -226,6 +246,7 @@ export function ArtistScreen({ device }: { device: Device }) {
           </button>
         </div>
       </div>
+      {topFanTile}
       {body}
     </>
   );
