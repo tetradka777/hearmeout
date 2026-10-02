@@ -5,7 +5,7 @@ import { useApp } from '@/lib/AppContext';
 import type { Device, StatsCalendarDay, StatsData, StatsPeriodType, StatsSeasonKey } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
 import { HeartIcon } from '../ui/Icons';
-import { toLocale, type Language } from '@/lib/i18n';
+import { toLocale, pluralForKey, type Language } from '@/lib/i18n';
 
 const DN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -153,13 +153,22 @@ function ListeningCalendar({ data, t, language }: { data: StatsData; t: ReturnTy
 }
 
 export function StatsScreen(_props: { device: Device }) {
-  const { t, language, me, lovedItems, toggleLoved, openRecap } = useApp();
+  const { t, language, me, lovedItems, toggleLoved, openRecap, ensureRecap, recapCache } = useApp();
   const [periodType, setPeriodType] = useState<StatsPeriodType>('week');
   const [offset, setOffset] = useState(0);
   const [seasonKey, setSeasonKey] = useState<StatsSeasonKey | null>(null);
   const [data, setData] = useState<StatsData | null>(null);
 
   useEffect(() => { setOffset(0); setSeasonKey(null); }, [periodType]);
+
+  // Real vibe line for the recap teaser (reuses the same "N tracks, mostly
+  // X" computation RecapScreen.tsx builds for its own pill), not the
+  // prototype's fabricated pull-quote. There's no "week" RecapPeriod in
+  // this app (day/month/season only, see RecapPeriod) — 'day' is what
+  // openRecap('me') actually opens by default, so that's what this
+  // preview should reflect.
+  useEffect(() => { if (me) ensureRecap('me', 'day'); }, [me, ensureRecap]);
+  const dayRecap = me ? recapCache[`${me.id}:day`] : undefined;
 
   useEffect(() => {
     if (!me) return;
@@ -229,8 +238,11 @@ export function StatsScreen(_props: { device: Device }) {
         <>
           <div className="bento b3">
             <div className="tile t-ac s2">
-              <span className="num" style={{ fontSize: 'clamp(36px,6vw,56px)' }}>{data.hours}</span>
-              <p>{t('stats.hoursOfMusic')}{data.comparisonNote === 'first_season' ? ` · ${t('stats.firstSeason')}` : data.comparisonPct != null ? ` · ${data.comparisonPct >= 0 ? '+' : ''}${data.comparisonPct}% ${t('stats.vsLastPeriod')}` : ''}</p>
+              <span className="num" style={{ fontSize: 'clamp(96px,20vw,170px)', display: 'block' }}>{data.hours}</span>
+              <p style={{ fontWeight: 800, marginTop: 12 }}>
+                {t('stats.hoursOfMusic')}
+                {data.comparisonNote === 'first_season' ? ` · ${t('stats.firstSeason')}` : data.comparisonPct != null ? ` · ${data.comparisonPct >= 0 ? '+' : '−'}${Math.abs(data.comparisonPct)}% ${t(periodType === 'season' ? 'stats.vsPreviousSeason' : periodType === 'month' ? (offset === 0 ? 'stats.vsLastMonth' : 'stats.vsMonthBefore') : (offset === 0 ? 'stats.vsLastWeek' : 'stats.vsWeekBefore'))}` : ''}
+              </p>
             </div>
             <div className="tile">
               <div className="stack">
@@ -239,7 +251,7 @@ export function StatsScreen(_props: { device: Device }) {
               </div>
             </div>
 
-            <div className="tile"><span className="num">{data.avgRating || '—'}</span><small className="muted">{t('history.avg')}</small></div>
+            <div className="tile"><span className="num">{data.avgRating || '—'}</span><small className="muted">{t(periodType === 'season' ? 'stats.avgRatingSeason' : periodType === 'month' ? 'stats.avgRatingMonth' : 'stats.avgRatingWeek')}</small></div>
             <div className="tile"><span className="num">{data.peakHour != null ? `${String(data.peakHour).padStart(2, '0')}:00` : '—'}</span><small className="muted">{t('stats.peakHour')}</small></div>
             <div className="tile"><span className="num">{data.topArtists.length}</span><small className="muted">{t('stats.artistsTracked')}</small></div>
 
@@ -306,6 +318,7 @@ export function StatsScreen(_props: { device: Device }) {
 
             <div className="tile s2">
               <h3>{t('stats.recentPlays')}</h3>
+              <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 6px' }}>{t('stats.recentPlaysHint')}</p>
               <div className="stack" style={{ marginTop: 10 }}>
                 {data.recentPlays.length ? data.recentPlays.map((p, i) => {
                   const loved = lovedItems.some((li) => li.type === 'track' && li.title === p.title && li.artist === p.artist);
@@ -324,9 +337,16 @@ export function StatsScreen(_props: { device: Device }) {
           </div>
 
           <button className="tile t-ac" style={{ textAlign: 'left', width: '100%', marginTop: 14 }} onClick={() => openRecap('me')}>
-            <div className="eyebrow">{t('stats.recapLinkEyebrow')}</div>
-            <h3>{t('stats.recapLinkTitle')}</h3>
-            <p>{t('stats.recapLinkCta')} →</p>
+            <span className="pill">{t('stats.recapLinkEyebrow')}</span>
+            <h2 style={{ margin: '14px 0 4px' }}>{t('stats.recapLinkTitle')}</h2>
+            {dayRecap && (
+              <p style={{ fontWeight: 700 }}>
+                “{dayRecap.trackCount > 0
+                  ? `${dayRecap.trackCount} ${pluralForKey(language, dayRecap.trackCount, 'recap.trackOne', 'recap.trackFew', 'recap.trackMany')}${dayRecap.topGenres[0] ? t('recap.vibeGenre', { genre: dayRecap.topGenres[0] }) : ''}`
+                  : t('recap.vibeEmpty')}”
+              </p>
+            )}
+            <span style={{ fontWeight: 800 }}>{t('stats.recapLinkCta')} →</span>
           </button>
         </>
       )}
