@@ -59,7 +59,7 @@ export function drawRecapPoster(canvas: HTMLCanvasElement, data: RecapData, name
     y += 40;
     ctx.fillStyle = '#c07b52';
     ctx.font = '500 30px sans-serif';
-    ctx.fillText(data.topGenres.join(' · '), 64, y);
+    ctx.fillText(data.topGenres.map((g) => g.genre).join(' · '), 64, y);
   }
 
   ctx.fillStyle = '#7a7266';
@@ -110,7 +110,8 @@ export function drawBlendPoster(
   const colY = 300;
   const colWidth = 420;
   const columns: [RecapData, string, number][] = [[dataA, nameA, 64], [dataB, nameB, W - 64 - colWidth]];
-  const sharedGenres = new Set(dataA.topGenres.filter((g) => dataB.topGenres.includes(g)));
+  const bGenres = new Set(dataB.topGenres.map((g) => g.genre));
+  const sharedGenres = new Set(dataA.topGenres.filter((g) => bGenres.has(g.genre)).map((g) => g.genre));
 
   for (const [data, name, x] of columns) {
     let y = colY;
@@ -139,9 +140,9 @@ export function drawBlendPoster(
       ctx.fillText('GENRES', x, y);
       y += 32;
       for (const g of data.topGenres) {
-        ctx.fillStyle = sharedGenres.has(g) ? '#d98a5f' : '#c07b52';
-        ctx.font = sharedGenres.has(g) ? '700 24px sans-serif' : '500 24px sans-serif';
-        ctx.fillText(g, x, y);
+        ctx.fillStyle = sharedGenres.has(g.genre) ? '#d98a5f' : '#c07b52';
+        ctx.font = sharedGenres.has(g.genre) ? '700 24px sans-serif' : '500 24px sans-serif';
+        ctx.fillText(g.genre, x, y);
         y += 32;
       }
     }

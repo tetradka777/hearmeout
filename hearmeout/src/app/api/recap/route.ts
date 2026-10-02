@@ -6,8 +6,6 @@ import { canViewProfileData } from '@/lib/userProfile';
 import type { RecapData, RecapPeriod } from '@/lib/types';
 import { parseSeasonKey, seasonBounds } from '@/lib/seasons';
 
-const PERIOD_DAYS: Record<RecapPeriod, number> = { day: 1, month: 30, season: 90 };
-
 type Row = { track_id: string | null; track_title: string | null; artist: string | null; artist_id: string | null; album_id: string | null; cover_url: string | null; genre: string | null; duration_ms: number | null };
 
 export async function GET(request: NextRequest) {
@@ -17,6 +15,10 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const period = (url.searchParams.get('period') as RecapPeriod) || 'day';
   const targetUserId = url.searchParams.get('userId') || viewerId;
+  // vRecap() in the prototype has a second chip row for day (Today/
+  // Yesterday) and month (This month/Last month) — real calendar-boundary
+  // windows, not a rolling "last N days".
+  const offset = Number(url.searchParams.get('offset') || 0) || 0;
 
   const admin = supabaseAdmin();
 
@@ -30,15 +32,21 @@ export async function GET(request: NextRequest) {
   // of "the last 90 days from now" — parsed to real calendar-month bounds.
   const seasonParam = url.searchParams.get('season');
   const parsedSeason = seasonParam ? parseSeasonKey(seasonParam) : null;
+  const now = new Date();
   let since: string;
   let until: string | null = null;
   if (parsedSeason) {
     const { start, end } = seasonBounds(parsedSeason.year, parsedSeason.season);
     since = start.toISOString();
     until = end.toISOString();
+  } else if (period === 'month') {
+    const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + offset, 1));
+    since = start.toISOString();
+    until = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 1)).toISOString();
   } else {
-    const days = PERIOD_DAYS[period] ?? 1;
-    since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+    const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + offset));
+    since = start.toISOString();
+    until = new Date(start.getTime() + 24 * 60 * 60 * 1000).toISOString();
   }
 
   // Paginated for the same reason as /api/stats: PostgREST caps a single
@@ -87,12 +95,14 @@ export async function GET(request: NextRequest) {
   const topArtists = [...artistAgg.values()]
     .sort((a, b) => b.count - a.count)
     .slice(0, 3)
-    .map((a) => ({ id: a.id, name: a.name, cover: a.cover }));
+    .map((a) => ({ id: a.id, name: a.name, cover: a.cover, plays: a.count }));
   const topSongs = [...trackAgg.values()]
     .sort((a, b) => b.count - a.count)
     .slice(0, 3)
-    .map((t) => ({ title: t.title, artist: t.artist, albumId: t.albumId, cover: t.cover }));
-  const topGenres = [...genreCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([g]) => g);
+    .map((t) => ({ title: t.title, artist: t.artist, albumId: t.albumId, cover: t.cover, plays: t.count }));
+  const totalGenre = [...genreCounts.values()].reduce((s, n) => s + n, 0);
+  const topGenres = [...genreCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3)
+    .map(([genre, n]) => ({ genre, pct: totalGenre ? Math.round((n / totalGenre) * 100) : 0 }));
 
   const recap: RecapData = { topArtists, topSongs, topGenres, minutes, uniqueArtists, trackCount: rows.length };
   return NextResponse.json(recap);

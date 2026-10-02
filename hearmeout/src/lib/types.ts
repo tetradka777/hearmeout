@@ -34,13 +34,14 @@ export type RecapPeriod = 'day' | 'month' | 'season';
 export type SeasonName = 'winter' | 'spring' | 'summer' | 'autumn';
 export type SeasonOption = { key: string; year: number; season: SeasonName };
 
-export type RecapArtistRef = { id: string | null; name: string; cover: string | null };
-export type RecapTrackRef = { title: string; artist: string; albumId: string | null; cover: string | null };
+export type RecapArtistRef = { id: string | null; name: string; cover: string | null; plays: number };
+export type RecapTrackRef = { title: string; artist: string; albumId: string | null; cover: string | null; plays: number };
+export type RecapGenreShare = { genre: string; pct: number };
 
 export type RecapData = {
   topArtists: RecapArtistRef[];
   topSongs: RecapTrackRef[];
-  topGenres: string[];
+  topGenres: RecapGenreShare[];
   minutes: number;
   uniqueArtists: number;
   trackCount: number;

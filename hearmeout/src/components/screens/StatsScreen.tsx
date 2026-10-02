@@ -342,7 +342,7 @@ export function StatsScreen(_props: { device: Device }) {
             {dayRecap && (
               <p style={{ fontWeight: 700 }}>
                 “{dayRecap.trackCount > 0
-                  ? `${dayRecap.trackCount} ${pluralForKey(language, dayRecap.trackCount, 'recap.trackOne', 'recap.trackFew', 'recap.trackMany')}${dayRecap.topGenres[0] ? t('recap.vibeGenre', { genre: dayRecap.topGenres[0] }) : ''}`
+                  ? `${dayRecap.trackCount} ${pluralForKey(language, dayRecap.trackCount, 'recap.trackOne', 'recap.trackFew', 'recap.trackMany')}${dayRecap.topGenres[0] ? t('recap.vibeGenre', { genre: dayRecap.topGenres[0].genre }) : ''}`
                   : t('recap.vibeEmpty')}”
               </p>
             )}

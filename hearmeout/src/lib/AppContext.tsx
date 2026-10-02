@@ -127,6 +127,7 @@ type AppState = {
   viewingGroupId: string;
   recapPeriod: RecapPeriod;
   recapSeasonKey: string | null;
+  recapOffset: number;
   recapViewUserId: string;
   recapOrigin: ScreenName;
   searchQuery: string;
@@ -162,6 +163,7 @@ type AppContextValue = {
   toggleLoved: (type: LovedItemType, title: string, artist?: string | null, itemId?: string | null, cover?: string | null) => Promise<void>;
   friendRequests: { incoming: FriendRequest[]; outgoing: FriendRequest[] };
   recapCache: Record<string, RecapData>;
+  recapLocked: Record<string, true>;
   reviewsVersion: number;
   showScreen: (name: ScreenName) => void;
   goBack: (name: ScreenName) => void;
@@ -176,11 +178,12 @@ type AppContextValue = {
   setHistoryQuery: (q: string) => void;
   setRecapPeriod: (p: RecapPeriod) => void;
   setRecapSeasonKey: (key: string | null) => void;
+  setRecapOffset: (o: number) => void;
   recapSeasons: SeasonOption[] | null;
   setRatingValue: (v: number) => void;
   setRatingDraftText: (t: string) => void;
   publishRating: (albumId: string, stars: number, review: string, tags?: string[], isPrivate?: boolean) => Promise<void>;
-  ensureRecap: (userId: string, period: RecapPeriod, seasonKey?: string | null) => void;
+  ensureRecap: (userId: string, period: RecapPeriod, seasonKey?: string | null, offset?: number) => void;
   registerWithPassword: (name: string, password: string) => Promise<void>;
   dismissOnboarding: () => void;
   loginWithPassword: (handle: string, password: string) => Promise<void>;
@@ -225,6 +228,7 @@ const initialState: AppState = {
   viewingGroupId: '',
   recapPeriod: 'day',
   recapSeasonKey: null,
+  recapOffset: 0,
   recapViewUserId: 'me',
   recapOrigin: 'catalog',
   searchQuery: '',
@@ -250,6 +254,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [lovedItems, setLovedItems] = useState<LovedItem[]>([]);
   const [friendRequests, setFriendRequests] = useState<{ incoming: FriendRequest[]; outgoing: FriendRequest[] }>({ incoming: [], outgoing: [] });
   const [recapCache, setRecapCache] = useState<Record<string, RecapData>>({});
+  const [recapLocked, setRecapLocked] = useState<Record<string, true>>({});
   const [reviewsVersion, setReviewsVersion] = useState(0);
   const [fetchedAlbums, setFetchedAlbums] = useState<Record<string, Album>>({});
   const [failedAlbumIds, setFailedAlbumIds] = useState<Record<string, true>>({});
@@ -548,20 +553,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const setActiveGenre = useCallback((g: string) => patch({ activeGenre: g }), [patch]);
   const setSortBy = useCallback((sVal: SortBy) => patch({ sortBy: sVal }), [patch]);
   const setHistoryQuery = useCallback((q: string) => patch({ historyQuery: q }), [patch]);
-  const setRecapPeriod = useCallback((p: RecapPeriod) => patch({ recapPeriod: p, recapSeasonKey: null }), [patch]);
+  const setRecapPeriod = useCallback((p: RecapPeriod) => patch({ recapPeriod: p, recapSeasonKey: null, recapOffset: 0 }), [patch]);
   const setRecapSeasonKey = useCallback((key: string | null) => patch({ recapSeasonKey: key }), [patch]);
+  const setRecapOffset = useCallback((o: number) => patch({ recapOffset: o }), [patch]);
   const setRatingValue = useCallback((v: number) => patch({ ratingValue: v }), [patch]);
   const setRatingDraftText = useCallback((t: string) => patch({ ratingDraftText: t }), [patch]);
 
-  const ensureRecap = useCallback((userId: string, period: RecapPeriod, seasonKey?: string | null) => {
+  const ensureRecap = useCallback((userId: string, period: RecapPeriod, seasonKey?: string | null, offset = 0) => {
     const targetId = userId === 'me' ? me?.id : userId;
     if (!targetId) return;
-    const key = `${targetId}:${period}${seasonKey ? ':' + seasonKey : ''}`;
+    const key = `${targetId}:${period}${seasonKey ? ':' + seasonKey : offset ? ':' + offset : ''}`;
     if (requestedRecapKeys.current.has(key)) return;
     requestedRecapKeys.current.add(key);
-    const seasonQS = seasonKey ? `&season=${encodeURIComponent(seasonKey)}` : '';
+    const seasonQS = seasonKey ? `&season=${encodeURIComponent(seasonKey)}` : offset ? `&offset=${offset}` : '';
     fetch(`/api/recap?period=${period}&userId=${targetId}${seasonQS}`)
-      .then((res) => (res.ok ? res.json() : null))
+      .then((res) => {
+        // A friend's recap is just another view into their listening data
+        // (same friends-only boundary as their profile) — vRecap() in the
+        // prototype has a dedicated locked state for this, not an endless
+        // spinner.
+        if (res.status === 403) { setRecapLocked((s) => ({ ...s, [key]: true })); return null; }
+        return res.ok ? res.json() : null;
+      })
       .then((data: RecapData | null) => {
         if (data) setRecapCache((s) => ({ ...s, [key]: data }));
         else requestedRecapKeys.current.delete(key);
@@ -896,16 +909,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AppContextValue>(() => ({
     state, language: state.language, t, albums: ALBUMS, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds,
-    spotifyObscure, spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, friendRequests, recapCache, reviewsVersion,
+    spotifyObscure, spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, friendRequests, recapCache, recapLocked, reviewsVersion,
     showScreen, goBack, openAlbum, viewFriend, viewGroup, openRecap, closeRecap,
-    setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, recapSeasons,
+    setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, setRecapOffset, recapSeasons,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
     updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateLanguage, updateRegion, updateOpenProfile, updateAppearance, updatePrivacy,
     addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyObscure,
-    spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, friendRequests, recapCache, reviewsVersion, showScreen, goBack, openAlbum,
-    setRecapSeasonKey, recapSeasons,
+    spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, friendRequests, recapCache, recapLocked, reviewsVersion, showScreen, goBack, openAlbum,
+    setRecapSeasonKey, setRecapOffset, recapSeasons,
     viewFriend, viewGroup, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
