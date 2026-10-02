@@ -4,21 +4,15 @@ import { useMemo, useRef, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
 import { userAvatarStyle, formatJoinDate } from '@/lib/format';
-import { regionDisplayName, pluralForKey } from '@/lib/i18n';
+import { regionDisplayName, getRegionCodes } from '@/lib/i18n';
 import {
   GenresBlock, TasteFingerprint, RecentRatingsList, MyReviewsBlock, ListeningRecentBlock,
-  Top4Grid, FriendRequestsBlock, FriendsBlock, AwardsBlock, LovedTracksBlock,
+  Top4Grid, FriendRequestsBlock, FriendsBlock, AwardsBlock, LovedTracksColumn, LovedAlbumsColumn, LovedArtistsColumn,
 } from '../ProfileBlocks';
 import { StarIcon, BarsIcon } from '../ui/Icons';
 import { GroupsIcon, SettingsIcon } from '../redesign/icons';
 
-type ProfileTab = 'ratings' | 'reviews' | 'awards' | 'listening' | 'friends';
-
-function ProfileBanner() {
-  const { me } = useApp();
-  if (!me?.bannerUrl) return null;
-  return <div style={{ height: 140, borderRadius: 'var(--r)', marginBottom: 14, backgroundImage: `url('${me.bannerUrl}')`, backgroundSize: 'cover', backgroundPosition: 'center' }} />;
-}
+type ProfileTab = 'ratings' | 'reviews' | 'loved' | 'taste' | 'awards' | 'listening' | 'friends';
 
 function AvatarPicker({ size = 96 }: { size?: number }) {
   const { t, me, updateAvatar } = useApp();
@@ -45,16 +39,10 @@ function AvatarPicker({ size = 96 }: { size?: number }) {
   );
 }
 
-function SettingsSummary() {
-  const { t, me, language, showScreen } = useApp();
+function PreviewPublicPageButton() {
+  const { t, me } = useApp();
   if (!me) return null;
-  return (
-    <div className="tile">
-      <h3>{t('settings.eyebrow')}</h3>
-      <div className="row"><div className="g">{t('profile.region')}</div><small className="muted">{me.region ? regionDisplayName(me.region, language) : t('profile.regionNone')}</small></div>
-      <button className="btn ghost" style={{ marginTop: 10 }} onClick={() => showScreen('settings')}>{t('settings.openAll')} →</button>
-    </div>
-  );
+  return <a className="btn ghost" href={`/u/${me.handle.replace(/^@/, '')}`} target="_blank" rel="noreferrer">{t('profile.previewPublicPage')}</a>;
 }
 
 function ShareProfileButton() {
@@ -98,8 +86,9 @@ function ShareLovedTracksButton() {
 }
 
 export function ProfileScreen(_props: { device: Device }) {
-  const { t, language, me, myRatings, albums, liveAlbums, updateProfileName, updateProfileHandle, showScreen } = useApp();
+  const { t, language, me, myRatings, albums, liveAlbums, updateProfileName, updateProfileHandle, updateRegion, showScreen } = useApp();
   const [tab, setTab] = useState<ProfileTab>('ratings');
+  const regionCodes = useMemo(() => getRegionCodes(), []);
 
   const tasteFingerprint = useMemo(() => {
     const sums = new Map<string, { sum: number; count: number }>();
@@ -117,23 +106,15 @@ export function ProfileScreen(_props: { device: Device }) {
       .slice(0, 4);
   }, [myRatings, albums, liveAlbums]);
 
-  const artistCount = useMemo(() => {
-    const artists = new Set<string>();
-    for (const r of myRatings) {
-      const a = liveAlbums[r.albumId] || albums.find((x) => x.id === r.albumId);
-      if (a) artists.add(a.artist);
-    }
-    return artists.size;
-  }, [myRatings, albums, liveAlbums]);
-
   if (!me) return null;
 
-  const friendsSuffix = pluralForKey(language, me.friends.length, 'profile.friendOne', 'profile.friendFew', 'profile.friendMany');
   const recentFive = [...myRatings].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
 
   const TABS: { key: ProfileTab; label: string }[] = [
     { key: 'ratings', label: t('profile.tabRatings') },
     { key: 'reviews', label: t('profile.tabReviews') },
+    { key: 'loved', label: t('profile.tabLoved') },
+    { key: 'taste', label: t('profile.tabTaste') },
     { key: 'awards', label: t('profile.tabAwards') },
     { key: 'listening', label: t('profile.tabListening') },
     { key: 'friends', label: t('profile.tabFriends') },
@@ -141,23 +122,22 @@ export function ProfileScreen(_props: { device: Device }) {
 
   return (
     <>
-      <ProfileBanner />
       <div className="tile t-ink hero">
         <div className="prof">
           <AvatarPicker />
           <div className="pinfo">
             <input className="pname" defaultValue={me.name} onBlur={(e) => updateProfileName(e.target.value)} />
             <div className="phandle"><input defaultValue={me.handle} onBlur={(e) => updateProfileHandle(e.target.value)} /></div>
-            <p className="muted">{me.friends.length} {friendsSuffix} · {t('profile.joined')} {formatJoinDate(me.joinedAt, language)}</p>
+            <p className="muted">{t('profile.joined')} {formatJoinDate(me.joinedAt, language)} · {t('profile.tapToEditHint')}</p>
           </div>
           <div className="pcnt">
             <div><span className="num">{me.stats.ratings}</span><small>{t('profile.ratings')}</small></div>
+            <div><span className="num">{me.stats.avg || '—'}</span><small>{t('profile.avg')}</small></div>
             <div><span className="num">{me.stats.reviews}</span><small>{t('profile.reviews')}</small></div>
             <div><span className="num">{me.friends.length}</span><small>{t('profile.friends')}</small></div>
-            <div><span className="num">{artistCount}</span><small>{t('profile.artists')}</small></div>
           </div>
         </div>
-        <div className="acts"><ShareProfileButton /></div>
+        <div className="acts"><ShareProfileButton /><PreviewPublicPageButton /></div>
       </div>
 
       <div className="bento" style={{ gridTemplateColumns: 'repeat(2,minmax(0,1fr))' }}>
@@ -170,9 +150,17 @@ export function ProfileScreen(_props: { device: Device }) {
         <button className="tile" style={{ textAlign: 'left', cursor: 'pointer' }} onClick={() => showScreen('groups')}>
           <GroupsIcon /><h3 style={{ marginTop: 8 }}>{t('profile.quickGroups')}</h3>
         </button>
-        <button className="tile" style={{ textAlign: 'left', cursor: 'pointer' }} onClick={() => showScreen('settings')}>
+        <div className="tile">
           <SettingsIcon /><h3 style={{ marginTop: 8 }}>{t('profile.quickSettings')}</h3>
-        </button>
+          <div className="row" style={{ marginTop: 10 }}>
+            <div className="g">{t('profile.region')}</div>
+            <select className="field" value={me.region ?? ''} onChange={(e) => updateRegion(e.target.value || null)}>
+              <option value="">{t('profile.regionNone')}</option>
+              {regionCodes.map((code) => <option key={code} value={code}>{regionDisplayName(code, language)}</option>)}
+            </select>
+          </div>
+          <button className="btn ghost" style={{ marginTop: 10, width: '100%' }} onClick={() => showScreen('settings')}>{t('settings.openAll')} →</button>
+        </div>
       </div>
 
       <div className="chips">
@@ -197,18 +185,6 @@ export function ProfileScreen(_props: { device: Device }) {
             <div style={{ marginTop: 10 }}><RecentRatingsList ratings={recentFive} /></div>
             {me.stats.ratings > 5 && <button className="btn ghost" style={{ marginTop: 10 }} onClick={() => showScreen('history')}>{t('profile.seeAllRatings', { count: me.stats.ratings })}</button>}
           </div>
-          <div className="tile">
-            <h3>{t('profile.top4')}</h3>
-            <div style={{ marginTop: 10 }}><Top4Grid ids={me.top4Albums} /></div>
-          </div>
-          <div className="tile s2">
-            <h3>{t('profile.taste')}</h3>
-            <div style={{ marginTop: 10 }}><TasteFingerprint entries={tasteFingerprint} /></div>
-          </div>
-          <div className="tile">
-            <h3>{t('profile.favoriteGenres')}</h3>
-            <div style={{ marginTop: 10 }}><GenresBlock genres={me.genres} /></div>
-          </div>
         </div>
       )}
 
@@ -218,10 +194,42 @@ export function ProfileScreen(_props: { device: Device }) {
             <h3>{t('profile.tabReviews')}</h3>
             <div style={{ marginTop: 10 }}><MyReviewsBlock /></div>
           </div>
+        </div>
+      )}
+
+      {tab === 'loved' && (
+        <div className="bento b3">
           <div className="tile">
-            <h3>{t('profile.lovedTracks')}</h3>
-            <div style={{ marginTop: 10 }}><LovedTracksBlock /></div>
-            <div style={{ marginTop: 10 }}><ShareLovedTracksButton /></div>
+            <h3>{t('profile.lovedTypeTrack')}</h3>
+            <div style={{ marginTop: 10 }}><LovedTracksColumn /></div>
+          </div>
+          <div className="tile">
+            <h3>{t('profile.lovedTypeAlbum')}</h3>
+            <div style={{ marginTop: 10 }}><LovedAlbumsColumn /></div>
+          </div>
+          <div className="tile">
+            <h3>{t('profile.lovedTypeArtist')}</h3>
+            <div style={{ marginTop: 10 }}><LovedArtistsColumn /></div>
+          </div>
+          <div className="tile s3"><ShareLovedTracksButton /></div>
+        </div>
+      )}
+
+      {tab === 'taste' && (
+        <div className="bento b3">
+          <div className="tile s2">
+            <h3>{t('profile.taste')}</h3>
+            <p className="muted" style={{ margin: '-6px 0 10px' }}>{t('profile.tasteFingerprintSubtitle')}</p>
+            <TasteFingerprint entries={tasteFingerprint} />
+          </div>
+          <div className="tile">
+            <h3>{t('profile.favoriteGenres')}</h3>
+            <p className="muted" style={{ margin: '-6px 0 10px' }}>{t('profile.favoriteGenresSubtitle')}</p>
+            <GenresBlock genres={me.genres} />
+          </div>
+          <div className="tile s3">
+            <h3>{t('profile.top4')}</h3>
+            <div style={{ marginTop: 10 }}><Top4Grid ids={me.top4Albums} /></div>
           </div>
         </div>
       )}
@@ -230,7 +238,7 @@ export function ProfileScreen(_props: { device: Device }) {
         <div className="bento b3">
           <div className="tile s3">
             <h3>{t('profile.monthAwards')}</h3>
-            <div style={{ marginTop: 10 }}><AwardsBlock /></div>
+            <div style={{ marginTop: 10 }}><AwardsBlock onGoToFriends={() => setTab('friends')} /></div>
           </div>
         </div>
       )}
@@ -241,7 +249,6 @@ export function ProfileScreen(_props: { device: Device }) {
             <h3>{t('profile.tabListening')}</h3>
             <div style={{ marginTop: 10 }}><ListeningRecentBlock /></div>
           </div>
-          <SettingsSummary />
         </div>
       )}
 

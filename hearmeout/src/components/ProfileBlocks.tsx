@@ -242,17 +242,59 @@ export function ListeningRecentBlock() {
   );
 }
 
-const LOVED_TYPE_LABEL: Record<string, string> = { track: 'profile.lovedTypeTrack', album: 'profile.lovedTypeAlbum', artist: 'profile.lovedTypeArtist' };
-
-export function LovedTracksBlock() {
+// vProfile()'s loveRows(kind,keys): three distinct row shapes per type, not
+// one merged list — tracks are plain text (no cover, no click-through),
+// albums link to the album/rate page, artists link to the artist page.
+export function LovedTracksColumn() {
   const { t, lovedItems, toggleLoved } = useApp();
-  if (!lovedItems.length) return <p className="muted">{t('profile.noLovedTracks')}</p>;
+  const items = lovedItems.filter((li) => li.type === 'track');
+  if (!items.length) return <p className="muted">{t('profile.lovedEmptyTrack')}</p>;
   return (
     <div className="stack">
-      {lovedItems.slice(0, 10).map((li) => (
+      {items.map((li) => (
         <div className="row" key={li.id}>
-          <CoverArt url={li.cover ?? undefined} fallbackLetter={(li.artist || li.title)[0] || '?'} className="cov" style={{ width: 36, height: 36 }} />
-          <div className="g"><b>{li.title}</b><div className="muted">{li.artist ? `${li.artist} · ` : ''}{t(LOVED_TYPE_LABEL[li.type] as never)}</div></div>
+          <div className="g"><b>{li.title}</b>{li.artist && <small className="muted">{li.artist}</small>}</div>
+          <button className="ib love on" onClick={() => toggleLoved(li.type, li.title, li.artist, li.itemId, li.cover)} aria-label={t('stats.loveTrack')}><HeartIcon /></button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function LovedAlbumsColumn() {
+  const { t, lovedItems, toggleLoved, albums, liveAlbums, openAlbum } = useApp();
+  const items = lovedItems.filter((li) => li.type === 'album');
+  if (!items.length) return <p className="muted">{t('profile.lovedEmptyAlbum')}</p>;
+  return (
+    <div className="stack">
+      {items.map((li) => {
+        const a = li.itemId ? (liveAlbums[li.itemId] || albums.find((x) => x.id === li.itemId || x.spotifyId === li.itemId)) : undefined;
+        return (
+          <div className="row" key={li.id}>
+            <button className="rowlink" onClick={() => a && openAlbum(a.id)} style={{ cursor: a ? 'pointer' : 'default' }}>
+              <CoverArt url={li.cover ?? undefined} fallbackLetter={(li.artist || li.title)[0] || '?'} className="cov" style={{ width: 44, height: 44 }} />
+              <div className="g"><b>{li.title}</b><div className="muted">{li.artist}</div></div>
+            </button>
+            <button className="ib love on" onClick={() => toggleLoved(li.type, li.title, li.artist, li.itemId, li.cover)} aria-label={t('stats.loveTrack')}><HeartIcon /></button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export function LovedArtistsColumn() {
+  const { t, lovedItems, toggleLoved, openSpotifyArtist } = useApp();
+  const items = lovedItems.filter((li) => li.type === 'artist');
+  if (!items.length) return <p className="muted">{t('profile.lovedEmptyArtist')}</p>;
+  return (
+    <div className="stack">
+      {items.map((li) => (
+        <div className="row" key={li.id}>
+          <button className="rowlink" onClick={() => li.itemId && openSpotifyArtist(li.itemId)} style={{ cursor: li.itemId ? 'pointer' : 'default' }}>
+            <div className="dot" style={li.cover ? { backgroundImage: `url('${li.cover}')`, backgroundSize: 'cover', color: 'transparent' } : undefined}>{li.title[0]}</div>
+            <div className="g"><b>{li.title}</b></div>
+          </button>
           <button className="ib love on" onClick={() => toggleLoved(li.type, li.title, li.artist, li.itemId, li.cover)} aria-label={t('stats.loveTrack')}><HeartIcon /></button>
         </div>
       ))}
@@ -311,6 +353,7 @@ export function FriendRequestsBlock() {
                 <div className="dot" style={userAvatarStyle(r.user)}>{r.user.name[0]}</div>
                 <div className="g"><b>{r.user.name}</b><div className="muted">{r.user.handle}</div></div>
                 <span className="tag">{t('friends.pendingBadge')}</span>
+                <button className="btn ghost" onClick={() => respondToFriendRequest(r.id, 'cancel')}>{t('friends.cancel')}</button>
               </div>
             ))}
           </div>
@@ -409,7 +452,7 @@ export function FriendsBlock() {
 
 type Award = { name: string; value: number };
 
-export function AwardsBlock() {
+export function AwardsBlock({ onGoToFriends }: { onGoToFriends: () => void }) {
   const { t, language, me } = useApp();
   const [mostMinutes, setMostMinutes] = useState<Award | null>(null);
   const [mostNiche, setMostNiche] = useState<Award | null>(null);
@@ -447,7 +490,12 @@ export function AwardsBlock() {
   }, [me]);
 
   if (!me) return null;
-  if (!me.friends.length) return <p className="muted">{t('awards.needFriends')}</p>;
+  if (!me.friends.length) return (
+    <div>
+      <p className="muted">{t('awards.needFriends')}</p>
+      <button className="btn" style={{ marginTop: 10 }} onClick={onGoToFriends}>{t('profile.tabFriends')}</button>
+    </div>
+  );
   if (loading) return <p className="muted">{t('awards.computing')}</p>;
   if (!mostMinutes || !mostNiche) return <p className="muted">{t('awards.notEnough')}</p>;
 

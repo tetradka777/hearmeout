@@ -206,7 +206,7 @@ type AppContextValue = {
     ratingsVisible: boolean; shareLive: boolean; publicReviews: boolean; discoverable: boolean;
   }>) => Promise<void>;
   addFriend: (handle: string) => Promise<void>;
-  respondToFriendRequest: (requestId: number, action: 'accept' | 'decline') => Promise<void>;
+  respondToFriendRequest: (requestId: number, action: 'accept' | 'decline' | 'cancel') => Promise<void>;
   syncSpotify: () => Promise<void>;
   onSpotifyConnected: () => Promise<void>;
   importStreamingHistory: (files: File[]) => Promise<{ imported: number; skipped: number; errors: string[] } | null>;
@@ -691,7 +691,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [refreshMe, refreshFriendRequests, showToast, t]);
 
-  const respondToFriendRequest = useCallback(async (requestId: number, action: 'accept' | 'decline') => {
+  const respondToFriendRequest = useCallback(async (requestId: number, action: 'accept' | 'decline' | 'cancel') => {
     const res = await fetch('/api/friends/respond', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -702,7 +702,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return;
     }
     await Promise.all([refreshFriendRequests(), action === 'accept' ? refreshMe() : Promise.resolve()]);
-    showToast(action === 'accept' ? t('toast.friendAdded') : t('toast.friendRequestDeclined'));
+    showToast(action === 'accept' ? t('toast.friendAdded') : action === 'cancel' ? t('toast.friendRequestCancelled') : t('toast.friendRequestDeclined'));
   }, [refreshFriendRequests, refreshMe, showToast, t]);
 
   const syncSpotify = useCallback(async () => {
