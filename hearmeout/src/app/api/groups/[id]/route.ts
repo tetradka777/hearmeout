@@ -12,7 +12,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   const leaderboardPeriod: GroupLeaderboardPeriod = url.searchParams.get('period') === 'week' ? 'week' : 'month';
 
   const admin = supabaseAdmin();
-  const { data: group } = await admin.from('groups').select('id, name, created_by').eq('id', id).maybeSingle();
+  const { data: group } = await admin.from('groups').select('id, name, created_by, created_at').eq('id', id).maybeSingle();
   if (!group) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
   const { data: memberRows } = await admin.from('group_members').select('user_id').eq('group_id', id);
@@ -295,7 +295,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   const vote = { monthKey, myVote: myVoteRow ? (myVoteRow.candidate_id as string) : null, candidates };
 
   const detail: GroupDetail = {
-    id: group.id, name: group.name, createdBy: group.created_by,
+    id: group.id, name: group.name, createdBy: group.created_by, createdAt: group.created_at,
     members, memberStats, awards, activity, leaderboard, leaderboardPeriod,
     records, topAlbums, taste, vote,
   };

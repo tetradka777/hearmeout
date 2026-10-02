@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device, GroupSummary } from '@/lib/types';
+import { userAvatarStyle } from '@/lib/format';
+import { MascotIcon } from '../redesign/icons';
 
 // Groups list (spec 6.6 "Groups: list"). Tapping a group opens its own
 // full-screen page (GroupScreen) via viewGroup, a real navigable route —
@@ -41,7 +43,7 @@ export function GroupsScreen(_props: { device: Device }) {
 
   return (
     <>
-      <div className="eyebrow">{t('groups.eyebrow')}</div>
+      <div className="eyebrow">{t('groups.eyebrowCount', { count: groups?.length ?? 0 })}</div>
       <h1 className="big">{t('groups.title')}</h1>
 
       {groups === null ? (
@@ -49,10 +51,22 @@ export function GroupsScreen(_props: { device: Device }) {
       ) : (
         <div className="bento b3">
           {groups.map((g) => (
-            <button className="tile" key={g.id} onClick={() => viewGroup(g.id)} style={{ textAlign: 'left', cursor: 'pointer' }}>
-              <h3>{g.name}</h3>
-              <p className="muted">{t('groups.memberCount', { count: g.memberCount })}</p>
-              {g.newPlays > 0 && <span className="tag">{g.newPlays} new</span>}
+            <button className="tile gl" key={g.id} onClick={() => viewGroup(g.id)} style={{ textAlign: 'left', cursor: 'pointer' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
+                <h3>{g.name}</h3>
+                {g.newPlays > 0 && <span className="tag">{g.newPlays} new</span>}
+              </div>
+              <div className="hrow" style={{ margin: '14px 0 10px', gap: 6, flexWrap: 'wrap' }}>
+                {g.members.map((m) => (
+                  <span key={m.id} className="dot" style={{ ...userAvatarStyle(m), width: 32, height: 32, fontSize: 13 }}>{m.name[0]}</span>
+                ))}
+              </div>
+              <small className="muted">{t('groups.memberCount', { count: g.memberCount })} · {t('groups.since', { date: new Date(g.createdAt).toLocaleDateString() })}</small>
+              {g.topListener && (
+                <p style={{ marginTop: 12, fontWeight: 700 }}>{t('groups.listenedMostWeek', { name: g.topListener.user.name, hours: g.topListener.hours })}</p>
+              )}
+              <p className="muted" style={{ marginTop: 2 }}>{t('groups.voteOpenHint')}</p>
+              <span style={{ display: 'inline-block', marginTop: 14, fontWeight: 800 }}>{t('groups.openGroup')} →</span>
             </button>
           ))}
           {creating ? (
@@ -73,8 +87,9 @@ export function GroupsScreen(_props: { device: Device }) {
               </div>
             </div>
           ) : (
-            <button className="tile" onClick={() => setCreating(true)} style={{ textAlign: 'left', cursor: 'pointer', borderStyle: 'dashed' }}>
-              <h3>+ {t('groups.create')}</h3>
+            <button className="tile t-soft2 empty" onClick={() => setCreating(true)} style={{ minHeight: 210, cursor: 'pointer' }}>
+              <MascotIcon />
+              <h3>{t('groups.newGroup')}</h3>
               <p className="muted">{t('groups.newGroupHint')}</p>
             </button>
           )}

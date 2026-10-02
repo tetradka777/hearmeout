@@ -179,7 +179,7 @@ export type StatsData = {
   seasonChips: StatsSeasonChip[];
 };
 
-export type GroupSummary = { id: string; name: string; memberCount: number; newPlays: number };
+export type GroupSummary = { id: string; name: string; memberCount: number; newPlays: number; createdAt: string; members: ApiUser[]; topListener: { user: ApiUser; hours: number } | null };
 export type GroupMember = ApiUser;
 export type GroupAward = { label: string; winner: ApiUser | null; detail: string };
 export type GroupActivityEvent = {
@@ -215,6 +215,7 @@ export type GroupDetail = {
   id: string;
   name: string;
   createdBy: string;
+  createdAt: string;
   members: GroupMember[];
   memberStats: GroupMemberStats[];
   awards: GroupAward[];

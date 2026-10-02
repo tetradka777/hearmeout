@@ -14,11 +14,27 @@ export async function GET() {
   if (!groupIds.length) return NextResponse.json([]);
 
   const [{ data: groups }, { data: allMembers }] = await Promise.all([
-    admin.from('groups').select('id, name').in('id', groupIds),
+    admin.from('groups').select('id, name, created_at').in('id', groupIds),
     admin.from('group_members').select('group_id, user_id').in('group_id', groupIds),
   ]);
 
+  const allMemberIds = [...new Set((allMembers || []).map((m) => m.user_id as string))];
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  // vGroups() list cards show the member avatar row and "Listened most this
+  // week: {name} · {hours}h" — both missing before, even though the data
+  // (users + this-week listening_events) is the same the group detail page
+  // already fetches per group.
+  const [{ data: users }, { data: weekEvents }] = await Promise.all([
+    admin.from('users').select('id, name, handle, avatar_url').in('id', allMemberIds),
+    admin.from('listening_events').select('user_id, duration_ms').in('user_id', allMemberIds).gte('played_at', since),
+  ]);
+  const userById = new Map((users || []).map((u) => [u.id as string, { id: u.id as string, name: u.name as string, handle: u.handle as string, avatarUrl: u.avatar_url as string | null }]));
+  const hoursByUser = new Map<string, number>();
+  for (const e of weekEvents || []) {
+    const k = e.user_id as string;
+    hoursByUser.set(k, (hoursByUser.get(k) || 0) + (e.duration_ms || 0));
+  }
+
   const summaries: GroupSummary[] = [];
   for (const g of groups || []) {
     const memberIds = (allMembers || []).filter((m) => m.group_id === g.id).map((m) => m.user_id as string);
@@ -27,7 +43,12 @@ export async function GET() {
       .select('*', { count: 'exact', head: true })
       .in('user_id', memberIds)
       .gte('created_at', since);
-    summaries.push({ id: g.id, name: g.name, memberCount: memberIds.length, newPlays: count || 0 });
+    const members = memberIds.map((id) => userById.get(id)).filter((u): u is NonNullable<typeof u> => !!u);
+    const ranked = members
+      .map((user) => ({ user, hours: Math.round(((hoursByUser.get(user.id) || 0) / 3600000) * 10) / 10 }))
+      .sort((a, b) => b.hours - a.hours);
+    const topListener = ranked.length && ranked[0].hours > 0 ? ranked[0] : null;
+    summaries.push({ id: g.id, name: g.name, memberCount: memberIds.length, newPlays: count || 0, createdAt: g.created_at as string, members, topListener });
   }
   return NextResponse.json(summaries);
 }

@@ -37,7 +37,7 @@ export function GroupScreen({ device }: { device: Device }) {
   if (!me) return null;
   if (!detail) return (
     <>
-      <button className="crumb" onClick={() => goBack('groups')}>‹ {t('groups.title')}</button>
+      <button className="crumb" onClick={() => goBack('groups')}>‹ {t('groups.allGroups')}</button>
       <p className="muted">{t('groups.loading')}</p>
     </>
   );
@@ -66,6 +66,8 @@ export function GroupScreen({ device }: { device: Device }) {
   };
 
   const totalHours = detail.leaderboard.reduce((s, r) => s + r.hours, 0);
+  const totalRatingsThisMonth = detail.memberStats.reduce((s, m) => s + m.ratingsMonth, 0);
+  const groupAvgScore = detail.memberStats.length ? detail.memberStats.reduce((s, m) => s + m.avgScore, 0) / detail.memberStats.length : 0;
   const statsByUser = new Map(detail.memberStats.map((s) => [s.userId, s]));
   const voteTop = Math.max(1, ...detail.vote.candidates.map((c) => c.count));
   const albumMeta = (id: string) => liveAlbums[id] || albums.find((x) => x.id === id);
@@ -74,12 +76,12 @@ export function GroupScreen({ device }: { device: Device }) {
 
   return (
     <>
-      <button className="crumb" onClick={() => goBack('groups')}>‹ {t('groups.title')}</button>
+      <button className="crumb" onClick={() => goBack('groups')}>‹ {t('groups.allGroups')}</button>
 
       <div className="tile t-ink hero glow">
         <span className="pill">{t('groups.privateGroup')}</span>
         <h1>{detail.name}</h1>
-        <p className="muted">{t('groups.memberCount', { count: detail.members.length })}</p>
+        <p className="muted">{t('groups.memberCount', { count: detail.members.length })} · {t('groups.since', { date: new Date(detail.createdAt).toLocaleDateString() })}</p>
         <div className="hrow" style={{ marginTop: 10 }}>
           {detail.members.map((m) => (
             <button key={m.id} className="dot" style={{ ...userAvatarStyle(m), width: 40, height: 40 }} onClick={() => m.id !== me.id && viewFriend(m.id)}>
@@ -93,9 +95,9 @@ export function GroupScreen({ device }: { device: Device }) {
       </div>
 
       <div className="stats3">
-        <div className="tile"><span className="num">{totalHours.toFixed(0)}h</span><small className="muted">listened this month</small></div>
-        <div className="tile"><span className="num">{detail.activity.length}</span><small className="muted">{t('groups.activity')}</small></div>
-        <div className="tile"><span className="num">{detail.members.length}</span><small className="muted">{t('groups.yourGroups')}</small></div>
+        <div className="tile t-pop"><span className="num">{totalHours.toFixed(0)}h</span><small>{t(period === 'week' ? 'groups.listenedWeek' : 'groups.listenedMonth')}</small></div>
+        <div className="tile t-ac"><span className="num">{totalRatingsThisMonth}</span><small>{t('groups.figRatings')}</small></div>
+        <div className="tile t-ink"><span className="num">{groupAvgScore ? groupAvgScore.toFixed(1) : '—'}</span><small>{t('groups.figAvg')}</small></div>
       </div>
 
       <div className="bento b3">
@@ -146,7 +148,7 @@ export function GroupScreen({ device }: { device: Device }) {
                   <div className="top">
                     <div className="dot" style={userAvatarStyle(m)}>{m.name[0]}</div>
                     <b>{m.name}</b>
-                    {m.id === detail.createdBy && <span className="tag">{t('groups.owner')}</span>}
+                    <span className="tag">{m.id === detail.createdBy ? t('groups.owner') : t('groups.member')}</span>
                   </div>
                   {s && (
                     <>
@@ -177,19 +179,22 @@ export function GroupScreen({ device }: { device: Device }) {
           <h3>{t('groups.voteOpen')}</h3>
           <p className="muted">{t('groups.voteQuestion')}</p>
           {detail.vote.candidates.length ? (
-            <div className="stack" style={{ marginTop: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 12, marginTop: 10 }}>
               {detail.vote.candidates.map((c) => {
                 const a = albumMeta(c.albumId);
+                const totalVotes = detail.vote.candidates.reduce((s, x) => s + x.count, 0);
+                const pct = totalVotes ? Math.round((c.count / totalVotes) * 100) : 0;
+                const mine = detail.vote.myVote === c.albumId;
                 return (
-                  <button className="row" key={c.albumId} onClick={() => castVote(c.albumId)} style={{ cursor: 'pointer' }}>
-                    <CoverArt url={a?.cover} fallbackLetter={a?.artist[0] || '?'} className="cov" style={{ width: 40, height: 40 }} />
-                    <div className="g">
-                      <b>{a ? a.title : '…'}</b>
-                      <div className="meter" style={{ marginTop: 4 }}><i style={{ width: `${(c.count / voteTop) * 100}%` }} /></div>
-                    </div>
-                    <span className="num" style={{ fontSize: 18 }}>{c.count}</span>
-                    {detail.vote.myVote === c.albumId && <span className="tag">✓</span>}
-                  </button>
+                  <div key={c.albumId}>
+                    <CoverArt url={a?.cover} fallbackLetter={a?.artist[0] || '?'} className="cov" style={{ width: '100%', aspectRatio: '1' }} />
+                    <b style={{ display: 'block', margin: '8px 0 2px', fontSize: 14 }}>{a ? a.title : '…'}</b>
+                    <div className="meter" style={{ height: 10 }}><i style={{ width: `${(c.count / voteTop) * 100}%` }} /></div>
+                    <small style={{ fontWeight: 700 }}>{t('groups.voteCount', { count: c.count })} · {pct}%</small>
+                    <button className={`btn${mine ? '' : ' ghost'}`} style={{ width: '100%', marginTop: 8, padding: 8 }} onClick={() => castVote(c.albumId)} aria-pressed={mine}>
+                      {mine ? t('groups.yourVote') : t('groups.voteBtn')}
+                    </button>
+                  </div>
                 );
               })}
             </div>
