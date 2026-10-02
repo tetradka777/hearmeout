@@ -50,7 +50,8 @@ function FriendsWhoRated({ albumId }: { albumId: string }) {
             <div className="row" key={r.id}>
               <div className="dot" style={userAvatarStyle({ avatarUrl: r.avatarUrl })}>{r.name[0]}</div>
               <div className="g"><b>{r.name}</b></div>
-              <Stars value={r.stars} size={14} />
+              <Stars value={r.stars} size={15} />
+              <span className="num" style={{ fontSize: 30 }}>{r.stars.toFixed(1)}</span>
             </div>
           ))}
         </div>
@@ -82,9 +83,6 @@ export function RateScreen({ device }: { device: Device }) {
     if (state.activeScreen === 'rate' && !enriched) ensureLiveAlbum(state.currentAlbumId, staticMatch?.spotifyId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.activeScreen, state.currentAlbumId, enriched]);
-
-  const [wishlisted, setWishlisted] = useState(false);
-  useEffect(() => { setWishlisted(false); }, [a?.id]);
 
   const [circleAvg, setCircleAvg] = useState<{ avg: number; n: number } | null>(null);
   useEffect(() => {
@@ -171,9 +169,6 @@ export function RateScreen({ device }: { device: Device }) {
           </p>
           <h1 className="big">{a.title}</h1>
           <div className="acts" style={{ margin: '0 0 14px' }}>
-            <button className="btn ghost" onClick={() => setWishlisted((v) => !v)}>
-              {wishlisted ? t('album.inWishlist') : t('album.addWishlist')}
-            </button>
             <button className={`btn ghost love${albumLoved ? ' on' : ''}`} onClick={() => toggleLoved('album', a.title, a.artist, a.spotifyId ?? null, spotifyCovers[a.id] || a.cover || null)}>
               <HeartIcon /> {albumLoved ? t('album.loved') : t('album.love')}
             </button>
