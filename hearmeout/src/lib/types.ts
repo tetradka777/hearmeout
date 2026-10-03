@@ -76,6 +76,14 @@ export type PublicProfile = ApiUser & {
   // mutual connections without exposing a stranger's whole friend graph.
   friends?: ApiUser[];
   recentRatings?: RatingRecord[];
+  // Friend-only extras (spec 6.4), same visibility as recentRatings:
+  // their most recent play however old (the "last played" tile), when the
+  // viewer and this person became friends, and the monthly awards they
+  // won this month within their own friend circle (label = i18n key
+  // suffix under "groups.", e.g. "awardNightOwl").
+  lastPlayed?: NowPlaying | null;
+  friendsSince?: string | null;
+  awards?: { label: string; detail: string }[];
 };
 
 export type Me = PublicProfile & {

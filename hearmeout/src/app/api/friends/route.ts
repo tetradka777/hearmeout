@@ -54,3 +54,33 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ ok: true, status: 'pending', user: { id: target.id, name: target.name, handle: target.handle, avatarUrl: target.avatar_url } });
 }
+
+// Unfriend (spec 6.4 "Friends ✓ → Remove", after an inline confirm). Drops
+// both directions of the friendship and any request rows between the two,
+// so either side can send a fresh request later.
+export async function DELETE(request: NextRequest) {
+  const userId = await getCurrentUserId();
+  if (!userId) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
+
+  const body = await request.json().catch(() => null);
+  const friendId = typeof body?.friendId === 'string' ? body.friendId : '';
+  // Strict UUID check: the id is interpolated into PostgREST .or() filter
+  // strings below, so nothing else may get through.
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(friendId) || friendId === userId) {
+    return NextResponse.json({ error: 'invalid_payload' }, { status: 400 });
+  }
+
+  const admin = supabaseAdmin();
+  const { error } = await admin
+    .from('friendships')
+    .delete()
+    .or(`and(user_id.eq.${userId},friend_id.eq.${friendId}),and(user_id.eq.${friendId},friend_id.eq.${userId})`);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await admin
+    .from('friend_requests')
+    .delete()
+    .or(`and(from_user_id.eq.${userId},to_user_id.eq.${friendId}),and(from_user_id.eq.${friendId},to_user_id.eq.${userId})`);
+
+  return NextResponse.json({ ok: true });
+}

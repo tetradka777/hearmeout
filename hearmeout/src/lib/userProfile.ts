@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ApiUser, NowPlaying, PublicProfile } from './types';
 import { isDemoAccountId } from './demoAccounts';
+import { computeMonthAwards } from './monthAwards';
 
 // The sync job polls Spotify's recently-played list periodically rather
 // than instantly, so "still playing" is an approximation, capped at 6
@@ -21,7 +22,9 @@ export async function fetchIsOpenProfile(admin: SupabaseClient, userId: string):
   return !!data?.is_open_profile;
 }
 
-async function fetchNowPlaying(admin: SupabaseClient, userId: string): Promise<NowPlaying | null> {
+// The person's most recent play, however old, plus whether it still counts
+// as "listening now" (see NOW_PLAYING_MAX_AGE_MS above).
+async function fetchLastPlay(admin: SupabaseClient, userId: string): Promise<{ last: NowPlaying | null; live: boolean }> {
   const { data } = await admin
     .from('listening_events')
     .select('track_title, artist, cover_url, played_at, duration_ms, album_id')
@@ -29,13 +32,35 @@ async function fetchNowPlaying(admin: SupabaseClient, userId: string): Promise<N
     .order('played_at', { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (!data?.track_title || !data.artist) return null;
+  if (!data?.track_title || !data.artist) return { last: null, live: false };
   const playedAt = new Date(data.played_at as string).getTime();
   const age = Date.now() - playedAt;
   const durationMs = (data.duration_ms as number | null) ?? null;
   const stillPlayingWindow = Math.min(durationMs ?? NOW_PLAYING_MAX_AGE_MS, NOW_PLAYING_MAX_AGE_MS);
-  if (age < 0 || age > stillPlayingWindow) return null;
-  return { title: data.track_title as string, artist: data.artist as string, cover: (data.cover_url as string | null) ?? null, startedAt: data.played_at as string, durationMs, albumId: (data.album_id as string | null) ?? null };
+  const last: NowPlaying = { title: data.track_title as string, artist: data.artist as string, cover: (data.cover_url as string | null) ?? null, startedAt: data.played_at as string, durationMs, albumId: (data.album_id as string | null) ?? null };
+  return { last, live: age >= 0 && age <= stillPlayingWindow };
+}
+
+// Awards (lib/monthAwards.ts) this person won this calendar month within
+// their own circle — themself plus their friends.
+async function fetchCircleAwards(admin: SupabaseClient, userId: string, friends: ApiUser[], self: ApiUser): Promise<{ label: string; detail: string }[]> {
+  const circle = [self, ...friends];
+  const ids = circle.map((u) => u.id);
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+  const [{ data: events }, { data: monthRatings }] = await Promise.all([
+    admin.from('listening_events').select('user_id, played_at, duration_ms, genre').in('user_id', ids).gte('played_at', monthStart.toISOString()).limit(6000),
+    admin.from('ratings').select('user_id, stars').in('user_id', ids).gte('created_at', monthStart.toISOString()).limit(6000),
+  ]);
+  const userById = new Map(circle.map((u) => [u.id, u] as const));
+  return computeMonthAwards(
+    (events || []) as { user_id: string; played_at: string; duration_ms: number | null; genre: string | null }[],
+    (monthRatings || []) as { user_id: string; stars: number }[],
+    userById,
+  )
+    .filter((a) => a.winner?.id === userId)
+    .map((a) => ({ label: a.label, detail: a.detail }));
 }
 
 // `viewerId` is who's asking — friends-of-friends discovery (showing this
@@ -58,12 +83,12 @@ export async function getUserProfile(
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
 
-  const [{ data: user, error: userErr }, { data: ratings }, { data: genreRows }, { data: todayRows }, nowPlaying, isOpenProfile] = await Promise.all([
+  const [{ data: user, error: userErr }, { data: ratings }, { data: genreRows }, { data: todayRows }, lastPlay, isOpenProfile] = await Promise.all([
     admin.from('users').select('id, name, handle, avatar_url, created_at').eq('id', userId).maybeSingle(),
     admin.from('ratings').select('album_id, stars, review, tags, created_at, is_private').eq('user_id', userId).order('created_at', { ascending: false }),
     admin.from('listening_events').select('genre').eq('user_id', userId).not('genre', 'is', null).limit(5000),
     admin.from('listening_events').select('duration_ms').eq('user_id', userId).gte('played_at', startOfDay.toISOString()),
-    fetchNowPlaying(admin, userId),
+    fetchLastPlay(admin, userId),
     fetchIsOpenProfile(admin, userId),
   ]);
 
@@ -126,7 +151,9 @@ export async function getUserProfile(
     handle: user.handle,
     avatarUrl: user.avatar_url,
     stats: { ratings: ratingsList.length, avg: Math.round(avg * 10) / 10, reviews: reviewsCount },
-    nowPlaying,
+    // Spec 6.4: non-friends (the open-profile teaser tier) don't see what
+    // this person is playing.
+    nowPlaying: isOpen && lastPlay.live ? lastPlay.last : null,
     genres,
     top4Albums,
     minutesToday,
@@ -153,6 +180,19 @@ export async function getUserProfile(
         return f ? { id: f.id, name: f.name, handle: f.handle, avatarUrl: f.avatar_url } : null;
       })
       .filter((f): f is ApiUser => f !== null);
+
+    if (!isSelf) {
+      profile.lastPlayed = lastPlay.last;
+      const self: ApiUser = { id: user.id, name: user.name, handle: user.handle, avatarUrl: user.avatar_url };
+      const [since, awards] = await Promise.all([
+        viewerId
+          ? admin.from('friendships').select('created_at').eq('user_id', viewerId).eq('friend_id', userId).maybeSingle()
+          : Promise.resolve({ data: null }),
+        fetchCircleAwards(admin, userId, profile.friends, self),
+      ]);
+      profile.friendsSince = (since.data?.created_at as string | undefined) ?? null;
+      profile.awards = awards;
+    }
   }
 
   return profile;

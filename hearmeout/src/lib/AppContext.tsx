@@ -218,6 +218,7 @@ type AppContextValue = {
   }>) => Promise<void>;
   addFriend: (handle: string) => Promise<void>;
   respondToFriendRequest: (requestId: number, action: 'accept' | 'decline' | 'cancel') => Promise<void>;
+  removeFriend: (friendId: string) => Promise<boolean>;
   syncSpotify: () => Promise<void>;
   onSpotifyConnected: () => Promise<void>;
   importStreamingHistory: (files: File[]) => Promise<{ imported: number; skipped: number; errors: string[] } | null>;
@@ -804,6 +805,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     showToast(action === 'accept' ? t('toast.friendAdded') : action === 'cancel' ? t('toast.friendRequestCancelled') : t('toast.friendRequestDeclined'));
   }, [refreshFriendRequests, refreshMe, showToast, t]);
 
+  // Returns whether it worked so the caller can keep its confirm UI open on
+  // failure; toasts either way.
+  const removeFriend = useCallback(async (friendId: string) => {
+    const res = await fetch('/api/friends', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ friendId }) });
+    if (!res.ok) { showToast(t('toast.friendRemoveFailed')); return false; }
+    await Promise.all([refreshMe(), refreshFriendRequests()]);
+    showToast(t('toast.friendRemoved'));
+    return true;
+  }, [refreshFriendRequests, refreshMe, showToast, t]);
+
   const syncSpotify = useCallback(async () => {
     const res = await fetch('/api/sync', { method: 'POST' });
     if (!res.ok) {
@@ -1020,7 +1031,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
     updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateLanguage, updateRegion, updateOpenProfile, updateAppearance, updatePrivacy,
-    addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
+    addFriend, respondToFriendRequest, removeFriend, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyObscure,
     spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, laterItems, toggleLaterAlbum, toggleLaterTrack, removeLaterItem, removeAllLater, friendRequests, recapCache, recapLocked, reviewsVersion, showScreen, viewHistory, goBack, openAlbum,
     setRecapSeasonKey, setRecapOffset, recapSeasons,
@@ -1028,7 +1039,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
     updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateLanguage, updateRegion, updateOpenProfile, updateAppearance, updatePrivacy,
-    addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast]);
+    addFriend, respondToFriendRequest, removeFriend, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
