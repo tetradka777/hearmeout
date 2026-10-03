@@ -13,6 +13,7 @@ import { QuickModeToggle } from './QuickModeToggle';
 import { GlobalPlayer } from '../DockedPlayer';
 import { NowPlayingBar } from './NowPlayingBar';
 import { usePlayer } from '@/lib/PlayerContext';
+import { Toast } from '../ui/Toast';
 
 // The redesign's app shell (spec 3.9, 4, 15.1, 17.1): Cream Pop top pill
 // bar OR Toxic sidebar (both rendered; CSS in components.css decides which
@@ -59,21 +60,26 @@ const TAB_ICON: Partial<Record<ScreenName, ReactNode>> = {
 };
 
 export function RedesignShell({ children }: { children: ReactNode }) {
-  const { me, t, state, showScreen, setSearchQuery, openAlbum } = useApp();
+  const { me, t, state, showScreen, viewHistory, setSearchQuery, openAlbum } = useApp();
+  const goToNavItem = (screen: ScreenName) => (screen === 'history' ? viewHistory() : showScreen(screen));
   const navItems = useNavItems();
-  const activeGroup = NAV_GROUP[state.activeScreen];
+  // History is both a nav destination and a screen opened from Profile —
+  // the prototype doesn't light up "Rate" when it was opened that way
+  // (redesign fix B6).
+  const activeGroup = state.activeScreen === 'history' && state.historyOrigin === 'profile' ? null : NAV_GROUP[state.activeScreen];
   const { currentTrack } = usePlayer();
   const hasPlayer = !!currentTrack;
   const hasNowPlaying = me?.design === 'toxic' && !!me?.nowPlaying;
 
   return (
     <div className={`rd${hasPlayer ? ' hasmp' : ''}${hasNowPlaying ? ' hasnp' : ''}`}>
+      <div className="wrap">
       {/* Cream Pop desktop top bar */}
       <div className="nav">
-        <div className="logo"><span className="mk" />hearmeout</div>
+        <button className="logo" onClick={() => showScreen('catalog')}><span className="mk" />hearmeout</button>
         <nav>
           {navItems.map((item) => (
-            <button key={item.screen} className={activeGroup === item.screen ? 'on' : ''} onClick={() => showScreen(item.screen)}>
+            <button key={item.screen} className={activeGroup === item.screen ? 'on' : ''} onClick={() => goToNavItem(item.screen)}>
               {t(item.labelKey)}
             </button>
           ))}
@@ -94,10 +100,10 @@ export function RedesignShell({ children }: { children: ReactNode }) {
 
       {/* Toxic desktop sidebar */}
       <div className="side">
-        <div className="logo"><span className="mk" />hearmeout</div>
+        <button className="logo" onClick={() => showScreen('catalog')}><span className="mk" />hearmeout</button>
         <nav>
           {navItems.map((item) => (
-            <button key={item.screen} className={activeGroup === item.screen ? 'on' : ''} onClick={() => showScreen(item.screen)}>
+            <button key={item.screen} className={activeGroup === item.screen ? 'on' : ''} onClick={() => goToNavItem(item.screen)}>
               {item.icon}{t(item.labelKey)}
             </button>
           ))}
@@ -118,7 +124,7 @@ export function RedesignShell({ children }: { children: ReactNode }) {
 
       {/* Mobile header (both designs) */}
       <div className="mobtop">
-        <div className="logo"><span className="mk" />hearmeout</div>
+        <button className="logo" onClick={() => showScreen('catalog')}><span className="mk" />hearmeout</button>
         <div className="topr">
           <QuickModeToggle />
           <AvatarMenu />
@@ -128,6 +134,7 @@ export function RedesignShell({ children }: { children: ReactNode }) {
       <Ticker />
 
       <main className="fade">{children}</main>
+      </div>
 
       {/* Mobile tab bar: 5 tabs + round quick-rate + (spec 3.9) */}
       <div className="tabbar">
@@ -142,7 +149,7 @@ export function RedesignShell({ children }: { children: ReactNode }) {
           onClick={() => {
             const playingId = me?.nowPlaying?.albumId || currentTrack?.albumId;
             if (playingId) openAlbum(playingId);
-            else showScreen('history');
+            else viewHistory();
           }}
           aria-label={t('nav.rate')}
         >
@@ -155,6 +162,7 @@ export function RedesignShell({ children }: { children: ReactNode }) {
           slot in Toxic, so only one renders at a time. */}
       {!hasPlayer && <NowPlayingBar />}
       <GlobalPlayer />
+      <Toast />
     </div>
   );
 }

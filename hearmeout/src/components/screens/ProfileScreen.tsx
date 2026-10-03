@@ -86,7 +86,7 @@ function ShareLovedTracksButton() {
 }
 
 export function ProfileScreen(_props: { device: Device }) {
-  const { t, language, me, myRatings, albums, liveAlbums, updateProfileName, updateProfileHandle, updateRegion, showScreen } = useApp();
+  const { t, language, me, myRatings, albums, liveAlbums, updateProfileName, updateProfileHandle, updateRegion, showScreen, viewHistory } = useApp();
   const [tab, setTab] = useState<ProfileTab>('ratings');
   const regionCodes = useMemo(() => getRegionCodes(), []);
 
@@ -141,7 +141,7 @@ export function ProfileScreen(_props: { device: Device }) {
       </div>
 
       <div className="bento" style={{ gridTemplateColumns: 'repeat(2,minmax(0,1fr))' }}>
-        <button className="tile" style={{ textAlign: 'left', cursor: 'pointer' }} onClick={() => showScreen('history')}>
+        <button className="tile" style={{ textAlign: 'left', cursor: 'pointer' }} onClick={() => viewHistory('profile')}>
           <StarIcon /><h3 style={{ marginTop: 8 }}>{t('profile.quickHistory')}</h3>
         </button>
         <button className="tile" style={{ textAlign: 'left', cursor: 'pointer' }} onClick={() => showScreen('stats')}>
@@ -178,12 +178,12 @@ export function ProfileScreen(_props: { device: Device }) {
               <div className="tile"><span className="num">{me.stats.avg || '—'}</span><small className="muted">{t('profile.avg')}</small></div>
               <div className="tile"><span className="num">{me.stats.reviews}</span><small className="muted">{t('profile.reviews')}</small></div>
             </div>
-            <button className="btn ghost" style={{ marginTop: 10 }} onClick={() => showScreen('history')}>{t('profile.openHistoryStats')} →</button>
+            <button className="btn ghost" style={{ marginTop: 10 }} onClick={() => viewHistory('profile')}>{t('profile.openHistoryStats')} →</button>
           </div>
           <div className="tile s2">
             <h3>{t('profile.recentRatings')}</h3>
             <div style={{ marginTop: 10 }}><RecentRatingsList ratings={recentFive} /></div>
-            {me.stats.ratings > 5 && <button className="btn ghost" style={{ marginTop: 10 }} onClick={() => showScreen('history')}>{t('profile.seeAllRatings', { count: me.stats.ratings })}</button>}
+            {me.stats.ratings > 5 && <button className="btn ghost" style={{ marginTop: 10 }} onClick={() => viewHistory('profile')}>{t('profile.seeAllRatings', { count: me.stats.ratings })}</button>}
           </div>
         </div>
       )}

@@ -53,6 +53,8 @@ export function Ticker() {
     return () => { if (rafRef.current != null) cancelAnimationFrame(rafRef.current); TK.last = 0; };
   }, []);
 
+  if (!events.length) return null;
+
   const group = (key: string) => (
     <span className="grp" key={key}>
       {events.map((e) => (

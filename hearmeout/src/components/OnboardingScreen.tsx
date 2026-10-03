@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import { CoverArt } from './ui/CoverArt';
 import { StarSlider } from './redesign/Stars';
@@ -48,6 +48,19 @@ function CalibrateStep() {
   const { t, albums, spotifyCovers, myRatings, publishRating } = useApp();
   const picks = useMemo(() => [...albums].sort(() => 0.5 - Math.random()).slice(0, 3), [albums]);
   const [values, setValues] = useState<Record<string, number>>({});
+  // Publish once ~400ms after the last pointer move, not on every tick of
+  // the drag (redesign fix B7) — StarSlider's onChange fires continuously
+  // while dragging, same as the real Rate screen's slider, but Rate only
+  // posts on an explicit button; calibration has no such button, so it
+  // debounces here instead.
+  const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  useEffect(() => () => { Object.values(timers.current).forEach(clearTimeout); }, []);
+
+  const rate = (albumId: string, v: number) => {
+    setValues((s) => ({ ...s, [albumId]: v }));
+    if (timers.current[albumId]) clearTimeout(timers.current[albumId]);
+    timers.current[albumId] = setTimeout(() => publishRating(albumId, v, ''), 400);
+  };
 
   return (
     <div className="sec">
@@ -64,7 +77,7 @@ function CalibrateStep() {
                 <b>{a.title}</b>
                 <div className="muted">{a.artist}</div>
                 <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <StarSlider value={val} onChange={(v) => { setValues((s) => ({ ...s, [a.id]: v })); publishRating(a.id, v, ''); }} size={20} />
+                  <StarSlider value={val} onChange={(v) => rate(a.id, v)} size={20} />
                   <span className="num" style={{ fontSize: 16 }}>{val > 0 ? val.toFixed(1) : '–'}</span>
                 </div>
               </div>

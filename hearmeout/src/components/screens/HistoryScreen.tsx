@@ -207,7 +207,12 @@ export function HistoryScreen(_props: { device: Device }) {
 
   return (
     <>
-      <button className="crumb" onClick={() => goBack('profile')}>‹ {t('profile.friends')}</button>
+      <button
+        className="crumb"
+        onClick={() => goBack(state.historyOrigin === 'profile' ? 'profile' : state.historyOrigin === 'rate' ? 'rate' : 'catalog')}
+      >
+        ‹ {t(state.historyOrigin === 'profile' ? 'history.crumbProfile' : state.historyOrigin === 'rate' ? 'history.crumbRate' : 'history.crumbHome')}
+      </button>
       <p className="eyebrow muted">{t('history.eyebrow')}</p>
       <h1 className="big">{t('history.title')}</h1>
       <p style={{ fontWeight: 800, margin: '-6px 0 18px' }}>

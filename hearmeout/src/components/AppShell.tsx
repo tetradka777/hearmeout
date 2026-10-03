@@ -3,7 +3,6 @@
 import { useEffect, type ComponentType } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device, ScreenName } from '@/lib/types';
-import { Toast } from './ui/Toast';
 import { RedesignShell } from './redesign/Shell';
 import { HomeScreen } from './screens/HomeScreen';
 import { RateScreen } from './screens/RateScreen';
@@ -50,15 +49,12 @@ export function AppShell() {
   }, [state.activeScreen, state.navAction]);
 
   return (
-    <>
-      <Toast />
-      <RedesignShell>
-        {SCREENS.map(({ name, Component }) => (
-          <div key={name} style={state.activeScreen === name ? undefined : { display: 'none' }}>
-            <Component device={state.view} />
-          </div>
-        ))}
-      </RedesignShell>
-    </>
+    <RedesignShell>
+      {SCREENS.map(({ name, Component }) => (
+        <div key={name} style={state.activeScreen === name ? undefined : { display: 'none' }}>
+          <Component device={state.view} />
+        </div>
+      ))}
+    </RedesignShell>
   );
 }

@@ -44,6 +44,28 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
     );
   }
 
+  if (profile.locked) {
+    return (
+      <div className="rd pubwrap">
+        <div className="wrap" style={{ maxWidth: 480, paddingTop: 40 }}>
+          <div className="tile t-ink hero" style={{ textAlign: 'center' }}>
+            <div className="dot" style={{ width: 88, height: 88, fontSize: 32, margin: '0 auto 14px' }}>{profile.name[0]}</div>
+            <h1 style={{ fontSize: 28 }}>{profile.name}</h1>
+            <p className="muted">{profile.handle}</p>
+          </div>
+          <div className="tile t-soft2 empty" style={{ marginTop: 14 }}>
+            <span className="num" style={{ fontSize: 54 }}>🔒</span>
+            <h3>This profile is private</h3>
+            <p className="muted">Only this person's friends can see their ratings, genres and charts.</p>
+          </div>
+          <div style={{ textAlign: 'center', marginTop: 30 }}>
+            <a href="/" className="link">Rate your own music on HearMeOut →</a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const top4 = profile.top4Albums
     .map((id) => ALBUMS.find((a) => a.id === id))
     .filter((a): a is (typeof ALBUMS)[number] => !!a);

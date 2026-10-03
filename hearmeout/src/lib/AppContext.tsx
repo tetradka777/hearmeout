@@ -130,6 +130,11 @@ type AppState = {
   recapOffset: number;
   recapViewUserId: string;
   recapOrigin: ScreenName;
+  // Which screen actually opened History, so its back-crumb and nav
+  // highlight can match the prototype's "label by entry point" instead of
+  // a hardcoded destination (redesign fix B6). null = opened directly from
+  // the nav tab or the quick-rate FAB, not from a specific other screen.
+  historyOrigin: 'profile' | 'rate' | null;
   searchQuery: string;
   activeGenre: string;
   sortBy: SortBy;
@@ -168,6 +173,7 @@ type AppContextValue = {
   recapLocked: Record<string, true>;
   reviewsVersion: number;
   showScreen: (name: ScreenName) => void;
+  viewHistory: (origin?: 'profile' | 'rate' | null) => void;
   goBack: (name: ScreenName) => void;
   openAlbum: (id: string) => void;
   viewFriend: (id: string) => void;
@@ -234,6 +240,7 @@ const initialState: AppState = {
   recapOffset: 0,
   recapViewUserId: 'me',
   recapOrigin: 'catalog',
+  historyOrigin: null,
   searchQuery: '',
   activeGenre: 'Всё',
   sortBy: 'year',
@@ -293,7 +300,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!res.ok) return;
     const data: Me = await res.json();
     setMe(data);
-    patch({ authStatus: 'ready', language: 'en' });
+    patch({ authStatus: 'ready', language: data.language });
   }, [patch]);
 
   const refreshAlbumRatings = useCallback(async () => {
@@ -529,6 +536,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Re-clicking the tab you're already on doesn't push a duplicate stop.
     if (stateRef.current.activeScreen !== name) pushScreenHistory({ activeScreen: name });
   }, [patch]);
+  // History doubles as both a top-level nav destination and a screen
+  // opened from Profile or Rate — the crumb label, its target and whether
+  // the nav lights up "Rate" all depend on which (redesign fix B6).
+  const viewHistory = useCallback((origin: 'profile' | 'rate' | null = null) => {
+    patch({ historyOrigin: origin });
+    showScreen('history');
+  }, [patch, showScreen]);
   // Real browser back (when there's an in-app entry to return to) instead
   // of jumping straight to `name` — lets a "← Back" button and the
   // browser's own back button land you on exactly the same place, since
@@ -939,14 +953,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AppContextValue>(() => ({
     state, language: state.language, t, albums: ALBUMS, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds,
     spotifyObscure, spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, wishlistedAlbumIds, toggleWishlist, friendRequests, recapCache, recapLocked, reviewsVersion,
-    showScreen, goBack, openAlbum, viewFriend, viewGroup, openRecap, closeRecap,
+    showScreen, viewHistory, goBack, openAlbum, viewFriend, viewGroup, openRecap, closeRecap,
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, setRecapOffset, recapSeasons,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
     updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateLanguage, updateRegion, updateOpenProfile, updateAppearance, updatePrivacy,
     addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyObscure,
-    spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, wishlistedAlbumIds, toggleWishlist, friendRequests, recapCache, recapLocked, reviewsVersion, showScreen, goBack, openAlbum,
+    spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, wishlistedAlbumIds, toggleWishlist, friendRequests, recapCache, recapLocked, reviewsVersion, showScreen, viewHistory, goBack, openAlbum,
     setRecapSeasonKey, setRecapOffset, recapSeasons,
     viewFriend, viewGroup, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,

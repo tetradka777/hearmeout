@@ -71,7 +71,7 @@ export function RateScreen({ device }: { device: Device }) {
   const {
     state, t, language, albums, liveAlbums, failedAlbumIds, albumRatings, myRatings, spotifyCovers,
     reviewsVersion, openSpotifyArtist, ensureLiveAlbum, lovedItems, toggleLoved, wishlistedAlbumIds, toggleWishlist, me,
-    setRatingValue, publishRating, showToast, showScreen,
+    setRatingValue, publishRating, showToast, viewHistory,
   } = useApp();
   const { playQueue, currentTrack, playing } = usePlayer();
 
@@ -115,7 +115,7 @@ export function RateScreen({ device }: { device: Device }) {
   const chips = (
     <div className="chips">
       <button className="chip on">{t('album.rateAlbum')}</button>
-      <button className="chip" onClick={() => showScreen('history')}>{t('nav.rate')}</button>
+      <button className="chip" onClick={() => viewHistory('rate')}>{t('rate.historyChip')}</button>
     </div>
   );
 

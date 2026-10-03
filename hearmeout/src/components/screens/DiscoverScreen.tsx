@@ -166,7 +166,10 @@ export function DiscoverScreen({ device }: { device: Device }) {
 
   useEffect(() => {
     setMbFound(null);
-    if (!showLive || filter === 'people') { setPeople(null); return; }
+    // People are only part of the "all" and "people" segments (redesign
+    // fix B25) — this used to check the opposite, so the People chip never
+    // actually searched and stayed on "Searching…" forever.
+    if (!showLive || (filter !== 'all' && filter !== 'people')) { setPeople(null); return; }
     let cancelled = false;
     const timer = setTimeout(() => {
       fetch(`/api/users/search?q=${encodeURIComponent(query.trim())}`)

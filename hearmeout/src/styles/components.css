@@ -37,6 +37,19 @@
 /* ===== shell ===== */
 .rd .wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px 120px; min-width: 0; }
 .rd.hasnp .wrap { padding-bottom: 190px; }
+
+/* Toast (redesign fix B5): prototype's #toast — bottom-center pill, not
+   the old top-of-screen terracotta banner. 170px clears the mobile tab
+   bar; 28px on desktop (no tab bar); bumped further when a bottom player
+   or now-playing bar is also on screen so the toast doesn't sit on top of
+   it. */
+.rd .toast { position: fixed; left: 50%; bottom: 170px; transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 11px 20px; border-radius: 999px; font-weight: 800; z-index: 110; opacity: 0; pointer-events: none; transition: opacity .2s; max-width: 90vw; text-align: center; }
+.rd .toast.show { opacity: 1; }
+.rd.hasmp .toast, .rd.hasnp .toast { bottom: 230px; }
+@media (min-width: 900px) {
+  .rd .toast { bottom: 28px; }
+  .rd.hasmp .toast, .rd.hasnp .toast { bottom: 100px; }
+}
 .rd .logo { display: flex; align-items: center; gap: 8px; font: 800 24px/1 var(--font-display); letter-spacing: -.05em; }
 .rd .logo .mk { width: 26px; height: 26px; border-radius: 50%; background: var(--fg); position: relative; flex: none; }
 .rd .logo .mk::after { content: ''; position: absolute; inset: 7px; border-radius: 50%; background: var(--acc); }

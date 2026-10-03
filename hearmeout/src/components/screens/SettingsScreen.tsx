@@ -236,7 +236,7 @@ function PrivacySection() {
 }
 
 export function SettingsScreen({ device }: { device: Device }) {
-  const { t, me, syncSpotify, goBack } = useApp();
+  const { t, me, syncSpotify } = useApp();
   const [section, setSection] = useState<Section>('appearance');
   if (!me) return null;
 
@@ -280,7 +280,6 @@ export function SettingsScreen({ device }: { device: Device }) {
 
   return (
     <>
-      <button className="crumb" onClick={() => goBack('profile')}>‹ {t('friend.back')}</button>
       <div className="eyebrow">{t('settings.eyebrow')}</div>
       <h1 className="big">{t('settings.title')}</h1>
       <div className="setgrid">
