@@ -4,6 +4,8 @@ import { getCurrentUserId } from '@/lib/identity';
 import { acceptFriendRequest } from '@/lib/friendRequests';
 import { isDemoAccountId } from '@/lib/demoAccounts';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // Sends a friend request (pending, needs the other side to accept) rather
 // than adding instantly — replaces the old instant-mutual-add behavior.
 export async function POST(request: NextRequest) {
@@ -11,16 +13,19 @@ export async function POST(request: NextRequest) {
   if (!userId) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
 
   const body = await request.json().catch(() => null);
+  // By handle (search, Discover) or by user id (the /invite/[id] page,
+  // including an invite completed after sign-up — see AppContext).
   const raw = typeof body?.handle === 'string' ? body.handle.trim() : '';
-  if (!raw) return NextResponse.json({ error: 'invalid_payload' }, { status: 400 });
-  const normalized = raw.startsWith('@') ? raw : `@${raw}`;
+  const byId = typeof body?.userId === 'string' ? body.userId : '';
+  if (!raw && !byId) return NextResponse.json({ error: 'invalid_payload' }, { status: 400 });
+  if (byId && !UUID_RE.test(byId)) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
   const admin = supabaseAdmin();
-  const { data: target, error: findErr } = await admin
-    .from('users')
-    .select('id, name, handle, avatar_url')
-    .ilike('handle', normalized)
-    .maybeSingle();
+  const lookup = admin.from('users').select('id, name, handle, avatar_url');
+  const { data: target, error: findErr } = await (byId
+    ? lookup.eq('id', byId)
+    : lookup.ilike('handle', raw.startsWith('@') ? raw : `@${raw}`)
+  ).maybeSingle();
   if (findErr) return NextResponse.json({ error: findErr.message }, { status: 500 });
   if (!target) return NextResponse.json({ error: 'not_found' }, { status: 404 });
   if (target.id === userId) return NextResponse.json({ error: 'self' }, { status: 400 });
@@ -66,7 +71,7 @@ export async function DELETE(request: NextRequest) {
   const friendId = typeof body?.friendId === 'string' ? body.friendId : '';
   // Strict UUID check: the id is interpolated into PostgREST .or() filter
   // strings below, so nothing else may get through.
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(friendId) || friendId === userId) {
+  if (!UUID_RE.test(friendId) || friendId === userId) {
     return NextResponse.json({ error: 'invalid_payload' }, { status: 400 });
   }
 

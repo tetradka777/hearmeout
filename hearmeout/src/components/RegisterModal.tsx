@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { TranslationKey } from '@/lib/i18n';
 import { DEMO_PROFILES } from '@/lib/demoAccounts';
+import { PENDING_INVITE_KEY, PENDING_INVITE_NAME_KEY } from '@/lib/pendingInvite';
 
 const ERROR_KEY: Record<string, TranslationKey> = {
   weak_password: 'register.weakPassword',
@@ -57,6 +58,11 @@ function LandingBackground({ onAuth }: { onAuth: (mode: 'register' | 'login') =>
   );
 }
 
+// Read once at module load, before hydration: AppContext seeds the first
+// history entry on mount and rewrites "/" without its query string, so by
+// the time this component's effects run the ?auth= param is already gone.
+const INITIAL_AUTH = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('auth') : null;
+
 export function RegisterModal() {
   const { t, registerWithPassword, loginWithPassword } = useApp();
   const [authOpen, setAuthOpen] = useState<'register' | 'login' | null>(null);
@@ -66,6 +72,17 @@ export function RegisterModal() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [pendingInviteName, setPendingInviteName] = useState<string | null>(null);
+
+  // Arriving from an invite or public profile page's sign-up / sign-in
+  // buttons (/?auth=register|login): open that modal straight away, and
+  // say the friend request will follow (sent by AppContext after auth).
+  useEffect(() => {
+    if (INITIAL_AUTH === 'register' || INITIAL_AUTH === 'login') setAuthOpen(INITIAL_AUTH);
+    try {
+      if (localStorage.getItem(PENDING_INVITE_KEY)) setPendingInviteName(localStorage.getItem(PENDING_INVITE_NAME_KEY));
+    } catch { /* storage unavailable */ }
+  }, []);
 
   function mapError(err: unknown, fallback: TranslationKey): string {
     const code = err instanceof Error ? err.message : '';
@@ -100,6 +117,7 @@ export function RegisterModal() {
           <form onSubmit={handleSubmit} className="tile modal" role="dialog" aria-modal="true" style={{ maxWidth: 360, width: '100%', padding: 28 }}>
             <h2 style={{ marginBottom: 6 }}>{mode === 'register' ? t('register.titleSignup') : t('login.title')}</h2>
             <p className="muted" style={{ fontWeight: 600, marginBottom: 14 }}>{mode === 'register' ? t('register.subtitleSignup') : t('login.subtitle')}</p>
+            {pendingInviteName && <p className="tag" style={{ marginBottom: 14, display: 'inline-block' }}>{t('register.pendingInviteNote', { name: pendingInviteName })}</p>}
 
             {mode === 'register' ? (
               <>

@@ -9,6 +9,7 @@ import type {
 } from './types';
 import type { AlbumDetail, CatalogAlbum, CatalogArtist } from './spotifyCatalog';
 import { resolveMode, type Design, type Mode, type PaletteId, type TimeFormat, type WeekStart } from './palettes';
+import { PENDING_INVITE_KEY, PENDING_INVITE_NAME_KEY } from './pendingInvite';
 
 const GENRE_BUCKETS = ['Rock', 'Hip-Hop', 'Electronic', 'R&B', 'Pop', 'Latin'];
 
@@ -482,23 +483,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Completes an invite-link visit (see app/invite/[id]/page.tsx) that
   // happened while logged out: that page stashes the inviter's id in
   // localStorage before sending the visitor to "/" to sign up, and once
-  // auth is actually ready here, we finish the friend-add they started.
+  // auth is actually ready here, we send the friend request they started.
+  // Spec 13.x: it's a normal pending request (both sides see it as
+  // pending), not an instant friendship — unless the inviter had already
+  // requested this person, in which case /api/friends accepts it.
   useEffect(() => {
     if (state.authStatus !== 'ready') return;
     let pendingId: string | null = null;
-    try { pendingId = localStorage.getItem('hmo_pending_invite'); } catch { /* ignore */ }
+    try { pendingId = localStorage.getItem(PENDING_INVITE_KEY); } catch { /* ignore */ }
     if (!pendingId) return;
-    try { localStorage.removeItem('hmo_pending_invite'); } catch { /* ignore */ }
-    fetch('/api/friends/accept-invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fromUserId: pendingId }) })
+    try { localStorage.removeItem(PENDING_INVITE_KEY); localStorage.removeItem(PENDING_INVITE_NAME_KEY); } catch { /* ignore */ }
+    fetch('/api/friends', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: pendingId }) })
       .then((res) => res.ok ? res.json() : null)
       .then((data) => {
-        if (data?.user) {
-          showToast(t('toast.friendAdded'));
-          refreshMe();
-        }
+        if (data?.status === 'accepted') { showToast(t('toast.friendAdded')); refreshMe(); }
+        else if (data?.status === 'pending') { showToast(t('toast.friendRequestSent')); refreshFriendRequests(); }
       })
       .catch(() => {});
-  }, [state.authStatus, showToast, t, refreshMe]);
+  }, [state.authStatus, showToast, t, refreshMe, refreshFriendRequests]);
 
   const registerWithPassword = useCallback(async (name: string, password: string) => {
     const res = await fetch('/api/auth/signup', {
