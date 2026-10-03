@@ -2,7 +2,88 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
 import { computeMatch } from '@/lib/matchScore';
-import type { ApiUser, GroupAward, GroupDetail, GroupLeaderboardPeriod, GroupMemberStats, GroupRecord, GroupTastePair, GroupTopAlbum, GroupVoteCandidate } from '@/lib/types';
+import type { ApiUser, GroupAward, GroupDetail, GroupLeaderboardPeriod, GroupMemberStats, GroupPastAwards, GroupRecord, GroupTastePair, GroupTopAlbum, GroupVoteCandidate } from '@/lib/types';
+
+// Same four "real data" award types as the live current-month block below,
+// but as a standalone pure function of an already-bucketed single month's
+// rows — used to recompute past months on demand (spec gap: "Past months"
+// awards history). Deliberately leaves out awardStreak: a consecutive-day
+// streak isn't bounded by a single calendar month the way the other
+// awards are, and the live computation below treats it as a single
+// all-time figure, not something that can be meaningfully snapshotted per
+// past month without extra persisted state.
+function computeMonthAwards(
+  monthEvents: { user_id: string; played_at: string; duration_ms: number | null; genre: string | null }[],
+  monthRatings: { user_id: string; stars: number }[],
+  userById: Map<string, ApiUser>
+): GroupAward[] {
+  const awards: GroupAward[] = [];
+
+  const hoursByUser = new Map<string, number>();
+  for (const e of monthEvents) hoursByUser.set(e.user_id, (hoursByUser.get(e.user_id) || 0) + (e.duration_ms || 0));
+  let mostActive: { id: string; hours: number } | null = null;
+  for (const [k, ms] of hoursByUser.entries()) {
+    const hours = Math.round((ms / 3600000) * 10) / 10;
+    if (!mostActive || hours > mostActive.hours) mostActive = { id: k, hours };
+  }
+  if (mostActive && mostActive.hours > 0) {
+    const u = userById.get(mostActive.id);
+    if (u) awards.push({ label: 'awardMostActive', winner: u, detail: `${mostActive.hours}h` });
+  }
+
+  const nightCounts = new Map<string, { night: number; total: number }>();
+  for (const e of monthEvents) {
+    const cur = nightCounts.get(e.user_id) || { night: 0, total: 0 };
+    cur.total += 1;
+    const hour = new Date(e.played_at).getHours();
+    if (hour >= 23 || hour < 5) cur.night += 1;
+    nightCounts.set(e.user_id, cur);
+  }
+  let nightOwl: { id: string; pct: number } | null = null;
+  for (const [k, v] of nightCounts.entries()) {
+    if (v.total < 5) continue;
+    const pct = Math.round((v.night / v.total) * 100);
+    if (!nightOwl || pct > nightOwl.pct) nightOwl = { id: k, pct };
+  }
+  if (nightOwl && nightOwl.pct > 0) {
+    const u = userById.get(nightOwl.id);
+    if (u) awards.push({ label: 'awardNightOwl', winner: u, detail: `${nightOwl.pct}%` });
+  }
+
+  const ratingsByUser = new Map<string, number[]>();
+  for (const r of monthRatings) {
+    const arr = ratingsByUser.get(r.user_id) || [];
+    arr.push(Number(r.stars));
+    ratingsByUser.set(r.user_id, arr);
+  }
+  let harshest: { id: string; avg: number } | null = null;
+  for (const [k, arr] of ratingsByUser.entries()) {
+    if (arr.length < 2) continue;
+    const avg = arr.reduce((s, n) => s + n, 0) / arr.length;
+    if (!harshest || avg < harshest.avg) harshest = { id: k, avg };
+  }
+  if (harshest) {
+    const u = userById.get(harshest.id);
+    if (u) awards.push({ label: 'awardHarshestCritic', winner: u, detail: harshest.avg.toFixed(1) });
+  }
+
+  const genresByUser = new Map<string, Set<string>>();
+  for (const e of monthEvents) {
+    if (!e.genre) continue;
+    if (!genresByUser.has(e.user_id)) genresByUser.set(e.user_id, new Set());
+    genresByUser.get(e.user_id)!.add(e.genre);
+  }
+  let genreExplorer: { id: string; count: number } | null = null;
+  for (const [k, set] of genresByUser.entries()) {
+    if (!genreExplorer || set.size > genreExplorer.count) genreExplorer = { id: k, count: set.size };
+  }
+  if (genreExplorer && genreExplorer.count > 0) {
+    const u = userById.get(genreExplorer.id);
+    if (u) awards.push({ label: 'awardGenreExplorer', winner: u, detail: String(genreExplorer.count) });
+  }
+
+  return awards;
+}
 
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const userId = await getCurrentUserId();
@@ -15,9 +96,11 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   const { data: group } = await admin.from('groups').select('id, name, created_by, created_at').eq('id', id).maybeSingle();
   if (!group) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
-  const { data: memberRows } = await admin.from('group_members').select('user_id').eq('group_id', id);
+  const { data: memberRows } = await admin.from('group_members').select('user_id, muted').eq('group_id', id);
   const memberIds = (memberRows || []).map((m) => m.user_id as string);
   if (!memberIds.includes(userId)) return NextResponse.json({ error: 'not_a_member' }, { status: 403 });
+  const myMembership = (memberRows || []).find((m) => m.user_id === userId);
+  const muted = Boolean(myMembership?.muted);
 
   const { data: users } = await admin.from('users').select('id, name, handle, avatar_url').in('id', memberIds);
   const members: ApiUser[] = (users || []).map((u) => ({ id: u.id, name: u.name, handle: u.handle, avatarUrl: u.avatar_url }));
@@ -28,7 +111,15 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
 
-  const [{ data: ratingsRows }, { data: eventsRows }, { data: allRatingsRows }, { data: monthRatingsRows }] = await Promise.all([
+  // Past-months awards history (spec gap): recomputed on demand for the
+  // last PAST_MONTHS_LOOKBACK calendar months before this one, from the
+  // same retained listening_events/ratings — no snapshot table needed
+  // since nothing here is ever deleted and the computation is a pure
+  // function of a date range. See computeMonthAwards below.
+  const PAST_MONTHS_LOOKBACK = 3;
+  const pastWindowStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - PAST_MONTHS_LOOKBACK, 1)).toISOString();
+
+  const [{ data: ratingsRows }, { data: eventsRows }, { data: allRatingsRows }, { data: monthRatingsRows }, { data: pastEventsRows }, { data: pastRatingsRows }] = await Promise.all([
     admin.from('ratings').select('user_id, album_id, stars, review, created_at, is_private').in('user_id', memberIds).order('created_at', { ascending: false }).limit(60),
     admin.from('listening_events').select('user_id, played_at, duration_ms, genre').in('user_id', memberIds).gte('played_at', monthAgo).limit(6000),
     // Full rating history per member (not just the last 60 across the whole
@@ -41,6 +132,10 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     // month specifically, which the 60-row activity feed can't guarantee
     // for an active group.
     admin.from('ratings').select('user_id, album_id, stars, created_at').in('user_id', memberIds).gte('created_at', monthStart).limit(6000),
+    // Past-months awards: listening_events/ratings for the lookback window,
+    // bucketed by calendar month in JS below.
+    admin.from('listening_events').select('user_id, played_at, duration_ms, genre').in('user_id', memberIds).gte('played_at', pastWindowStart).lt('played_at', monthStart).limit(9000),
+    admin.from('ratings').select('user_id, stars, created_at').in('user_id', memberIds).gte('created_at', pastWindowStart).lt('created_at', monthStart).limit(9000),
   ]);
 
   // Activity feed: recent ratings by any member, album title/artist resolved
@@ -294,10 +389,36 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   const candidates: GroupVoteCandidate[] = voteCandidateAlbums.map((albumId) => ({ albumId, count: voteCounts.get(albumId) || 0 }));
   const vote = { monthKey, myVote: myVoteRow ? (myVoteRow.candidate_id as string) : null, candidates };
 
+  // Past-months awards history (spec gap): bucket the lookback-window rows
+  // fetched above by calendar month (UTC, matching monthStart's convention)
+  // and recompute each past month's winners with computeMonthAwards. Months
+  // with no qualifying winner at all are left out, same as the live awards
+  // tile already does for the current month.
+  const pastEventsByMonth = new Map<string, { user_id: string; played_at: string; duration_ms: number | null; genre: string | null }[]>();
+  for (const e of pastEventsRows || []) {
+    const key = (e.played_at as string).slice(0, 7);
+    const arr = pastEventsByMonth.get(key) || [];
+    arr.push({ user_id: e.user_id as string, played_at: e.played_at as string, duration_ms: e.duration_ms as number | null, genre: e.genre as string | null });
+    pastEventsByMonth.set(key, arr);
+  }
+  const pastRatingsByMonth = new Map<string, { user_id: string; stars: number }[]>();
+  for (const r of pastRatingsRows || []) {
+    const key = (r.created_at as string).slice(0, 7);
+    const arr = pastRatingsByMonth.get(key) || [];
+    arr.push({ user_id: r.user_id as string, stars: Number(r.stars) });
+    pastRatingsByMonth.set(key, arr);
+  }
+  const pastAwards: GroupPastAwards[] = [];
+  for (let offset = 1; offset <= PAST_MONTHS_LOOKBACK; offset++) {
+    const key = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - offset, 1)).toISOString().slice(0, 7);
+    const monthAwards = computeMonthAwards(pastEventsByMonth.get(key) || [], pastRatingsByMonth.get(key) || [], userById);
+    if (monthAwards.length) pastAwards.push({ monthKey: key, awards: monthAwards });
+  }
+
   const detail: GroupDetail = {
     id: group.id, name: group.name, createdBy: group.created_by, createdAt: group.created_at,
-    members, memberStats, awards, activity, leaderboard, leaderboardPeriod,
-    records, topAlbums, taste, vote,
+    members, memberStats, awards, pastAwards, activity, leaderboard, leaderboardPeriod,
+    records, topAlbums, taste, vote, muted,
   };
   return NextResponse.json(detail);
 }

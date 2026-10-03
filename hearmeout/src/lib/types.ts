@@ -210,6 +210,11 @@ export type GroupRecord = { label: string; holder: ApiUser | null; value: string
 export type GroupTopAlbum = { albumId: string; avgScore: number; count: number };
 export type GroupTastePair = { a: ApiUser; b: ApiUser; pct: number };
 export type GroupTaste = { avgMatch: number | null; closest: GroupTastePair | null; furthest: GroupTastePair | null };
+// Past-months awards history (spec gap): each past calendar month's winners,
+// recomputed on demand from retained listening_events/ratings — see
+// GET /api/groups/[id]. monthKey is "YYYY-MM"; the client formats it with
+// the viewer's locale, same convention as vote.monthKey.
+export type GroupPastAwards = { monthKey: string; awards: GroupAward[] };
 
 export type GroupDetail = {
   id: string;
@@ -219,6 +224,7 @@ export type GroupDetail = {
   members: GroupMember[];
   memberStats: GroupMemberStats[];
   awards: GroupAward[];
+  pastAwards: GroupPastAwards[];
   activity: GroupActivityEvent[];
   leaderboard: { user: ApiUser; hours: number }[];
   leaderboardPeriod: GroupLeaderboardPeriod;
@@ -226,6 +232,9 @@ export type GroupDetail = {
   topAlbums: GroupTopAlbum[];
   taste: GroupTaste | null;
   vote: GroupVoteState;
+  // This viewer's own mute state for this group (spec gap) — per
+  // group_members row, see migration_018.
+  muted: boolean;
 };
 
 export type ArtistRelease = {

@@ -66,6 +66,11 @@ export function GroupScreen({ device }: { device: Device }) {
     if (res.ok) { showToast(t('groups.leftToast')); showScreen('groups'); }
   };
 
+  const toggleMute = async () => {
+    const res = await fetch(`/api/groups/${groupId}/mute`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ muted: !detail.muted }) });
+    if (res.ok) load(); else showToast(t('groups.muteFailed'));
+  };
+
   const totalHours = detail.leaderboard.reduce((s, r) => s + r.hours, 0);
   const totalRatingsThisMonth = detail.memberStats.reduce((s, m) => s + m.ratingsMonth, 0);
   const groupAvgScore = detail.memberStats.length ? detail.memberStats.reduce((s, m) => s + m.avgScore, 0) / detail.memberStats.length : 0;
@@ -92,6 +97,7 @@ export function GroupScreen({ device }: { device: Device }) {
         </div>
         <div className="acts">
           <button className="btn" onClick={async () => { await navigator.clipboard.writeText(window.location.origin); showToast(t('groups.inviteSuccess')); }}>{t('groups.invite')}</button>
+          <button className="btn ghost" aria-pressed={detail.muted} onClick={toggleMute}>{detail.muted ? t('groups.muted') : t('groups.muteNotifications')}</button>
         </div>
       </div>
 
@@ -126,7 +132,7 @@ export function GroupScreen({ device }: { device: Device }) {
           </div>
         </div>
 
-        {detail.awards.length > 0 && (
+        {(detail.awards.length > 0 || detail.pastAwards.length > 0) && (
           <div className="tile t-soft2">
             <h3>{t('groups.awards')}</h3>
             <div className="stack" style={{ marginTop: 10 }}>
@@ -136,6 +142,25 @@ export function GroupScreen({ device }: { device: Device }) {
                 </div>
               ))}
             </div>
+            {detail.pastAwards.length > 0 && (
+              <>
+                <p className="muted" style={{ fontWeight: 800, margin: '14px 0 4px', fontSize: 13 }}>{t('groups.pastMonths')}</p>
+                <div className="stack" style={{ gap: 6 }}>
+                  {detail.pastAwards.map((pm) => (
+                    <div className="row" key={pm.monthKey} style={{ alignItems: 'flex-start' }}>
+                      <div className="g">
+                        <b style={{ fontSize: 13 }}>{new Date(`${pm.monthKey}-01`).toLocaleDateString(toLocale(language), { month: 'long', year: 'numeric' })}</b>
+                        <div className="hrow" style={{ marginTop: 4, flexWrap: 'wrap', gap: 6 }}>
+                          {pm.awards.map((a, i) => (
+                            <span className="tag" key={i}>{t(AWARD_LABEL_KEY[a.label] as never)}: {a.winner?.name}</span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         )}
 
