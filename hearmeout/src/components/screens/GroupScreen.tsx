@@ -22,6 +22,7 @@ export function GroupScreen({ device }: { device: Device }) {
   const { t, language, me, state, goBack, showScreen, albums, liveAlbums, openAlbum, showToast, viewFriend } = useApp();
   const [detail, setDetail] = useState<GroupDetail | null>(null);
   const [inviteHandle, setInviteHandle] = useState('');
+  const [inviteErr, setInviteErr] = useState('');
   const [period, setPeriod] = useState<GroupLeaderboardPeriod>('month');
   const [leavingConfirm, setLeavingConfirm] = useState(false);
 
@@ -31,7 +32,7 @@ export function GroupScreen({ device }: { device: Device }) {
     if (!groupId) return;
     fetch(`/api/groups/${groupId}?period=${p}`).then((r) => (r.ok ? r.json() : null)).then(setDetail);
   };
-  useEffect(() => { setDetail(null); setLeavingConfirm(false); load('month'); setPeriod('month'); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [groupId]);
+  useEffect(() => { setDetail(null); setLeavingConfirm(false); setInviteErr(''); setInviteHandle(''); load('month'); setPeriod('month'); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [groupId]);
 
   const changePeriod = (p: GroupLeaderboardPeriod) => { setPeriod(p); load(p); };
 
@@ -51,14 +52,29 @@ export function GroupScreen({ device }: { device: Device }) {
     if (res.ok) load(); else showToast(t('groups.voteFailed'));
   };
 
+  // Invite-by-handle errors render under the field (prototype #ginverr),
+  // not as toasts; only success is toasted.
   const invite = async () => {
-    if (!inviteHandle.trim()) return;
-    const res = await fetch(`/api/groups/${groupId}/members`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle: inviteHandle.trim() }) });
-    if (res.ok) { setInviteHandle(''); load(); showToast(t('groups.inviteSuccess')); }
-    else {
-      const body = await res.json().catch(() => null);
-      showToast(body?.error === 'not_found' ? t('groups.inviteNotFound') : body?.error === 'already_member' ? t('groups.alreadyMember') : t('groups.inviteFailed'));
-    }
+    const handle = inviteHandle.trim().replace(/^@/, '');
+    setInviteErr('');
+    if (!handle) { setInviteErr(t('groups.enterHandle')); return; }
+    const res = await fetch(`/api/groups/${groupId}/members`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle }) });
+    if (res.ok) { setInviteHandle(''); load(); showToast(t('groups.invitedHandle', { handle })); return; }
+    const body = await res.json().catch(() => null);
+    setInviteErr(
+      body?.error === 'not_found' ? t('groups.handleNotFound', { handle })
+        : body?.error === 'already_member' ? t('groups.handleAlreadyMember', { handle })
+        : t('groups.inviteFailed'),
+    );
+  };
+
+  // "Invite friends" copies the user's personal invite link (/invite/[id]).
+  // clipboard.writeText can throw synchronously in some sandboxes, so the
+  // fallback shows the link itself in the toast.
+  const copyInviteLink = async () => {
+    const url = `${window.location.origin}/invite/${me.id}`;
+    try { await navigator.clipboard.writeText(url); showToast(t('groups.inviteLinkCopied')); }
+    catch { showToast(url); }
   };
 
   const leaveGroup = async () => {
@@ -96,7 +112,7 @@ export function GroupScreen({ device }: { device: Device }) {
           ))}
         </div>
         <div className="acts">
-          <button className="btn" onClick={async () => { await navigator.clipboard.writeText(window.location.origin); showToast(t('groups.inviteSuccess')); }}>{t('groups.invite')}</button>
+          <button className="btn" onClick={copyInviteLink}>{t('groups.inviteFriends')}</button>
           <button className="btn ghost" aria-pressed={detail.muted} onClick={toggleMute}>{detail.muted ? t('groups.muted') : t('groups.muteNotifications')}</button>
         </div>
       </div>
@@ -262,10 +278,12 @@ export function GroupScreen({ device }: { device: Device }) {
           <div className="setrow" style={{ border: 0, padding: 0 }}>
             <h3 style={{ marginBottom: 0 }}>{t('groups.inviteByHandle')}</h3>
           </div>
-          <div className="acts" style={{ marginTop: 10 }}>
-            <input className="field" style={{ flex: 1 }} placeholder={t('groups.inviteHandle')} value={inviteHandle} onChange={(e) => setInviteHandle(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') invite(); }} />
+          <label htmlFor="ginv" style={{ marginTop: 10 }}>{t('groups.handleLabel')}</label>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <input className="field" id="ginv" style={{ flex: 1, minWidth: 150 }} placeholder="@handle" value={inviteHandle} aria-invalid={!!inviteErr} aria-describedby="ginverr" onChange={(e) => setInviteHandle(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') invite(); }} />
             <button className="btn" onClick={invite}>{t('groups.invite')}</button>
           </div>
+          <p className="ferr" id="ginverr" role="alert">{inviteErr}</p>
         </div>
 
         <div className="tile">

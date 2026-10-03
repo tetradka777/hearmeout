@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useApp } from '@/lib/AppContext';
 import type { Device, GroupSummary } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
@@ -15,6 +16,9 @@ export function GroupsScreen(_props: { device: Device }) {
   const [groups, setGroups] = useState<GroupSummary[] | null>(null);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
+  const [firstInvite, setFirstInvite] = useState('');
+  const [nameErr, setNameErr] = useState('');
+  const [inviteErr, setInviteErr] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const loadGroups = () => {
@@ -22,23 +26,43 @@ export function GroupsScreen(_props: { device: Device }) {
   };
   useEffect(() => { loadGroups(); }, []);
 
+  useEffect(() => {
+    if (!creating) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setCreating(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [creating]);
+
   if (!me) return null;
 
+  const openModal = () => {
+    setNewName(''); setFirstInvite(''); setNameErr(''); setInviteErr('');
+    setCreating(true);
+  };
+
+  // Spec 6.6 "New group" modal (prototype #gmodal): name 2–30 characters,
+  // optional first invite by handle, errors inline under each field.
   const createGroup = async () => {
+    if (submitting) return;
     const name = newName.trim();
-    if (!name || submitting) return;
+    const handle = firstInvite.trim().replace(/^@/, '');
+    setNameErr(''); setInviteErr('');
+    if (name.length < 2 || name.length > 30) { setNameErr(t('groups.nameLengthError')); return; }
     setSubmitting(true);
-    const res = await fetch('/api/groups', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+    const res = await fetch('/api/groups', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, firstInvite: handle || undefined }) });
     setSubmitting(false);
     if (res.ok) {
       const g = await res.json();
-      setNewName('');
       setCreating(false);
       loadGroups();
       viewGroup(g.id);
-    } else {
-      showToast(t('groups.createFailed'));
+      showToast(t('groups.created'));
+      return;
     }
+    const body = await res.json().catch(() => null);
+    if (body?.error === 'name_length') setNameErr(t('groups.nameLengthError'));
+    else if (body?.error === 'invite_not_found') setInviteErr(t('groups.handleNotFound', { handle }));
+    else showToast(t('groups.createFailed'));
   };
 
   return (
@@ -69,31 +93,60 @@ export function GroupsScreen(_props: { device: Device }) {
               <span style={{ display: 'inline-block', marginTop: 14, fontWeight: 800 }}>{t('groups.openGroup')} →</span>
             </button>
           ))}
-          {creating ? (
-            <div className="tile">
-              <div className="field" style={{ display: 'flex', gap: 8 }}>
-                <input
-                  style={{ flex: 1, background: 'transparent', border: 0 }}
-                  placeholder={t('groups.namePlaceholder')}
-                  value={newName}
-                  autoFocus
-                  onChange={(e) => setNewName(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') createGroup(); if (e.key === 'Escape') setCreating(false); }}
-                />
-              </div>
-              <div className="acts">
-                <button className="btn" disabled={submitting} onClick={createGroup}>{t('groups.create')}</button>
-                <button className="btn ghost" onClick={() => setCreating(false)}>✕</button>
-              </div>
-            </div>
-          ) : (
-            <button className="tile t-soft2 empty" onClick={() => setCreating(true)} style={{ minHeight: 210, cursor: 'pointer' }}>
-              <MascotIcon />
-              <h3>{t('groups.newGroup')}</h3>
-              <p className="muted">{t('groups.newGroupHint')}</p>
-            </button>
-          )}
+          <button className="tile t-soft2 empty" onClick={openModal} style={{ minHeight: 210, cursor: 'pointer' }}>
+            <MascotIcon />
+            <h3>{t('groups.newGroup')}</h3>
+            <p className="muted">{t('groups.newGroupHint')}</p>
+          </button>
         </div>
+      )}
+
+      {creating && createPortal(
+        <div className="modalbg" onClick={(e) => { if (e.target === e.currentTarget) setCreating(false); }}>
+          <form
+            className="modal tile"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="gmt"
+            onSubmit={(e) => { e.preventDefault(); createGroup(); }}
+          >
+            <h2 id="gmt" style={{ marginBottom: 6 }}>{t('groups.newGroup')}</h2>
+            <p className="muted" style={{ fontWeight: 600, marginBottom: 14 }}>{t('groups.modalBody')}</p>
+            <label htmlFor="gname">{t('groups.nameLabel')}</label>
+            <input
+              className="field"
+              id="gname"
+              maxLength={30}
+              placeholder={t('groups.nameExample')}
+              value={newName}
+              autoFocus
+              aria-invalid={!!nameErr}
+              aria-describedby="gnerr"
+              onChange={(e) => setNewName(e.target.value)}
+            />
+            <p className="ferr" id="gnerr" role="alert">{nameErr}</p>
+            <label htmlFor="gfirst" style={{ marginTop: 10 }}>{t('groups.firstInviteLabel')}</label>
+            <input
+              className="field"
+              id="gfirst"
+              placeholder="@handle"
+              value={firstInvite}
+              aria-invalid={!!inviteErr}
+              aria-describedby="gferr"
+              onChange={(e) => setFirstInvite(e.target.value)}
+            />
+            <p className="ferr" id="gferr" role="alert">{inviteErr}</p>
+            <div className="acts">
+              <button type="submit" className="btn lg" disabled={submitting}>{t('groups.createGroup')}</button>
+              <button type="button" className="btn ghost lg" onClick={() => setCreating(false)}>{t('groups.cancel')}</button>
+            </div>
+          </form>
+        </div>,
+        // Portal into the .rd root: every screen inside <main class="fade">
+        // runs a transform animation, which would turn it into the
+        // containing block for position:fixed and shrink the backdrop to
+        // the screen's own box instead of the viewport.
+        document.querySelector('.rd') ?? document.body,
       )}
     </>
   );

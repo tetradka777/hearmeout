@@ -58,15 +58,28 @@ export async function POST(request: NextRequest) {
   if (!userId) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
 
   const body = await request.json().catch(() => null);
-  const name = typeof body?.name === 'string' ? body.name.trim().slice(0, 60) : '';
-  if (!name) return NextResponse.json({ error: 'invalid_payload' }, { status: 400 });
+  const name = typeof body?.name === 'string' ? body.name.trim() : '';
+  // Spec 6.6 "New group" modal: name 2–30 characters, optional first invite.
+  if (name.length < 2 || name.length > 30) return NextResponse.json({ error: 'name_length' }, { status: 400 });
+  const rawInvite = typeof body?.firstInvite === 'string' ? body.firstInvite.trim() : '';
 
   const admin = supabaseAdmin();
+
+  // Resolve the optional first invitee before creating anything, so an
+  // unknown handle doesn't leave a half-made group behind.
+  let inviteeId: string | null = null;
+  if (rawInvite) {
+    const normalized = rawInvite.startsWith('@') ? rawInvite : `@${rawInvite}`;
+    const { data: target } = await admin.from('users').select('id').ilike('handle', normalized).maybeSingle();
+    if (!target) return NextResponse.json({ error: 'invite_not_found' }, { status: 404 });
+    if (target.id !== userId) inviteeId = target.id;
+  }
 
   const { data: group, error } = await admin.from('groups').insert({ name, created_by: userId }).select('id, name').single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const { error: memberErr } = await admin.from('group_members').insert({ group_id: group.id, user_id: userId });
+  const rows = [{ group_id: group.id, user_id: userId }, ...(inviteeId ? [{ group_id: group.id, user_id: inviteeId }] : [])];
+  const { error: memberErr } = await admin.from('group_members').insert(rows);
   if (memberErr) return NextResponse.json({ error: memberErr.message }, { status: 500 });
 
   return NextResponse.json({ id: group.id, name: group.name });
