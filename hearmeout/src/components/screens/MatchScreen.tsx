@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { ApiUser, Device, DiscoverMatchPerson, GroupSummary, PublicProfile, StatsData } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
@@ -18,6 +18,31 @@ function sharedArtistNames(a: StatsData | null, b: StatsData | null): string[] {
   return a.topArtists.filter((x) => bNames.has(x.name)).map((x) => x.name);
 }
 
+// countUp() in reference/app.js: the hero percentage counts up to its value
+// over 450ms (ease-out cubic), replayed whenever the value changes or the
+// screen is entered again. Skipped for reduced motion — the OS setting or
+// the account's Motion switch, both folded into <html data-motion="off">.
+function useCountUp(target: number | null, replayKey: unknown): number | null {
+  const [shown, setShown] = useState(target);
+  // Layout effect so the reset to 0 lands before paint — otherwise the final
+  // number flashes for a frame before the count starts.
+  useLayoutEffect(() => {
+    if (target == null || document.documentElement.dataset.motion === 'off') { setShown(target); return; }
+    setShown(0);
+    let raf = 0;
+    const t0 = performance.now();
+    const step = (now: number) => {
+      // rAF timestamps can predate performance.now() taken above.
+      const k = Math.min(1, Math.max(0, (now - t0) / 450));
+      setShown(Math.round(target * (1 - Math.pow(1 - k, 3))));
+      if (k < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [target, replayKey]);
+  return shown;
+}
+
 // vMatch() in reference/app.js: a friend picker (pills) drives one
 // continuous "You and {friend}" comparison — hero taste-match card with a
 // dot-meter, a disagreement/gap list, shared artists, a weekly leaderboard,
@@ -25,7 +50,7 @@ function sharedArtistNames(a: StatsData | null, b: StatsData | null): string[] {
 // numbers here are real (computeMatch, shared ratings, /api/stats), unlike
 // the prototype's own hardcoded demo data.
 export function MatchScreen(_props: { device: Device }) {
-  const { t, language, me, myRatings, albums, liveAlbums, spotifyCovers, openAlbum, viewFriend, showScreen, addFriend } = useApp();
+  const { t, language, me, state, myRatings, albums, liveAlbums, spotifyCovers, openAlbum, viewFriend, viewGroup, showScreen, addFriend } = useApp();
   const [info, setInfo] = useState<Record<string, FriendInfo>>({});
   const [groups, setGroups] = useState<GroupSummary[] | null>(null);
   const [discover, setDiscover] = useState<DiscoverMatchPerson[] | null>(null);
@@ -75,6 +100,8 @@ export function MatchScreen(_props: { device: Device }) {
     return () => { cancelled = true; };
   }, [me]);
 
+  const isActiveScreen = state.activeScreen === 'match';
+
   const ranked = useMemo(() => {
     if (!me) return [] as ApiUser[];
     return [...me.friends].sort((a, b) => (info[b.id]?.score ?? -1) - (info[a.id]?.score ?? -1));
@@ -83,6 +110,9 @@ export function MatchScreen(_props: { device: Device }) {
   const activeId = (selectedId && ranked.some((f) => f.id === selectedId)) ? selectedId : (ranked[0]?.id ?? null);
   const active = activeId ? ranked.find((f) => f.id === activeId) ?? null : null;
   const activeInfo = activeId ? info[activeId] ?? null : null;
+  // All screens stay mounted, so key the replay on the screen becoming
+  // visible too — otherwise it would only ever animate off-screen at load.
+  const shownPct = useCountUp(activeInfo?.score ?? null, isActiveScreen ? activeId : null);
 
   useEffect(() => {
     if (!activeId) { setHistory(null); return; }
@@ -119,7 +149,11 @@ export function MatchScreen(_props: { device: Device }) {
     .sort((a, b) => Math.abs(b.mine - b.theirs) - Math.abs(a.mine - a.theirs));
 
   const trendDelta = history && history.length >= 2 ? Math.round(history[history.length - 1].pct - history[0].pct) : null;
-  const trendDate = history && history.length >= 2 ? new Date(history[0].date).toLocaleDateString(toLocale(language), { month: 'long' }) : '';
+  // A bare month name is nominative in Russian ("с сентябрь"); day + month
+  // gives the genitive the sentence needs ("с 5 сентября").
+  const trendDate = history && history.length >= 2
+    ? new Date(history[0].date).toLocaleDateString(toLocale(language), language === 'ru' ? { day: 'numeric', month: 'long' } : { month: 'long' })
+    : '';
 
   const leaderboard = [
     { id: 'me', name: t('friend.you'), hours: myWeekHours ?? 0 },
@@ -147,7 +181,7 @@ export function MatchScreen(_props: { device: Device }) {
           </span>
         )}
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6 }}>
-          <span className="num pct">{pct ?? '—'}</span><span className="num pcts">%</span>
+          <span className="num pct">{shownPct ?? '—'}</span><span className="num pcts">%</span>
         </div>
         <p style={{ fontWeight: 800, marginTop: 16 }}>{t('match.tasteMatchSummary', { count: sharedArt.length })}</p>
         <div className="dotm" role="img" aria-label={t('match.percentMatchAria', { pct: pct ?? 0 })}>
@@ -261,7 +295,7 @@ export function MatchScreen(_props: { device: Device }) {
         ) : (
           <div className="bento b3">
             {groups.slice(0, 3).map((g) => (
-              <button className="tile gl" key={g.id} onClick={() => showScreen('groups')} style={{ textAlign: 'left', cursor: 'pointer' }}>
+              <button className="tile gl" key={g.id} onClick={() => viewGroup(g.id)} style={{ textAlign: 'left', cursor: 'pointer' }}>
                 <h3>{g.name}</h3>
                 <div className="hrow" style={{ margin: '12px 0 8px', gap: 6, flexWrap: 'wrap' }}>
                   {g.members.map((m) => (
