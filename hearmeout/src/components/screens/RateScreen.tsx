@@ -70,7 +70,7 @@ function FriendsWhoRated({ albumId }: { albumId: string }) {
 export function RateScreen({ device }: { device: Device }) {
   const {
     state, t, language, albums, liveAlbums, failedAlbumIds, albumRatings, myRatings, spotifyCovers,
-    reviewsVersion, openSpotifyArtist, ensureLiveAlbum, lovedItems, toggleLoved, me,
+    reviewsVersion, openSpotifyArtist, ensureLiveAlbum, lovedItems, toggleLoved, wishlistedAlbumIds, toggleWishlist, me,
     setRatingValue, publishRating, showToast, showScreen,
   } = useApp();
   const { playQueue, currentTrack, playing } = usePlayer();
@@ -132,6 +132,7 @@ export function RateScreen({ device }: { device: Device }) {
   const trackQueue: QueueTrack[] = a.tracklist.map((tr) => ({ title: tr, artist: a.artist, cover, albumId: a.id, spotifyId: a.spotifyId }));
   const openSpotifyUrl = a.spotifyId ? `https://open.spotify.com/album/${a.spotifyId}` : null;
   const albumLoved = lovedItems.some((li) => li.type === 'album' && li.title === a.title && li.artist === a.artist);
+  const wishlisted = !!wishlistedAlbumIds[a.id];
   const vsAverage = val > 0 && ratingInfo ? val - ratingInfo.avg : null;
 
   const tracklist = a.tracklist.length ? (
@@ -169,6 +170,9 @@ export function RateScreen({ device }: { device: Device }) {
           </p>
           <h1 className="big">{a.title}</h1>
           <div className="acts" style={{ margin: '0 0 14px' }}>
+            <button className={`btn ghost${wishlisted ? ' on' : ''}`} onClick={() => toggleWishlist(a.id)}>
+              {wishlisted ? t('album.inWishlist') : t('album.addWishlist')}
+            </button>
             <button className={`btn ghost love${albumLoved ? ' on' : ''}`} onClick={() => toggleLoved('album', a.title, a.artist, a.spotifyId ?? null, spotifyCovers[a.id] || a.cover || null)}>
               <HeartIcon /> {albumLoved ? t('album.loved') : t('album.love')}
             </button>

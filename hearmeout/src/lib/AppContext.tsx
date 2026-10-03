@@ -161,6 +161,8 @@ type AppContextValue = {
   setFeed: (feed: FeedResponse | null) => void;
   lovedItems: LovedItem[];
   toggleLoved: (type: LovedItemType, title: string, artist?: string | null, itemId?: string | null, cover?: string | null) => Promise<void>;
+  wishlistedAlbumIds: Record<string, true>;
+  toggleWishlist: (albumId: string) => Promise<void>;
   friendRequests: { incoming: FriendRequest[]; outgoing: FriendRequest[] };
   recapCache: Record<string, RecapData>;
   recapLocked: Record<string, true>;
@@ -253,6 +255,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [myRatings, setMyRatings] = useState<RatingRecord[]>([]);
   const [feed, setFeed] = useState<FeedResponse | null>(null);
   const [lovedItems, setLovedItems] = useState<LovedItem[]>([]);
+  const [wishlistedAlbumIds, setWishlistedAlbumIds] = useState<Record<string, true>>({});
   const [friendRequests, setFriendRequests] = useState<{ incoming: FriendRequest[]; outgoing: FriendRequest[] }>({ incoming: [], outgoing: [] });
   const [recapCache, setRecapCache] = useState<Record<string, RecapData>>({});
   const [recapLocked, setRecapLocked] = useState<Record<string, true>>({});
@@ -325,6 +328,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await refreshLovedItems();
   }, [refreshLovedItems]);
 
+  const refreshWishlist = useCallback(async () => {
+    const res = await fetch('/api/wishlist');
+    if (!res.ok) return;
+    const data = await res.json();
+    const map: Record<string, true> = {};
+    for (const id of (data.albumIds || []) as string[]) map[id] = true;
+    setWishlistedAlbumIds(map);
+  }, []);
+
+  const toggleWishlist = useCallback(async (albumId: string) => {
+    const res = await fetch('/api/wishlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ albumId }),
+    });
+    if (!res.ok) return;
+    await refreshWishlist();
+  }, [refreshWishlist]);
+
   const refreshFriendRequests = useCallback(async () => {
     const res = await fetch('/api/friends/requests');
     if (!res.ok) return;
@@ -373,6 +395,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => { if (state.authStatus === 'ready') refreshMyRatings(); }, [state.authStatus, refreshMyRatings]);
   useEffect(() => { if (state.authStatus === 'ready') refreshLovedItems(); }, [state.authStatus, refreshLovedItems]);
+  useEffect(() => { if (state.authStatus === 'ready') refreshWishlist(); }, [state.authStatus, refreshWishlist]);
 
   // Redesign appearance: applies as soon as `me` loads (the layout's inline
   // script already applied the cached values before hydration, so there's
@@ -915,7 +938,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AppContextValue>(() => ({
     state, language: state.language, t, albums: ALBUMS, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds,
-    spotifyObscure, spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, friendRequests, recapCache, recapLocked, reviewsVersion,
+    spotifyObscure, spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, wishlistedAlbumIds, toggleWishlist, friendRequests, recapCache, recapLocked, reviewsVersion,
     showScreen, goBack, openAlbum, viewFriend, viewGroup, openRecap, closeRecap,
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, setRecapOffset, recapSeasons,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
@@ -923,7 +946,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateLanguage, updateRegion, updateOpenProfile, updateAppearance, updatePrivacy,
     addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyObscure,
-    spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, friendRequests, recapCache, recapLocked, reviewsVersion, showScreen, goBack, openAlbum,
+    spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, wishlistedAlbumIds, toggleWishlist, friendRequests, recapCache, recapLocked, reviewsVersion, showScreen, goBack, openAlbum,
     setRecapSeasonKey, setRecapOffset, recapSeasons,
     viewFriend, viewGroup, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,

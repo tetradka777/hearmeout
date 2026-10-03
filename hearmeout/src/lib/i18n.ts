@@ -348,6 +348,8 @@ const ru = {
   'recapTeaser.connectPrompt': 'Подключи Spotify и послушай что-нибудь — рекап появится здесь',
 
   'album.rateAlbum': 'Оценить альбом',
+  'album.addWishlist': '+ В список «Хочу послушать»',
+  'album.inWishlist': '✓ В списке «Хочу послушать»',
   'album.love': 'Любимый',
   'album.loved': 'В любимых',
   'artist.love': 'Любимый',
@@ -1126,6 +1128,8 @@ const en: Dict = {
   'recapTeaser.connectPrompt': 'Connect Spotify and listen to something — your recap will show up here',
 
   'album.rateAlbum': 'Rate album',
+  'album.addWishlist': '+ Add to wishlist',
+  'album.inWishlist': '✓ In wishlist',
   'album.love': 'Love',
   'album.loved': 'Loved',
   'artist.love': 'Love',
@@ -1901,6 +1905,8 @@ const fr: Dict = {
   'recapTeaser.connectPrompt': 'Connectez Spotify et écoutez quelque chose — votre récap apparaîtra ici',
 
   'album.rateAlbum': "Noter l'album",
+  'album.addWishlist': "+ Ajouter à la liste d'envies",
+  'album.inWishlist': "✓ Dans la liste d'envies",
   'album.love': 'Aimer',
   'album.loved': 'Aimé',
   'artist.love': 'Aimer',
@@ -2676,6 +2682,8 @@ const es: Dict = {
   'recapTeaser.connectPrompt': 'Conecta Spotify y escucha algo — tu resumen aparecerá aquí',
 
   'album.rateAlbum': 'Valorar álbum',
+  'album.addWishlist': '+ Añadir a la lista de deseos',
+  'album.inWishlist': '✓ En la lista de deseos',
   'album.love': 'Favorito',
   'album.loved': 'En favoritos',
   'artist.love': 'Favorito',
@@ -3451,6 +3459,8 @@ const de: Dict = {
   'recapTeaser.connectPrompt': 'Verbinde Spotify und hör dir etwas an — dein Rückblick erscheint dann hier',
 
   'album.rateAlbum': 'Album bewerten',
+  'album.addWishlist': '+ Zur Wunschliste hinzufügen',
+  'album.inWishlist': '✓ Auf der Wunschliste',
   'album.love': 'Favorit',
   'album.loved': 'Favorisiert',
   'artist.love': 'Favorit',
