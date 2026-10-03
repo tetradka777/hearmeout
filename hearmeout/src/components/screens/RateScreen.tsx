@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
-import { HeartIcon, PlayIcon } from '../ui/Icons';
+import { HeartIcon, PlayIcon, BookmarkIcon } from '../ui/Icons';
 import { Stars, StarSlider } from '../redesign/Stars';
 import { PreviewButton } from '../redesign/PreviewButton';
 import { pluralForKey } from '@/lib/i18n';
@@ -70,7 +70,7 @@ function FriendsWhoRated({ albumId }: { albumId: string }) {
 export function RateScreen({ device }: { device: Device }) {
   const {
     state, t, language, albums, liveAlbums, failedAlbumIds, albumRatings, myRatings, spotifyCovers,
-    reviewsVersion, openSpotifyArtist, ensureLiveAlbum, lovedItems, toggleLoved, wishlistedAlbumIds, toggleWishlist, me,
+    reviewsVersion, openSpotifyArtist, ensureLiveAlbum, lovedItems, toggleLoved, laterItems, toggleLaterAlbum, toggleLaterTrack, me,
     setRatingValue, publishRating, showToast, viewHistory,
   } = useApp();
   const { playQueue, currentTrack, playing } = usePlayer();
@@ -132,7 +132,7 @@ export function RateScreen({ device }: { device: Device }) {
   const trackQueue: QueueTrack[] = a.tracklist.map((tr) => ({ title: tr, artist: a.artist, cover, albumId: a.id, spotifyId: a.spotifyId }));
   const openSpotifyUrl = a.spotifyId ? `https://open.spotify.com/album/${a.spotifyId}` : null;
   const albumLoved = lovedItems.some((li) => li.type === 'album' && li.title === a.title && li.artist === a.artist);
-  const wishlisted = !!wishlistedAlbumIds[a.id];
+  const savedForLater = laterItems.some((li) => li.type === 'album' && li.albumId === a.id);
   const vsAverage = val > 0 && ratingInfo ? val - ratingInfo.avg : null;
 
   const tracklist = a.tracklist.length ? (
@@ -140,12 +140,23 @@ export function RateScreen({ device }: { device: Device }) {
       {a.tracklist.map((tr, i) => {
         const isRowCurrent = currentTrack?.albumId === a.id && currentTrack?.title === tr;
         const isRowPlaying = isRowCurrent && playing;
+        const trackSaved = laterItems.some((li) => li.type === 'track' && li.albumId === a.id && li.trackIndex === i);
         return (
-          <button className={`trk row${isRowCurrent ? ' cur' : ''}`} key={tr} onClick={() => playQueue(trackQueue, i)} aria-label={t('album.playPreviewOf', { title: tr })}>
-            <span className="muted" style={{ width: 24 }}>{String(i + 1).padStart(2, '0')}</span>
-            <b>{tr}</b>
-            <span className="ticn">{isRowPlaying ? <span className="eq"><b /><b /><b /></span> : <PlayIcon size={14} />}</span>
-          </button>
+          <div className="row later-row" key={tr}>
+            <button className={`trk rowlink${isRowCurrent ? ' cur' : ''}`} onClick={() => playQueue(trackQueue, i)} aria-label={t('album.playPreviewOf', { title: tr })}>
+              <span className="muted" style={{ width: 24 }}>{String(i + 1).padStart(2, '0')}</span>
+              <b>{tr}</b>
+              <span className="ticn">{isRowPlaying ? <span className="eq"><b /><b /><b /></span> : <PlayIcon size={14} />}</span>
+            </button>
+            <button
+              className={`ib love${trackSaved ? ' on' : ''}`}
+              aria-pressed={trackSaved}
+              aria-label={trackSaved ? t('track.removeLater') : t('track.saveLater')}
+              onClick={() => toggleLaterTrack(a.id, i, tr, a.artist, cover || null)}
+            >
+              <BookmarkIcon />
+            </button>
+          </div>
         );
       })}
     </div>
@@ -170,8 +181,8 @@ export function RateScreen({ device }: { device: Device }) {
           </p>
           <h1 className="big">{a.title}</h1>
           <div className="acts" style={{ margin: '0 0 14px' }}>
-            <button className={`btn ghost${wishlisted ? ' on' : ''}`} onClick={() => toggleWishlist(a.id)}>
-              {wishlisted ? t('album.inWishlist') : t('album.addWishlist')}
+            <button className={`btn ghost love${savedForLater ? ' on' : ''}`} aria-pressed={savedForLater} onClick={() => toggleLaterAlbum(a.id, a.title, a.artist, cover || null)}>
+              <BookmarkIcon /> {savedForLater ? t('album.savedForLater') : t('album.listenLater')}
             </button>
             <button className={`btn ghost love${albumLoved ? ' on' : ''}`} onClick={() => toggleLoved('album', a.title, a.artist, a.spotifyId ?? null, spotifyCovers[a.id] || a.cover || null)}>
               <HeartIcon /> {albumLoved ? t('album.loved') : t('album.love')}

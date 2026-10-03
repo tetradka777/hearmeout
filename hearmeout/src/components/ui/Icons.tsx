@@ -39,6 +39,38 @@ export function HeartIcon() {
   );
 }
 
+export function BookmarkIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M7 3h10a1 1 0 0 1 1 1v17l-6-4-6 4V4a1 1 0 0 1 1-1z" />
+    </svg>
+  );
+}
+
+export function NextIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M6 5l9 7-9 7zM19 5v14" />
+    </svg>
+  );
+}
+
+export function CloseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  );
+}
+
+export function CheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M5 12.5l4.5 4.5L19 7.5" />
+    </svg>
+  );
+}
+
 export function CompassSearchIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">

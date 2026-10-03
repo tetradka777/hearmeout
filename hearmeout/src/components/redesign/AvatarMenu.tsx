@@ -5,11 +5,12 @@ import { useApp } from '@/lib/AppContext';
 import { userAvatarStyle } from '@/lib/format';
 import { ProfileIcon } from '../ui/Icons';
 
-// Avatar menu popover (spec 3.9): Profile, Settings, Sign out. Closes on
+// Avatar menu popover (spec 3.9, 13.20): Profile, Listen later (with a
+// count tag), Settings, Sign out. Closes on
 // outside click, Escape, or picking an item. Opens below the button, or
 // above it when the button sits in the lower half of the screen.
 export function AvatarMenu({ className = 'avt' }: { className?: string }) {
-  const { t, me, showScreen, logout } = useApp();
+  const { t, me, showScreen, logout, laterItems } = useApp();
   const [open, setOpen] = useState(false);
   const [openUp, setOpenUp] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -56,6 +57,9 @@ export function AvatarMenu({ className = 'avt' }: { className?: string }) {
           style={{ position: 'absolute', right: 0, ...(openUp ? { bottom: '48px' } : { top: '48px' }) }}
         >
           <button role="menuitem" onClick={() => { showScreen('profile'); setOpen(false); }}>{t('settings.menuProfile')}</button>
+          <button role="menuitem" onClick={() => { showScreen('later'); setOpen(false); }}>
+            {t('nav.later')}{laterItems.length > 0 && <span className="tag" style={{ float: 'right' }}>{laterItems.length}</span>}
+          </button>
           <button role="menuitem" onClick={() => { showScreen('settings'); setOpen(false); }}>{t('settings.menuSettings')}</button>
           <hr />
           <button role="menuitem" onClick={() => { setOpen(false); logout(); }}>{t('settings.menuSignOut')}</button>

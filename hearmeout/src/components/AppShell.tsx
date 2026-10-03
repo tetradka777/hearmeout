@@ -18,6 +18,7 @@ import { GroupScreen } from './screens/GroupScreen';
 import { DiscoverScreen } from './screens/DiscoverScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { StatesScreen } from './screens/StatesScreen';
+import { LaterScreen } from './screens/LaterScreen';
 
 // Every screen mounts once and stays mounted (shown/hidden, not
 // unmounted/remounted) so in-progress state — draft reviews, scroll
@@ -37,6 +38,7 @@ const SCREENS: { name: ScreenName; Component: ComponentType<{ device: Device }> 
   { name: 'discover', Component: DiscoverScreen },
   { name: 'settings', Component: SettingsScreen },
   { name: 'states', Component: StatesScreen },
+  { name: 'later', Component: LaterScreen },
 ];
 
 export function AppShell() {

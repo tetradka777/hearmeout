@@ -16,6 +16,8 @@ type PlayerValue = {
   currentTrack: QueueTrack | null;
   playQueue: (tracks: QueueTrack[], startIndex: number) => void;
   toggle: () => void;
+  next: () => void;
+  close: () => void;
 };
 
 const PlayerContext = createContext<PlayerValue | null>(null);
@@ -84,9 +86,24 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     else audio.pause();
   }, [currentTrack, status]);
 
+  // Manual "Next" (prototype's mini-player, spec 3.18/B11) — same bounds
+  // check as auto-advance-on-ended, just triggerable from a button too.
+  const next = useCallback(() => advance(), [advance]);
+
+  // "✕" close (spec 3.18/B11): the mini-player has no way to dismiss
+  // itself today, so it stays docked until a full page reload. Clearing
+  // the queue drops `currentTrack` to null, which is what both the
+  // mini-player and the shell's `hasmp` bottom-padding key off of.
+  const close = useCallback(() => {
+    audioRef.current?.pause();
+    setQueue([]);
+    setIndex(0);
+    setPlaying(false);
+  }, []);
+
   const value = useMemo<PlayerValue>(() => ({
-    queue, index, playing, progress, status, currentTrack, playQueue, toggle,
-  }), [queue, index, playing, progress, status, currentTrack, playQueue, toggle]);
+    queue, index, playing, progress, status, currentTrack, playQueue, toggle, next, close,
+  }), [queue, index, playing, progress, status, currentTrack, playQueue, toggle, next, close]);
 
   return (
     <PlayerContext.Provider value={value}>

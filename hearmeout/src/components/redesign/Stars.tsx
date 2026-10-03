@@ -42,7 +42,7 @@ export function Stars({ value, size = 22, onDark = false }: { value: number; siz
   return <span className={`stars${onDark ? ' on-dark' : ''}`} style={{ fontSize: size }}><FiveStars value={value} size={size} /></span>;
 }
 
-export function StarSlider({ value, onChange, size = 28 }: { value: number; onChange: (v: number) => void; size?: number }) {
+export function StarSlider({ value, onChange, size = 28, onDark = false }: { value: number; onChange: (v: number) => void; size?: number; onDark?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
 
@@ -68,7 +68,7 @@ export function StarSlider({ value, onChange, size = 28 }: { value: number; onCh
   return (
     <div
       ref={ref}
-      className="stars rs"
+      className={`stars rs${onDark ? ' on-dark' : ''}`}
       role="slider"
       tabIndex={0}
       aria-valuemin={0.1}

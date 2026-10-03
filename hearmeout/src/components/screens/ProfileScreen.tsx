@@ -11,8 +11,9 @@ import {
 } from '../ProfileBlocks';
 import { StarIcon, BarsIcon } from '../ui/Icons';
 import { GroupsIcon, SettingsIcon } from '../redesign/icons';
+import { CoverArt } from '../ui/CoverArt';
 
-type ProfileTab = 'ratings' | 'reviews' | 'loved' | 'taste' | 'awards' | 'listening' | 'friends';
+type ProfileTab = 'ratings' | 'reviews' | 'loved' | 'taste' | 'awards' | 'listening' | 'friends' | 'later';
 
 function AvatarPicker({ size = 96 }: { size?: number }) {
   const { t, me, updateAvatar } = useApp();
@@ -86,7 +87,7 @@ function ShareLovedTracksButton() {
 }
 
 export function ProfileScreen(_props: { device: Device }) {
-  const { t, language, me, myRatings, albums, liveAlbums, updateProfileName, updateProfileHandle, updateRegion, showScreen, viewHistory } = useApp();
+  const { t, language, me, myRatings, albums, liveAlbums, updateProfileName, updateProfileHandle, updateRegion, showScreen, viewHistory, laterItems } = useApp();
   const [tab, setTab] = useState<ProfileTab>('ratings');
   const regionCodes = useMemo(() => getRegionCodes(), []);
 
@@ -118,6 +119,7 @@ export function ProfileScreen(_props: { device: Device }) {
     { key: 'awards', label: t('profile.tabAwards') },
     { key: 'listening', label: t('profile.tabListening') },
     { key: 'friends', label: t('profile.tabFriends') },
+    { key: 'later', label: t('nav.later') },
   ];
 
   return (
@@ -248,6 +250,31 @@ export function ProfileScreen(_props: { device: Device }) {
           <div className="tile s3">
             <h3>{t('profile.tabListening')}</h3>
             <div style={{ marginTop: 10 }}><ListeningRecentBlock /></div>
+          </div>
+        </div>
+      )}
+
+      {tab === 'later' && (
+        <div className="bento b3">
+          <div className="tile s3">
+            <h3>{t('nav.later')}</h3>
+            <div className="stats3" style={{ marginTop: 10 }}>
+              <div className="tile"><span className="num">{laterItems.filter((i) => i.type === 'album').length}</span><small className="muted">{t('later.tagAlbum')}</small></div>
+              <div className="tile"><span className="num">{laterItems.filter((i) => i.type === 'track').length}</span><small className="muted">{t('later.tagTrack')}</small></div>
+            </div>
+            {laterItems.length ? (
+              <div className="stack" style={{ marginTop: 10 }}>
+                {[...laterItems].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5).map((item) => (
+                  <div className="row" key={item.id}>
+                    <CoverArt url={item.cover ?? undefined} fallbackLetter={(item.artist || item.title)[0] || '?'} className="cov" style={{ width: 40, height: 40 }} />
+                    <div className="g"><b>{item.title}</b><div className="muted">{item.artist}</div></div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="muted" style={{ marginTop: 10 }}>{t('later.emptyTitle')}</p>
+            )}
+            <button className="btn ghost" style={{ marginTop: 10 }} onClick={() => showScreen('later')}>{t('later.openLater')} →</button>
           </div>
         </div>
       )}

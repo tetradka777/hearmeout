@@ -4,9 +4,8 @@ import type { ReactNode } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { ScreenName } from '@/lib/types';
 import type { TranslationKey } from '@/lib/i18n';
-import { HomeIcon, StarIcon, PeopleIcon, BarsIcon, CompassSearchIcon, ProfileIcon } from '../ui/Icons';
-import { userAvatarStyle } from '@/lib/format';
-import { GroupsIcon, SettingsIcon } from './icons';
+import { HomeIcon, PeopleIcon, BarsIcon, CompassSearchIcon } from '../ui/Icons';
+import { GroupsIcon } from './icons';
 import { Ticker } from './Ticker';
 import { AvatarMenu } from './AvatarMenu';
 import { QuickModeToggle } from './QuickModeToggle';
@@ -15,23 +14,24 @@ import { NowPlayingBar } from './NowPlayingBar';
 import { usePlayer } from '@/lib/PlayerContext';
 import { Toast } from '../ui/Toast';
 
-// The redesign's app shell (spec 3.9, 4, 15.1, 17.1): Cream Pop top pill
-// bar OR Toxic sidebar (both rendered; CSS in components.css decides which
-// shows, by data-design and viewport — same technique the prototype uses),
-// mobile header, five-tab bar with a quick-rate +, the activity ticker, and
-// the avatar menu. Mounted once around the existing screen-switching logic
-// in AppShell.tsx, so none of this remounts when the active screen changes.
+// The redesign's app shell (spec 2.4, 3.9, 4, 15.1, 17.1): one top menu
+// bar structure shared by both designs — they only ever differ in skin,
+// never in what exists or where it sits (no sidebar in either design) —
+// plus the mobile header, five-tab bar with a quick-rate +, the activity
+// ticker, and the avatar menu. Mounted once around the existing
+// screen-switching logic in AppShell.tsx, so none of this remounts when
+// the active screen changes.
 
-type NavItem = { screen: ScreenName; labelKey: TranslationKey; icon: ReactNode };
+type NavItem = { screen: ScreenName; labelKey: TranslationKey };
 
 function useNavItems(): NavItem[] {
   return [
-    { screen: 'catalog', labelKey: 'nav.home', icon: <HomeIcon /> },
-    { screen: 'history', labelKey: 'nav.rate', icon: <StarIcon /> },
-    { screen: 'match', labelKey: 'nav.match', icon: <PeopleIcon /> },
-    { screen: 'stats', labelKey: 'nav.stats', icon: <BarsIcon /> },
-    { screen: 'groups', labelKey: 'nav.groups', icon: <GroupsIcon /> },
-    { screen: 'discover', labelKey: 'nav.discover', icon: <CompassSearchIcon /> },
+    { screen: 'catalog', labelKey: 'nav.home' },
+    { screen: 'history', labelKey: 'nav.rate' },
+    { screen: 'match', labelKey: 'nav.match' },
+    { screen: 'stats', labelKey: 'nav.stats' },
+    { screen: 'groups', labelKey: 'nav.groups' },
+    { screen: 'discover', labelKey: 'nav.discover' },
   ];
 }
 
@@ -49,6 +49,7 @@ const NAV_GROUP: Record<ScreenName, ScreenName | null> = {
   profile: null,
   settings: null,
   states: null,
+  later: null,
 };
 
 const TAB_SCREENS: ScreenName[] = ['catalog', 'match', 'discover', 'stats', 'groups'];
@@ -69,12 +70,12 @@ export function RedesignShell({ children }: { children: ReactNode }) {
   const activeGroup = state.activeScreen === 'history' && state.historyOrigin === 'profile' ? null : NAV_GROUP[state.activeScreen];
   const { currentTrack } = usePlayer();
   const hasPlayer = !!currentTrack;
-  const hasNowPlaying = me?.design === 'toxic' && !!me?.nowPlaying;
+  const hasNowPlaying = !!me?.nowPlaying;
 
   return (
     <div className={`rd${hasPlayer ? ' hasmp' : ''}${hasNowPlaying ? ' hasnp' : ''}`}>
       <div className="wrap">
-      {/* Cream Pop desktop top bar */}
+      {/* Desktop top bar — identical structure in both designs (spec 2.4/15.1), skin only differs via CSS */}
       <div className="nav">
         <button className="logo" onClick={() => showScreen('catalog')}><span className="mk" />hearmeout</button>
         <nav>
@@ -95,30 +96,6 @@ export function RedesignShell({ children }: { children: ReactNode }) {
           </div>
           <QuickModeToggle />
           <AvatarMenu />
-        </div>
-      </div>
-
-      {/* Toxic desktop sidebar */}
-      <div className="side">
-        <button className="logo" onClick={() => showScreen('catalog')}><span className="mk" />hearmeout</button>
-        <nav>
-          {navItems.map((item) => (
-            <button key={item.screen} className={activeGroup === item.screen ? 'on' : ''} onClick={() => goToNavItem(item.screen)}>
-              {item.icon}{t(item.labelKey)}
-            </button>
-          ))}
-          <button className={state.activeScreen === 'settings' ? 'on' : ''} onClick={() => showScreen('settings')}>
-            <SettingsIcon />{t('settings.menuSettings')}
-          </button>
-        </nav>
-        <div className="merow">
-          <QuickModeToggle />
-          <button className="me" onClick={() => showScreen('profile')}>
-            <span className="dot" style={me ? userAvatarStyle(me) : undefined}>
-              {!me?.avatarUrl && <ProfileIcon />}
-            </span>
-            {me?.name}
-          </button>
         </div>
       </div>
 
@@ -159,7 +136,7 @@ export function RedesignShell({ children }: { children: ReactNode }) {
 
       {/* The preview mini-player takes priority over the now-playing bar
           while active (spec 13.17.2) — both live in the same fixed-bottom
-          slot in Toxic, so only one renders at a time. */}
+          slot, so only one renders at a time. */}
       {!hasPlayer && <NowPlayingBar />}
       <GlobalPlayer />
       <Toast />

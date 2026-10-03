@@ -5,7 +5,7 @@ import { ALBUMS } from './data';
 import { supabase } from './supabaseClient';
 import { translate, type Language, type TranslationKey } from './i18n';
 import type {
-  Album, AlbumRatingInfo, ArtistState, Device, FeedResponse, FriendRequest, LovedItem, LovedItemType, Me, RatingRecord, RecapData, RecapPeriod, ScreenName, SeasonOption,
+  Album, AlbumRatingInfo, ArtistState, Device, FeedResponse, FriendRequest, LaterItem, LovedItem, LovedItemType, Me, RatingRecord, RecapData, RecapPeriod, ScreenName, SeasonOption,
 } from './types';
 import type { AlbumDetail, CatalogAlbum, CatalogArtist } from './spotifyCatalog';
 import { resolveMode, type Design, type Mode, type PaletteId, type TimeFormat, type WeekStart } from './palettes';
@@ -56,7 +56,7 @@ type AuthStatus = 'loading' | 'anonymous' | 'ready';
 // history entry and URL, so the browser's own back/forward buttons work
 // everywhere on the site, not just on "content" pages.
 const ALL_SCREENS = new Set<ScreenName>([
-  'catalog', 'rate', 'history', 'recap', 'profile', 'artist', 'friend', 'match', 'stats', 'groups', 'group', 'discover', 'settings',
+  'catalog', 'rate', 'history', 'recap', 'profile', 'artist', 'friend', 'match', 'stats', 'groups', 'group', 'discover', 'settings', 'later',
 ]);
 
 // What's stored as `history.state` for one entry — enough to restore that
@@ -166,8 +166,11 @@ type AppContextValue = {
   setFeed: (feed: FeedResponse | null) => void;
   lovedItems: LovedItem[];
   toggleLoved: (type: LovedItemType, title: string, artist?: string | null, itemId?: string | null, cover?: string | null) => Promise<void>;
-  wishlistedAlbumIds: Record<string, true>;
-  toggleWishlist: (albumId: string) => Promise<void>;
+  laterItems: LaterItem[];
+  toggleLaterAlbum: (albumId: string, title: string, artist: string, cover?: string | null) => Promise<void>;
+  toggleLaterTrack: (albumId: string, trackIndex: number, title: string, artist: string, cover?: string | null) => Promise<void>;
+  removeLaterItem: (id: number) => Promise<boolean>;
+  removeAllLater: () => Promise<boolean>;
   friendRequests: { incoming: FriendRequest[]; outgoing: FriendRequest[] };
   recapCache: Record<string, RecapData>;
   recapLocked: Record<string, true>;
@@ -262,7 +265,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [myRatings, setMyRatings] = useState<RatingRecord[]>([]);
   const [feed, setFeed] = useState<FeedResponse | null>(null);
   const [lovedItems, setLovedItems] = useState<LovedItem[]>([]);
-  const [wishlistedAlbumIds, setWishlistedAlbumIds] = useState<Record<string, true>>({});
+  const [laterItems, setLaterItems] = useState<LaterItem[]>([]);
   const [friendRequests, setFriendRequests] = useState<{ incoming: FriendRequest[]; outgoing: FriendRequest[] }>({ incoming: [], outgoing: [] });
   const [recapCache, setRecapCache] = useState<Record<string, RecapData>>({});
   const [recapLocked, setRecapLocked] = useState<Record<string, true>>({});
@@ -335,24 +338,50 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await refreshLovedItems();
   }, [refreshLovedItems]);
 
-  const refreshWishlist = useCallback(async () => {
-    const res = await fetch('/api/wishlist');
+  const refreshLater = useCallback(async () => {
+    const res = await fetch('/api/later');
     if (!res.ok) return;
     const data = await res.json();
-    const map: Record<string, true> = {};
-    for (const id of (data.albumIds || []) as string[]) map[id] = true;
-    setWishlistedAlbumIds(map);
+    setLaterItems(data.items || []);
   }, []);
 
-  const toggleWishlist = useCallback(async (albumId: string) => {
-    const res = await fetch('/api/wishlist', {
+  const toggleLaterAlbum = useCallback(async (albumId: string, title: string, artist: string, cover?: string | null) => {
+    const res = await fetch('/api/later', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ albumId }),
+      body: JSON.stringify({ type: 'album', albumId, title, artist, cover: cover ?? null }),
     });
     if (!res.ok) return;
-    await refreshWishlist();
-  }, [refreshWishlist]);
+    const { saved } = await res.json();
+    await refreshLater();
+    showToast(saved ? t('toast.albumSavedLater') : t('toast.removedLater'));
+  }, [refreshLater, showToast, t]);
+
+  const toggleLaterTrack = useCallback(async (albumId: string, trackIndex: number, title: string, artist: string, cover?: string | null) => {
+    const res = await fetch('/api/later', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'track', albumId, trackIndex, title, artist, cover: cover ?? null }),
+    });
+    if (!res.ok) return;
+    const { saved } = await res.json();
+    await refreshLater();
+    showToast(saved ? t('toast.trackSavedLater') : t('toast.removedLater'));
+  }, [refreshLater, showToast, t]);
+
+  const removeLaterItem = useCallback(async (id: number) => {
+    const res = await fetch(`/api/later/${id}`, { method: 'DELETE' });
+    if (!res.ok) return false;
+    await refreshLater();
+    return true;
+  }, [refreshLater]);
+
+  const removeAllLater = useCallback(async () => {
+    const res = await fetch('/api/later', { method: 'DELETE' });
+    if (!res.ok) return false;
+    await refreshLater();
+    return true;
+  }, [refreshLater]);
 
   const refreshFriendRequests = useCallback(async () => {
     const res = await fetch('/api/friends/requests');
@@ -402,7 +431,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => { if (state.authStatus === 'ready') refreshMyRatings(); }, [state.authStatus, refreshMyRatings]);
   useEffect(() => { if (state.authStatus === 'ready') refreshLovedItems(); }, [state.authStatus, refreshLovedItems]);
-  useEffect(() => { if (state.authStatus === 'ready') refreshWishlist(); }, [state.authStatus, refreshWishlist]);
+  useEffect(() => { if (state.authStatus === 'ready') refreshLater(); }, [state.authStatus, refreshLater]);
 
   // Redesign appearance: applies as soon as `me` loads (the layout's inline
   // script already applied the cached values before hydration, so there's
@@ -656,8 +685,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     await Promise.all([refreshMyRatings(), refreshAlbumRatings(), refreshMe()]);
     setReviewsVersion((v) => v + 1);
-    showToast(isPrivate ? t('toast.savedPrivately') : isEditing ? t('toast.ratingUpdated') : t('toast.published'));
-  }, [myRatings, refreshMyRatings, refreshAlbumRatings, refreshMe, showToast, t]);
+    // Rating an album removes it from Listen later (spec 13.20 rule 2) —
+    // tracks stay, so this only ever matches the album-level entry.
+    const laterMatch = laterItems.find((i) => i.type === 'album' && i.albumId === albumId);
+    const removedFromLater = laterMatch ? await removeLaterItem(laterMatch.id) : false;
+    if (removedFromLater) {
+      showToast(isPrivate ? t('toast.savedPrivatelyRemovedLater') : t('toast.publishedRemovedLater'));
+    } else {
+      showToast(isPrivate ? t('toast.savedPrivately') : isEditing ? t('toast.ratingUpdated') : t('toast.published'));
+    }
+  }, [myRatings, refreshMyRatings, refreshAlbumRatings, refreshMe, showToast, t, laterItems, removeLaterItem]);
 
   const updateProfileName = useCallback(async (name: string) => {
     await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
@@ -952,7 +989,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AppContextValue>(() => ({
     state, language: state.language, t, albums: ALBUMS, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds,
-    spotifyObscure, spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, wishlistedAlbumIds, toggleWishlist, friendRequests, recapCache, recapLocked, reviewsVersion,
+    spotifyObscure, spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, laterItems, toggleLaterAlbum, toggleLaterTrack, removeLaterItem, removeAllLater, friendRequests, recapCache, recapLocked, reviewsVersion,
     showScreen, viewHistory, goBack, openAlbum, viewFriend, viewGroup, openRecap, closeRecap,
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, setRecapOffset, recapSeasons,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
@@ -960,7 +997,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateLanguage, updateRegion, updateOpenProfile, updateAppearance, updatePrivacy,
     addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyObscure,
-    spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, wishlistedAlbumIds, toggleWishlist, friendRequests, recapCache, recapLocked, reviewsVersion, showScreen, viewHistory, goBack, openAlbum,
+    spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, laterItems, toggleLaterAlbum, toggleLaterTrack, removeLaterItem, removeAllLater, friendRequests, recapCache, recapLocked, reviewsVersion, showScreen, viewHistory, goBack, openAlbum,
     setRecapSeasonKey, setRecapOffset, recapSeasons,
     viewFriend, viewGroup, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,

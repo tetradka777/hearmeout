@@ -54,6 +54,11 @@ export type DiscoverMatchPerson = ApiUser & { score: number; sharedAlbums: numbe
 export type LovedItemType = 'track' | 'album' | 'artist';
 export type LovedItem = { id: number; type: LovedItemType; itemId: string | null; title: string; artist: string | null; cover: string | null; createdAt: string };
 
+// Listen later (redesign spec 13.20): a saved album, or a saved track
+// (trackIndex into that album's tracklist — null for an album-level save).
+export type LaterItemType = 'album' | 'track';
+export type LaterItem = { id: number; type: LaterItemType; albumId: string; trackIndex: number | null; title: string; artist: string | null; cover: string | null; createdAt: string };
+
 export type NowPlaying = { title: string; artist: string; cover: string | null; startedAt: string; durationMs: number | null; albumId: string | null };
 
 export type PublicProfile = ApiUser & {
@@ -138,7 +143,8 @@ export type ScreenName =
   | 'group'
   | 'discover'
   | 'settings'
-  | 'states';
+  | 'states'
+  | 'later';
 
 // Stats period model (redesign spec 7.5 / Appendix B): only the current and
 // previous week/month, and the started seasons of the current calendar
