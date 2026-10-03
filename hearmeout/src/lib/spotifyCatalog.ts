@@ -229,3 +229,26 @@ export async function fetchArtistAlbumsSplit(id: string): Promise<{ released: Sp
   upcoming.sort((a, b) => (a.releaseDate || '').localeCompare(b.releaseDate || ''));
   return { released, upcoming };
 }
+
+export type ArtistTopTrack = { id: string; title: string; durationMs: number; albumId: string; albumTitle: string; albumCover: string | null; trackNumber: number };
+
+// The artist page's Popular tab (spec 6.7). Spotify requires a market for
+// top tracks; the account's region when it's a valid code, else US.
+export async function fetchArtistTopTracks(id: string, market?: string | null): Promise<ArtistTopTrack[]> {
+  const token = await getSpotifyAppToken();
+  const res = await fetch(`https://api.spotify.com/v1/artists/${id}/top-tracks?market=${isValidMarket(market) ? market : 'US'}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (res.status === 404) return [];
+  if (!res.ok) throw new Error(`Spotify request failed (/artists/${id}/top-tracks): ${res.status}`);
+  const data = await res.json();
+  return (data.tracks || []).slice(0, 10).map((tr: { id: string; name: string; duration_ms: number; track_number: number; album: { id: string; name: string; images?: { url: string }[] } }) => ({
+    id: tr.id,
+    title: tr.name,
+    durationMs: tr.duration_ms,
+    albumId: tr.album.id,
+    albumTitle: tr.album.name,
+    albumCover: tr.album.images?.[0]?.url ?? null,
+    trackNumber: tr.track_number,
+  }));
+}
