@@ -6,6 +6,8 @@ import type { Device, StatsCalendarDay, StatsData, StatsPeriodType, StatsSeasonK
 import { CoverArt } from '../ui/CoverArt';
 import { HeartIcon } from '../ui/Icons';
 import { toLocale, pluralForKey, type Language } from '@/lib/i18n';
+import type { WeekStart } from '@/lib/palettes';
+import { formatHour } from '@/lib/format';
 
 const DN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -31,20 +33,24 @@ function parseDay(iso: string): Date {
   return new Date(Date.UTC(y, m - 1, d));
 }
 
-function ListeningCalendar({ data, t, language }: { data: StatsData; t: ReturnType<typeof useApp>['t']; language: Language }) {
+function ListeningCalendar({ data, t, language, weekStart }: { data: StatsData; t: ReturnType<typeof useApp>['t']; language: Language; weekStart: WeekStart }) {
   const { periodType, calendar } = data;
   const scrollRef = useRef<HTMLDivElement>(null);
   const calRef = useRef<HTMLDivElement>(null);
   const [selected, setSelected] = useState<string | null>(null);
   useEffect(() => setSelected(null), [data.periodLabel, periodType]);
 
-  const todayKey = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  // Local calendar date, not UTC (redesign fix, item 22) — toISOString()
+  // shifts to UTC first, so anyone west of Greenwich in the evening, or
+  // east of it past midnight UTC, got "today" highlighted a day off.
+  const todayKey = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }, []);
   const inPeriodToday = calendar.days.some((d) => d.date === todayKey && !d.future);
   const fallbackReadout = inPeriodToday ? calendar.days.find((d) => d.date === todayKey) : calendar.bestDay;
   const readoutDay: StatsCalendarDay | { date: string; minutes: number; tracks: number; topArtist: string | null } | null =
     (selected && calendar.days.find((d) => d.date === selected)) || fallbackReadout || null;
-
-  const weekStart = 'mon'; // grid alignment only; actual period math already uses the account setting server-side
 
   const fit = () => {
     const sc = scrollRef.current, cal = calRef.current;
@@ -252,10 +258,10 @@ export function StatsScreen(_props: { device: Device }) {
             </div>
 
             <div className="tile"><span className="num">{data.avgRating || '—'}</span><small className="muted">{t(periodType === 'season' ? 'stats.avgRatingSeason' : periodType === 'month' ? 'stats.avgRatingMonth' : 'stats.avgRatingWeek')}</small></div>
-            <div className="tile"><span className="num">{data.peakHour != null ? `${String(data.peakHour).padStart(2, '0')}:00` : '—'}</span><small className="muted">{t('stats.peakHour')}</small></div>
+            <div className="tile"><span className="num">{data.peakHour != null ? formatHour(data.peakHour, me?.timeFormat ?? '24') : '—'}</span><small className="muted">{t('stats.peakHour')}</small></div>
             <div className="tile"><span className="num">{data.topArtists.length}</span><small className="muted">{t('stats.artistsTracked')}</small></div>
 
-            <ListeningCalendar data={data} t={t} language={language} />
+            <ListeningCalendar data={data} t={t} language={language} weekStart={me?.weekStart ?? 'mon'} />
 
             <div className="tile">
               <h3>{periodType === 'season' ? t('stats.hoursPerWeek') : t('stats.hoursPerDay')}</h3>
@@ -294,10 +300,10 @@ export function StatsScreen(_props: { device: Device }) {
             <div className="tile">
               <h3>{t('stats.whenYouListen')}</h3>
               <div className="tod" style={{ marginTop: 10 }}>
-                {data.heatmap.map((n, h) => <i key={h} className={n === maxHeat && n > 0 ? 'pk' : ''} style={{ height: `${Math.max(4, (n / maxHeat) * 100)}%` }} title={`${h}:00 — ${n}`} />)}
+                {data.heatmap.map((n, h) => <i key={h} className={n === maxHeat && n > 0 ? 'pk' : ''} style={{ height: `${Math.max(4, (n / maxHeat) * 100)}%` }} title={`${formatHour(h, me?.timeFormat ?? '24')} — ${n}`} />)}
               </div>
               <div className="todax"><span>00</span><span>06</span><span>12</span><span>18</span><span>23</span></div>
-              {data.peakHour != null && <p className="muted" style={{ marginTop: 6 }}>{t('stats.peakSentence', { hour: `${String(data.peakHour).padStart(2, '0')}:00` })}</p>}
+              {data.peakHour != null && <p className="muted" style={{ marginTop: 6 }}>{t('stats.peakSentence', { hour: formatHour(data.peakHour, me?.timeFormat ?? '24') })}</p>}
             </div>
 
             {data.genreSplit.length > 0 && (
@@ -325,7 +331,7 @@ export function StatsScreen(_props: { device: Device }) {
                   return (
                     <div className="row" key={i}>
                       <CoverArt url={p.cover ?? undefined} fallbackLetter={p.artist[0] || '?'} className="cov" style={{ width: 36, height: 36 }} />
-                      <div className="g"><b>{p.title}</b><div className="muted">{p.artist} · {new Date(p.playedAt).toLocaleString(toLocale(language), { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div></div>
+                      <div className="g"><b>{p.title}</b><div className="muted">{p.artist} · {new Date(p.playedAt).toLocaleString(toLocale(language), { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: me?.timeFormat === '12' })}</div></div>
                       <button className={`ib love${loved ? ' on' : ''}`} onClick={() => toggleLoved('track', p.title, p.artist, p.trackId, p.cover)} aria-label={t('stats.loveTrack')}>
                         <HeartIcon />
                       </button>

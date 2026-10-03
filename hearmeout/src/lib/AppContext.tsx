@@ -202,8 +202,8 @@ type AppContextValue = {
   claimAccount: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   deleteAccount: () => Promise<boolean>;
-  updateProfileName: (name: string) => Promise<void>;
-  updateProfileHandle: (handle: string) => Promise<void>;
+  updateProfileName: (name: string) => Promise<boolean>;
+  updateProfileHandle: (handle: string) => Promise<boolean>;
   updateAvatar: (dataUrl: string) => Promise<void>;
   updateBanner: (dataUrl: string) => Promise<void>;
   updateLanguage: (language: Language) => Promise<void>;
@@ -696,15 +696,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [myRatings, refreshMyRatings, refreshAlbumRatings, refreshMe, showToast, t, laterItems, removeLaterItem]);
 
+  // Redesign fix (item 20): the sign-up modal already enforces name length
+  // (2-24) and surfaces server errors — the profile screen's own inline
+  // name/handle fields didn't, so a too-short name or a taken handle just
+  // silently reverted on refreshMe() with no explanation. Returns whether
+  // the save stuck, so the caller can put the field back the way it was.
   const updateProfileName = useCallback(async (name: string) => {
-    await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+    const trimmed = name.trim();
+    if (trimmed.length < 2 || trimmed.length > 24) {
+      showToast(t('profile.nameLengthError'));
+      return false;
+    }
+    const res = await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: trimmed }) });
+    if (!res.ok) { showToast(t('profile.nameSaveFailed')); return false; }
     await refreshMe();
-  }, [refreshMe]);
+    showToast(t('profile.nameSaved'));
+    return true;
+  }, [refreshMe, showToast, t]);
 
   const updateProfileHandle = useCallback(async (handle: string) => {
-    await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle }) });
+    const trimmed = handle.trim().replace(/^@/, '');
+    if (trimmed.length < 3 || trimmed.length > 20) {
+      showToast(t('profile.handleLengthError'));
+      return false;
+    }
+    const res = await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle: trimmed }) });
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      showToast(data?.error === 'handle_taken' ? t('profile.handleTaken') : t('profile.handleSaveFailed'));
+      return false;
+    }
     await refreshMe();
-  }, [refreshMe]);
+    showToast(t('profile.handleSaved'));
+    return true;
+  }, [refreshMe, showToast, t]);
 
   const updateAvatar = useCallback(async (dataUrl: string) => {
     await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ avatarUrl: dataUrl }) });

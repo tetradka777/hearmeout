@@ -128,8 +128,17 @@ export function ProfileScreen(_props: { device: Device }) {
         <div className="prof">
           <AvatarPicker />
           <div className="pinfo">
-            <input className="pname" defaultValue={me.name} onBlur={(e) => updateProfileName(e.target.value)} />
-            <div className="phandle"><input defaultValue={me.handle} onBlur={(e) => updateProfileHandle(e.target.value)} /></div>
+            <input
+              className="pname"
+              defaultValue={me.name}
+              onBlur={async (e) => { if (!(await updateProfileName(e.target.value))) e.target.value = me.name; }}
+            />
+            <div className="phandle">
+              <input
+                defaultValue={me.handle}
+                onBlur={async (e) => { if (!(await updateProfileHandle(e.target.value))) e.target.value = me.handle; }}
+              />
+            </div>
             <p className="muted">{t('profile.joined')} {formatJoinDate(me.joinedAt, language)} · {t('profile.tapToEditHint')}</p>
           </div>
           <div className="pcnt">

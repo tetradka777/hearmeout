@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device, RatingRecord } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
@@ -8,6 +8,7 @@ import { Stars } from '../redesign/Stars';
 import { toLocale, pluralForKey } from '@/lib/i18n';
 import { REVIEW_TAG_LABEL_KEY } from '@/lib/reviewTags';
 import { MascotIcon } from '../redesign/icons';
+import { exportRatingsCsv } from '@/lib/csvExport';
 
 type Filter = 'all' | 'reviewed' | 'private' | 'high' | 'low';
 type Sort = 'newest' | 'oldest';
@@ -23,15 +24,19 @@ function monthKey(iso: string) {
 function HistoryRow({ rating }: { rating: RatingRecord }) {
   const { albums, liveAlbums, spotifyCovers, language, openAlbum, t } = useApp();
   const a = liveAlbums[rating.albumId] || albums.find((x) => x.id === rating.albumId);
-  if (!a) return null;
-  const cover = spotifyCovers[a.id] || a.cover;
+  // A rating for an album outside the static catalog that hasn't resolved
+  // yet (or never will, e.g. removed from Spotify) used to just vanish
+  // from the list — shown with its raw id instead (redesign fix, item 19).
+  const title = a?.title ?? rating.albumId;
+  const artist = a?.artist ?? '';
+  const cover = a ? spotifyCovers[a.id] || a.cover : undefined;
   const date = new Date(rating.createdAt).toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short' });
   return (
-    <button className="row" onClick={() => openAlbum(a.id)} style={{ cursor: 'pointer', width: '100%' }}>
-      <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: 48, height: 48 }} />
+    <button className="row" onClick={() => openAlbum(rating.albumId)} style={{ cursor: 'pointer', width: '100%' }}>
+      <CoverArt url={cover} fallbackLetter={artist[0] || '?'} className="cov" style={{ width: 48, height: 48 }} />
       <div className="g">
-        <b>{a.title}</b>
-        <small className="muted" style={{ fontWeight: 600 }}>{a.artist} · {date}{rating.isPrivate ? ` · ${t('history.privateBadge')}` : ''}</small>
+        <b>{title}</b>
+        <small className="muted" style={{ fontWeight: 600 }}>{artist}{artist ? ' · ' : ''}{date}{rating.isPrivate ? ` · ${t('history.privateBadge')}` : ''}</small>
       </div>
       {rating.review && <span className="tag">{t('history.reviewBadge')}</span>}
       {rating.previousStars != null && <span className="rev">{rating.previousStars.toFixed(1)} → {rating.stars.toFixed(1)}</span>}
@@ -41,23 +46,6 @@ function HistoryRow({ rating }: { rating: RatingRecord }) {
   );
 }
 
-function exportCsv(ratings: RatingRecord[], albums: ReturnType<typeof useApp>['albums'], liveAlbums: ReturnType<typeof useApp>['liveAlbums']) {
-  const rows = [['date', 'title', 'artist', 'score', 'review']];
-  for (const r of ratings) {
-    const a = liveAlbums[r.albumId] || albums.find((x) => x.id === r.albumId);
-    if (!a) continue;
-    const esc = (s: string) => `"${s.replace(/"/g, '""')}"`;
-    rows.push([r.createdAt, esc(a.title), esc(a.artist), r.stars.toFixed(1), esc(r.review || '')]);
-  }
-  const csv = rows.map((row) => row.join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = 'hearmeout-ratings.csv';
-  link.click();
-  URL.revokeObjectURL(url);
-}
 
 // vHistory()'s sparkHtml(): a real SVG line chart (not bars) over the last
 // 6 months that actually have a rating, with hoverable/focusable points and
@@ -102,16 +90,29 @@ function AverageByMonthChart({ months }: { months: { key: string; label: string;
 }
 
 export function HistoryScreen(_props: { device: Device }) {
-  const { state, t, language, me, albums, liveAlbums, spotifyCovers, myRatings, albumRatings, setHistoryQuery, showScreen, openAlbum, goBack } = useApp();
+  const { state, t, language, me, albums, liveAlbums, spotifyCovers, myRatings, albumRatings, setHistoryQuery, showScreen, openAlbum, goBack, ensureLiveAlbum } = useApp();
   const [filter, setFilter] = useState<Filter>('all');
   const [sort, setSort] = useState<Sort>('newest');
+
+  // Ratings for an album outside the static catalog (a live Spotify search
+  // result never opened on its own album screen) used to just disappear
+  // from History and its CSV export, since HistoryRow silently returns
+  // null for an album it can't resolve. Resolving every rated album up
+  // front, not just the ones the user happens to click into, is the fix
+  // (redesign fix, item 19).
+  useEffect(() => {
+    for (const r of myRatings) {
+      if (!albums.find((a) => a.id === r.albumId) && !liveAlbums[r.albumId]) ensureLiveAlbum(r.albumId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [myRatings]);
 
   const filtered = useMemo(() => {
     const q = (state.historyQuery || '').trim().toLowerCase();
     let list = myRatings;
     if (q) {
       list = list.filter((r) => {
-        const a = albums.find((x) => x.id === r.albumId);
+        const a = liveAlbums[r.albumId] || albums.find((x) => x.id === r.albumId);
         return a ? (a.title + ' ' + a.artist + ' ' + r.tags.join(' ')).toLowerCase().includes(q) : false;
       });
     }
@@ -350,7 +351,7 @@ export function HistoryScreen(_props: { device: Device }) {
           </div>
         )}
         <div className="acts">
-          <button className="btn ghost" disabled={!myRatings.length} onClick={() => exportCsv(myRatings, albums, liveAlbums)}>{t('history.exportBtn')}</button>
+          <button className="btn ghost" disabled={!myRatings.length} onClick={() => exportRatingsCsv(myRatings, (id) => liveAlbums[id] || albums.find((x) => x.id === id))}>{t('history.exportBtn')}</button>
         </div>
       </div>
     </>

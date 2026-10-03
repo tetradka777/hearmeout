@@ -6,6 +6,7 @@ import type { Device } from '@/lib/types';
 import { getRegionCodes, regionDisplayName, LANGUAGES, LANGUAGE_LABEL } from '@/lib/i18n';
 import { PALETTES, type Design, type Mode } from '@/lib/palettes';
 import { AccountBlock, ConnectBlock, ImportHistoryBlock } from '../ProfileBlocks';
+import { exportRatingsCsv } from '@/lib/csvExport';
 
 type Section = 'appearance' | 'language' | 'account' | 'connections' | 'privacy';
 
@@ -153,19 +154,21 @@ function LanguageRegionSection() {
   );
 }
 
+// Redesign fix (item 21): spec 7.1/9.9 calls this a single switch, "Private
+// profile" — it was built as a two-button Open/Closed segmented control,
+// which is a different control than the prototype's for the same setting.
 function ProfileVisibilitySection() {
   const { t, me, updateOpenProfile } = useApp();
   if (!me) return null;
-  const isOpen = me.isOpenProfile;
+  const isPrivate = !me.isOpenProfile;
 
   return (
-    <div className="sec">
-      <h3>{t('settings.profileVisibility')}</h3>
-      <p className="muted">{isOpen ? t('settings.profileVisibilityOpenHint') : t('settings.profileVisibilityClosedHint')}</p>
-      <div className="seg" style={{ marginTop: 10 }}>
-        <button className={!isOpen ? 'on' : ''} onClick={() => updateOpenProfile(false)}>{t('settings.profileClosed')}</button>
-        <button className={isOpen ? 'on' : ''} onClick={() => updateOpenProfile(true)}>{t('settings.profileOpen')}</button>
+    <div className="setrow">
+      <div>
+        <b>{t('settings.privateProfile')}</b>
+        <div><small className="muted">{isPrivate ? t('settings.profileVisibilityClosedHint') : t('settings.profileVisibilityOpenHint')}</small></div>
       </div>
+      <button className="sw" role="switch" aria-checked={isPrivate} onClick={() => updateOpenProfile(isPrivate)}><i /></button>
     </div>
   );
 }
@@ -185,10 +188,14 @@ function ReplayOnboardingRow() {
   );
 }
 
+// Redesign fix (item 21): spec's two-step delete requires typing the exact
+// word DELETE before the button enables — this used to just be a plain
+// Confirm/Cancel pair with no typed safety check.
 function DeleteAccountBlock() {
   const { t, deleteAccount, showToast } = useApp();
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [confirmText, setConfirmText] = useState('');
 
   return (
     <div className="sec">
@@ -200,9 +207,17 @@ function DeleteAccountBlock() {
       ) : (
         <div className="tile t-pop">
           <p>{t('settings.deleteAccountConfirm')}</p>
+          <input
+            className="field"
+            style={{ marginTop: 10 }}
+            placeholder={t('settings.deleteAccountTypeDelete')}
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            aria-label={t('settings.deleteAccountTypeDelete')}
+          />
           <div className="acts">
-            <button className="btn ghost" onClick={() => setConfirming(false)} disabled={busy}>{t('settings.deleteAccountCancel')}</button>
-            <button className="btn danger" disabled={busy} onClick={async () => {
+            <button className="btn ghost" onClick={() => { setConfirming(false); setConfirmText(''); }} disabled={busy}>{t('settings.deleteAccountCancel')}</button>
+            <button className="btn danger" disabled={busy || confirmText !== 'DELETE'} onClick={async () => {
               setBusy(true);
               const ok = await deleteAccount();
               if (!ok) { setBusy(false); showToast(t('settings.deleteAccountFailed')); }
@@ -215,7 +230,7 @@ function DeleteAccountBlock() {
 }
 
 function PrivacySection() {
-  const { t, me, updatePrivacy } = useApp();
+  const { t, me, updatePrivacy, myRatings, albums, liveAlbums } = useApp();
   if (!me) return null;
   const rows: { key: keyof typeof me; label: string; set: (v: boolean) => void }[] = [
     { key: 'ratingsVisible', label: t('settings.ratingsVisible') || 'Ratings visible to friends', set: (v) => updatePrivacy({ ratingsVisible: v }) },
@@ -231,6 +246,16 @@ function PrivacySection() {
           <button className="sw" role="switch" aria-checked={!!me[r.key]} onClick={() => r.set(!me[r.key])}><i /></button>
         </div>
       ))}
+      {/* Redesign fix (item 21): same ratings CSV as History's own export
+          button (prototype's doCsv(), reachable from both places). */}
+      <button
+        className="btn ghost"
+        style={{ marginTop: 14 }}
+        disabled={!myRatings.length}
+        onClick={() => exportRatingsCsv(myRatings, (id) => liveAlbums[id] || albums.find((x) => x.id === id))}
+      >
+        {t('settings.exportMyData')}
+      </button>
     </>
   );
 }
