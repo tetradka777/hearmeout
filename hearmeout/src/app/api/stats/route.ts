@@ -6,7 +6,7 @@ import { canViewProfileData } from '@/lib/userProfile';
 import type { StatsCalendarDay, StatsData, StatsPeriodType, StatsSeasonChip, StatsSeasonKey } from '@/lib/types';
 import type { WeekStart } from '@/lib/palettes';
 
-type Row = { track_id: string | null; track_title: string | null; artist: string | null; artist_id: string | null; cover_url: string | null; genre: string | null; duration_ms: number | null; played_at: string };
+type Row = { track_id: string | null; track_title: string | null; artist: string | null; artist_id: string | null; album_id: string | null; album: string | null; cover_url: string | null; genre: string | null; duration_ms: number | null; played_at: string };
 
 const DAY_MS = 86400000;
 
@@ -141,7 +141,7 @@ export async function GET(request: NextRequest) {
     fetchAllRows<Row>((from, to) =>
       admin
         .from('listening_events')
-        .select('track_id, track_title, artist, artist_id, cover_url, genre, duration_ms, played_at')
+        .select('track_id, track_title, artist, artist_id, album_id, album, cover_url, genre, duration_ms, played_at')
         .eq('user_id', targetUserId)
         .order('played_at', { ascending: true })
         .range(from, to)
@@ -237,7 +237,7 @@ export async function GET(request: NextRequest) {
   const recentPlays = [...inRange]
     .sort((a, b) => new Date(b.played_at).getTime() - new Date(a.played_at).getTime())
     .slice(0, 8)
-    .map((r) => ({ title: r.track_title || '', artist: r.artist || '', cover: r.cover_url, playedAt: r.played_at, trackId: r.track_id }));
+    .map((r) => ({ title: r.track_title || '', artist: r.artist || '', cover: r.cover_url, playedAt: r.played_at, trackId: r.track_id, albumId: r.album_id, album: r.album }));
 
   const bars: StatsData['bars'] = [];
   if (periodType === 'season') {

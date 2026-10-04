@@ -189,7 +189,10 @@ export type StatsData = {
   peakHour: number | null;
   genreSplit: { genre: string; pct: number }[];
   bars: { label: string; hours: number; future: boolean }[];
-  recentPlays: { title: string; artist: string; cover: string | null; playedAt: string; trackId: string | null }[];
+  // albumId: Spotify album id (synced plays); album: its title (also set
+  // for imported history, where albumId may be missing). Used for the Listen
+  // later bookmark on Stats → Recently played.
+  recentPlays: { title: string; artist: string; cover: string | null; playedAt: string; trackId: string | null; albumId: string | null; album: string | null }[];
   calendar: {
     days: StatsCalendarDay[];
     activeDays: number;

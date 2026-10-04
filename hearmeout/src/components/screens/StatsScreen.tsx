@@ -4,7 +4,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device, StatsCalendarDay, StatsData, StatsPeriodType, StatsSeasonKey } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
-import { HeartIcon } from '../ui/Icons';
+import { BookmarkIcon, HeartIcon } from '../ui/Icons';
+import { usePlayer } from '@/lib/PlayerContext';
+import type { AlbumDetail } from '@/lib/spotifyCatalog';
 import { toLocale, pluralForKey, type Language } from '@/lib/i18n';
 import type { WeekStart } from '@/lib/palettes';
 import { formatHour } from '@/lib/format';
@@ -161,7 +163,33 @@ function ListeningCalendar({ data, t, language, weekStart }: { data: StatsData; 
 }
 
 export function StatsScreen(_props: { device: Device }) {
-  const { t, language, me, lovedItems, toggleLoved, openRecap, ensureRecap, recapCache } = useApp();
+  const { t, language, me, lovedItems, toggleLoved, openRecap, ensureRecap, recapCache, laterItems, toggleLaterTrack, showToast } = useApp();
+  const { playQueue } = usePlayer();
+  const [savingRow, setSavingRow] = useState<number | null>(null);
+
+  // Listen later from Recently played (spec 13.20): a track bookmark needs
+  // its album and its position in that album. Synced plays carry the
+  // Spotify album id; imported history may only have the album title, which
+  // is resolved to an id first. The position comes from the album's
+  // tracklist (matched by track id, else title).
+  const toggleRecentLater = async (p: StatsData['recentPlays'][number], row: number) => {
+    const saved = laterItems.find((li) => li.type === 'track' && li.title === p.title && li.artist === p.artist);
+    if (saved) { await toggleLaterTrack(saved.albumId, saved.trackIndex ?? 0, p.title, p.artist, p.cover); return; }
+    setSavingRow(row);
+    try {
+      let albumId = p.albumId;
+      if (!albumId && p.album) {
+        const r = await fetch(`/api/spotify/resolve-album?title=${encodeURIComponent(p.album)}&artist=${encodeURIComponent(p.artist)}`);
+        albumId = r.ok ? (await r.json()).id : null;
+      }
+      const detail: AlbumDetail | null = albumId ? await fetch(`/api/spotify/album/${albumId}`).then((r) => (r.ok ? r.json() : null)) : null;
+      const index = detail ? detail.tracklist.findIndex((tr) => (p.trackId && tr.id === p.trackId) || tr.title.toLowerCase() === p.title.toLowerCase()) : -1;
+      if (!albumId || index < 0) { showToast(t('stats.laterNoAlbum')); return; }
+      await toggleLaterTrack(albumId, index, p.title, p.artist, p.cover);
+    } finally {
+      setSavingRow(null);
+    }
+  };
   const [periodType, setPeriodType] = useState<StatsPeriodType>('week');
   const [offset, setOffset] = useState(0);
   const [seasonKey, setSeasonKey] = useState<StatsSeasonKey | null>(null);
@@ -327,12 +355,18 @@ export function StatsScreen(_props: { device: Device }) {
               <div className="stack" style={{ marginTop: 10 }}>
                 {data.recentPlays.length ? data.recentPlays.map((p, i) => {
                   const loved = lovedItems.some((li) => li.type === 'track' && li.title === p.title && li.artist === p.artist);
+                  const later = laterItems.some((li) => li.type === 'track' && li.title === p.title && li.artist === p.artist);
                   return (
                     <div className="row" key={i}>
-                      <CoverArt url={p.cover ?? undefined} fallbackLetter={p.artist[0] || '?'} className="cov" style={{ width: 36, height: 36 }} />
-                      <div className="g"><b>{p.title}</b><div className="muted">{p.artist} · {new Date(p.playedAt).toLocaleString(toLocale(language), { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: me?.timeFormat === '12' })}</div></div>
+                      <button className="rowlink" onClick={() => playQueue([{ title: p.title, artist: p.artist, cover: p.cover, albumId: p.albumId }], 0)} aria-label={t('album.playPreviewOf', { title: p.title })}>
+                        <CoverArt url={p.cover ?? undefined} fallbackLetter={p.artist[0] || '?'} className="cov" style={{ width: 36, height: 36 }} />
+                        <div className="g"><b>{p.title}</b><div className="muted">{p.artist} · {new Date(p.playedAt).toLocaleString(toLocale(language), { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: me?.timeFormat === '12' })}</div></div>
+                      </button>
                       <button className={`ib love${loved ? ' on' : ''}`} onClick={() => toggleLoved('track', p.title, p.artist, p.trackId, p.cover)} aria-label={t('stats.loveTrack')}>
                         <HeartIcon />
+                      </button>
+                      <button className={`ib love${later ? ' on' : ''}`} aria-pressed={later} disabled={savingRow === i} onClick={() => toggleRecentLater(p, i)} aria-label={later ? t('track.removeLater') : t('track.saveLater')}>
+                        <BookmarkIcon />
                       </button>
                     </div>
                   );
