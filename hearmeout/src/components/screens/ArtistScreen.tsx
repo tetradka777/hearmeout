@@ -5,8 +5,9 @@ import { useApp } from '@/lib/AppContext';
 import { usePlayer, type QueueTrack } from '@/lib/PlayerContext';
 import type { ApiUser, Device, SpotifyArtistAlbum } from '@/lib/types';
 import type { ArtistTopTrack } from '@/lib/spotifyCatalog';
+import type { Concert } from '@/lib/concerts';
 import { coverArtUrl } from '@/lib/musicbrainz';
-import { regionDisplayName } from '@/lib/i18n';
+import { regionDisplayName, toLocale } from '@/lib/i18n';
 import { CoverArt } from '../ui/CoverArt';
 import { BookmarkIcon, HeartIcon, PlayIcon } from '../ui/Icons';
 import { ArtistAvatar } from '../ui/ArtistAvatar';
@@ -54,6 +55,8 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
   const [following, setFollowing] = useState(false);
   const [topTracks, setTopTracks] = useState<ArtistTopTrack[] | null | 'error'>(null);
   const [reviews, setReviews] = useState<FriendReview[] | null>(null);
+  // null = not loaded; configured=false = no Ticketmaster key on the server.
+  const [concerts, setConcerts] = useState<{ configured: boolean; list: Concert[] } | 'error' | null>(null);
   const [topFan, setTopFan] = useState<{ id: string; name: string; handle: string; avatarUrl: string | null; hours: number } | null>(null);
 
   const isSpotify = art?.source === 'spotify';
@@ -89,6 +92,19 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
       .catch(() => { if (!cancelled) setTopTracks('error'); });
     return () => { cancelled = true; };
   }, [art?.id, isSpotify, me?.region]);
+
+  // Concerts load lazily, the first time the tab is opened for this artist.
+  useEffect(() => { setConcerts(null); }, [art?.id, me?.region]);
+  useEffect(() => {
+    if (!art || !isSpotify || tab !== 'concerts' || concerts !== null) return;
+    let cancelled = false;
+    const country = me?.region ? `&country=${encodeURIComponent(me.region)}` : '';
+    fetch(`/api/artist/${art.id}/concerts?name=${encodeURIComponent(art.name)}${country}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!cancelled) setConcerts(d ? { configured: !!d.configured, list: d.concerts || [] } : 'error'); })
+      .catch(() => { if (!cancelled) setConcerts('error'); });
+    return () => { cancelled = true; };
+  }, [art, isSpotify, tab, concerts, me?.region]);
 
   const albumIdsKey = (art?.releasedAlbums || []).map((al) => al.id).join(',');
   useEffect(() => {
@@ -267,19 +283,42 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
         </div>
       );
     } else {
-      // Concerts: there's no concert-listing data source behind the app
-      // yet, so this tab is honest about it and hands off to a ticket
-      // search for the artist instead of showing invented dates.
+      // Concerts (Ticketmaster, lib/concerts.ts) in the account's region.
+      // Without a TICKETMASTER_API_KEY on the server, or on an error, the tab
+      // falls back to a ticket search for the artist — never invented dates.
       const region = me?.region ? regionDisplayName(me.region, language) : null;
+      const searchLink = (
+        <a className="btn ghost" href={`https://www.songkick.com/search?query=${encodeURIComponent(art.name)}&type=artists`} target="_blank" rel="noreferrer">{t('artist.findTickets')}</a>
+      );
+      const list = concerts && concerts !== 'error' && concerts.configured ? concerts.list : null;
       body = (
         <div className="tile">
           <p className="muted" style={{ fontWeight: 600, marginBottom: 6 }}>
             {region ? t('artist.concertsNote', { region }) : t('artist.concertsNoRegion')}
           </p>
-          <div className="row">
-            <span className="g"><b>{art.name}</b><small className="muted" style={{ fontWeight: 600 }}>{t('artist.concertsEmpty')}</small></span>
-            <a className="btn ghost" href={`https://www.songkick.com/search?query=${encodeURIComponent(art.name)}&type=artists`} target="_blank" rel="noreferrer">{t('artist.findTickets')}</a>
-          </div>
+          {concerts === null ? (
+            <p className="muted">{t('artist.concertsLoading')}</p>
+          ) : list && list.length ? list.map((c) => {
+            const d = new Date(`${c.date}T00:00:00Z`);
+            return (
+              <div className="row" key={c.id}>
+                <span className="num" style={{ fontSize: 22, width: 72 }}>{d.toLocaleDateString(toLocale(language), { day: 'numeric', month: 'short', timeZone: 'UTC' })}</span>
+                <span className="g">
+                  <b>{c.name}</b>
+                  <small className="muted" style={{ fontWeight: 600 }}>{[c.venue, c.city].filter(Boolean).join(' · ')}{c.time ? ` · ${c.time.slice(0, 5)}` : ''}</small>
+                </span>
+                {c.url && <a className="btn ghost" href={c.url} target="_blank" rel="noreferrer">{t('artist.tickets')}</a>}
+              </div>
+            );
+          }) : (
+            <div className="row">
+              <span className="g">
+                <b>{art.name}</b>
+                <small className="muted" style={{ fontWeight: 600 }}>{list ? (region ? t('artist.concertsNone', { region }) : t('artist.concertsNoneAnywhere')) : t('artist.concertsEmpty')}</small>
+              </span>
+              {searchLink}
+            </div>
+          )}
         </div>
       );
     }
