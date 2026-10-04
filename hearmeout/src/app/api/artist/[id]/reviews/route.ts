@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
 import type { ApiUser } from '@/lib/types';
+import { DEFAULT_PRIVACY, fetchPrivacy } from '@/lib/privacy';
 
 // Reviews tab on the artist page (spec 6.7): your friends' written reviews
 // of this artist's albums. ratings has no artist column (album -> artist
@@ -32,8 +33,10 @@ export async function GET(request: NextRequest) {
     .limit(30);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  // Friends who turned off "Ratings visible to friends" are left out.
+  const privacy = await fetchPrivacy(admin, [...friends.keys()]);
   const reviews = (data || [])
-    .filter((r) => !r.is_private && typeof r.review === 'string' && r.review.trim())
+    .filter((r) => !r.is_private && typeof r.review === 'string' && r.review.trim() && (privacy.get(r.user_id as string) ?? DEFAULT_PRIVACY).ratingsVisible)
     .map((r) => ({ user: friends.get(r.user_id as string)!, albumId: r.album_id as string, stars: Number(r.stars), review: r.review as string, createdAt: r.created_at as string }));
   return NextResponse.json({ reviews });
 }

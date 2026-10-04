@@ -2,7 +2,6 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ALBUMS } from './data';
-import { supabase } from './supabaseClient';
 import { translate, type Language, type TranslationKey } from './i18n';
 import type {
   Album, AlbumRatingInfo, AppNotification, ArtistState, Device, FeedResponse, FriendRequest, LaterItem, LovedItem, LovedItemType, Me, RatingRecord, RecapData, RecapPeriod, ScreenName, SeasonOption,
@@ -323,7 +322,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [patch]);
 
   const refreshAlbumRatings = useCallback(async () => {
-    const { data } = await supabase.from('album_ratings').select('album_id, avg_stars, ratings_count');
+    // Server-side (the view is closed to the browser's anon key, migration 022).
+    const res = await fetch('/api/albums/summary').catch(() => null);
+    const data: { album_id: string; avg_stars: number; ratings_count: number }[] = res?.ok ? await res.json() : [];
     const map: Record<string, AlbumRatingInfo> = {};
     for (const row of data || []) {
       map[row.album_id as string] = { avg: Number(row.avg_stars), count: Number(row.ratings_count) };

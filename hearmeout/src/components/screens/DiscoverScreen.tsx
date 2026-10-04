@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device, DiscoverMatchPerson } from '@/lib/types';
-import { supabase } from '@/lib/supabaseClient';
 import { userAvatarStyle, starsText, formatRelative } from '@/lib/format';
 import { regionDisplayName } from '@/lib/i18n';
 import { CoverArt } from '../ui/CoverArt';
@@ -96,22 +95,11 @@ function SiteReviewsBlock() {
 
   useEffect(() => {
     let cancelled = false;
-    supabase
-      .from('ratings')
-      .select('stars, review, created_at, album_id, users(name, handle, avatar_url)')
-      .not('review', 'is', null)
-      .eq('is_private', false)
-      .order('created_at', { ascending: false })
-      .limit(8)
-      .then(({ data }) => {
-        if (cancelled) return;
-        type Row = { stars: number; review: string | null; created_at: string; album_id: string; users: { name: string; handle: string; avatar_url: string | null } | null };
-        const rows = (data || []) as unknown as Row[];
-        setReviews(rows.filter((r) => r.review).map((r) => ({
-          stars: r.stars, review: r.review as string, createdAt: r.created_at, albumId: r.album_id,
-          user: { name: r.users?.name ?? '', handle: r.users?.handle ?? '', avatarUrl: r.users?.avatar_url ?? null },
-        })));
-      });
+    // Server-side: no private ratings, respects "Public reviews".
+    fetch('/api/reviews/recent')
+      .then((r) => (r.ok ? r.json() : { reviews: [] }))
+      .then((d: { reviews: SiteReview[] }) => { if (!cancelled) setReviews(d.reviews); })
+      .catch(() => { if (!cancelled) setReviews([]); });
     return () => { cancelled = true; };
   }, []);
 

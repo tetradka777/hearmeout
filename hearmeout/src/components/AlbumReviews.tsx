@@ -2,12 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
-import { supabase } from '@/lib/supabaseClient';
 import { userAvatarStyle, formatRelative } from '@/lib/format';
 import type { AlbumReview } from '@/lib/types';
 import { Stars } from './redesign/Stars';
 
-type Row = { stars: number; review: string | null; created_at: string; users: { name: string; handle: string; avatar_url: string | null } | null };
 type ReviewWithTime = AlbumReview & { createdAt: string };
 
 export function AlbumReviews({ albumId, refreshToken }: { albumId: string; refreshToken: number }) {
@@ -17,27 +15,11 @@ export function AlbumReviews({ albumId, refreshToken }: { albumId: string; refre
   useEffect(() => {
     let cancelled = false;
     setReviews(null);
-    supabase
-      .from('ratings')
-      .select('stars, review, created_at, users(name, handle, avatar_url)')
-      .eq('album_id', albumId)
-      .not('review', 'is', null)
-      .eq('is_private', false)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        if (cancelled) return;
-        const rows = (data || []) as unknown as Row[];
-        setReviews(
-          rows
-            .filter((r) => r.review)
-            .map((r) => ({
-              stars: r.stars,
-              review: r.review as string,
-              createdAt: r.created_at,
-              user: { name: r.users?.name ?? '', handle: r.users?.handle ?? '', avatarUrl: r.users?.avatar_url ?? null },
-            }))
-        );
-      });
+    // Server-side: skips private ratings and respects "Public reviews".
+    fetch(`/api/albums/${encodeURIComponent(albumId)}/reviews`)
+      .then((r) => (r.ok ? r.json() : { reviews: [] }))
+      .then((d: { reviews: ReviewWithTime[] }) => { if (!cancelled) setReviews(d.reviews); })
+      .catch(() => { if (!cancelled) setReviews([]); });
     return () => { cancelled = true; };
   }, [albumId, refreshToken]);
 

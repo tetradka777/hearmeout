@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
+import { DEFAULT_PRIVACY, fetchPrivacy } from '@/lib/privacy';
 import type { ApiUser, FeedDisagreement, FeedEvent, FeedResponse } from '@/lib/types';
 
 // Home feed (redesign spec 6.1, 8): real friend activity plus today's
@@ -67,7 +68,12 @@ export async function GET() {
 
   // "Keep private" ratings never leave their owner's own view — not as a
   // feed event, and not as the hero disagreement below.
-  const visibleFriendRatings = (friendRatings || []).filter((r) => !r.is_private);
+  // Settings → Privacy: friends who turned off "Ratings visible to friends"
+  // don't appear as rating events or in the hero; "Show what I'm playing"
+  // off keeps their plays out of first-play events.
+  const privacy = await fetchPrivacy(admin, friendIds);
+  const flags = (id: string) => privacy.get(id) ?? DEFAULT_PRIVACY;
+  const visibleFriendRatings = (friendRatings || []).filter((r) => !r.is_private && flags(r.user_id).ratingsVisible);
 
   // Rating-with-review events: friends' recent written reviews.
   const ratingEvents: FeedEvent[] = visibleFriendRatings
@@ -89,7 +95,7 @@ export async function GET() {
   const firstPlayEvents: FeedEvent[] = [];
   for (const e of todayEvents || []) {
     const key = `${e.user_id}::${e.track_id || e.track_title || ''}`;
-    if (seenBefore.has(key) || firstPlaySeen.has(key) || !e.track_title) continue;
+    if (seenBefore.has(key) || firstPlaySeen.has(key) || !e.track_title || !flags(e.user_id).shareLive) continue;
     firstPlaySeen.add(key);
     firstPlayEvents.push({
       type: 'first_play',

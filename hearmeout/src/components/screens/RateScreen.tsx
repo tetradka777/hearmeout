@@ -10,7 +10,6 @@ import { PreviewButton } from '../redesign/PreviewButton';
 import { pluralForKey } from '@/lib/i18n';
 import type { QueueTrack } from '@/lib/PlayerContext';
 import { usePlayer } from '@/lib/PlayerContext';
-import { supabase } from '@/lib/supabaseClient';
 import { userAvatarStyle } from '@/lib/format';
 import { AlbumReviews } from '../AlbumReviews';
 import { AlbumRatingDistribution } from '../AlbumRatingDistribution';
@@ -28,14 +27,14 @@ function FriendsWhoRated({ albumId }: { albumId: string }) {
   useEffect(() => {
     if (!me || !me.friends.length) { setRows([]); return; }
     let cancelled = false;
-    const friendIds = me.friends.map((f) => f.id);
     const byId = new Map(me.friends.map((f) => [f.id, f]));
-    supabase.from('ratings').select('user_id, stars').eq('album_id', albumId).in('user_id', friendIds)
-      .then(({ data }) => {
+    fetch(`/api/albums/${encodeURIComponent(albumId)}/friends`)
+      .then((r) => (r.ok ? r.json() : { ratings: [] }))
+      .then((d: { ratings: { userId: string; stars: number }[] }) => {
         if (cancelled) return;
-        setRows((data || []).map((r) => {
-          const f = byId.get(r.user_id as string);
-          return { id: r.user_id as string, name: f?.name || '?', avatarUrl: f?.avatarUrl ?? null, stars: Number(r.stars) };
+        setRows(d.ratings.map((r) => {
+          const f = byId.get(r.userId);
+          return { id: r.userId, name: f?.name || '?', avatarUrl: f?.avatarUrl ?? null, stars: r.stars };
         }));
       });
     return () => { cancelled = true; };
@@ -88,14 +87,17 @@ export function RateScreen({ device }: { device: Device }) {
   useEffect(() => {
     if (!a || !me) return;
     let cancelled = false;
-    const ids = [me.id, ...me.friends.map((f) => f.id)];
-    supabase.from('ratings').select('stars').eq('album_id', a.id).in('user_id', ids).then(({ data }) => {
-      if (cancelled || !data?.length) { if (!cancelled) setCircleAvg(null); return; }
-      const avg = data.reduce((s, r) => s + Number(r.stars), 0) / data.length;
-      setCircleAvg({ avg, n: data.length });
-    });
+    // "your circle": your score plus friends' visible ones (server-side).
+    const mine = myRatings.find((r) => r.albumId === a.id)?.stars;
+    fetch(`/api/albums/${encodeURIComponent(a.id)}/friends`)
+      .then((r) => (r.ok ? r.json() : { ratings: [] }))
+      .then((d: { ratings: { stars: number }[] }) => {
+        if (cancelled) return;
+        const scores = [...d.ratings.map((r) => r.stars), ...(mine != null ? [mine] : [])];
+        setCircleAvg(scores.length ? { avg: scores.reduce((s, x) => s + x, 0) / scores.length, n: scores.length } : null);
+      });
     return () => { cancelled = true; };
-  }, [a, me]);
+  }, [a, me, myRatings]);
 
   // Third stat tile (spec 6.2): your plays of this album.
   const [myPlays, setMyPlays] = useState<number | null>(null);

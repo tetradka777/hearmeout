@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
-import { supabase } from '@/lib/supabaseClient';
 
 // Ratings are stored in 0.1 steps (see StarPicker), so the real possible
 // values are 0.1..5.0 — one bucket per exact value, 50 in total.
@@ -18,15 +17,14 @@ export function AlbumRatingDistribution({ albumId, refreshToken }: { albumId: st
   useEffect(() => {
     let cancelled = false;
     setCounts(null);
-    supabase
-      .from('ratings')
-      .select('stars')
-      .eq('album_id', albumId)
-      .then(({ data }) => {
+    // Server-side aggregate (no private ratings, no user ids).
+    fetch(`/api/albums/${encodeURIComponent(albumId)}/stats`)
+      .then((r) => (r.ok ? r.json() : { stars: [] }))
+      .then((d: { stars: number[] }) => {
         if (cancelled) return;
         const buckets = new Array(BUCKET_COUNT).fill(0);
-        for (const row of (data || []) as { stars: number }[]) {
-          const tenths = Math.min(BUCKET_COUNT, Math.max(1, Math.round(Number(row.stars) * 10)));
+        for (const stars of d.stars) {
+          const tenths = Math.min(BUCKET_COUNT, Math.max(1, Math.round(stars * 10)));
           buckets[tenths - 1]++;
         }
         setCounts(buckets);

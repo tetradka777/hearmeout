@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ApiUser, NowPlaying, PublicProfile } from './types';
 import { isDemoAccountId } from './demoAccounts';
 import { computeMonthAwards } from './monthAwards';
+import { DEFAULT_PRIVACY, fetchPrivacy } from './privacy';
 
 // The sync job polls Spotify's recently-played list periodically rather
 // than instantly, so "still playing" is an approximation, capped at 6
@@ -123,6 +124,13 @@ export async function getUserProfile(
     };
   }
 
+  // Settings → Privacy, applied for everyone but the owner: "Ratings
+  // visible to friends" off hides scores (list, top 4, average);
+  // "Show what I'm playing" off hides now playing and last played.
+  const privacy = isSelf ? DEFAULT_PRIVACY : ((await fetchPrivacy(admin, [userId])).get(userId) ?? DEFAULT_PRIVACY);
+  const showScores = isSelf || privacy.ratingsVisible;
+  const showListening = isSelf || privacy.shareLive;
+
   const ratingsList = ratings || [];
   const avg = ratingsList.length ? ratingsList.reduce((s, r) => s + Number(r.stars), 0) / ratingsList.length : 0;
   const reviewsCount = ratingsList.filter((r) => r.review).length;
@@ -130,7 +138,7 @@ export async function getUserProfile(
   // everyone but its owner — it still counts toward the owner's own totals
   // above, but never surfaces in a list someone else can read through.
   const visibleRatingsList = isSelf ? ratingsList : ratingsList.filter((r) => !r.is_private);
-  const top4Albums = [...visibleRatingsList].sort((a, b) => Number(b.stars) - Number(a.stars)).slice(0, 4).map((r) => r.album_id as string);
+  const top4Albums = !showScores ? [] : [...visibleRatingsList].sort((a, b) => Number(b.stars) - Number(a.stars)).slice(0, 4).map((r) => r.album_id as string);
 
   const genreCounts = new Map<string, number>();
   for (const row of genreRows || []) {
@@ -150,10 +158,10 @@ export async function getUserProfile(
     name: user.name,
     handle: user.handle,
     avatarUrl: user.avatar_url,
-    stats: { ratings: ratingsList.length, avg: Math.round(avg * 10) / 10, reviews: reviewsCount },
+    stats: { ratings: ratingsList.length, avg: showScores ? Math.round(avg * 10) / 10 : 0, reviews: reviewsCount },
     // Spec 6.4: non-friends (the open-profile teaser tier) don't see what
     // this person is playing.
-    nowPlaying: isOpen && lastPlay.live ? lastPlay.last : null,
+    nowPlaying: isOpen && showListening && lastPlay.live ? lastPlay.last : null,
     genres,
     top4Albums,
     minutesToday,
@@ -161,7 +169,7 @@ export async function getUserProfile(
   };
 
   if (isOpen) {
-    profile.recentRatings = visibleRatingsList.slice(0, 20).map((r) => ({
+    profile.recentRatings = (showScores ? visibleRatingsList : []).slice(0, 20).map((r) => ({
       albumId: r.album_id as string,
       stars: Number(r.stars),
       review: r.review as string | null,
@@ -182,7 +190,7 @@ export async function getUserProfile(
       .filter((f): f is ApiUser => f !== null);
 
     if (!isSelf) {
-      profile.lastPlayed = lastPlay.last;
+      profile.lastPlayed = showListening ? lastPlay.last : null;
       const self: ApiUser = { id: user.id, name: user.name, handle: user.handle, avatarUrl: user.avatar_url };
       const [since, awards] = await Promise.all([
         viewerId
