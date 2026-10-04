@@ -510,3 +510,9 @@
   .rd .nav nav button { padding: 9px 7px; font-size: 13px; }
   .rd .search { width: 110px; }
 }
+
+/* New-friend-requests count on the avatar and the profile's friends tab.
+   Fixed red (same as .btn.danger / .ferr) so it stays visible on the
+   accent-filled avatar in every palette. */
+.rd .badge { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: #C8321F; color: #fff; font: 800 11px/18px var(--font-body); text-align: center; outline: 2px solid var(--paper); pointer-events: none; }
+.rd .chip .badge { position: static; display: inline-block; margin-left: 6px; outline: 0; }

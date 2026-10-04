@@ -388,11 +388,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return true;
   }, [refreshLater]);
 
+  const outgoingIdsRef = useRef<Set<number>>(new Set());
   const refreshFriendRequests = useCallback(async () => {
     const res = await fetch('/api/friends/requests');
     if (!res.ok) return;
-    setFriendRequests(await res.json());
-  }, []);
+    const data: { incoming: FriendRequest[]; outgoing: FriendRequest[] } = await res.json();
+    // An outgoing request that disappeared was accepted (or declined) on
+    // the other side — reload `me` so a new friend shows up without a reload.
+    const nowOut = new Set(data.outgoing.map((r) => r.id));
+    const resolved = [...outgoingIdsRef.current].some((id) => !nowOut.has(id));
+    outgoingIdsRef.current = nowOut;
+    setFriendRequests(data);
+    if (resolved) refreshMe();
+  }, [refreshMe]);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 768px)');
@@ -481,7 +489,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
   }, [me]);
 
-  useEffect(() => { if (state.authStatus === 'ready') refreshFriendRequests(); }, [state.authStatus, refreshFriendRequests]);
+  // Friend requests arrive from other people, so they're re-checked when the
+  // tab becomes visible again and once a minute while it's visible — not
+  // only at sign-in (a request sent while you're on the page used to stay
+  // invisible until a reload). Drives the "new requests" badge.
+  useEffect(() => {
+    if (state.authStatus !== 'ready') return;
+    refreshFriendRequests();
+    const onVisible = () => { if (document.visibilityState === 'visible') refreshFriendRequests(); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    const timer = setInterval(onVisible, 60_000);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+      clearInterval(timer);
+    };
+  }, [state.authStatus, refreshFriendRequests]);
 
   // Completes an invite-link visit (see app/invite/[id]/page.tsx) that
   // happened while logged out: that page stashes the inviter's id in

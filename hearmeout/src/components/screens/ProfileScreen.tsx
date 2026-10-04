@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { PROFILE_TAB_EVENT } from '../redesign/AvatarMenu';
 import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
 import { userAvatarStyle, formatJoinDate } from '@/lib/format';
@@ -85,8 +86,15 @@ function ShareLovedTracksButton() {
 }
 
 export function ProfileScreen(_props: { device: Device }) {
-  const { t, language, me, myRatings, albums, liveAlbums, updateProfileName, updateProfileHandle, updateRegion, showScreen, viewHistory, laterItems } = useApp();
+  const { t, language, me, myRatings, albums, liveAlbums, updateProfileName, updateProfileHandle, updateRegion, showScreen, viewHistory, laterItems, friendRequests } = useApp();
   const [tab, setTab] = useState<ProfileTab>('ratings');
+  const incomingRequests = friendRequests.incoming.length;
+  // The avatar menu's "Friend requests" item lands here on the friends tab.
+  useEffect(() => {
+    const onTab = (e: Event) => setTab((e as CustomEvent<ProfileTab>).detail);
+    window.addEventListener(PROFILE_TAB_EVENT, onTab);
+    return () => window.removeEventListener(PROFILE_TAB_EVENT, onTab);
+  }, []);
   const regionCodes = useMemo(() => getRegionCodes(), []);
 
   const tasteFingerprint = useMemo(() => {
@@ -174,7 +182,10 @@ export function ProfileScreen(_props: { device: Device }) {
 
       <div className="chips">
         {TABS.map((tb) => (
-          <button key={tb.key} className={`chip ${tab === tb.key ? 'on' : ''}`} onClick={() => setTab(tb.key)}>{tb.label}</button>
+          <button key={tb.key} className={`chip ${tab === tb.key ? 'on' : ''}`} onClick={() => setTab(tb.key)}>
+            {tb.label}
+            {tb.key === 'friends' && incomingRequests > 0 && <span className="badge" aria-label={t('friends.newRequestsAria', { count: incomingRequests })}>{incomingRequests}</span>}
+          </button>
         ))}
       </div>
 
