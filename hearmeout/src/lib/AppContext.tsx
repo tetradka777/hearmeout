@@ -182,7 +182,10 @@ type AppContextValue = {
   openAlbum: (id: string) => void;
   viewFriend: (id: string) => void;
   viewGroup: (id: string) => void;
-  openRecap: (userId: string) => void;
+  // `period` switches the recap to that period's latest window (the Home
+  // and Stats recap tiles open the weekly recap, spec 6.12); omitted, the
+  // screen keeps whatever period it was last on.
+  openRecap: (userId: string, period?: RecapPeriod) => void;
   closeRecap: () => void;
   setSearchQuery: (q: string) => void;
   setActiveGenre: (g: string) => void;
@@ -614,9 +617,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     patch({ viewingGroupId: id, activeScreen: 'group', navAction: 'push' });
     pushScreenHistory({ activeScreen: 'group', viewingGroupId: id });
   }, [patch]);
-  const openRecap = useCallback((userId: string) => {
+  const openRecap = useCallback((userId: string, period?: RecapPeriod) => {
     const origin = stateRef.current.activeScreen;
-    setState((s) => ({ ...s, recapViewUserId: userId, recapOrigin: origin, activeScreen: 'recap', navAction: 'push' }));
+    const periodPatch = period ? { recapPeriod: period, recapSeasonKey: null, recapOffset: 0 } : {};
+    setState((s) => ({ ...s, ...periodPatch, recapViewUserId: userId, recapOrigin: origin, activeScreen: 'recap', navAction: 'push' }));
     pushScreenHistory({ activeScreen: 'recap', recapViewUserId: userId, recapOrigin: origin });
   }, []);
   const closeRecap = useCallback(() => {
@@ -641,7 +645,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (requestedRecapKeys.current.has(key)) return;
     requestedRecapKeys.current.add(key);
     const seasonQS = seasonKey ? `&season=${encodeURIComponent(seasonKey)}` : offset ? `&offset=${offset}` : '';
-    fetch(`/api/recap?period=${period}&userId=${targetId}${seasonQS}`)
+    // Weeks follow the *viewer's* week-start setting, so a friend's recap
+    // chips line up with your own.
+    const weekQS = period === 'week' ? `&weekStart=${me?.weekStart ?? 'mon'}` : '';
+    fetch(`/api/recap?period=${period}&userId=${targetId}${seasonQS}${weekQS}`)
       .then((res) => {
         // A friend's recap is just another view into their listening data
         // (same friends-only boundary as their profile) — vRecap() in the

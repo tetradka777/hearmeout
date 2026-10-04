@@ -1,204 +1,314 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device, PublicProfile, RecapData, RecapPeriod } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
-import { pluralForKey, type TranslationKey } from '@/lib/i18n';
+import { toLocale, type Language, type TranslationKey } from '@/lib/i18n';
+import { recapLine } from '@/lib/recapLine';
+import { completedWeekRange, isoWeekNumber } from '@/lib/weeks';
+import { parseSeasonKey } from '@/lib/seasons';
+import { drawStoryCard } from '@/lib/posterCanvas';
 import { CoverArt } from '../ui/CoverArt';
 import { PreviewButton } from '../redesign/PreviewButton';
-import { drawRecapPoster } from '@/lib/posterCanvas';
 
-const PERIOD_KEY: Record<RecapPeriod, TranslationKey> = { day: 'recap.day', month: 'recap.month', season: 'recap.season' };
+const PERIODS: RecapPeriod[] = ['day', 'week', 'month', 'season'];
+const PERIOD_KEY: Record<RecapPeriod, TranslationKey> = { day: 'recap.day', week: 'recap.week', month: 'recap.month', season: 'recap.season' };
+const WEEK_OFFSETS = [0, -1, -2, -3, -4];
 
-function PosterDownloadButton({ data, name, periodLabel }: { data: RecapData; name: string; periodLabel: string }) {
-  const { t } = useApp();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  const download = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    drawRecapPoster(canvas, data, name, periodLabel);
-    const url = canvas.toDataURL('image/png');
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'hearmeout-recap.png';
-    link.click();
-  };
-
-  return (
-    <>
-      <button className="btn ghost" onClick={download}>{t('recap.downloadPoster')}</button>
-      <canvas ref={canvasRef} style={{ display: 'none' }} />
-    </>
-  );
+function recapKey(targetId: string, period: RecapPeriod, seasonKey: string | null, offset: number): string {
+  return `${targetId}:${period}${seasonKey ? ':' + seasonKey : offset ? ':' + offset : ''}`;
 }
 
+function rangeLabel(r: RecapData | undefined, period: RecapPeriod, seasonKey: string | null, language: Language, t: (k: TranslationKey) => string): string {
+  const loc = toLocale(language);
+  if (period === 'season' && seasonKey) {
+    const parsed = parseSeasonKey(seasonKey);
+    return parsed ? `${t(`season.${parsed.season}` as TranslationKey)} ${parsed.year}` : '';
+  }
+  if (!r) return '';
+  const start = new Date(r.range.start);
+  if (period === 'day') return start.toLocaleDateString(loc, { day: 'numeric', month: 'long', timeZone: 'UTC' });
+  if (period === 'month') return start.toLocaleDateString(loc, { month: 'long', year: 'numeric', timeZone: 'UTC' });
+  const last = new Date((r.range.end ? new Date(r.range.end).getTime() : Date.now()) - 86400000);
+  const fmt = (d: Date) => d.toLocaleDateString(loc, { day: 'numeric', month: 'short', timeZone: 'UTC' });
+  return `${fmt(start)} – ${fmt(last)}`;
+}
+
+// vRecap() in reference/app.js (spec 6.12 / 13.8): one layout for every
+// period — header with the vibe pill, Day / Week / Month / Season chips
+// with their sub-chips (Week 39 · latest … 35), the 4:5 story card on the
+// left and the stack on the right (numbers, song of the period, tops, and
+// for your own recap: awards, friends' recaps and the share actions).
 export function RecapScreen(_props: { device: Device }) {
-  const { state, t, language, me, albums, liveAlbums, ensureRecap, recapCache, recapLocked, closeRecap, setRecapPeriod, setRecapSeasonKey, setRecapOffset, recapSeasons, openAlbum, openSpotifyArtist, viewFriend, openRecap } = useApp();
+  const {
+    state, t, language, me, albums, liveAlbums, ensureRecap, recapCache, recapLocked, closeRecap,
+    setRecapPeriod, setRecapSeasonKey, setRecapOffset, recapSeasons, openAlbum, openSpotifyArtist,
+    viewFriend, openRecap, showScreen, showToast,
+  } = useApp();
   const targetId = state.recapViewUserId === 'me' ? me?.id : state.recapViewUserId;
-  const isMe = state.recapViewUserId === 'me';
+  const isMe = state.recapViewUserId === 'me' || (!!me && state.recapViewUserId === me.id);
   const [profile, setProfile] = useState<PublicProfile | null>(null);
+  const period = state.recapPeriod;
+  const isSeason = period === 'season';
+  const seasonKey = isSeason ? state.recapSeasonKey : null;
+  const offset = isSeason ? 0 : state.recapOffset;
+  const friends = isMe && me ? me.friends.slice(0, 6) : [];
 
   useEffect(() => {
-    if (!targetId) return;
-    ensureRecap(state.recapViewUserId, state.recapPeriod, state.recapSeasonKey, state.recapOffset);
-  }, [state.recapViewUserId, state.recapPeriod, state.recapSeasonKey, state.recapOffset, targetId, ensureRecap]);
+    if (!targetId || (isSeason && !seasonKey)) return;
+    ensureRecap(state.recapViewUserId, period, seasonKey, offset);
+  }, [state.recapViewUserId, period, seasonKey, offset, isSeason, targetId, ensureRecap]);
+
+  // Friends' recaps: the same period and window for each friend.
+  const friendIdsKey = friends.map((f) => f.id).join(',');
+  useEffect(() => {
+    if (state.activeScreen !== 'recap' || (isSeason && !seasonKey)) return;
+    for (const id of friendIdsKey ? friendIdsKey.split(',') : []) ensureRecap(id, period, seasonKey, offset);
+  }, [state.activeScreen, friendIdsKey, period, seasonKey, offset, isSeason, ensureRecap]);
 
   useEffect(() => {
-    if (state.recapPeriod === 'season' && !state.recapSeasonKey && recapSeasons?.length) {
-      setRecapSeasonKey(recapSeasons[0].key);
-    }
-  }, [state.recapPeriod, state.recapSeasonKey, recapSeasons, setRecapSeasonKey]);
+    if (isSeason && !state.recapSeasonKey && recapSeasons?.length) setRecapSeasonKey(recapSeasons[0].key);
+  }, [isSeason, state.recapSeasonKey, recapSeasons, setRecapSeasonKey]);
 
   useEffect(() => {
     if (isMe || !targetId) { setProfile(null); return; }
     let cancelled = false;
-    fetch(`/api/users/${targetId}`).then((res) => (res.ok ? res.json() : null)).then((data) => {
-      if (!cancelled) setProfile(data);
-    });
+    fetch(`/api/users/${targetId}`).then((res) => (res.ok ? res.json() : null)).then((data) => { if (!cancelled) setProfile(data); });
     return () => { cancelled = true; };
   }, [isMe, targetId]);
 
-  if (!targetId) return <div className="tile empty"><p>{t('app.loading')}</p></div>;
-  const isSeason = state.recapPeriod === 'season';
-  const cacheKey = `${targetId}:${state.recapPeriod}${isSeason && state.recapSeasonKey ? ':' + state.recapSeasonKey : state.recapOffset ? ':' + state.recapOffset : ''}`;
-  const locked = !!recapLocked[cacheKey];
-  const r = isSeason && !state.recapSeasonKey ? undefined : recapCache[cacheKey];
-  const name = isMe ? me?.name : profile?.name;
-  const avatarUrl = isMe ? me?.avatarUrl ?? null : profile?.avatarUrl ?? null;
-  const vibe = r
-    ? `${r.trackCount} ${pluralForKey(language, r.trackCount, 'recap.trackOne', 'recap.trackFew', 'recap.trackMany')}${r.topGenres[0] ? t('recap.vibeGenre', { genre: r.topGenres[0].genre }) : ''}`
-    : '';
+  if (!targetId || !me) return <div className="tile empty"><p>{t('app.loading')}</p></div>;
 
-  const artistRowClick = (id: string | null) => { if (id) openSpotifyArtist(id); };
-  const trackRowClick = (albumId: string | null) => { if (albumId) openAlbum(albumId); };
+  const key = recapKey(targetId, period, seasonKey, offset);
+  const locked = !!recapLocked[key];
+  const r = isSeason && !seasonKey ? undefined : recapCache[key];
+  const name = (isMe ? me.name : profile?.name) || '';
+  const avatarUrl = isMe ? me.avatarUrl : profile?.avatarUrl ?? null;
+  const weekNumber = (o: number) => isoWeekNumber(completedWeekRange(o, me.weekStart).start);
+  const range = rangeLabel(r, period, seasonKey, language, t);
+  const line = r ? recapLine(r, language, t) : null;
+  const pill = period === 'week' ? t('recap.weekPill', { n: weekNumber(offset) }) : t(PERIOD_KEY[period]).toLowerCase();
+  const vibe = line ? `${line.lead}${line.em ? ' ' + line.em : ''}` : '';
+  const hours = r ? Math.round(r.minutes / 60) : 0;
 
-  return (
-    <>
-      <div className="setrow" style={{ border: 0, padding: 0 }}>
-        <button className="crumb" onClick={closeRecap}>‹ {t('nav.home')}</button>
-        <button className="ib" onClick={closeRecap} aria-label="Close">✕</button>
-      </div>
+  const storyNumbers = r ? [
+    { value: `${hours}h`, label: t('recap.listened') },
+    { value: String(r.newArtists), label: t('recap.newArtists') },
+    { value: r.avgScore != null ? r.avgScore.toFixed(1) : '—', label: t('recap.avgScore') },
+    { value: String(r.awards.length), label: t('recap.awardsCount') },
+  ] : [];
 
-      <div className="seg" role="radiogroup">
-        {(['day', 'month', 'season'] as RecapPeriod[]).map((p) => (
-          <button key={p} className={state.recapPeriod === p ? 'on' : ''} role="radio" aria-checked={state.recapPeriod === p} onClick={() => setRecapPeriod(p)}>
-            {t(PERIOD_KEY[p])}
+  // Share as image: the story card as a 4:5 PNG in the current palette —
+  // the system share sheet when it takes files, a download otherwise.
+  const shareImage = async () => {
+    if (!r || !line) return;
+    const css = getComputedStyle(document.querySelector('.rd') ?? document.documentElement);
+    const color = (v: string, fallback: string) => css.getPropertyValue(v).trim() || fallback;
+    const canvas = document.createElement('canvas');
+    drawStoryCard(canvas, {
+      pill, lead: line.lead, emphasis: line.em, numbers: storyNumbers,
+      colors: { ink: color('--ink', '#294074'), cream: color('--cream', '#F6EFE0'), accent: color('--acc', '#D72E33'), pop: color('--pop', '#FDEDA3') },
+    });
+    const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, 'image/png'));
+    if (!blob) return;
+    const file = new File([blob], `hearmeout-recap-${period}.png`, { type: 'image/png' });
+    if (navigator.canShare?.({ files: [file] })) {
+      try { await navigator.share({ files: [file] }); return; } catch { /* cancelled, fall back to download */ }
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+    showToast(t('recap.imageSaved'));
+  };
+
+  // Send to friends: there's no in-app messaging, so this shares a link to
+  // your recap (friends can open it; non-friends get the locked view).
+  const sendToFriends = async () => {
+    const url = `${window.location.origin}/?screen=recap&id=${encodeURIComponent(me.id)}`;
+    const text = t('recap.sendText');
+    if (navigator.share) {
+      try { await navigator.share({ text, url }); return; } catch { /* cancelled, fall back to copy */ }
+    }
+    try { await navigator.clipboard.writeText(`${text} ${url}`); showToast(t('recap.linkCopied')); }
+    catch { showToast(url); }
+  };
+
+  let subChips = null;
+  if (period === 'week') {
+    subChips = (
+      <div className="chips" role="group" aria-label={t('recap.week')}>
+        {WEEK_OFFSETS.map((o) => (
+          <button key={o} className={`chip${offset === o ? ' on' : ''}`} onClick={() => setRecapOffset(o)}>
+            {t(o === 0 ? 'recap.weekChipLatest' : 'recap.weekChip', { n: weekNumber(o) })}
           </button>
         ))}
       </div>
-      {isSeason && (
-        recapSeasons === null ? (
-          <p className="muted">{t('recap.loading')}</p>
-        ) : recapSeasons.length ? (
-          <div className="chips" style={{ marginTop: 10 }}>
-            {recapSeasons.map((s) => (
-              <button key={s.key} className={`chip ${state.recapSeasonKey === s.key ? 'on' : ''}`} onClick={() => setRecapSeasonKey(s.key)}>
-                {t(`season.${s.season}` as TranslationKey)} {s.year}
-              </button>
-            ))}
-          </div>
-        ) : (
-          <p className="muted">{t('recap.noData')}</p>
-        )
-      )}
-      {!isSeason && (
-        <div className="chips" style={{ marginTop: 10 }}>
-          <button className={`chip ${state.recapOffset === 0 ? 'on' : ''}`} onClick={() => setRecapOffset(0)}>
-            {t(state.recapPeriod === 'day' ? 'recap.today' : 'recap.thisMonth')}
-          </button>
-          <button className={`chip ${state.recapOffset === -1 ? 'on' : ''}`} onClick={() => setRecapOffset(-1)}>
-            {t(state.recapPeriod === 'day' ? 'recap.yesterday' : 'recap.lastMonth')}
-          </button>
+    );
+  } else if (isSeason) {
+    subChips = recapSeasons === null ? <p className="muted">{t('recap.loading')}</p>
+      : recapSeasons.length ? (
+        <div className="chips" role="group" aria-label={t('recap.season')}>
+          {recapSeasons.map((s) => (
+            <button key={s.key} className={`chip${state.recapSeasonKey === s.key ? ' on' : ''}`} onClick={() => setRecapSeasonKey(s.key)}>
+              {t(`season.${s.season}` as TranslationKey)} {s.year}
+            </button>
+          ))}
         </div>
-      )}
+      ) : <p className="muted">{t('recap.noData')}</p>;
+  } else {
+    subChips = (
+      <div className="chips">
+        <button className={`chip${offset === 0 ? ' on' : ''}`} onClick={() => setRecapOffset(0)}>{t(period === 'day' ? 'recap.today' : 'recap.thisMonth')}</button>
+        <button className={`chip${offset === -1 ? ' on' : ''}`} onClick={() => setRecapOffset(-1)}>{t(period === 'day' ? 'recap.yesterday' : 'recap.lastMonth')}</button>
+      </div>
+    );
+  }
 
-      <div className="tile t-ink hero" style={{ marginTop: 14 }}>
-        <div className="dot" style={{ ...userAvatarStyle({ avatarUrl }), width: 64, height: 64, fontSize: 22 }}>{(name || '?')[0]}</div>
-        <h1 style={{ marginTop: 14 }}>{name}</h1>
-        <p className="muted">{t(PERIOD_KEY[state.recapPeriod])} {t('recap.periodLabel')}</p>
-        {r && <span className="pill">{r.trackCount > 0 ? vibe : t('recap.vibeEmpty')}</span>}
+  return (
+    <>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+        <button className="crumb" onClick={closeRecap}>‹ {isMe ? t('nav.home') : name}</button>
+        <button className="ib" onClick={closeRecap} aria-label={t('recap.close')}>✕</button>
+      </div>
+      <p className="eyebrow muted" style={{ marginTop: 8 }}>
+        {period === 'week' ? t(me.weekStart === 'sun' ? 'recap.generatedSun' : 'recap.generatedMon', { range }) : range}
+      </p>
+      <h1 className="big">{isMe ? t(`recap.titleMe.${period}` as TranslationKey) : t(`recap.titleOf.${period}` as TranslationKey, { name })}</h1>
+
+      <div className="rhead">
+        <span className="avt" style={userAvatarStyle({ avatarUrl })}>{name[0]?.toUpperCase()}</span>
+        <div><b>{name}</b><br /><small className="muted" style={{ fontWeight: 700 }}>{range}</small></div>
+        {vibe && <span className="vibe">{vibe}</span>}
       </div>
 
+      <div className="chips" role="group" aria-label={t('recap.periodLabel')}>
+        {PERIODS.map((p) => (
+          <button key={p} className={`chip${period === p ? ' on' : ''}`} aria-pressed={period === p} onClick={() => setRecapPeriod(p)}>{t(PERIOD_KEY[p])}</button>
+        ))}
+      </div>
+      {subChips}
+
       {locked ? (
-        <div className="tile t-soft2 empty" style={{ marginTop: 14 }}>
+        <div className="tile t-soft2 empty" style={{ marginTop: 12 }}>
           <span className="num" style={{ fontSize: 54 }}>🔒</span>
-          <h3>{t('recap.lockedTitle', { name: name || '' })}</h3>
-          <p className="muted">{t('recap.lockedHint')}</p>
+          <h3>{t('recap.lockedTitle', { name })}</h3>
+          <p className="muted" style={{ fontWeight: 600 }}>{t('recap.lockedHint')}</p>
         </div>
-      ) : !r ? (
+      ) : !r || !line ? (
         <p className="muted" style={{ marginTop: 14 }}>{t('recap.loading')}</p>
       ) : (
-        <>
-          <div className="stats3">
-            <div className="tile"><span className="num">{r.minutes.toLocaleString()}</span><small className="muted">{t('recap.minutes')}</small></div>
-            <div className="tile"><span className="num">{r.uniqueArtists}</span><small className="muted">{t('recap.artists')}</small></div>
-            <div className="tile"><span className="num">{r.topGenres.length}</span><small className="muted">{t('recap.genresCount')}</small></div>
-            <div className="tile"><span className="num">{r.trackCount}</span><small className="muted">{t('recap.plays')}</small></div>
+        <div className="two" style={{ alignItems: 'start' }}>
+          <div className="story">
+            <span className="pill" style={{ alignSelf: 'flex-start' }}>{pill}</span>
+            <q>{line.lead}{line.em && <> <em>{line.em}</em></>}</q>
+            <div className="four">
+              {storyNumbers.map((n) => <div key={n.label}><b>{n.value}</b><small>{n.label}</small></div>)}
+            </div>
           </div>
 
-          {r.topSongs[0] && (
-            <div className="tile t-ac" onClick={() => trackRowClick(r.topSongs[0].albumId)} style={{ cursor: 'pointer', marginBottom: 14 }}>
-              <div className="pvw">
-                <PreviewButton tracks={[{ title: r.topSongs[0].title, artist: r.topSongs[0].artist, cover: r.topSongs[0].cover, albumId: r.topSongs[0].albumId }]} size={52} />
-                <div>
-                  <div className="eyebrow">{t('recap.songOfWeek')}</div>
-                  <h3>{r.topSongs[0].title}</h3>
-                  <p>{r.topSongs[0].artist}</p>
-                </div>
-              </div>
+          <div className="stack">
+            <div className="g2">
+              <div className="tile t-pop"><span className="num" style={{ fontSize: 40 }}>{r.minutes.toLocaleString(toLocale(language))}</span><br /><small style={{ fontWeight: 700 }}>{t('recap.minutesL')}</small></div>
+              <div className="tile t-ink"><span className="num" style={{ fontSize: 40 }}>{r.uniqueArtists}</span><br /><small style={{ fontWeight: 700 }}>{t('recap.uniqueArtists')}</small></div>
+              <div className="tile"><span className="num" style={{ fontSize: 40, color: 'var(--acct)' }}>{r.topGenres.length}</span><br /><small className="muted" style={{ fontWeight: 700 }}>{t('recap.genresL')}</small></div>
+              <div className="tile t-soft2"><span className="num" style={{ fontSize: 40 }}>{r.trackCount}</span><br /><small style={{ fontWeight: 700 }}>{t('recap.playsL')}</small></div>
             </div>
-          )}
 
-          <div className="bento b3">
+            {r.topSongs[0] && (
+              <div className="tile t-ac" style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+                <CoverArt url={r.topSongs[0].cover ?? undefined} fallbackLetter={r.topSongs[0].artist[0] || '?'} className="cov" style={{ width: 72, height: 72 }} />
+                <button style={{ flex: 1, minWidth: 0, textAlign: 'left' }} onClick={() => r.topSongs[0].albumId && openAlbum(r.topSongs[0].albumId)}>
+                  <small style={{ fontWeight: 800 }}>{t(`recap.songOf.${period}` as TranslationKey)}</small>
+                  <h3>{r.topSongs[0].title}</h3>
+                  <p style={{ fontWeight: 600 }}>{r.topSongs[0].artist}</p>
+                </button>
+                <PreviewButton tracks={[{ title: r.topSongs[0].title, artist: r.topSongs[0].artist, cover: r.topSongs[0].cover, albumId: r.topSongs[0].albumId }]} size={56} />
+              </div>
+            )}
+
             <div className="tile">
-              <h3>{t('recap.topArtists')}</h3>
-              <div className="stack" style={{ marginTop: 10 }}>
-                {r.topArtists.length ? r.topArtists.map((a, i) => (
-                  <button className="row" key={`${a.id ?? a.name}-${i}`} onClick={() => artistRowClick(a.id)} style={{ cursor: a.id ? 'pointer' : 'default' }}>
-                    <span className="muted" style={{ width: 20 }}>{i + 1}</span>
-                    <CoverArt url={a.cover ?? undefined} fallbackLetter={a.name[0] || '?'} className="cov" style={{ width: 36, height: 36 }} />
-                    <div className="g"><b>{a.name}</b></div>
-                    <small className="muted">{t('stats.playsCount', { count: a.plays })}</small>
+              <h2>{t('recap.topArtists')}</h2>
+              {r.topArtists.length ? r.topArtists.map((a, i) => (
+                <button className="row" key={`${a.id ?? a.name}-${i}`} onClick={() => a.id && openSpotifyArtist(a.id)} style={{ cursor: a.id ? 'pointer' : 'default' }}>
+                  <span className="num" style={{ fontSize: 24, width: 20 }}>{i + 1}</span>
+                  <b className="g">{a.name}</b>
+                  <span className="muted" style={{ fontWeight: 800 }}>{t('stats.playsCount', { count: a.plays })}</span>
+                </button>
+              )) : <p className="muted">{t('recap.noData')}</p>}
+            </div>
+
+            <div className="tile t-soft2">
+              <h2>{t('recap.topSongs')}</h2>
+              {r.topSongs.length ? r.topSongs.map((s, i) => {
+                const album = s.albumId ? (liveAlbums[s.albumId] || albums.find((x) => x.id === s.albumId)) : undefined;
+                return (
+                  <button className="row" key={`${s.albumId ?? s.title}-${i}`} onClick={() => s.albumId && openAlbum(s.albumId)} style={{ cursor: s.albumId ? 'pointer' : 'default' }}>
+                    <span className="num" style={{ fontSize: 24, width: 20 }}>{i + 1}</span>
+                    <span className="g"><b>{s.title}</b><small className="muted" style={{ fontWeight: 600 }}>{s.artist}{album ? ` · ${album.title}` : ''}</small></span>
+                    <span className="muted" style={{ fontWeight: 800 }}>{s.plays}</span>
                   </button>
-                )) : <p className="muted">{t('recap.noData')}</p>}
-              </div>
+                );
+              }) : <p className="muted">{t('recap.noData')}</p>}
             </div>
+
             <div className="tile">
-              <h3>{t('recap.topSongs')}</h3>
-              <div className="stack" style={{ marginTop: 10 }}>
-                {r.topSongs.length ? r.topSongs.map((s, i) => {
-                  const album = s.albumId ? (liveAlbums[s.albumId] || albums.find((x) => x.id === s.albumId)) : undefined;
-                  return (
-                    <button className="row" key={`${s.albumId ?? s.title}-${i}`} onClick={() => trackRowClick(s.albumId)} style={{ cursor: s.albumId ? 'pointer' : 'default' }}>
-                      <span className="muted" style={{ width: 20 }}>{i + 1}</span>
-                      <CoverArt url={s.cover ?? undefined} fallbackLetter={s.artist[0] || '?'} className="cov" style={{ width: 36, height: 36 }} />
-                      <div className="g"><b>{s.title}</b><div className="muted">{s.artist}{album ? ` · ${album.title}` : ''}</div></div>
-                      <small className="muted">{t('stats.playsCount', { count: s.plays })}</small>
-                    </button>
-                  );
-                }) : <p className="muted">{t('recap.noData')}</p>}
-              </div>
-            </div>
-            <div className="tile">
-              <h3>{t('recap.topGenres')}</h3>
+              <h2>{t('recap.topGenres')}</h2>
               {r.topGenres.length ? (
-                <div className="chips" style={{ marginTop: 10 }}>{r.topGenres.map((g) => <span className="chip" key={g.genre}>{g.genre} · {g.pct}%</span>)}</div>
+                <div className="chips" style={{ margin: 0 }}>
+                  {r.topGenres.map((g, i) => <span className={`chip${i === 0 ? ' on' : ''}`} key={g.genre}>{g.genre} · {g.pct}%</span>)}
+                </div>
               ) : <p className="muted">{t('recap.noData')}</p>}
             </div>
-          </div>
 
-          <div className="acts" style={{ marginTop: 14 }}>
-            <PosterDownloadButton data={r} name={name || ''} periodLabel={`${t(PERIOD_KEY[state.recapPeriod])} ${t('recap.periodLabel')}`} />
-            {!isMe && (
+            {isMe ? (
               <>
-                <button className="btn ghost" onClick={() => viewFriend(targetId)}>{t('recap.viewProfileOf', { name: name || '' })}</button>
-                <button className="btn ghost" onClick={() => openRecap('me')}>{t('recap.myRecap')}</button>
+                <div className="tile t-soft2">
+                  <h2>{t('recap.awardsEarned')}</h2>
+                  <div className="chips" style={{ margin: 0 }}>
+                    {r.awards.length
+                      ? r.awards.map((a) => <span className="chip on" key={a}>{t(`groups.${a}` as TranslationKey)}</span>)
+                      : <span className="muted" style={{ fontWeight: 600 }}>{t('recap.noAwards')}</span>}
+                  </div>
+                </div>
+
+                {friends.length > 0 && (
+                  <div className="tile">
+                    <h2>{t('recap.friendsRecaps')}</h2>
+                    {friends.map((f) => {
+                      const fk = recapKey(f.id, period, seasonKey, offset);
+                      const fr = recapCache[fk];
+                      const fLine = fr ? recapLine(fr, language, t) : null;
+                      const text = recapLocked[fk] ? t('recap.friendPrivate') : !fr ? t('recap.loading') : fr.trackCount ? `“${fLine!.lead}${fLine!.em ? ' ' + fLine!.em : ''}”` : t('recap.friendQuiet');
+                      return (
+                        <button className="row" key={f.id} onClick={() => openRecap(f.id)}>
+                          <span className="avt" style={userAvatarStyle(f)}>{f.name[0]?.toUpperCase()}</span>
+                          <span className="g"><b>{f.name}</b><small className="muted" style={{ fontWeight: 600 }}>{text}</small></span>
+                          <span className="tag">{t('recap.friendOpen')}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <div className="acts" style={{ margin: 0 }}>
+                  <button className="btn lg" style={{ ['--bb' as string]: 'var(--acc)', ['--bf' as string]: 'var(--onacc)' }} onClick={shareImage}>{t('recap.shareImage')}</button>
+                  <button className="btn ghost lg" onClick={sendToFriends}>{t('recap.sendFriends')}</button>
+                  <button className="btn ghost lg" onClick={() => showScreen('stats')}>{t('recap.listeningStats')}</button>
+                </div>
               </>
+            ) : (
+              <div className="acts" style={{ margin: 0 }}>
+                <button className="btn lg" onClick={() => viewFriend(targetId)}>{t('recap.viewProfileOf', { name })}</button>
+                <button className="btn ghost lg" onClick={() => openRecap('me')}>{t('recap.myRecap')}</button>
+              </div>
             )}
           </div>
-        </>
+        </div>
       )}
     </>
   );

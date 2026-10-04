@@ -29,7 +29,7 @@ export type AlbumReview = {
   user: { name: string; handle: string; avatarUrl: string | null };
 };
 
-export type RecapPeriod = 'day' | 'month' | 'season';
+export type RecapPeriod = 'day' | 'week' | 'month' | 'season';
 
 export type SeasonName = 'winter' | 'spring' | 'summer' | 'autumn';
 export type SeasonOption = { key: string; year: number; season: SeasonName };
@@ -45,6 +45,13 @@ export type RecapData = {
   minutes: number;
   uniqueArtists: number;
   trackCount: number;
+  // Story card (spec 6.12): artists first heard in this window, average of
+  // the ratings given in it (null when none), the award labels won in it
+  // (i18n key suffixes under "groups."), and the window itself.
+  newArtists: number;
+  avgScore: number | null;
+  awards: string[];
+  range: { start: string; end: string | null };
 };
 
 export type ApiUser = { id: string; name: string; handle: string; avatarUrl: string | null };

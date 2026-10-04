@@ -10,6 +10,8 @@ import { FriendsRow } from '../FriendsRow';
 import { OnThisDayTeaser } from './OnThisDayTeaser';
 import { StarIcon } from '../ui/Icons';
 import { toLocale } from '@/lib/i18n';
+import { recapLine } from '@/lib/recapLine';
+import { completedWeekRange, isoWeekNumber } from '@/lib/weeks';
 
 // Home feed (redesign spec 6.1). Replaces the old Home = catalog-browser
 // screen; browsing the catalog moved to Discover (spec 13.3). Real data
@@ -54,22 +56,19 @@ function HeroTile() {
   );
 }
 
+// Spec 6.12: the Home recap tile opens the weekly recap — "your recap ·
+// week N", the week's generated line, "Open your recap".
 function RecapTile() {
   const { me, t, language, ensureRecap, recapCache, openRecap } = useApp();
-  useEffect(() => { if (me) ensureRecap('me', 'day'); }, [me, ensureRecap]);
+  useEffect(() => { if (me) ensureRecap('me', 'week'); }, [me, ensureRecap]);
   if (!me) return null;
-  const r = recapCache['me:day'];
+  const r = recapCache[`${me.id}:week`];
+  const line = r ? recapLine(r, language, t) : null;
   return (
-    <button className="tile t-ac" style={{ textAlign: 'left', width: '100%' }} onClick={() => openRecap('me')}>
-      <div className="eyebrow">{t('recapTeaser.title')}</div>
-      {r && r.topArtists[0] ? (
-        <>
-          <h3>{r.topArtists[0].name}</h3>
-          <p>{r.minutes} {t('awards.minutesShort')}</p>
-        </>
-      ) : (
-        <p>{t('recapTeaser.notYet')}</p>
-      )}
+    <button className="tile t-ac" style={{ textAlign: 'left', width: '100%' }} onClick={() => openRecap('me', 'week')}>
+      <div className="eyebrow">{t('recapTeaser.weekEyebrow', { n: isoWeekNumber(completedWeekRange(0, me.weekStart).start) })}</div>
+      {line && <h3 style={{ margin: '8px 0' }}>“{line.lead}{line.em ? ` ${line.em}` : ''}”</h3>}
+      <span style={{ fontWeight: 800 }}>{t('recapTeaser.open')} →</span>
     </button>
   );
 }

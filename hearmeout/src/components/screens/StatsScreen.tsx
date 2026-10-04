@@ -8,6 +8,8 @@ import { HeartIcon } from '../ui/Icons';
 import { toLocale, pluralForKey, type Language } from '@/lib/i18n';
 import type { WeekStart } from '@/lib/palettes';
 import { formatHour } from '@/lib/format';
+import { recapLine } from '@/lib/recapLine';
+import { completedWeekRange, isoWeekNumber } from '@/lib/weeks';
 
 const DN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -167,14 +169,11 @@ export function StatsScreen(_props: { device: Device }) {
 
   useEffect(() => { setOffset(0); setSeasonKey(null); }, [periodType]);
 
-  // Real vibe line for the recap teaser (reuses the same "N tracks, mostly
-  // X" computation RecapScreen.tsx builds for its own pill), not the
-  // prototype's fabricated pull-quote. There's no "week" RecapPeriod in
-  // this app (day/month/season only, see RecapPeriod) — 'day' is what
-  // openRecap('me') actually opens by default, so that's what this
-  // preview should reflect.
-  useEffect(() => { if (me) ensureRecap('me', 'day'); }, [me, ensureRecap]);
-  const dayRecap = me ? recapCache[`${me.id}:day`] : undefined;
+  // Recap tile (spec 6.5): "Your week N recap is ready", the week's real
+  // generated line (lib/recapLine.ts), and it opens the weekly recap.
+  useEffect(() => { if (me) ensureRecap('me', 'week'); }, [me, ensureRecap]);
+  const weekRecap = me ? recapCache[`${me.id}:week`] : undefined;
+  const weekRecapLine = weekRecap ? recapLine(weekRecap, language, t) : null;
 
   useEffect(() => {
     if (!me) return;
@@ -342,16 +341,10 @@ export function StatsScreen(_props: { device: Device }) {
             </div>
           </div>
 
-          <button className="tile t-ac" style={{ textAlign: 'left', width: '100%', marginTop: 14 }} onClick={() => openRecap('me')}>
+          <button className="tile t-ac" style={{ textAlign: 'left', width: '100%', marginTop: 14 }} onClick={() => openRecap('me', 'week')}>
             <span className="pill">{t('stats.recapLinkEyebrow')}</span>
-            <h2 style={{ margin: '14px 0 4px' }}>{t('stats.recapLinkTitle')}</h2>
-            {dayRecap && (
-              <p style={{ fontWeight: 700 }}>
-                “{dayRecap.trackCount > 0
-                  ? `${dayRecap.trackCount} ${pluralForKey(language, dayRecap.trackCount, 'recap.trackOne', 'recap.trackFew', 'recap.trackMany')}${dayRecap.topGenres[0] ? t('recap.vibeGenre', { genre: dayRecap.topGenres[0].genre }) : ''}`
-                  : t('recap.vibeEmpty')}”
-              </p>
-            )}
+            <h2 style={{ margin: '14px 0 4px' }}>{me ? t('stats.recapWeekTitle', { n: isoWeekNumber(completedWeekRange(0, me.weekStart).start) }) : ''}</h2>
+            {weekRecapLine && <p style={{ fontWeight: 700 }}>“{weekRecapLine.lead}{weekRecapLine.em ? ` ${weekRecapLine.em}` : ''}”</p>}
             <span style={{ fontWeight: 800 }}>{t('stats.recapLinkCta')} →</span>
           </button>
         </>

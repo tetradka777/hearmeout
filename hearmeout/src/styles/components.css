@@ -327,7 +327,8 @@
 .rd .ib svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .rd .pvw { display: flex; align-items: center; gap: 14px; margin: 0 0 16px; }
 .rd .pvbtn { position: relative; width: 60px; height: 60px; border-radius: 50%; flex: none; color: var(--fg); }
-.rd .pvbtn svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+/* Direct child only: the play triangle inside .ic is an svg too and must not rotate. */
+.rd .pvbtn > svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
 .rd .pvbtn .trk { fill: none; stroke: color-mix(in srgb, currentColor 18%, transparent); stroke-width: 4; }
 .rd .pvbtn .prg { fill: none; stroke: var(--acct); stroke-width: 4; stroke-linecap: round; }
 .rd .pvbtn .ic { position: absolute; inset: 8px; border-radius: 50%; background: var(--fg); color: var(--bg); display: grid; place-items: center; font-size: 15px; padding-left: 2px; }
@@ -359,6 +360,8 @@
 .rd .mbars small { font-weight: 800; text-align: center; line-height: 1.2; }
 .rd .rev { font-weight: 800; font-size: 12px; padding: 2px 9px; border-radius: 99px; background: color-mix(in srgb, currentColor 14%, transparent); }
 .rd .vsline { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 6px; }
+/* Recap: the four number tiles as a 2×2 grid (spec 6.12). */
+.rd .g2 { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
 
 /* ===== carried-over site functions (spec section 13) ===== */
 .rd .stars.rs { cursor: pointer; touch-action: pan-y; padding: 4px 0; user-select: none; -webkit-user-select: none; }
