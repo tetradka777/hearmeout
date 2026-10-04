@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
+import { handleIlikePattern } from '@/lib/slug';
 import { acceptFriendRequest } from '@/lib/friendRequests';
 import { isDemoAccountId } from '@/lib/demoAccounts';
 
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
   const lookup = admin.from('users').select('id, name, handle, avatar_url');
   const { data: target, error: findErr } = await (byId
     ? lookup.eq('id', byId)
-    : lookup.ilike('handle', raw.startsWith('@') ? raw : `@${raw}`)
+    : lookup.ilike('handle', handleIlikePattern(raw))
   ).maybeSingle();
   if (findErr) return NextResponse.json({ error: findErr.message }, { status: 500 });
   if (!target) return NextResponse.json({ error: 'not_found' }, { status: 404 });

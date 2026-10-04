@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
+import { handleIlikePattern } from '@/lib/slug';
 import type { GroupSummary } from '@/lib/types';
 
 export async function GET() {
@@ -69,8 +70,7 @@ export async function POST(request: NextRequest) {
   // unknown handle doesn't leave a half-made group behind.
   let inviteeId: string | null = null;
   if (rawInvite) {
-    const normalized = rawInvite.startsWith('@') ? rawInvite : `@${rawInvite}`;
-    const { data: target } = await admin.from('users').select('id').ilike('handle', normalized).maybeSingle();
+    const { data: target } = await admin.from('users').select('id').ilike('handle', handleIlikePattern(rawInvite)).maybeSingle();
     if (!target) return NextResponse.json({ error: 'invite_not_found' }, { status: 404 });
     if (target.id !== userId) inviteeId = target.id;
   }

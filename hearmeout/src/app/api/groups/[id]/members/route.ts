@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
+import { handleIlikePattern } from '@/lib/slug';
 
 export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const userId = await getCurrentUserId();
@@ -14,9 +15,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
   const body = await request.json().catch(() => null);
   const raw = typeof body?.handle === 'string' ? body.handle.trim() : '';
   if (!raw) return NextResponse.json({ error: 'invalid_payload' }, { status: 400 });
-  const normalized = raw.startsWith('@') ? raw : `@${raw}`;
-
-  const { data: target } = await admin.from('users').select('id, name, handle, avatar_url').ilike('handle', normalized).maybeSingle();
+  const { data: target } = await admin.from('users').select('id, name, handle, avatar_url').ilike('handle', handleIlikePattern(raw)).maybeSingle();
   if (!target) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
   const { data: existing } = await admin.from('group_members').select('user_id').eq('group_id', id).eq('user_id', target.id).maybeSingle();
