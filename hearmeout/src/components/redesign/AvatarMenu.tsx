@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import { userAvatarStyle } from '@/lib/format';
+import { NotificationsModal } from './NotificationsModal';
 
 // Asks ProfileScreen (always mounted) to switch to a given tab.
 export const PROFILE_TAB_EVENT = 'hmo:profile-tab';
@@ -13,8 +14,11 @@ export const PROFILE_TAB_EVENT = 'hmo:profile-tab';
 // outside click, Escape, or picking an item. Opens below the button, or
 // above it when the button sits in the lower half of the screen.
 export function AvatarMenu({ className = 'avt' }: { className?: string }) {
-  const { t, me, showScreen, logout, laterItems, friendRequests } = useApp();
+  const { t, me, showScreen, logout, laterItems, friendRequests, notifications } = useApp();
   const incoming = friendRequests.incoming.length;
+  const unread = notifications.unread;
+  const badge = incoming + unread;
+  const [showNotifications, setShowNotifications] = useState(false);
   const [open, setOpen] = useState(false);
   const [openUp, setOpenUp] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -48,12 +52,12 @@ export function AvatarMenu({ className = 'avt' }: { className?: string }) {
         onClick={toggle}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={incoming ? `${t('nav.profile')} · ${t('friends.newRequestsAria', { count: incoming })}` : t('nav.profile')}
+        aria-label={[t('nav.profile'), incoming ? t('friends.newRequestsAria', { count: incoming }) : '', unread ? t('notify.unreadAria', { count: unread }) : ''].filter(Boolean).join(' · ')}
         style={me ? userAvatarStyle(me) : undefined}
       >
         {!me?.avatarUrl && (me?.name?.[0]?.toUpperCase() ?? '')}
       </button>
-      {incoming > 0 && <span className="badge" aria-hidden="true">{incoming > 9 ? '9+' : incoming}</span>}
+      {badge > 0 && <span className="badge" aria-hidden="true">{badge > 9 ? '9+' : badge}</span>}
       {open && (
         <div
           ref={menuRef}
@@ -68,6 +72,9 @@ export function AvatarMenu({ className = 'avt' }: { className?: string }) {
               {t('settings.menuRequests')}<span className="tag" style={{ float: 'right', background: '#C8321F', color: '#fff' }}>{incoming}</span>
             </button>
           )}
+          <button role="menuitem" onClick={() => { setShowNotifications(true); setOpen(false); }}>
+            {t('notify.title')}{unread > 0 && <span className="tag" style={{ float: 'right', background: '#C8321F', color: '#fff' }}>{unread}</span>}
+          </button>
           <button role="menuitem" onClick={() => { showScreen('later'); setOpen(false); }}>
             {t('nav.later')}{laterItems.length > 0 && <span className="tag" style={{ float: 'right' }}>{laterItems.length}</span>}
           </button>
@@ -76,6 +83,7 @@ export function AvatarMenu({ className = 'avt' }: { className?: string }) {
           <button role="menuitem" onClick={() => { setOpen(false); logout(); }}>{t('settings.menuSignOut')}</button>
         </div>
       )}
+      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} />}
     </div>
   );
 }

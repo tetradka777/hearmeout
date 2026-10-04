@@ -5,7 +5,7 @@ import { ALBUMS } from './data';
 import { supabase } from './supabaseClient';
 import { translate, type Language, type TranslationKey } from './i18n';
 import type {
-  Album, AlbumRatingInfo, ArtistState, Device, FeedResponse, FriendRequest, LaterItem, LovedItem, LovedItemType, Me, RatingRecord, RecapData, RecapPeriod, ScreenName, SeasonOption,
+  Album, AlbumRatingInfo, AppNotification, ArtistState, Device, FeedResponse, FriendRequest, LaterItem, LovedItem, LovedItemType, Me, RatingRecord, RecapData, RecapPeriod, ScreenName, SeasonOption,
 } from './types';
 import type { AlbumDetail, CatalogAlbum, CatalogArtist } from './spotifyCatalog';
 import { resolveMode, type Design, type Mode, type PaletteId, type TimeFormat, type WeekStart } from './palettes';
@@ -227,6 +227,12 @@ type AppContextValue = {
   addFriend: (handle: string) => Promise<void>;
   respondToFriendRequest: (requestId: number, action: 'accept' | 'decline' | 'cancel') => Promise<void>;
   removeFriend: (friendId: string) => Promise<boolean>;
+  // In-app notifications (migration 021): a friend's "hi" and shared
+  // recaps. Polled together with friend requests.
+  notifications: { items: AppNotification[]; unread: number };
+  markNotificationsRead: () => Promise<void>;
+  sendHi: (friendId: string) => Promise<boolean>;
+  shareRecapWithFriends: (period: RecapPeriod, offset: number) => Promise<boolean>;
   syncSpotify: () => Promise<void>;
   onSpotifyConnected: () => Promise<void>;
   importStreamingHistory: (files: File[]) => Promise<{ imported: number; skipped: number; errors: string[] } | null>;
@@ -276,6 +282,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [lovedItems, setLovedItems] = useState<LovedItem[]>([]);
   const [laterItems, setLaterItems] = useState<LaterItem[]>([]);
   const [friendRequests, setFriendRequests] = useState<{ incoming: FriendRequest[]; outgoing: FriendRequest[] }>({ incoming: [], outgoing: [] });
+  const [notifications, setNotifications] = useState<{ items: AppNotification[]; unread: number }>({ items: [], unread: 0 });
   const [recapCache, setRecapCache] = useState<Record<string, RecapData>>({});
   const [recapLocked, setRecapLocked] = useState<Record<string, true>>({});
   const [reviewsVersion, setReviewsVersion] = useState(0);
@@ -499,8 +506,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // invisible until a reload). Drives the "new requests" badge.
   useEffect(() => {
     if (state.authStatus !== 'ready') return;
-    refreshFriendRequests();
-    const onVisible = () => { if (document.visibilityState === 'visible') refreshFriendRequests(); };
+    const refreshInbox = () => {
+      refreshFriendRequests();
+      fetch('/api/notifications').then((r) => (r.ok ? r.json() : null)).then((d) => { if (d) setNotifications(d); }).catch(() => {});
+    };
+    refreshInbox();
+    const onVisible = () => { if (document.visibilityState === 'visible') refreshInbox(); };
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('focus', onVisible);
     const timer = setInterval(onVisible, 60_000);
@@ -844,6 +855,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Returns whether it worked so the caller can keep its confirm UI open on
   // failure; toasts either way.
+  const markNotificationsRead = useCallback(async () => {
+    setNotifications((n) => ({ items: n.items.map((i) => ({ ...i, read: true })), unread: 0 }));
+    await fetch('/api/notifications/read', { method: 'POST' }).catch(() => {});
+  }, []);
+
+  // Both return whether it was delivered and toast either way; a 429 means
+  // the cooldown (one hi per friend per hour, one recap share per day).
+  const sendHi = useCallback(async (friendId: string) => {
+    const res = await fetch('/api/notifications', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: 'hi', to: friendId }) });
+    showToast(t(res.ok ? 'notify.hiSent' : res.status === 429 ? 'notify.hiTooSoon' : 'notify.failed'));
+    return res.ok;
+  }, [showToast, t]);
+
+  const shareRecapWithFriends = useCallback(async (period: RecapPeriod, offset: number) => {
+    const res = await fetch('/api/notifications', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: 'recap', period, offset }) });
+    if (!res.ok) { showToast(t(res.status === 429 ? 'notify.recapTooSoon' : 'notify.failed')); return false; }
+    const { sent } = await res.json();
+    showToast(sent ? t('notify.recapSent', { count: sent }) : t('notify.noFriends'));
+    return sent > 0;
+  }, [showToast, t]);
+
   const removeFriend = useCallback(async (friendId: string) => {
     const res = await fetch('/api/friends', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ friendId }) });
     if (!res.ok) { showToast(t('toast.friendRemoveFailed')); return false; }
@@ -1068,7 +1100,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
     updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateLanguage, updateRegion, updateOpenProfile, updateAppearance, updatePrivacy,
-    addFriend, respondToFriendRequest, removeFriend, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
+    addFriend, respondToFriendRequest, removeFriend, notifications, markNotificationsRead, sendHi, shareRecapWithFriends, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyObscure,
     spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, laterItems, toggleLaterAlbum, toggleLaterTrack, removeLaterItem, removeAllLater, friendRequests, recapCache, recapLocked, reviewsVersion, showScreen, viewHistory, goBack, openAlbum,
     setRecapSeasonKey, setRecapOffset, recapSeasons,
@@ -1076,7 +1108,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
     updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateLanguage, updateRegion, updateOpenProfile, updateAppearance, updatePrivacy,
-    addFriend, respondToFriendRequest, removeFriend, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast]);
+    addFriend, respondToFriendRequest, removeFriend, notifications, markNotificationsRead, sendHi, shareRecapWithFriends, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

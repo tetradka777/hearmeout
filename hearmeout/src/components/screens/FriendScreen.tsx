@@ -95,7 +95,7 @@ function MatchLine({ points }: { points: number[] }) {
 }
 
 export function FriendScreen({ device }: { device: Device }) {
-  const { t, language, state, me, myRatings, friendRequests, addFriend, respondToFriendRequest, removeFriend, showToast, goBack, showScreen, albums, liveAlbums, spotifyCovers, openAlbum } = useApp();
+  const { t, language, state, me, myRatings, friendRequests, addFriend, respondToFriendRequest, removeFriend, sendHi, goBack, showScreen, albums, liveAlbums, spotifyCovers, openAlbum } = useApp();
   const [confirmRemove, setConfirmRemove] = useState(false);
   const snapshotSent = useRef<string | null>(null);
   const [f, setF] = useState<PublicProfile | null>(null);
@@ -223,16 +223,8 @@ export function FriendScreen({ device }: { device: Device }) {
     <button className="btn" onClick={() => addFriend(f.handle)}>{t('friend.addThem')}</button>
   );
 
-  // "Say hi": there's no in-app messaging, so this hands a short greeting to
-  // the system share sheet, or copies it for pasting into a chat.
-  const sayHi = async () => {
-    const text = t('friend.hiMessage', { name: firstName });
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      try { await navigator.share({ text }); return; } catch { /* cancelled, fall through to copy */ }
-    }
-    try { await navigator.clipboard.writeText(text); showToast(t('friend.hiCopied')); }
-    catch { showToast(text); }
-  };
+  // "Say hi": an in-app notification to the friend (migration 021).
+  const sayHi = () => { sendHi(f.id); };
 
   if (f.locked) {
     return (

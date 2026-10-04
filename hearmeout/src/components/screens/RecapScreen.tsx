@@ -44,7 +44,7 @@ export function RecapScreen(_props: { device: Device }) {
   const {
     state, t, language, me, albums, liveAlbums, ensureRecap, recapCache, recapLocked, closeRecap,
     setRecapPeriod, setRecapSeasonKey, setRecapOffset, recapSeasons, openAlbum, openSpotifyArtist,
-    viewFriend, openRecap, showScreen, showToast,
+    viewFriend, openRecap, showScreen, showToast, shareRecapWithFriends,
   } = useApp();
   const targetId = state.recapViewUserId === 'me' ? me?.id : state.recapViewUserId;
   const isMe = state.recapViewUserId === 'me' || (!!me && state.recapViewUserId === me.id);
@@ -126,17 +126,9 @@ export function RecapScreen(_props: { device: Device }) {
     showToast(t('recap.imageSaved'));
   };
 
-  // Send to friends: there's no in-app messaging, so this shares a link to
-  // your recap (friends can open it; non-friends get the locked view).
-  const sendToFriends = async () => {
-    const url = `${window.location.origin}/?screen=recap&id=${encodeURIComponent(me.id)}`;
-    const text = t('recap.sendText');
-    if (navigator.share) {
-      try { await navigator.share({ text, url }); return; } catch { /* cancelled, fall back to copy */ }
-    }
-    try { await navigator.clipboard.writeText(`${text} ${url}`); showToast(t('recap.linkCopied')); }
-    catch { showToast(url); }
-  };
+  // Send to friends: an in-app notification to every friend that opens this
+  // recap (same period and window) — migration 021.
+  const sendToFriends = () => { shareRecapWithFriends(period, offset); };
 
   let subChips = null;
   if (period === 'week') {

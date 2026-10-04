@@ -122,6 +122,17 @@ export type Me = PublicProfile & {
 
 export type FriendRequest = { id: number; user: ApiUser; createdAt: string };
 
+// In-app notification (migration 021): a friend's "hi", or a friend
+// sharing their recap for a period (payload.period / payload.offset).
+export type AppNotification = {
+  id: number;
+  kind: 'hi' | 'recap';
+  payload: { period?: RecapPeriod; offset?: number };
+  createdAt: string;
+  read: boolean;
+  actor: ApiUser;
+};
+
 // Home feed (redesign spec 6.1, 8 "Feed events"). Album/track metadata is
 // resolved on the client from the catalog (same convention as ratings.
 // album_id everywhere else in this app) — the server only returns ids.
