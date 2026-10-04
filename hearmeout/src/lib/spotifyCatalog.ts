@@ -1,4 +1,5 @@
 import { getSpotifyAppToken } from './spotifyAppAuth';
+import { bucketForGenres } from './genreBuckets';
 
 async function spotifyGet(path: string, params: Record<string, string>) {
   const token = await getSpotifyAppToken();
@@ -129,6 +130,10 @@ export type AlbumDetail = {
   artist: string;
   artistId: string | null;
   tracklist: AlbumTrack[];
+  // Catalog genre bucket (lib/genreBuckets.ts) from the main artist's
+  // Spotify genres — albums themselves almost never carry genres. Older
+  // cached details (spotify_cache) may lack it.
+  genreBucket?: string | null;
 };
 
 // Full album detail incl. tracklist — Spotify returns the first page of
@@ -145,12 +150,17 @@ export async function fetchSpotifyAlbumDetail(id: string): Promise<AlbumDetail |
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`Spotify request failed (/albums/${id}): ${res.status}`);
   const a = await res.json();
+  const artistId: string | null = a.artists?.[0]?.id ?? null;
+  // One extra request for the artist's genres; a failure just leaves the
+  // album without a bucket rather than failing the album.
+  const artist = artistId ? await fetchSpotifyArtistDetail(artistId).catch(() => null) : null;
   return {
     id: a.id,
     title: a.name,
     cover: a.images?.[0]?.url ?? null,
     year: a.release_date ? parseInt(a.release_date.slice(0, 4), 10) : null,
     releaseDate: a.release_date ?? null,
+    genreBucket: bucketForGenres([...(a.genres || []), ...(artist?.genres || [])]),
     artist: (a.artists || []).map((x: { name: string }) => x.name).join(', '),
     artistId: a.artists?.[0]?.id ?? null,
     tracklist: (a.tracks?.items || []).map((t: { id: string; name: string; track_number: number }) => ({

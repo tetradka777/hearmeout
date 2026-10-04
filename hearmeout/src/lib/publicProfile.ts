@@ -32,10 +32,22 @@ export const loadPublicProfile = cache(async (handle: string): Promise<PublicPro
   // over the person's public ratings, highest average first. Genre comes
   // from the static catalog, same as the in-app Profile → taste tab.
   const { data: ratings } = await admin.from('ratings').select('album_id, stars, is_private').eq('user_id', user.id);
+  const publicRatings = (ratings || []).filter((r) => !r.is_private);
+  // Albums outside the catalog: their bucket from the cached Spotify album
+  // detail (genreBucket, lib/genreBuckets.ts) — never a fresh Spotify call
+  // from a public page render; uncached albums are simply left out.
+  const liveIds = publicRatings.map((r) => r.album_id as string).filter((id) => !ALBUMS.some((a) => a.id === id));
+  const liveBucket = new Map<string, string>();
+  if (liveIds.length) {
+    const { data: cached } = await admin.from('spotify_cache').select('key, payload').in('key', liveIds.slice(0, 500).map((id) => `album:${id}`));
+    for (const row of cached || []) {
+      const bucket = (row.payload as { genreBucket?: string | null } | null)?.genreBucket;
+      if (bucket) liveBucket.set(String(row.key).slice('album:'.length), bucket);
+    }
+  }
   const byGenre = new Map<string, { sum: number; count: number }>();
-  for (const r of ratings || []) {
-    if (r.is_private) continue;
-    const genre = ALBUMS.find((a) => a.id === r.album_id)?.genreBucket;
+  for (const r of publicRatings) {
+    const genre = ALBUMS.find((a) => a.id === r.album_id)?.genreBucket ?? liveBucket.get(r.album_id as string);
     if (!genre) continue;
     const cur = byGenre.get(genre) || { sum: 0, count: 0 };
     cur.sum += Number(r.stars);

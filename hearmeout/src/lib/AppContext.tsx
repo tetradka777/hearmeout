@@ -36,6 +36,10 @@ function catalogAlbumToAlbum(c: CatalogAlbum): Album {
 // one recap track, a friend's top-4 pick, an artist's discography entry —
 // that isn't already sitting in the local catalog or a loaded home section.
 function albumDetailToAlbum(d: AlbumDetail, overrideId?: string): Album {
+  // Live data replaces the catalog entry in liveAlbums, so keep the
+  // catalog's genre when Spotify has none — an empty bucket here used to
+  // drop catalog albums out of the taste fingerprint.
+  const catalog = ALBUMS.find((x) => x.id === (overrideId ?? d.id) || x.spotifyId === d.id);
   return {
     id: overrideId ?? d.id,
     spotifyId: d.id,
@@ -43,8 +47,8 @@ function albumDetailToAlbum(d: AlbumDetail, overrideId?: string): Album {
     artist: d.artist,
     artistId: d.artistId,
     year: d.year ?? 0,
-    genre: '',
-    genreBucket: '',
+    genre: catalog?.genre ?? '',
+    genreBucket: catalog?.genreBucket || d.genreBucket || '',
     cover: d.cover ?? undefined,
     tracklist: d.tracklist.map((t) => t.title),
   };
