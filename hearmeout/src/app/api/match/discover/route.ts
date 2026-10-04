@@ -16,7 +16,8 @@ export async function GET() {
   const admin = supabaseAdmin();
   const [{ data: mine }, { data: others }, { data: friendRows }] = await Promise.all([
     admin.from('ratings').select('album_id, stars').eq('user_id', userId),
-    admin.from('ratings').select('user_id, album_id, stars').neq('user_id', userId),
+    // Other people's private ratings never feed someone else's match.
+    admin.from('ratings').select('user_id, album_id, stars').neq('user_id', userId).not('is_private', 'is', true),
     admin.from('friendships').select('friend_id').eq('user_id', userId),
   ]);
 
@@ -41,10 +42,11 @@ export async function GET() {
     scored.push({ userId: uid, score, shared: shared.length });
   }
   scored.sort((a, b) => b.score - a.score || b.shared - a.shared);
-  const top = scored.slice(0, 10);
+  const top = scored.slice(0, 30);
   if (!top.length) return NextResponse.json({ people: [] });
 
-  const { data: users } = await admin.from('users').select('id, name, handle, avatar_url').in('id', top.map((t) => t.userId));
+  // "Appear in Discover" off (Settings → Privacy) keeps a person out of these suggestions.
+  const { data: users } = await admin.from('users').select('id, name, handle, avatar_url').in('id', top.map((t) => t.userId)).not('discoverable', 'is', false);
   const byId = new Map((users || []).map((u) => [u.id as string, u]));
   const people = top
     .map((t) => {
@@ -52,7 +54,8 @@ export async function GET() {
       if (!u) return null;
       return { id: u.id, name: u.name, handle: u.handle, avatarUrl: u.avatar_url, score: t.score, sharedAlbums: t.shared };
     })
-    .filter((p): p is NonNullable<typeof p> => !!p);
+    .filter((p): p is NonNullable<typeof p> => !!p)
+    .slice(0, 10);
 
   return NextResponse.json({ people });
 }
