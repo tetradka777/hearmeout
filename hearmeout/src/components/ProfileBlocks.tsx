@@ -130,7 +130,7 @@ export function ImportHistoryBlock() {
 
 export function RecapOpenButton({ userId, label }: { userId: string; label: string }) {
   const { openRecap } = useApp();
-  return <button className="btn ghost" onClick={() => openRecap(userId)}>🎧 {label} →</button>;
+  return <button className="btn ghost" onClick={() => openRecap(userId)}>{label} →</button>;
 }
 
 export function GenresBlock({ genres }: { genres: { g: string; pct: number }[] }) {
@@ -406,7 +406,7 @@ function InviteLinkButtons() {
       {showQr && qrDataUrl && (
         <div className="qrw">
           {/* eslint-disable-next-line @next/next/no-img-element -- a locally-generated data: URI, not an external/optimizable image */}
-          <img src={qrDataUrl} alt="QR code to add me as a friend" className="qr" />
+          <img src={qrDataUrl} alt={t('friends.qrHint')} className="qr" />
           <div className="muted" style={{ marginTop: 6 }}>{t('friends.qrHint')}</div>
         </div>
       )}

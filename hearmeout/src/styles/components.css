@@ -496,3 +496,17 @@
   .rd .mp-time { display: none; }
   .rd .t4 { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
+
+/* Narrow desktop (900–1180px): the prototype's English labels fit the top
+   bar, but longer ones (ru/fr/de) pushed search, theme and avatar past the
+   right edge. Tighter menu padding and a narrower search keep it in one
+   line without wrapping or horizontal scroll. */
+@media (min-width: 900px) and (max-width: 1180px) {
+  .rd .nav { gap: 8px; padding-left: 14px; }
+  .rd .nav nav button { padding: 9px 9px; font-size: 14px; white-space: nowrap; }
+  .rd .search { width: 140px; }
+}
+@media (min-width: 900px) and (max-width: 1040px) {
+  .rd .nav nav button { padding: 9px 7px; font-size: 13px; }
+  .rd .search { width: 110px; }
+}

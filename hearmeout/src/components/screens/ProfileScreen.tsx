@@ -9,8 +9,6 @@ import {
   GenresBlock, TasteFingerprint, RecentRatingsList, MyReviewsBlock, ListeningRecentBlock,
   Top4Grid, FriendRequestsBlock, FriendsBlock, AwardsBlock, LovedTracksColumn, LovedAlbumsColumn, LovedArtistsColumn,
 } from '../ProfileBlocks';
-import { StarIcon, BarsIcon } from '../ui/Icons';
-import { GroupsIcon, SettingsIcon } from '../redesign/icons';
 import { CoverArt } from '../ui/CoverArt';
 
 type ProfileTab = 'ratings' | 'reviews' | 'loved' | 'taste' | 'awards' | 'listening' | 'friends' | 'later';
@@ -21,7 +19,7 @@ function AvatarPicker({ size = 96 }: { size?: number }) {
   if (!me) return null;
   return (
     <div className="avwrap" onClick={() => inputRef.current?.click()}>
-      <div className="dot" style={{ width: size, height: size, fontSize: size / 3, ...userAvatarStyle(me) }}>{!me.avatarUrl && me.name[0]}</div>
+      <div className="avt" style={{ width: size, height: size, fontSize: size / 3, backgroundSize: 'cover', backgroundPosition: 'center', ...userAvatarStyle(me) }}>{!me.avatarUrl && me.name[0].toUpperCase()}</div>
       <span className="avhint">{t('profile.changePhoto')}</span>
       <input
         ref={inputRef}
@@ -152,20 +150,20 @@ export function ProfileScreen(_props: { device: Device }) {
       </div>
 
       <div className="bento" style={{ gridTemplateColumns: 'repeat(2,minmax(0,1fr))' }}>
-        <button className="tile" style={{ textAlign: 'left', cursor: 'pointer' }} onClick={() => viewHistory('profile')}>
-          <StarIcon /><h3 style={{ marginTop: 8 }}>{t('profile.quickHistory')}</h3>
+        <button className="tile t-ac" style={{ textAlign: 'left', cursor: 'pointer' }} onClick={() => viewHistory('profile')}>
+          <h3>{t('profile.quickHistory')}</h3><p style={{ fontWeight: 600, marginTop: 4 }}>{t('profile.quickHistorySub')}</p>
         </button>
-        <button className="tile" style={{ textAlign: 'left', cursor: 'pointer' }} onClick={() => showScreen('stats')}>
-          <BarsIcon /><h3 style={{ marginTop: 8 }}>{t('profile.quickStats')}</h3>
+        <button className="tile t-pop" style={{ textAlign: 'left', cursor: 'pointer' }} onClick={() => showScreen('stats')}>
+          <h3>{t('profile.quickStats')}</h3><p className="muted" style={{ fontWeight: 600, marginTop: 4 }}>{t('profile.quickStatsSub')}</p>
         </button>
         <button className="tile" style={{ textAlign: 'left', cursor: 'pointer' }} onClick={() => showScreen('groups')}>
-          <GroupsIcon /><h3 style={{ marginTop: 8 }}>{t('profile.quickGroups')}</h3>
+          <h3>{t('profile.quickGroups')}</h3><p className="muted" style={{ fontWeight: 600, marginTop: 4 }}>{t('profile.quickGroupsSub')}</p>
         </button>
-        <div className="tile">
-          <SettingsIcon /><h3 style={{ marginTop: 8 }}>{t('profile.quickSettings')}</h3>
+        <div className="tile t-soft2">
+          <h3>{t('profile.quickSettings')}</h3>
           <div className="row" style={{ marginTop: 10 }}>
             <div className="g">{t('profile.region')}</div>
-            <select className="field" value={me.region ?? ''} onChange={(e) => updateRegion(e.target.value || null)}>
+            <select className="field" style={{ width: 'auto', flex: 1, minWidth: 0 }} value={me.region ?? ''} onChange={(e) => updateRegion(e.target.value || null)}>
               <option value="">{t('profile.regionNone')}</option>
               {regionCodes.map((code) => <option key={code} value={code}>{regionDisplayName(code, language)}</option>)}
             </select>

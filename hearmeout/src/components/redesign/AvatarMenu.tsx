@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import { userAvatarStyle } from '@/lib/format';
-import { ProfileIcon } from '../ui/Icons';
 
 // Avatar menu popover (spec 3.9, 13.20): Profile, Listen later (with a
 // count tag), Settings, Sign out. Closes on
@@ -47,7 +46,7 @@ export function AvatarMenu({ className = 'avt' }: { className?: string }) {
         aria-label={t('nav.profile')}
         style={me ? userAvatarStyle(me) : undefined}
       >
-        {!me?.avatarUrl && <ProfileIcon />}
+        {!me?.avatarUrl && (me?.name?.[0]?.toUpperCase() ?? '')}
       </button>
       {open && (
         <div

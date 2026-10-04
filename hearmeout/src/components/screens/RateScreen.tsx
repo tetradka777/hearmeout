@@ -97,6 +97,18 @@ export function RateScreen({ device }: { device: Device }) {
     return () => { cancelled = true; };
   }, [a, me]);
 
+  // Third stat tile (spec 6.2): your plays of this album.
+  const [myPlays, setMyPlays] = useState<number | null>(null);
+  const playIds = a ? [a.id, a.spotifyId].filter(Boolean).join(',') : '';
+  useEffect(() => {
+    if (!playIds || !me) { setMyPlays(null); return; }
+    let cancelled = false;
+    fetch(`/api/me/album-plays?ids=${encodeURIComponent(playIds)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!cancelled) setMyPlays(d ? d.plays : null); });
+    return () => { cancelled = true; };
+  }, [playIds, me]);
+
   const [text, setText] = useState(state.ratingDraftText);
   useEffect(() => setText(state.ratingDraftText), [state.currentAlbumId, state.ratingDraftText]);
 
@@ -126,7 +138,7 @@ export function RateScreen({ device }: { device: Device }) {
 
   const ratingInfo = albumRatings[a.id];
   const val = state.ratingValue || 0;
-  const label = val > 0 ? t('rate.hintValue', { value: val.toFixed(1) }) : t('rate.hintEmpty');
+  const label = t('rate.hintEmpty');
   const isEditing = myRatings.some((r) => r.albumId === a.id);
   const cover = spotifyCovers[a.id] || a.cover;
   const trackQueue: QueueTrack[] = a.tracklist.map((tr) => ({ title: tr, artist: a.artist, cover, albumId: a.id, spotifyId: a.spotifyId }));
@@ -205,8 +217,8 @@ export function RateScreen({ device }: { device: Device }) {
               <small>{ratingInfo ? `${ratingInfo.count} ${pluralForKey(language, ratingInfo.count, 'album.ratingOne', 'album.ratingFew', 'album.ratingMany')}` : t('album.noRatings')}</small>
             </div>
             <div className="tile t-ink">
-              <span className="num">{val > 0 ? val.toFixed(1) : '–'}</span>
-              <small>{t('rate.yourRating')}</small>
+              <span className="num">{myPlays ?? '–'}</span>
+              <small>{t('album.yourPlays')}</small>
             </div>
           </div>
 
@@ -223,7 +235,7 @@ export function RateScreen({ device }: { device: Device }) {
           </div>
 
           <div>
-            <label>{t('rate.tagsLabel')} <span className="muted" style={{ fontWeight: 700 }}>{tags.length} / {MAX_REVIEW_TAGS}</span></label>
+            <label>{t('rate.tagsLabel')} <span className="muted" style={{ fontWeight: 700 }}>{t('rate.tagsCount', { n: tags.length, max: MAX_REVIEW_TAGS })}</span></label>
             <div className="tagrow">
               {REVIEW_TAG_ORDER.map((id) => (
                 <button key={id} className={`chip${tags.includes(id) ? ' on' : ''}`} aria-pressed={tags.includes(id)} style={{ margin: 0 }} onClick={() => toggleTag(id)}>

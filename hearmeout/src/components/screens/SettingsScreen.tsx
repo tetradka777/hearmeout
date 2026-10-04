@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
-import { getRegionCodes, regionDisplayName, LANGUAGES, LANGUAGE_LABEL } from '@/lib/i18n';
+import { getRegionCodes, regionDisplayName, toLocale, LANGUAGES, LANGUAGE_LABEL, type Language } from '@/lib/i18n';
 import { PALETTES, type Design, type Mode } from '@/lib/palettes';
 import { AccountBlock, ConnectBlock, ImportHistoryBlock } from '../ProfileBlocks';
 import { exportRatingsCsv } from '@/lib/csvExport';
@@ -27,7 +27,7 @@ function DesignSection({ device }: { device: Device }) {
 
   return (
     <div className="sec">
-      <h3>{t('settings.design') || 'Design'}</h3>
+      <h3>{t('settings.design')}</h3>
       <div className="optgrid" style={{ marginTop: 10 }}>
         {DESIGNS.map((d) => (
           <button key={d.id} className="optcard" role="radio" aria-checked={design === d.id} onClick={() => updateAppearance({ design: d.id })}>
@@ -56,12 +56,12 @@ function PaletteSection() {
   const { t, me, updateAppearance } = useApp();
   if (!me) return null;
   const groups: { key: 'classic' | 'neon'; label: string }[] = [
-    { key: 'classic', label: t('settings.paletteClassic') || 'Classic' },
-    { key: 'neon', label: t('settings.paletteNeon') || 'Neon' },
+    { key: 'classic', label: t('settings.paletteClassic') },
+    { key: 'neon', label: t('settings.paletteNeon') },
   ];
   return (
     <div className="sec">
-      <h3>{t('settings.colorPalette') || 'Color palette'}</h3>
+      <h3>{t('settings.colorPalette')}</h3>
       {groups.map((grp) => (
         <div key={grp.key}>
           <div className="palgroup">{grp.label}</div>
@@ -86,13 +86,13 @@ function ExtrasSection() {
   if (!me) return null;
   return (
     <div className="sec">
-      <h3>{t('settings.extras') || 'Extras'}</h3>
+      <h3>{t('settings.extras')}</h3>
       <div className="setrow">
-        <div><b>{t('settings.activityStrip') || 'Activity strip'}</b></div>
+        <div><b>{t('settings.activityStrip')}</b></div>
         <button className="sw" role="switch" aria-checked={me.tickerEnabled} onClick={() => updateAppearance({ tickerEnabled: !me.tickerEnabled })}><i /></button>
       </div>
       <div className="setrow">
-        <div><b>{t('settings.animations') || 'Animations'}</b></div>
+        <div><b>{t('settings.animations')}</b></div>
         <button className="sw" role="switch" aria-checked={me.motionEnabled} onClick={() => updateAppearance({ motionEnabled: !me.motionEnabled })}><i /></button>
       </div>
       <button className="btn ghost" style={{ marginTop: 14 }} onClick={() => showScreen('states')}>{t('settings.viewStates')}</button>
@@ -112,6 +112,13 @@ function AppearanceSection({ device }: { device: Device }) {
   );
 }
 
+// Weekday name in the interface language (0 = Sunday), from Intl rather
+// than a dictionary key per day. 4 Jan 2026 is a Sunday.
+function weekdayName(day: number, language: Language): string {
+  const name = new Date(Date.UTC(2026, 0, 4 + day)).toLocaleDateString(toLocale(language), { weekday: 'long', timeZone: 'UTC' });
+  return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
 function LanguageRegionSection() {
   const { t, me, language, updateLanguage, updateRegion, updateAppearance } = useApp();
   const regionCodes = useMemo(() => getRegionCodes(), []);
@@ -121,7 +128,7 @@ function LanguageRegionSection() {
     <>
       <h2>{t('settings.languageRegion')}</h2>
       <div className="sec">
-        <h3>{t('settings.language') || 'Language'}</h3>
+        <h3>{t('settings.language')}</h3>
         <p className="muted">{t('settings.languageHint')}</p>
         <div className="chips" style={{ marginTop: 10 }}>
           {LANGUAGES.map((l) => (
@@ -137,17 +144,17 @@ function LanguageRegionSection() {
         </select>
       </div>
       <div className="sec">
-        <h3>{t('settings.timeFormat') || 'Time format'}</h3>
+        <h3>{t('settings.timeFormat')}</h3>
         <div className="seg" style={{ marginTop: 10 }}>
-          <button className={me.timeFormat === '24' ? 'on' : ''} onClick={() => updateAppearance({ timeFormat: '24' })}>24-hour</button>
-          <button className={me.timeFormat === '12' ? 'on' : ''} onClick={() => updateAppearance({ timeFormat: '12' })}>12-hour</button>
+          <button className={me.timeFormat === '24' ? 'on' : ''} onClick={() => updateAppearance({ timeFormat: '24' })}>{t('settings.hour24')}</button>
+          <button className={me.timeFormat === '12' ? 'on' : ''} onClick={() => updateAppearance({ timeFormat: '12' })}>{t('settings.hour12')}</button>
         </div>
       </div>
       <div className="sec">
-        <h3>{t('settings.weekStart') || 'Week starts on'}</h3>
+        <h3>{t('settings.weekStart')}</h3>
         <div className="seg" style={{ marginTop: 10 }}>
-          <button className={me.weekStart === 'mon' ? 'on' : ''} onClick={() => updateAppearance({ weekStart: 'mon' })}>Monday</button>
-          <button className={me.weekStart === 'sun' ? 'on' : ''} onClick={() => updateAppearance({ weekStart: 'sun' })}>Sunday</button>
+          <button className={me.weekStart === 'mon' ? 'on' : ''} onClick={() => updateAppearance({ weekStart: 'mon' })}>{weekdayName(1, language)}</button>
+          <button className={me.weekStart === 'sun' ? 'on' : ''} onClick={() => updateAppearance({ weekStart: 'sun' })}>{weekdayName(0, language)}</button>
         </div>
       </div>
     </>
@@ -232,30 +239,32 @@ function DeleteAccountBlock() {
 function PrivacySection() {
   const { t, me, updatePrivacy, myRatings, albums, liveAlbums } = useApp();
   if (!me) return null;
-  const rows: { key: keyof typeof me; label: string; set: (v: boolean) => void }[] = [
-    { key: 'ratingsVisible', label: t('settings.ratingsVisible') || 'Ratings visible to friends', set: (v) => updatePrivacy({ ratingsVisible: v }) },
-    { key: 'shareLive', label: t('settings.shareLive') || "Show what I'm playing live", set: (v) => updatePrivacy({ shareLive: v }) },
-    { key: 'publicReviews', label: t('settings.publicReviews') || 'Public reviews', set: (v) => updatePrivacy({ publicReviews: v }) },
-    { key: 'discoverable', label: t('settings.discoverable') || 'Appear in Discover', set: (v) => updatePrivacy({ discoverable: v }) },
+  const rows: { key: keyof typeof me; label: string; hint: string; set: (v: boolean) => void }[] = [
+    { key: 'ratingsVisible', label: t('settings.ratingsVisible'), hint: t('settings.ratingsVisibleHint'), set: (v) => updatePrivacy({ ratingsVisible: v }) },
+    { key: 'shareLive', label: t('settings.shareLive'), hint: t('settings.shareLiveHint'), set: (v) => updatePrivacy({ shareLive: v }) },
+    { key: 'publicReviews', label: t('settings.publicReviews'), hint: t('settings.publicReviewsHint'), set: (v) => updatePrivacy({ publicReviews: v }) },
+    { key: 'discoverable', label: t('settings.discoverable'), hint: t('settings.discoverableHint'), set: (v) => updatePrivacy({ discoverable: v }) },
   ];
   return (
     <>
       {rows.map((r) => (
         <div className="setrow" key={r.key}>
-          <div><b>{r.label}</b></div>
+          <div><b>{r.label}</b><div><small className="muted">{r.hint}</small></div></div>
           <button className="sw" role="switch" aria-checked={!!me[r.key]} onClick={() => r.set(!me[r.key])}><i /></button>
         </div>
       ))}
       {/* Redesign fix (item 21): same ratings CSV as History's own export
           button (prototype's doCsv(), reachable from both places). */}
-      <button
-        className="btn ghost"
-        style={{ marginTop: 14 }}
-        disabled={!myRatings.length}
-        onClick={() => exportRatingsCsv(myRatings, (id) => liveAlbums[id] || albums.find((x) => x.id === id))}
-      >
-        {t('settings.exportMyData')}
-      </button>
+      <div className="acts">
+        <button
+          className="btn ghost"
+          disabled={!myRatings.length}
+          onClick={() => exportRatingsCsv(myRatings, (id) => liveAlbums[id] || albums.find((x) => x.id === id))}
+        >
+          {t('settings.exportMyData')}
+        </button>
+        <a className="btn ghost" href="/privacy" target="_blank" rel="noreferrer">{t('landing.whatWeStore')}</a>
+      </div>
     </>
   );
 }
@@ -270,7 +279,7 @@ export function SettingsScreen({ device }: { device: Device }) {
     { key: 'language', label: t('settings.languageRegion') },
     { key: 'account', label: t('profile.accountSection') },
     { key: 'connections', label: t('profile.connection') },
-    { key: 'privacy', label: t('settings.privacy') || 'Privacy' },
+    { key: 'privacy', label: t('settings.privacy') },
   ];
 
   const body = (
@@ -295,9 +304,13 @@ export function SettingsScreen({ device }: { device: Device }) {
       )}
       {section === 'privacy' && (
         <>
-          <h2>{t('settings.privacy')}</h2>
-          <ProfileVisibilitySection />
-          <PrivacySection />
+          {/* One card, as in the prototype's privacy tab: the five switches
+              (Private profile first) and the Export / What we store actions. */}
+          <div className="tile">
+            <h2>{t('settings.privacy')}</h2>
+            <ProfileVisibilitySection />
+            <PrivacySection />
+          </div>
         </>
       )}
     </>

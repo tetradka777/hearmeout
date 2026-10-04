@@ -45,7 +45,7 @@ function HeroTile() {
       <span className="pill">{t('home.heroSticker')}</span>
       <h1>{t('home.heroHeadline', { friend: hero.friend.name, album: album.title, theirScore: hero.theirs.toFixed(1), mine: hero.mine.toFixed(1) })}</h1>
       <div className="duel">
-        <div className="bub b-ac"><span className="num">{hero.mine.toFixed(1)}</span><span className="w">you</span></div>
+        <div className="bub b-ac"><span className="num">{hero.mine.toFixed(1)}</span><span className="w">{t('friend.you')}</span></div>
         <div className="bub b-pop r"><span className="num">{hero.theirs.toFixed(1)}</span><span className="w">{hero.friend.name}</span></div>
       </div>
       <div className="acts">
@@ -83,7 +83,7 @@ function FeedTile({ event }: { event: FeedEvent }) {
       <div className="tile">
         <div className="ft top">
           <div className="dot">{'\u{1F3A7}'}</div>
-          <div className="who"><b>you</b></div>
+          <div className="who"><b>{t('friend.you')}</b></div>
         </div>
         <p>{event.plays} plays · {event.minutes} min today</p>
       </div>
@@ -153,14 +153,14 @@ function FeedSection() {
 function DaySoFarTile() {
   const { me, t, ensureRecap, recapCache } = useApp();
   useEffect(() => { if (me) ensureRecap('me', 'day'); }, [me, ensureRecap]);
-  const r = recapCache['me:day'];
+  const r = me ? recapCache[`${me.id}:day`] : undefined;
   return (
     <div className="tile">
       <h3>{t('home.daySoFar')}</h3>
       <div className="stats3">
-        <div><span className="num">{r?.trackCount ?? 0}</span><small>tracks</small></div>
-        <div><span className="num">{r?.minutes ?? 0}</span><small>min</small></div>
-        <div><span className="num">{r?.uniqueArtists ?? 0}</span><small>artists</small></div>
+        <div><span className="num">{r?.trackCount ?? 0}</span><small>{t('home.cornerTracks')}</small></div>
+        <div><span className="num">{r?.minutes ?? 0}</span><small>{t('home.cornerMin')}</small></div>
+        <div><span className="num">{r?.uniqueArtists ?? 0}</span><small>{t('home.cornerArtists')}</small></div>
       </div>
     </div>
   );
