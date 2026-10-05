@@ -4,7 +4,7 @@ import type { Album } from './types';
 // Curated catalog metadata (title/artist/year/cover) — this is content, not
 // user activity, so it stays static. Ratings/reviews are NOT here anymore:
 // they're computed live from the `ratings` table (see AppContext's
-// albumRatings + AlbumScreen's live review fetch).
+// albumRatings + RateScreen's live review fetch).
 export const ALBUMS: Album[] = [
   { id: 'ok-computer', spotifyId: '6dVIqQ8qmQ5GBnJ9shOYGE', title: 'OK Computer', artist: 'Radiohead', year: 1997, genre: 'Alternative Rock', genreBucket: 'Rock', cover: 'https://i.scdn.co/image/ab67616d0000b273c8b444df094279e70d0ed856', tracklist: [] },
   { id: 'abbey-road', spotifyId: '0ETFjACtuP2ADo6LFhL6HN', title: 'Abbey Road', artist: 'The Beatles', year: 1969, genre: 'Pop Rock', genreBucket: 'Rock', cover: 'https://i.scdn.co/image/ab67616d0000b273dc30583ba717007b00cceb25', tracklist: [] },

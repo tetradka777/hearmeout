@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
+import { handleIlikePattern } from '@/lib/slug';
 import { acceptFriendRequest } from '@/lib/friendRequests';
 import { isDemoAccountId } from '@/lib/demoAccounts';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Sends a friend request (pending, needs the other side to accept) rather
 // than adding instantly — replaces the old instant-mutual-add behavior.
@@ -11,16 +14,19 @@ export async function POST(request: NextRequest) {
   if (!userId) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
 
   const body = await request.json().catch(() => null);
+  // By handle (search, Discover) or by user id (the /invite/[id] page,
+  // including an invite completed after sign-up — see AppContext).
   const raw = typeof body?.handle === 'string' ? body.handle.trim() : '';
-  if (!raw) return NextResponse.json({ error: 'invalid_payload' }, { status: 400 });
-  const normalized = raw.startsWith('@') ? raw : `@${raw}`;
+  const byId = typeof body?.userId === 'string' ? body.userId : '';
+  if (!raw && !byId) return NextResponse.json({ error: 'invalid_payload' }, { status: 400 });
+  if (byId && !UUID_RE.test(byId)) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
   const admin = supabaseAdmin();
-  const { data: target, error: findErr } = await admin
-    .from('users')
-    .select('id, name, handle, avatar_url')
-    .ilike('handle', normalized)
-    .maybeSingle();
+  const lookup = admin.from('users').select('id, name, handle, avatar_url');
+  const { data: target, error: findErr } = await (byId
+    ? lookup.eq('id', byId)
+    : lookup.ilike('handle', handleIlikePattern(raw))
+  ).maybeSingle();
   if (findErr) return NextResponse.json({ error: findErr.message }, { status: 500 });
   if (!target) return NextResponse.json({ error: 'not_found' }, { status: 404 });
   if (target.id === userId) return NextResponse.json({ error: 'self' }, { status: 400 });
@@ -53,4 +59,34 @@ export async function POST(request: NextRequest) {
   if (upsertErr) return NextResponse.json({ error: upsertErr.message }, { status: 500 });
 
   return NextResponse.json({ ok: true, status: 'pending', user: { id: target.id, name: target.name, handle: target.handle, avatarUrl: target.avatar_url } });
+}
+
+// Unfriend (spec 6.4 "Friends ✓ → Remove", after an inline confirm). Drops
+// both directions of the friendship and any request rows between the two,
+// so either side can send a fresh request later.
+export async function DELETE(request: NextRequest) {
+  const userId = await getCurrentUserId();
+  if (!userId) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
+
+  const body = await request.json().catch(() => null);
+  const friendId = typeof body?.friendId === 'string' ? body.friendId : '';
+  // Strict UUID check: the id is interpolated into PostgREST .or() filter
+  // strings below, so nothing else may get through.
+  if (!UUID_RE.test(friendId) || friendId === userId) {
+    return NextResponse.json({ error: 'invalid_payload' }, { status: 400 });
+  }
+
+  const admin = supabaseAdmin();
+  const { error } = await admin
+    .from('friendships')
+    .delete()
+    .or(`and(user_id.eq.${userId},friend_id.eq.${friendId}),and(user_id.eq.${friendId},friend_id.eq.${userId})`);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await admin
+    .from('friend_requests')
+    .delete()
+    .or(`and(from_user_id.eq.${userId},to_user_id.eq.${friendId}),and(from_user_id.eq.${friendId},to_user_id.eq.${userId})`);
+
+  return NextResponse.json({ ok: true });
 }

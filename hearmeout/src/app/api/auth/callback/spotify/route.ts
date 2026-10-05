@@ -30,20 +30,15 @@ export async function GET(request: NextRequest) {
   try {
     const admin = supabaseAdmin();
 
-    // Real enforcement of the "до 5 мест" beta cap — until now that copy
-    // was informational only, nothing actually counted connections. A
-    // premium account skips the check entirely (their real perk); everyone
-    // else is capped at 5 live Spotify syncs across the whole app, which
-    // mirrors Spotify's own dev-mode user allowlist being the real scarce
-    // resource here.
+    // Real enforcement of the "up to 5 slots" beta cap, applied to everyone
+    // equally now (premium removed) — this mirrors Spotify's own dev-mode
+    // user allowlist being the real scarce resource here, not a monetized
+    // limit the app itself chose, so there's no one to exempt from it.
     const { data: existingOwn } = await admin.from('connections').select('user_id').eq('user_id', userId).eq('provider', 'spotify').maybeSingle();
     if (!existingOwn) {
-      const { data: prefs } = await admin.from('users').select('is_premium').eq('id', userId).maybeSingle();
-      if (!prefs?.is_premium) {
-        const { count } = await admin.from('connections').select('user_id', { count: 'exact', head: true }).eq('provider', 'spotify');
-        if ((count ?? 0) >= 5) {
-          return NextResponse.redirect(`${origin}/?spotify_error=slots_full`);
-        }
+      const { count } = await admin.from('connections').select('user_id', { count: 'exact', head: true }).eq('provider', 'spotify');
+      if ((count ?? 0) >= 5) {
+        return NextResponse.redirect(`${origin}/?spotify_error=slots_full`);
       }
     }
 

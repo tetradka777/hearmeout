@@ -5,8 +5,9 @@ import { fetchAllRows } from '@/lib/supabasePaginate';
 import { canViewProfileData } from '@/lib/userProfile';
 import type { RecapData, RecapPeriod } from '@/lib/types';
 import { parseSeasonKey, seasonBounds } from '@/lib/seasons';
-
-const PERIOD_DAYS: Record<RecapPeriod, number> = { day: 1, month: 30, season: 90 };
+import { completedWeekRange } from '@/lib/weeks';
+import { computeMonthAwards } from '@/lib/monthAwards';
+import type { ApiUser } from '@/lib/types';
 
 type Row = { track_id: string | null; track_title: string | null; artist: string | null; artist_id: string | null; album_id: string | null; cover_url: string | null; genre: string | null; duration_ms: number | null };
 
@@ -17,6 +18,10 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const period = (url.searchParams.get('period') as RecapPeriod) || 'day';
   const targetUserId = url.searchParams.get('userId') || viewerId;
+  // vRecap() in the prototype has a second chip row for day (Today/
+  // Yesterday) and month (This month/Last month) — real calendar-boundary
+  // windows, not a rolling "last N days".
+  const offset = Number(url.searchParams.get('offset') || 0) || 0;
 
   const admin = supabaseAdmin();
 
@@ -26,28 +31,30 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'not_friends' }, { status: 403 });
   }
 
-  // Season recaps are premium-only — gated on the viewer (the one using the
-  // feature), not the target whose data it is, so a premium viewer can still
-  // open a non-premium friend's season recap. Real server-side gate, not
-  // just a hidden UI: a non-premium request never gets the computed data.
-  if (period === 'season') {
-    const { data: viewerPrefs } = await admin.from('users').select('is_premium').eq('id', viewerId).maybeSingle();
-    if (!viewerPrefs?.is_premium) return NextResponse.json({ error: 'premium_required' }, { status: 403 });
-  }
-
   // An explicit ?season=2025-summer picks a real historical window instead
   // of "the last 90 days from now" — parsed to real calendar-month bounds.
   const seasonParam = url.searchParams.get('season');
   const parsedSeason = seasonParam ? parseSeasonKey(seasonParam) : null;
+  const now = new Date();
   let since: string;
   let until: string | null = null;
   if (parsedSeason) {
     const { start, end } = seasonBounds(parsedSeason.year, parsedSeason.season);
     since = start.toISOString();
     until = end.toISOString();
+  } else if (period === 'week') {
+    // Spec 6.12: the last completed week (offset 0) and the weeks before it.
+    const { start, end } = completedWeekRange(Math.min(0, offset), url.searchParams.get('weekStart') === 'sun' ? 'sun' : 'mon', now);
+    since = start.toISOString();
+    until = end.toISOString();
+  } else if (period === 'month') {
+    const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + offset, 1));
+    since = start.toISOString();
+    until = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 1)).toISOString();
   } else {
-    const days = PERIOD_DAYS[period] ?? 1;
-    since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+    const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + offset));
+    since = start.toISOString();
+    until = new Date(start.getTime() + 24 * 60 * 60 * 1000).toISOString();
   }
 
   // Paginated for the same reason as /api/stats: PostgREST caps a single
@@ -95,14 +102,64 @@ export async function GET(request: NextRequest) {
 
   const topArtists = [...artistAgg.values()]
     .sort((a, b) => b.count - a.count)
-    .slice(0, 3)
-    .map((a) => ({ id: a.id, name: a.name, cover: a.cover }));
+    .slice(0, 5)
+    .map((a) => ({ id: a.id, name: a.name, cover: a.cover, plays: a.count }));
   const topSongs = [...trackAgg.values()]
     .sort((a, b) => b.count - a.count)
-    .slice(0, 3)
-    .map((t) => ({ title: t.title, artist: t.artist, albumId: t.albumId, cover: t.cover }));
-  const topGenres = [...genreCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([g]) => g);
+    .slice(0, 5)
+    .map((t) => ({ title: t.title, artist: t.artist, albumId: t.albumId, cover: t.cover, plays: t.count }));
+  const totalGenre = [...genreCounts.values()].reduce((s, n) => s + n, 0);
+  const topGenres = [...genreCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3)
+    .map(([genre, n]) => ({ genre, pct: totalGenre ? Math.round((n / totalGenre) * 100) : 0 }));
 
-  const recap: RecapData = { topArtists, topSongs, topGenres, minutes, uniqueArtists, trackCount: rows.length };
+  // Story-card numbers (spec 3.12 / 6.12): new artists, average score and
+  // awards for the same window.
+  const artistIds = [...new Set(rows.map((r) => r.artist_id).filter((x): x is string => !!x))];
+  const [{ rows: priorRows }, { data: periodRatings }, awards] = await Promise.all([
+    artistIds.length
+      ? fetchAllRows<{ artist_id: string | null }>((from, to) => admin.from('listening_events').select('artist_id').eq('user_id', targetUserId).in('artist_id', artistIds.slice(0, 300)).lt('played_at', since).range(from, to), 8000)
+      : Promise.resolve({ rows: [] as { artist_id: string | null }[], error: null }),
+    (() => {
+      let q = admin.from('ratings').select('stars, is_private').eq('user_id', targetUserId).gte('created_at', since);
+      if (until) q = q.lt('created_at', until);
+      return q;
+    })(),
+    circleAwards(admin, targetUserId, since, until),
+  ]);
+  const heardBefore = new Set(priorRows.map((r) => r.artist_id));
+  const newArtists = artistIds.filter((id) => !heardBefore.has(id)).length;
+  const visibleRatings = (periodRatings || []).filter((r) => targetUserId === viewerId || !r.is_private);
+  const avgScore = visibleRatings.length ? Math.round((visibleRatings.reduce((s, r) => s + Number(r.stars), 0) / visibleRatings.length) * 10) / 10 : null;
+
+  const recap: RecapData = {
+    topArtists, topSongs, topGenres, minutes, uniqueArtists, trackCount: rows.length,
+    newArtists, avgScore, awards, range: { start: since, end: until },
+  };
   return NextResponse.json(recap);
+}
+
+// Awards (lib/monthAwards.ts) this person won in the window, among their own
+// circle — themself plus their friends. Same rules as the friend profile's
+// Awards tile, just over the recap's period instead of the calendar month.
+async function circleAwards(admin: ReturnType<typeof supabaseAdmin>, userId: string, since: string, until: string | null): Promise<string[]> {
+  const { data: friendRows } = await admin.from('friendships').select('friend:friend_id(id, name, handle, avatar_url)').eq('user_id', userId);
+  const { data: self } = await admin.from('users').select('id, name, handle, avatar_url').eq('id', userId).maybeSingle();
+  if (!self) return [];
+  const circle: ApiUser[] = [{ id: self.id, name: self.name, handle: self.handle, avatarUrl: self.avatar_url }];
+  for (const row of friendRows || []) {
+    const f = row.friend as unknown as { id: string; name: string; handle: string; avatar_url: string | null } | null;
+    if (f) circle.push({ id: f.id, name: f.name, handle: f.handle, avatarUrl: f.avatar_url });
+  }
+  const ids = circle.map((u) => u.id);
+  let ev = admin.from('listening_events').select('user_id, played_at, duration_ms, genre').in('user_id', ids).gte('played_at', since);
+  let rt = admin.from('ratings').select('user_id, stars').in('user_id', ids).gte('created_at', since);
+  if (until) { ev = ev.lt('played_at', until); rt = rt.lt('created_at', until); }
+  const [{ data: events }, { data: ratings }] = await Promise.all([ev.limit(6000), rt.limit(6000)]);
+  return computeMonthAwards(
+    (events || []) as { user_id: string; played_at: string; duration_ms: number | null; genre: string | null }[],
+    (ratings || []) as { user_id: string; stars: number }[],
+    new Map(circle.map((u) => [u.id, u] as const)),
+  )
+    .filter((a) => a.winner?.id === userId)
+    .map((a) => a.label);
 }

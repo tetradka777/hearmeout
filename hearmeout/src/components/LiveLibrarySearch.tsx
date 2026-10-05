@@ -2,11 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
-import { searchLibrary, coverArtUrl, type LibraryArtist, type LibraryReleaseGroup } from '@/lib/musicbrainz';
-import { CoverArt } from './ui/CoverArt';
-import { ArtistAvatar } from './ui/ArtistAvatar';
+import { searchLibrary, type LibraryArtist, type LibraryReleaseGroup } from '@/lib/musicbrainz';
 
-export function LiveLibrarySearch({ query }: { query: string }) {
+export function LiveLibrarySearch({ query, onResult }: { query: string; onResult?: (hasResults: boolean) => void }) {
   const { t, openArtist, openAlbum, showToast } = useApp();
   const [result, setResult] = useState<{ artists: LibraryArtist[]; groups: LibraryReleaseGroup[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -34,56 +32,52 @@ export function LiveLibrarySearch({ query }: { query: string }) {
     setError(null);
     const timer = setTimeout(() => {
       searchLibrary(query)
-        .then((r) => { if (!cancelled) { setResult(r); setLoading(false); } })
+        .then((r) => {
+          if (cancelled) return;
+          setResult(r);
+          setLoading(false);
+          onResult?.(r.artists.length > 0 || r.groups.length > 0);
+        })
         .catch(() => {
           if (cancelled) return;
           const isFileProtocol = typeof location !== 'undefined' && location.protocol === 'file:';
           setError(isFileProtocol ? t('liveSearch.fileProtocolError') : t('liveSearch.error'));
           setLoading(false);
+          onResult?.(false);
         });
     }, 450);
     return () => { cancelled = true; clearTimeout(timer); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, t]);
 
-  if (loading) return <div className="archive-loading">{t('liveSearch.searching', { query })}</div>;
-  if (error) return <div className="empty-state">{error}</div>;
+  if (loading) return <p className="muted" style={{ fontWeight: 600 }}>{t('liveSearch.searching', { query })}</p>;
+  if (error) return <p className="muted" style={{ fontWeight: 600 }}>{error}</p>;
   if (!result || (!result.artists.length && !result.groups.length)) {
-    return <div className="empty-state">{t('liveSearch.empty')}</div>;
+    return <p className="muted" style={{ fontWeight: 600 }}>{t('liveSearch.empty')}</p>;
   }
 
+  // discoverHtml() "From the open library": one soft tile of rows — letter dot,
+  // name, "type · details" and an "open library" tag.
   return (
-    <>
-      {result.artists.length > 0 && (
-        <>
-          <div className="lib-subhead">{t('liveSearch.artists')}</div>
-          <div className="row-scroll">
-            {result.artists.map((ar) => (
-              <div className="cover" key={ar.id} onClick={() => openArtist(ar.id, ar.name)}>
-                <ArtistAvatar name={ar.name} />
-                <div className="meta"><div className="t">{ar.name}</div><div className="a">{ar.type || t('liveSearch.artistType')}</div></div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-      {result.groups.length > 0 && (
-        <>
-          <div className="lib-subhead">{t('liveSearch.albums')}</div>
-          <div className="grid-cards">
-            {result.groups.map((g) => {
-              const artist = (g['artist-credit'] || []).map((c) => c.name).join(', ') || t('liveSearch.unknownArtist');
-              const year = g['first-release-date'] ? g['first-release-date'].slice(0, 4) : '—';
-              const cover = coverArtUrl(g.id);
-              return (
-                <div className="cover" key={g.id} onClick={() => openGroup(g.title, artist, g.id)} style={{ cursor: 'pointer', opacity: resolving === g.id ? 0.6 : 1 }}>
-                  <CoverArt url={cover} fallbackLetter={artist[0] || '?'} className="art" />
-                  <div className="meta"><div className="t">{g.title}</div><div className="a">{artist} · {year}</div></div>
-                </div>
-              );
-            })}
-          </div>
-        </>
-      )}
-    </>
+    <div className="tile t-soft2">
+      {result.artists.map((ar) => (
+        <button className="row" key={ar.id} onClick={() => openArtist(ar.id, ar.name)}>
+          <span className="dot">{ar.name[0]}</span>
+          <span className="g"><b>{ar.name}</b><small className="muted" style={{ fontWeight: 600 }}>{t('liveSearch.artistType')}{ar.type ? ` · ${ar.type}` : ''}</small></span>
+          <span className="tag">{t('liveSearch.openLibraryTag')}</span>
+        </button>
+      ))}
+      {result.groups.map((g) => {
+        const artist = (g['artist-credit'] || []).map((c) => c.name).join(', ') || t('liveSearch.unknownArtist');
+        const year = g['first-release-date'] ? g['first-release-date'].slice(0, 4) : '';
+        return (
+          <button className="row" key={g.id} onClick={() => openGroup(g.title, artist, g.id)} style={{ opacity: resolving === g.id ? 0.6 : 1 }}>
+            <span className="dot">{g.title[0]}</span>
+            <span className="g"><b>{g.title}</b><small className="muted" style={{ fontWeight: 600 }}>{t('liveSearch.albumType')} · {artist}{year ? ` · ${year}` : ''}</small></span>
+            <span className="tag">{t('liveSearch.openLibraryTag')}</span>
+          </button>
+        );
+      })}
+    </div>
   );
 }

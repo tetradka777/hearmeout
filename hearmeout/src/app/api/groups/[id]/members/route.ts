@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
-
-const FREE_GROUP_LIMIT = 3;
+import { handleIlikePattern } from '@/lib/slug';
 
 export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const userId = await getCurrentUserId();
@@ -16,21 +15,11 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
   const body = await request.json().catch(() => null);
   const raw = typeof body?.handle === 'string' ? body.handle.trim() : '';
   if (!raw) return NextResponse.json({ error: 'invalid_payload' }, { status: 400 });
-  const normalized = raw.startsWith('@') ? raw : `@${raw}`;
-
-  const { data: target } = await admin.from('users').select('id, name, handle, avatar_url').ilike('handle', normalized).maybeSingle();
+  const { data: target } = await admin.from('users').select('id, name, handle, avatar_url').ilike('handle', handleIlikePattern(raw)).maybeSingle();
   if (!target) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
   const { data: existing } = await admin.from('group_members').select('user_id').eq('group_id', id).eq('user_id', target.id).maybeSingle();
   if (existing) return NextResponse.json({ error: 'already_member' }, { status: 409 });
-
-  const [{ data: targetPrefs }, { count: targetGroupCount }] = await Promise.all([
-    admin.from('users').select('is_premium').eq('id', target.id).maybeSingle(),
-    admin.from('group_members').select('*', { count: 'exact', head: true }).eq('user_id', target.id),
-  ]);
-  if (!targetPrefs?.is_premium && (targetGroupCount ?? 0) >= FREE_GROUP_LIMIT) {
-    return NextResponse.json({ error: 'group_limit_reached' }, { status: 403 });
-  }
 
   const { error } = await admin.from('group_members').insert({ group_id: id, user_id: target.id });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

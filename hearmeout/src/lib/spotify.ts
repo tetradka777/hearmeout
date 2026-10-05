@@ -1,4 +1,5 @@
-const SPOTIFY_SCOPES = ['user-read-recently-played', 'user-top-read'].join(' ');
+// user-read-private: the account country for region detection (migration 023).
+const SPOTIFY_SCOPES = ['user-read-recently-played', 'user-top-read', 'user-read-private'].join(' ');
 
 function basicAuthHeader() {
   const raw = `${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`;
@@ -57,7 +58,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<Omit<Spo
   return res.json();
 }
 
-export type SpotifyProfile = { id: string; display_name: string | null; images: { url: string }[] };
+export type SpotifyProfile = { id: string; display_name: string | null; images: { url: string }[]; country?: string };
 
 export async function fetchSpotifyProfile(accessToken: string): Promise<SpotifyProfile> {
   const res = await fetch('https://api.spotify.com/v1/me', {

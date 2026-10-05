@@ -2,12 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
-import { supabase } from '@/lib/supabaseClient';
-import { starsText, userAvatarStyle, formatRelative } from '@/lib/format';
-import { accentMix } from '@/lib/accentGradient';
+import { userAvatarStyle, formatRelative } from '@/lib/format';
 import type { AlbumReview } from '@/lib/types';
 
-type Row = { stars: number; review: string | null; created_at: string; users: { name: string; handle: string; avatar_url: string | null } | null };
 type ReviewWithTime = AlbumReview & { createdAt: string };
 
 export function AlbumReviews({ albumId, refreshToken }: { albumId: string; refreshToken: number }) {
@@ -17,47 +14,29 @@ export function AlbumReviews({ albumId, refreshToken }: { albumId: string; refre
   useEffect(() => {
     let cancelled = false;
     setReviews(null);
-    supabase
-      .from('ratings')
-      .select('stars, review, created_at, users(name, handle, avatar_url)')
-      .eq('album_id', albumId)
-      .not('review', 'is', null)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        if (cancelled) return;
-        const rows = (data || []) as unknown as Row[];
-        setReviews(
-          rows
-            .filter((r) => r.review)
-            .map((r) => ({
-              stars: r.stars,
-              review: r.review as string,
-              createdAt: r.created_at,
-              user: { name: r.users?.name ?? '', handle: r.users?.handle ?? '', avatarUrl: r.users?.avatar_url ?? null },
-            }))
-        );
-      });
+    // Server-side: skips private ratings and respects "Public reviews".
+    fetch(`/api/albums/${encodeURIComponent(albumId)}/reviews`)
+      .then((r) => (r.ok ? r.json() : { reviews: [] }))
+      .then((d: { reviews: ReviewWithTime[] }) => { if (!cancelled) setReviews(d.reviews); })
+      .catch(() => { if (!cancelled) setReviews([]); });
     return () => { cancelled = true; };
   }, [albumId, refreshToken]);
 
-  if (reviews === null) return <div className="archive-loading">{t('reviews.loading')}</div>;
-  if (!reviews.length) return <div className="empty-state">{t('reviews.empty')}</div>;
+  if (reviews === null) return <div className="muted">{t('reviews.loading')}</div>;
+  if (!reviews.length) return <p className="muted">{t('reviews.empty')}</p>;
 
+  // vRate() Reviews tile: avatar, "name · date", the quote at 17px and the
+  // score as a 30px accent number on the right.
   return (
     <>
       {reviews.map((r, i) => (
-        <div className="review-card" key={i}>
-          <div className="head">
-            <div className="user">
-              <div className="avatar" style={userAvatarStyle(r.user)} />
-              <div className="uname">{r.user.handle}</div>
-            </div>
-            <div className="review-card-meta">
-              <span className="stars-dot" style={{ color: accentMix(r.stars / 5) }}>{starsText(r.stars)}</span>
-              <span className="review-card-time">{formatRelative(r.createdAt, language)}</span>
-            </div>
-          </div>
-          <p>{r.review}</p>
+        <div className="row" style={{ alignItems: 'flex-start' }} key={i}>
+          <div className="dot" style={userAvatarStyle(r.user)}>{!r.user.avatarUrl && r.user.name[0]}</div>
+          <span className="g">
+            <b>{r.user.name} <small className="muted" style={{ fontWeight: 700 }}>· {formatRelative(r.createdAt, language)}</small></b>
+            <span className="quote" style={{ fontSize: 17, display: 'block', marginTop: 4 }}>&ldquo;{r.review}&rdquo;</span>
+          </span>
+          <span className="num" style={{ fontSize: 30, color: 'var(--acct)' }}>{r.stars.toFixed(1)}</span>
         </div>
       ))}
     </>

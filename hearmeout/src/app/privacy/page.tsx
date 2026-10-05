@@ -1,27 +1,46 @@
+/* eslint-disable @next/next/no-html-link-for-pages --
+   This page lives outside AppProvider; links into the app ("/", "/?auth=…")
+   must be full page loads so the app shell boots fresh (RegisterModal reads
+   ?auth= at module load, before the first history entry rewrites "/"). */
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
+import { pickLanguage, translate, type TranslationKey } from '@/lib/i18n';
 
 export const metadata: Metadata = { title: 'What we store — HearMeOut' };
 
+// vData(): four titled tiles (account, ratings, play history, people), then
+// the longer notes on visibility, sources and deletion.
+const TILES: [TranslationKey, TranslationKey, string][] = [
+  ['privacy.accountTitle', 'privacy.accountBody', ''],
+  ['privacy.ratingsTitle', 'privacy.ratingsBody', 't-pop'],
+  ['privacy.historyTitle', 'privacy.historyBody', ''],
+  ['privacy.peopleTitle', 'privacy.peopleBody', 't-soft2'],
+];
+const NOTE_KEYS: TranslationKey[] = ['privacy.item2', 'privacy.item3', 'privacy.item4', 'privacy.item5'];
+
 // Plain server component, deliberately outside AppProvider/AppGate — same
 // reasoning as /u/[handle]: a page a user might link to or read without
-// being logged in, so it shouldn't depend on client-side auth state.
-export default function PrivacyPage() {
+// being logged in, so it shouldn't depend on client-side auth state. The
+// language comes from the browser's Accept-Language (vData() in the
+// prototype: crumb, eyebrow, H1, tiles).
+export default async function PrivacyPage() {
+  const lang = pickLanguage((await headers()).get('accept-language'));
+  const t = (key: TranslationKey) => translate(lang, key);
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)', padding: '48px 20px' }}>
-      <div style={{ maxWidth: 560, margin: '0 auto' }}>
-        <div style={{ fontFamily: 'var(--font-space-grotesk),sans-serif', fontSize: 24, fontWeight: 700, marginBottom: 20 }}>
-          What we store
+    <div className="rd">
+      <div className="wrap" style={{ paddingTop: 48 }}>
+        <a className="crumb" href="/">‹ {t('pub.back')}</a>
+        <p className="eyebrow muted">{t('privacy.eyebrow')}</p>
+        <h1 className="big">{t('privacy.title')}</h1>
+        <div className="bento">
+          {TILES.map(([title, body, cls]) => (
+            <div className={cls ? `tile ${cls}` : 'tile'} key={title}>
+              <h2>{t(title)}</h2>
+              <p className={cls === 't-pop' ? undefined : 'muted'} style={{ fontWeight: 600 }}>{t(body)}</p>
+            </div>
+          ))}
         </div>
-        <div style={{ fontSize: 14.5, lineHeight: 1.8, color: 'var(--text)' }}>
-          <p style={{ marginBottom: 14 }}>We only store what the app itself needs: your name, e-mail, password (hashed — we never see it in plain text), your ratings and reviews, and your listening history if you connected Spotify or uploaded it yourself.</p>
-          <p style={{ marginBottom: 14 }}>We don't ask for or store your age, city, or phone number — none of that is needed to compare music taste.</p>
-          <p style={{ marginBottom: 14 }}>Your full profile (stats, rating history) is visible only to you and your friends, or when you switch it to open in settings. Anyone can find you by name, but only someone you've added as a friend can open your profile while it's closed.</p>
-          <p style={{ marginBottom: 14 }}>Album covers and track data come directly from Spotify and Deezer — we don't store or redistribute music files.</p>
-          <p style={{ marginBottom: 14 }}>You can delete your account at any time from settings — that erases everything listed above with no way to recover it.</p>
-        </div>
-        <div style={{ marginTop: 30, textAlign: 'center' }}>
-          <a href="/" style={{ color: 'var(--lime)', fontSize: 13, fontFamily: 'var(--font-ibm-plex-mono),monospace' }}>HearMeOut →</a>
-        </div>
+        {NOTE_KEYS.map((key) => <p className="muted" style={{ marginTop: 18, fontWeight: 600 }} key={key}>{t(key)}</p>)}
       </div>
     </div>
   );

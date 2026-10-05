@@ -1,41 +1,38 @@
 'use client';
 
 import { useApp } from '@/lib/AppContext';
-import { CoverArt } from './ui/CoverArt';
 
 const GENRES = ['Rock', 'Hip-Hop', 'Electronic', 'R&B', 'Pop', 'Latin'];
 
-function GenreRow({ genre, rowClass }: { genre: string; rowClass: string }) {
+// discoverHtml() "Top artists by genre": per genre an h3 "Genre · region"
+// and a chip per artist (artChip: avatar dot + name).
+function GenreRow({ genre, region }: { genre: string; region: string }) {
   const { t, spotifyGenreArtists, openSpotifyArtist } = useApp();
   const artists = spotifyGenreArtists[genre];
 
   return (
-    <div>
-      <div className="section-head"><h2>{genre}</h2><span>Spotify</span></div>
-      {artists === 'error' ? (
-        <div className="empty-state">{t('generic.loadError')}</div>
-      ) : !artists ? (
-        <div className="archive-loading">{t('genreTop.loading')}</div>
-      ) : artists.length ? (
-        <div className={rowClass}>
-          {artists.map((ar) => (
-            <div className="cover" key={ar.id} onClick={() => openSpotifyArtist(ar.id)} style={{ cursor: 'pointer' }}>
-              <CoverArt url={ar.photo ?? undefined} fallbackLetter={ar.name[0] || '?'} className="art artist-art" />
-              <div className="meta"><div className="t">{ar.name}</div></div>
-            </div>
+    <div style={{ marginBottom: 14 }}>
+      <h3 style={{ marginBottom: 8 }}>{genre} <small className="muted" style={{ fontWeight: 700 }}>· {region}</small></h3>
+      <div className="chips" style={{ margin: 0 }}>
+        {artists === 'error' ? <span className="muted">{t('generic.loadError')}</span>
+          : !artists ? <span className="muted">{t('genreTop.loading')}</span>
+          : !artists.length ? <span className="muted">{t('genreTop.empty')}</span>
+          : artists.map((ar) => (
+            <button className="chip" key={ar.id} onClick={() => openSpotifyArtist(ar.id)}>
+              <span className="dot" style={ar.photo ? { backgroundImage: `url('${ar.photo}')`, backgroundSize: 'cover', color: 'transparent' } : undefined}>{ar.name[0]}</span>
+              {ar.name}
+            </button>
           ))}
-        </div>
-      ) : (
-        <div className="empty-state">{t('recap.noData')}</div>
-      )}
+      </div>
     </div>
   );
 }
 
-export function GenreTopArtists({ rowClass }: { rowClass: string }) {
+export function GenreTopArtists({ onlyGenre, region }: { onlyGenre?: string; region: string }) {
+  const list = onlyGenre && onlyGenre !== 'Всё' ? GENRES.filter((g) => g === onlyGenre) : GENRES;
   return (
     <>
-      {GENRES.map((g) => <GenreRow key={g} genre={g} rowClass={rowClass} />)}
+      {list.map((g) => <GenreRow key={g} genre={g} region={region} />)}
     </>
   );
 }

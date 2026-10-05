@@ -1,4 +1,5 @@
 import { getSpotifyAppToken } from './spotifyAppAuth';
+import { bucketForGenres } from './genreBuckets';
 
 async function spotifyGet(path: string, params: Record<string, string>) {
   const token = await getSpotifyAppToken();
@@ -110,7 +111,17 @@ export async function resolveSpotifyAlbumId(title: string, artist: string): Prom
   return data.albums?.items?.[0]?.id ?? null;
 }
 
-export type AlbumTrack = { id: string; title: string; trackNumber: number };
+// Resolves a catalog artist name (our curated albums only know the artist's
+// name, not their Spotify id) to a real Spotify artist id, so Discover's
+// artist search results can open a real artist page instead of a dead click.
+export async function resolveSpotifyArtistId(name: string): Promise<string | null> {
+  const params: Record<string, string> = { q: `artist:${name}`, type: 'artist', limit: '1' };
+  const data = await spotifyGet('/search', params);
+  return data.artists?.items?.[0]?.id ?? null;
+}
+
+// durationMs is optional: details cached before it was added lack it.
+export type AlbumTrack = { id: string; title: string; trackNumber: number; durationMs?: number | null };
 export type AlbumDetail = {
   id: string;
   title: string;
@@ -120,6 +131,10 @@ export type AlbumDetail = {
   artist: string;
   artistId: string | null;
   tracklist: AlbumTrack[];
+  // Catalog genre bucket (lib/genreBuckets.ts) from the main artist's
+  // Spotify genres — albums themselves almost never carry genres. Older
+  // cached details (spotify_cache) may lack it.
+  genreBucket?: string | null;
 };
 
 // Full album detail incl. tracklist — Spotify returns the first page of
@@ -136,18 +151,24 @@ export async function fetchSpotifyAlbumDetail(id: string): Promise<AlbumDetail |
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`Spotify request failed (/albums/${id}): ${res.status}`);
   const a = await res.json();
+  const artistId: string | null = a.artists?.[0]?.id ?? null;
+  // One extra request for the artist's genres; a failure just leaves the
+  // album without a bucket rather than failing the album.
+  const artist = artistId ? await fetchSpotifyArtistDetail(artistId).catch(() => null) : null;
   return {
     id: a.id,
     title: a.name,
     cover: a.images?.[0]?.url ?? null,
     year: a.release_date ? parseInt(a.release_date.slice(0, 4), 10) : null,
     releaseDate: a.release_date ?? null,
+    genreBucket: bucketForGenres([...(a.genres || []), ...(artist?.genres || [])]),
     artist: (a.artists || []).map((x: { name: string }) => x.name).join(', '),
     artistId: a.artists?.[0]?.id ?? null,
-    tracklist: (a.tracks?.items || []).map((t: { id: string; name: string; track_number: number }) => ({
+    tracklist: (a.tracks?.items || []).map((t: { id: string; name: string; track_number: number; duration_ms?: number }) => ({
       id: t.id,
       title: t.name,
       trackNumber: t.track_number,
+      durationMs: t.duration_ms ?? null,
     })),
   };
 }
@@ -219,4 +240,27 @@ export async function fetchArtistAlbumsSplit(id: string): Promise<{ released: Sp
   released.sort((a, b) => (b.releaseDate || '').localeCompare(a.releaseDate || ''));
   upcoming.sort((a, b) => (a.releaseDate || '').localeCompare(b.releaseDate || ''));
   return { released, upcoming };
+}
+
+export type ArtistTopTrack = { id: string; title: string; durationMs: number; albumId: string; albumTitle: string; albumCover: string | null; trackNumber: number };
+
+// The artist page's Popular tab (spec 6.7). Spotify requires a market for
+// top tracks; the account's region when it's a valid code, else US.
+export async function fetchArtistTopTracks(id: string, market?: string | null): Promise<ArtistTopTrack[]> {
+  const token = await getSpotifyAppToken();
+  const res = await fetch(`https://api.spotify.com/v1/artists/${id}/top-tracks?market=${isValidMarket(market) ? market : 'US'}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (res.status === 404) return [];
+  if (!res.ok) throw new Error(`Spotify request failed (/artists/${id}/top-tracks): ${res.status}`);
+  const data = await res.json();
+  return (data.tracks || []).slice(0, 10).map((tr: { id: string; name: string; duration_ms: number; track_number: number; album: { id: string; name: string; images?: { url: string }[] } }) => ({
+    id: tr.id,
+    title: tr.name,
+    durationMs: tr.duration_ms,
+    albumId: tr.album.id,
+    albumTitle: tr.album.name,
+    albumCover: tr.album.images?.[0]?.url ?? null,
+    trackNumber: tr.track_number,
+  }));
 }

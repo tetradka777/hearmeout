@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
   const requestId = typeof body?.requestId === 'number' ? body.requestId : Number(body?.requestId);
   const action = body?.action;
-  if (!requestId || (action !== 'accept' && action !== 'decline')) {
+  if (!requestId || (action !== 'accept' && action !== 'decline' && action !== 'cancel')) {
     return NextResponse.json({ error: 'invalid_payload' }, { status: 400 });
   }
 
@@ -21,6 +21,16 @@ export async function POST(request: NextRequest) {
     .eq('id', requestId)
     .maybeSingle();
   if (findErr) return NextResponse.json({ error: findErr.message }, { status: 500 });
+  // "cancel" is the sender withdrawing their own pending request (vProfile()
+  // has a Cancel button on each outgoing request row) — accept/decline only
+  // cover the recipient's side, so this is a separate branch.
+  if (action === 'cancel') {
+    if (!reqRow || reqRow.from_user_id !== userId) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+    if (reqRow.status !== 'pending') return NextResponse.json({ error: 'already_resolved' }, { status: 409 });
+    await admin.from('friend_requests').delete().eq('id', requestId);
+    return NextResponse.json({ ok: true });
+  }
+
   if (!reqRow || reqRow.to_user_id !== userId) return NextResponse.json({ error: 'not_found' }, { status: 404 });
   if (reqRow.status !== 'pending') return NextResponse.json({ error: 'already_resolved' }, { status: 409 });
 

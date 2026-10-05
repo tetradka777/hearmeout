@@ -2,13 +2,13 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ALBUMS } from './data';
-import { supabase } from './supabaseClient';
 import { translate, type Language, type TranslationKey } from './i18n';
 import type {
-  Album, AlbumRatingInfo, ArtistState, Device, FriendRequest, LovedItem, LovedItemType, Me, RatingRecord, RecapData, RecapPeriod, ScreenName, SeasonOption,
+  Album, AlbumRatingInfo, AppNotification, ArtistState, Device, FeedResponse, FriendRequest, LaterItem, LovedItem, LovedItemType, Me, RatingRecord, RecapData, RecapPeriod, ScreenName, SeasonOption,
 } from './types';
 import type { AlbumDetail, CatalogAlbum, CatalogArtist } from './spotifyCatalog';
-import { THEME_PAIRS, isThemeId, isToxicity, onAccentFor, type Toxicity } from './themes';
+import { resolveMode, type Design, type Mode, type PaletteId, type TimeFormat, type WeekStart } from './palettes';
+import { PENDING_INVITE_KEY, PENDING_INVITE_NAME_KEY } from './pendingInvite';
 
 const GENRE_BUCKETS = ['Rock', 'Hip-Hop', 'Electronic', 'R&B', 'Pop', 'Latin'];
 
@@ -35,6 +35,10 @@ function catalogAlbumToAlbum(c: CatalogAlbum): Album {
 // one recap track, a friend's top-4 pick, an artist's discography entry —
 // that isn't already sitting in the local catalog or a loaded home section.
 function albumDetailToAlbum(d: AlbumDetail, overrideId?: string): Album {
+  // Live data replaces the catalog entry in liveAlbums, so keep the
+  // catalog's genre when Spotify has none — an empty bucket here used to
+  // drop catalog albums out of the taste fingerprint.
+  const catalog = ALBUMS.find((x) => x.id === (overrideId ?? d.id) || x.spotifyId === d.id);
   return {
     id: overrideId ?? d.id,
     spotifyId: d.id,
@@ -42,22 +46,22 @@ function albumDetailToAlbum(d: AlbumDetail, overrideId?: string): Album {
     artist: d.artist,
     artistId: d.artistId,
     year: d.year ?? 0,
-    genre: '',
-    genreBucket: '',
+    genre: catalog?.genre ?? '',
+    genreBucket: catalog?.genreBucket || d.genreBucket || '',
     cover: d.cover ?? undefined,
     tracklist: d.tracklist.map((t) => t.title),
+    trackDurations: d.tracklist.map((t) => t.durationMs ?? null),
   };
 }
 
 type SortBy = 'year' | 'genre' | 'artist';
-type RateOrigin = 'album' | 'history';
 type AuthStatus = 'loading' | 'anonymous' | 'ready';
 
 // Every screen — the 7 top-level tabs included — gets a real browser-
 // history entry and URL, so the browser's own back/forward buttons work
 // everywhere on the site, not just on "content" pages.
 const ALL_SCREENS = new Set<ScreenName>([
-  'catalog', 'album', 'rate', 'history', 'recap', 'profile', 'artist', 'friend', 'match', 'stats', 'groups', 'discover', 'settings',
+  'catalog', 'rate', 'history', 'recap', 'profile', 'artist', 'friend', 'match', 'stats', 'groups', 'group', 'discover', 'settings', 'later',
 ]);
 
 // What's stored as `history.state` for one entry — enough to restore that
@@ -70,9 +74,9 @@ type ScreenSnapshot = {
   hmoDepth: number;
   currentAlbumId?: string;
   viewingUserId?: string;
+  viewingGroupId?: string;
   recapViewUserId?: string;
   recapOrigin?: ScreenName;
-  rateOrigin?: RateOrigin;
   artistId?: string;
   artistName?: string;
   artistSource?: 'spotify' | 'musicbrainz';
@@ -86,9 +90,9 @@ function currentHistoryDepth(): number {
 function urlForSnapshot(snap: Omit<ScreenSnapshot, 'hmoDepth'>): string {
   switch (snap.activeScreen) {
     case 'catalog': return '/';
-    case 'album': return `/?screen=album&id=${encodeURIComponent(snap.currentAlbumId || '')}`;
     case 'rate': return `/?screen=rate&id=${encodeURIComponent(snap.currentAlbumId || '')}`;
     case 'friend': return `/?screen=friend&id=${encodeURIComponent(snap.viewingUserId || '')}`;
+    case 'group': return `/?screen=group&id=${encodeURIComponent(snap.viewingGroupId || '')}`;
     case 'recap': return `/?screen=recap&id=${encodeURIComponent(snap.recapViewUserId || '')}`;
     case 'artist': return `/?screen=artist&id=${encodeURIComponent(snap.artistId || '')}&source=${snap.artistSource}&name=${encodeURIComponent(snap.artistName || '')}`;
     default: return `/?screen=${snap.activeScreen}`;
@@ -125,17 +129,23 @@ type AppState = {
   navAction: 'push' | 'pop';
   currentAlbumId: string;
   viewingUserId: string;
+  viewingGroupId: string;
   recapPeriod: RecapPeriod;
   recapSeasonKey: string | null;
+  recapOffset: number;
   recapViewUserId: string;
   recapOrigin: ScreenName;
+  // Which screen actually opened History, so its back-crumb and nav
+  // highlight can match the prototype's "label by entry point" instead of
+  // a hardcoded destination (redesign fix B6). null = opened directly from
+  // the nav tab or the quick-rate FAB, not from a specific other screen.
+  historyOrigin: 'profile' | 'rate' | null;
   searchQuery: string;
   activeGenre: string;
   sortBy: SortBy;
   ratingValue: number;
   ratingDraftText: string;
   historyQuery: string;
-  rateOrigin: RateOrigin;
   currentArtist: ArtistState | null;
   toast: string | null;
   // True for the rest of this session right after a fresh signup, so
@@ -157,17 +167,29 @@ type AppContextValue = {
   spotifyObscure: Record<string, CatalogAlbum[] | 'error'>;
   spotifyGenreArtists: Record<string, CatalogArtist[] | 'error'>;
   myRatings: RatingRecord[];
+  feed: FeedResponse | null;
+  setFeed: (feed: FeedResponse | null) => void;
   lovedItems: LovedItem[];
   toggleLoved: (type: LovedItemType, title: string, artist?: string | null, itemId?: string | null, cover?: string | null) => Promise<void>;
+  laterItems: LaterItem[];
+  toggleLaterAlbum: (albumId: string, title: string, artist: string, cover?: string | null) => Promise<void>;
+  toggleLaterTrack: (albumId: string, trackIndex: number, title: string, artist: string, cover?: string | null) => Promise<void>;
+  removeLaterItem: (id: number) => Promise<boolean>;
+  removeAllLater: () => Promise<boolean>;
   friendRequests: { incoming: FriendRequest[]; outgoing: FriendRequest[] };
   recapCache: Record<string, RecapData>;
+  recapLocked: Record<string, true>;
   reviewsVersion: number;
   showScreen: (name: ScreenName) => void;
+  viewHistory: (origin?: 'profile' | 'rate' | null) => void;
   goBack: (name: ScreenName) => void;
   openAlbum: (id: string) => void;
-  openRateFor: (id: string, origin: RateOrigin) => void;
   viewFriend: (id: string) => void;
-  openRecap: (userId: string) => void;
+  viewGroup: (id: string) => void;
+  // `period` switches the recap to that period's latest window (the Home
+  // and Stats recap tiles open the weekly recap, spec 6.12); omitted, the
+  // screen keeps whatever period it was last on.
+  openRecap: (userId: string, period?: RecapPeriod) => void;
   closeRecap: () => void;
   setSearchQuery: (q: string) => void;
   setActiveGenre: (g: string) => void;
@@ -175,28 +197,43 @@ type AppContextValue = {
   setHistoryQuery: (q: string) => void;
   setRecapPeriod: (p: RecapPeriod) => void;
   setRecapSeasonKey: (key: string | null) => void;
+  setRecapOffset: (o: number) => void;
   recapSeasons: SeasonOption[] | null;
   setRatingValue: (v: number) => void;
   setRatingDraftText: (t: string) => void;
-  publishRating: (albumId: string, stars: number, review: string, tags?: string[]) => Promise<void>;
-  ensureRecap: (userId: string, period: RecapPeriod, seasonKey?: string | null) => void;
+  publishRating: (albumId: string, stars: number, review: string, tags?: string[], isPrivate?: boolean) => Promise<void>;
+  ensureRecap: (userId: string, period: RecapPeriod, seasonKey?: string | null, offset?: number) => void;
   registerWithPassword: (name: string, password: string) => Promise<void>;
-  dismissOnboarding: () => void;
+  dismissOnboarding: (silent?: boolean) => void;
+  replayOnboarding: () => void;
   loginWithPassword: (handle: string, password: string) => Promise<void>;
   claimAccount: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   deleteAccount: () => Promise<boolean>;
-  updateProfileName: (name: string) => Promise<void>;
-  updateProfileHandle: (handle: string) => Promise<void>;
+  updateProfileName: (name: string) => Promise<boolean>;
+  updateProfileHandle: (handle: string) => Promise<boolean>;
   updateAvatar: (dataUrl: string) => Promise<void>;
   updateBanner: (dataUrl: string) => Promise<void>;
-  updateAccentTheme: (theme: string) => Promise<void>;
-  updateAccentToxicity: (toxicity: string) => Promise<void>;
   updateLanguage: (language: Language) => Promise<void>;
   updateRegion: (region: string | null) => Promise<void>;
+  updateRegionAuto: (regionAuto: boolean) => Promise<void>;
   updateOpenProfile: (isOpenProfile: boolean) => Promise<void>;
+  updateAppearance: (updates: Partial<{
+    design: Design; mode: Mode; palette: PaletteId; tickerEnabled: boolean; motionEnabled: boolean;
+    timeFormat: TimeFormat; weekStart: WeekStart;
+  }>) => Promise<void>;
+  updatePrivacy: (updates: Partial<{
+    ratingsVisible: boolean; shareLive: boolean; publicReviews: boolean; discoverable: boolean;
+  }>) => Promise<void>;
   addFriend: (handle: string) => Promise<void>;
-  respondToFriendRequest: (requestId: number, action: 'accept' | 'decline') => Promise<void>;
+  respondToFriendRequest: (requestId: number, action: 'accept' | 'decline' | 'cancel') => Promise<void>;
+  removeFriend: (friendId: string) => Promise<boolean>;
+  // In-app notifications (migration 021): a friend's "hi" and shared
+  // recaps. Polled together with friend requests.
+  notifications: { items: AppNotification[]; unread: number };
+  markNotificationsRead: () => Promise<void>;
+  sendHi: (friendId: string) => Promise<boolean>;
+  shareRecapWithFriends: (period: RecapPeriod, offset: number) => Promise<boolean>;
   syncSpotify: () => Promise<void>;
   onSpotifyConnected: () => Promise<void>;
   importStreamingHistory: (files: File[]) => Promise<{ imported: number; skipped: number; errors: string[] } | null>;
@@ -216,17 +253,19 @@ const initialState: AppState = {
   navAction: 'push',
   currentAlbumId: ALBUMS[0]?.id ?? '',
   viewingUserId: '',
+  viewingGroupId: '',
   recapPeriod: 'day',
   recapSeasonKey: null,
+  recapOffset: 0,
   recapViewUserId: 'me',
   recapOrigin: 'catalog',
+  historyOrigin: null,
   searchQuery: '',
   activeGenre: 'Всё',
   sortBy: 'year',
   ratingValue: 0,
   ratingDraftText: '',
   historyQuery: '',
-  rateOrigin: 'album',
   currentArtist: null,
   toast: null,
   justRegistered: false,
@@ -240,9 +279,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [spotifyObscure, setSpotifyObscure] = useState<Record<string, CatalogAlbum[] | 'error'>>({});
   const [spotifyGenreArtists, setSpotifyGenreArtists] = useState<Record<string, CatalogArtist[] | 'error'>>({});
   const [myRatings, setMyRatings] = useState<RatingRecord[]>([]);
+  const [feed, setFeed] = useState<FeedResponse | null>(null);
   const [lovedItems, setLovedItems] = useState<LovedItem[]>([]);
+  const [laterItems, setLaterItems] = useState<LaterItem[]>([]);
   const [friendRequests, setFriendRequests] = useState<{ incoming: FriendRequest[]; outgoing: FriendRequest[] }>({ incoming: [], outgoing: [] });
+  const [notifications, setNotifications] = useState<{ items: AppNotification[]; unread: number }>({ items: [], unread: 0 });
   const [recapCache, setRecapCache] = useState<Record<string, RecapData>>({});
+  const [recapLocked, setRecapLocked] = useState<Record<string, true>>({});
   const [reviewsVersion, setReviewsVersion] = useState(0);
   const [fetchedAlbums, setFetchedAlbums] = useState<Record<string, Album>>({});
   const [failedAlbumIds, setFailedAlbumIds] = useState<Record<string, true>>({});
@@ -277,11 +320,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!res.ok) return;
     const data: Me = await res.json();
     setMe(data);
-    patch({ authStatus: 'ready', language: 'en' });
+    patch({ authStatus: 'ready', language: data.language });
   }, [patch]);
 
   const refreshAlbumRatings = useCallback(async () => {
-    const { data } = await supabase.from('album_ratings').select('album_id, avg_stars, ratings_count');
+    // Server-side (the view is closed to the browser's anon key, migration 022).
+    const res = await fetch('/api/albums/summary').catch(() => null);
+    const data: { album_id: string; avg_stars: number; ratings_count: number }[] = res?.ok ? await res.json() : [];
     const map: Record<string, AlbumRatingInfo> = {};
     for (const row of data || []) {
       map[row.album_id as string] = { avg: Number(row.avg_stars), count: Number(row.ratings_count) };
@@ -312,11 +357,64 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await refreshLovedItems();
   }, [refreshLovedItems]);
 
+  const refreshLater = useCallback(async () => {
+    const res = await fetch('/api/later');
+    if (!res.ok) return;
+    const data = await res.json();
+    setLaterItems(data.items || []);
+  }, []);
+
+  const toggleLaterAlbum = useCallback(async (albumId: string, title: string, artist: string, cover?: string | null) => {
+    const res = await fetch('/api/later', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'album', albumId, title, artist, cover: cover ?? null }),
+    });
+    if (!res.ok) return;
+    const { saved } = await res.json();
+    await refreshLater();
+    showToast(saved ? t('toast.albumSavedLater') : t('toast.removedLater'));
+  }, [refreshLater, showToast, t]);
+
+  const toggleLaterTrack = useCallback(async (albumId: string, trackIndex: number, title: string, artist: string, cover?: string | null) => {
+    const res = await fetch('/api/later', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'track', albumId, trackIndex, title, artist, cover: cover ?? null }),
+    });
+    if (!res.ok) return;
+    const { saved } = await res.json();
+    await refreshLater();
+    showToast(saved ? t('toast.trackSavedLater') : t('toast.removedLater'));
+  }, [refreshLater, showToast, t]);
+
+  const removeLaterItem = useCallback(async (id: number) => {
+    const res = await fetch(`/api/later/${id}`, { method: 'DELETE' });
+    if (!res.ok) return false;
+    await refreshLater();
+    return true;
+  }, [refreshLater]);
+
+  const removeAllLater = useCallback(async () => {
+    const res = await fetch('/api/later', { method: 'DELETE' });
+    if (!res.ok) return false;
+    await refreshLater();
+    return true;
+  }, [refreshLater]);
+
+  const outgoingIdsRef = useRef<Set<number>>(new Set());
   const refreshFriendRequests = useCallback(async () => {
     const res = await fetch('/api/friends/requests');
     if (!res.ok) return;
-    setFriendRequests(await res.json());
-  }, []);
+    const data: { incoming: FriendRequest[]; outgoing: FriendRequest[] } = await res.json();
+    // An outgoing request that disappeared was accepted (or declined) on
+    // the other side — reload `me` so a new friend shows up without a reload.
+    const nowOut = new Set(data.outgoing.map((r) => r.id));
+    const resolved = [...outgoingIdsRef.current].some((id) => !nowOut.has(id));
+    outgoingIdsRef.current = nowOut;
+    setFriendRequests(data);
+    if (resolved) refreshMe();
+  }, [refreshMe]);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 768px)');
@@ -360,53 +458,94 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => { if (state.authStatus === 'ready') refreshMyRatings(); }, [state.authStatus, refreshMyRatings]);
   useEffect(() => { if (state.authStatus === 'ready') refreshLovedItems(); }, [state.authStatus, refreshLovedItems]);
+  useEffect(() => { if (state.authStatus === 'ready') refreshLater(); }, [state.authStatus, refreshLater]);
 
-  // Only a premium account's theme choice is ever applied — a non-premium
-  // account can't reach the picker (server-gated too), but this is a second
-  // real check, not just relying on the UI having stayed locked. An account
-  // that's never touched the picker (accentTheme unset) gets no override at
-  // all, so the base [data-theme="dark"|"light"] default — including the
-  // light/dark distinction — stands exactly as it does for a free account.
+  // Redesign appearance: applies as soon as `me` loads (the layout's inline
+  // script already applied the cached values before hydration, so there's
+  // no flash — this effect just keeps the root in sync with the account's
+  // real settings and re-applies live when "system" mode's OS preference
+  // changes while the app is open).
   useEffect(() => {
+    if (!me) return;
     const root = document.documentElement;
-    if (me?.isPremium && isThemeId(me.accentTheme)) {
-      const toxicity: Toxicity = isToxicity(me.accentToxicity) ? me.accentToxicity : 'bright';
-      const pair = THEME_PAIRS[me.accentTheme][toxicity];
-      root.dataset.accent = me.accentTheme;
-      root.dataset.toxicity = toxicity;
-      root.style.setProperty('--lime', pair.lime);
-      root.style.setProperty('--coral', pair.coral);
-      root.style.setProperty('--on-accent', onAccentFor(pair.lime));
-    } else {
-      delete root.dataset.accent;
-      delete root.dataset.toxicity;
-      root.style.removeProperty('--lime');
-      root.style.removeProperty('--coral');
-      root.style.removeProperty('--on-accent');
+    root.dataset.design = me.design;
+    root.dataset.palette = me.palette;
+    root.dataset.mode = resolveMode(me.mode);
+    try {
+      localStorage.setItem('hmo-appearance', JSON.stringify({
+        design: me.design, mode: me.mode, palette: me.palette, motionEnabled: me.motionEnabled,
+      }));
+    } catch { /* ignore */ }
+
+    // Motion is off when the account setting says so OR the OS asks for
+    // reduced motion — the OS preference always wins over an account that
+    // merely never touched the toggle, and this re-applies live if the OS
+    // setting changes while the app is open (same pattern as the "system"
+    // color-scheme listener below).
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const applyMotion = () => {
+      if (!me.motionEnabled || motionQuery.matches) root.dataset.motion = 'off';
+      else delete root.dataset.motion;
+    };
+    applyMotion();
+    motionQuery.addEventListener('change', applyMotion);
+
+    let colorSchemeQuery: MediaQueryList | null = null;
+    let onColorSchemeChange: (() => void) | null = null;
+    if (me.mode === 'system') {
+      colorSchemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      onColorSchemeChange = () => { root.dataset.mode = resolveMode('system'); };
+      colorSchemeQuery.addEventListener('change', onColorSchemeChange);
     }
-  }, [me?.isPremium, me?.accentTheme, me?.accentToxicity]);
-  useEffect(() => { if (state.authStatus === 'ready') refreshFriendRequests(); }, [state.authStatus, refreshFriendRequests]);
+    return () => {
+      motionQuery.removeEventListener('change', applyMotion);
+      if (colorSchemeQuery && onColorSchemeChange) colorSchemeQuery.removeEventListener('change', onColorSchemeChange);
+    };
+  }, [me]);
+
+  // Friend requests arrive from other people, so they're re-checked when the
+  // tab becomes visible again and once a minute while it's visible — not
+  // only at sign-in (a request sent while you're on the page used to stay
+  // invisible until a reload). Drives the "new requests" badge.
+  useEffect(() => {
+    if (state.authStatus !== 'ready') return;
+    const refreshInbox = () => {
+      refreshFriendRequests();
+      fetch('/api/notifications').then((r) => (r.ok ? r.json() : null)).then((d) => { if (d) setNotifications(d); }).catch(() => {});
+    };
+    refreshInbox();
+    const onVisible = () => { if (document.visibilityState === 'visible') refreshInbox(); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    const timer = setInterval(onVisible, 60_000);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+      clearInterval(timer);
+    };
+  }, [state.authStatus, refreshFriendRequests]);
 
   // Completes an invite-link visit (see app/invite/[id]/page.tsx) that
   // happened while logged out: that page stashes the inviter's id in
   // localStorage before sending the visitor to "/" to sign up, and once
-  // auth is actually ready here, we finish the friend-add they started.
+  // auth is actually ready here, we send the friend request they started.
+  // Spec 13.x: it's a normal pending request (both sides see it as
+  // pending), not an instant friendship — unless the inviter had already
+  // requested this person, in which case /api/friends accepts it.
   useEffect(() => {
     if (state.authStatus !== 'ready') return;
     let pendingId: string | null = null;
-    try { pendingId = localStorage.getItem('hmo_pending_invite'); } catch { /* ignore */ }
+    try { pendingId = localStorage.getItem(PENDING_INVITE_KEY); } catch { /* ignore */ }
     if (!pendingId) return;
-    try { localStorage.removeItem('hmo_pending_invite'); } catch { /* ignore */ }
-    fetch('/api/friends/accept-invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fromUserId: pendingId }) })
+    try { localStorage.removeItem(PENDING_INVITE_KEY); localStorage.removeItem(PENDING_INVITE_NAME_KEY); } catch { /* ignore */ }
+    fetch('/api/friends', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: pendingId }) })
       .then((res) => res.ok ? res.json() : null)
       .then((data) => {
-        if (data?.user) {
-          showToast(t('toast.friendAdded'));
-          refreshMe();
-        }
+        if (data?.status === 'accepted') { showToast(t('toast.friendAdded')); refreshMe(); }
+        else if (data?.status === 'pending') { showToast(t('toast.friendRequestSent')); refreshFriendRequests(); }
       })
       .catch(() => {});
-  }, [state.authStatus, showToast, t, refreshMe]);
+  }, [state.authStatus, showToast, t, refreshMe, refreshFriendRequests]);
 
   const registerWithPassword = useCallback(async (name: string, password: string) => {
     const res = await fetch('/api/auth/signup', {
@@ -422,7 +561,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     patch({ justRegistered: true });
   }, [refreshMe, patch]);
 
-  const dismissOnboarding = useCallback(() => patch({ justRegistered: false }), [patch]);
+  const dismissOnboarding = useCallback((silent?: boolean) => { patch({ justRegistered: false }); if (!silent) showToast(t('onboarding.allSetToast')); }, [patch, showToast, t]);
+  // Settings -> Account's "Replay" row (prototype: data-go="onboarding"
+  // data-ob0="1") — OnboardingScreen's own step state is a plain useState
+  // that starts at 1, so remounting it via justRegistered is enough to
+  // restart from the first step.
+  const replayOnboarding = useCallback(() => patch({ justRegistered: true }), [patch]);
 
   const loginWithPassword = useCallback(async (handle: string, password: string) => {
     const res = await fetch('/api/auth/login', {
@@ -469,6 +613,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Re-clicking the tab you're already on doesn't push a duplicate stop.
     if (stateRef.current.activeScreen !== name) pushScreenHistory({ activeScreen: name });
   }, [patch]);
+  // History doubles as both a top-level nav destination and a screen
+  // opened from Profile or Rate — the crumb label, its target and whether
+  // the nav lights up "Rate" all depend on which (redesign fix B6).
+  const viewHistory = useCallback((origin: 'profile' | 'rate' | null = null) => {
+    patch({ historyOrigin: origin });
+    showScreen('history');
+  }, [patch, showScreen]);
   // Real browser back (when there's an in-app entry to return to) instead
   // of jumping straight to `name` — lets a "← Back" button and the
   // browser's own back button land you on exactly the same place, since
@@ -479,34 +630,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (currentHistoryDepth() > 0) window.history.back();
     else patch({ activeScreen: name, navAction: 'pop' });
   }, [patch]);
+  // The prototype has no separate album-browsing screen — vRate() in
+  // reference/app.js is the one page that shows the cover, tracklist,
+  // friends' ratings and community stats alongside the rating widget
+  // itself, always live (no "open the rating form" click-through). Every
+  // "go look at this album" link in the prototype is the same
+  // data-go="rate" data-a="<id>", so there's just one function here too.
   const openAlbum = useCallback((id: string) => {
-    patch({ currentAlbumId: id, activeScreen: 'album', navAction: 'push' });
-    pushScreenHistory({ activeScreen: 'album', currentAlbumId: id });
-  }, [patch]);
-
-  const openRateFor = useCallback((id: string, origin: RateOrigin) => {
     setState((s) => {
       const existing = myRatings.find((r) => r.albumId === id);
       return {
         ...s,
         currentAlbumId: id,
-        rateOrigin: origin,
         ratingValue: existing ? existing.stars : 0,
         ratingDraftText: existing ? existing.review || '' : '',
         activeScreen: 'rate',
         navAction: 'push',
       };
     });
-    pushScreenHistory({ activeScreen: 'rate', currentAlbumId: id, rateOrigin: origin });
+    pushScreenHistory({ activeScreen: 'rate', currentAlbumId: id });
   }, [myRatings]);
 
   const viewFriend = useCallback((id: string) => {
     patch({ viewingUserId: id, activeScreen: 'friend', navAction: 'push' });
     pushScreenHistory({ activeScreen: 'friend', viewingUserId: id });
   }, [patch]);
-  const openRecap = useCallback((userId: string) => {
+  const viewGroup = useCallback((id: string) => {
+    patch({ viewingGroupId: id, activeScreen: 'group', navAction: 'push' });
+    pushScreenHistory({ activeScreen: 'group', viewingGroupId: id });
+  }, [patch]);
+  const openRecap = useCallback((userId: string, period?: RecapPeriod) => {
     const origin = stateRef.current.activeScreen;
-    setState((s) => ({ ...s, recapViewUserId: userId, recapOrigin: origin, activeScreen: 'recap', navAction: 'push' }));
+    const periodPatch = period ? { recapPeriod: period, recapSeasonKey: null, recapOffset: 0 } : {};
+    setState((s) => ({ ...s, ...periodPatch, recapViewUserId: userId, recapOrigin: origin, activeScreen: 'recap', navAction: 'push' }));
     pushScreenHistory({ activeScreen: 'recap', recapViewUserId: userId, recapOrigin: origin });
   }, []);
   const closeRecap = useCallback(() => {
@@ -518,20 +674,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const setActiveGenre = useCallback((g: string) => patch({ activeGenre: g }), [patch]);
   const setSortBy = useCallback((sVal: SortBy) => patch({ sortBy: sVal }), [patch]);
   const setHistoryQuery = useCallback((q: string) => patch({ historyQuery: q }), [patch]);
-  const setRecapPeriod = useCallback((p: RecapPeriod) => patch({ recapPeriod: p, recapSeasonKey: null }), [patch]);
+  const setRecapPeriod = useCallback((p: RecapPeriod) => patch({ recapPeriod: p, recapSeasonKey: null, recapOffset: 0 }), [patch]);
   const setRecapSeasonKey = useCallback((key: string | null) => patch({ recapSeasonKey: key }), [patch]);
+  const setRecapOffset = useCallback((o: number) => patch({ recapOffset: o }), [patch]);
   const setRatingValue = useCallback((v: number) => patch({ ratingValue: v }), [patch]);
   const setRatingDraftText = useCallback((t: string) => patch({ ratingDraftText: t }), [patch]);
 
-  const ensureRecap = useCallback((userId: string, period: RecapPeriod, seasonKey?: string | null) => {
+  const ensureRecap = useCallback((userId: string, period: RecapPeriod, seasonKey?: string | null, offset = 0) => {
     const targetId = userId === 'me' ? me?.id : userId;
     if (!targetId) return;
-    const key = `${targetId}:${period}${seasonKey ? ':' + seasonKey : ''}`;
+    const key = `${targetId}:${period}${seasonKey ? ':' + seasonKey : offset ? ':' + offset : ''}`;
     if (requestedRecapKeys.current.has(key)) return;
     requestedRecapKeys.current.add(key);
-    const seasonQS = seasonKey ? `&season=${encodeURIComponent(seasonKey)}` : '';
-    fetch(`/api/recap?period=${period}&userId=${targetId}${seasonQS}`)
-      .then((res) => (res.ok ? res.json() : null))
+    const seasonQS = seasonKey ? `&season=${encodeURIComponent(seasonKey)}` : offset ? `&offset=${offset}` : '';
+    // Weeks follow the *viewer's* week-start setting, so a friend's recap
+    // chips line up with your own.
+    const weekQS = period === 'week' ? `&weekStart=${me?.weekStart ?? 'mon'}` : '';
+    fetch(`/api/recap?period=${period}&userId=${targetId}${seasonQS}${weekQS}`)
+      .then((res) => {
+        // A friend's recap is just another view into their listening data
+        // (same friends-only boundary as their profile) — vRecap() in the
+        // prototype has a dedicated locked state for this, not an endless
+        // spinner.
+        if (res.status === 403) { setRecapLocked((s) => ({ ...s, [key]: true })); return null; }
+        return res.ok ? res.json() : null;
+      })
       .then((data: RecapData | null) => {
         if (data) setRecapCache((s) => ({ ...s, [key]: data }));
         else requestedRecapKeys.current.delete(key);
@@ -553,12 +720,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; };
   }, [state.activeScreen, state.recapPeriod, state.recapViewUserId, me]);
 
-  const publishRating = useCallback(async (albumId: string, stars: number, review: string, tags: string[] = []) => {
+  // Posting/saving-privately never navigates away (the prototype's own
+  // post/priv click handlers just re-render the same vRate() page in
+  // place) — the rate screen is a persistent, always-live surface you can
+  // keep revising, not a form that closes on submit.
+  const publishRating = useCallback(async (albumId: string, stars: number, review: string, tags: string[] = [], isPrivate: boolean = false) => {
     const isEditing = myRatings.some((r) => r.albumId === albumId);
     const res = await fetch('/api/ratings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ albumId, stars, review, tags }),
+      body: JSON.stringify({ albumId, stars, review, tags, isPrivate }),
     });
     if (!res.ok) {
       showToast(t('toast.ratingSaveFailed'));
@@ -566,25 +737,51 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     await Promise.all([refreshMyRatings(), refreshAlbumRatings(), refreshMe()]);
     setReviewsVersion((v) => v + 1);
-    patch({ ratingValue: 0, ratingDraftText: '' });
-    // Saving and returning is the same "go back to where the rate form was
-    // opened from" as the explicit back button — same history.back() path,
-    // so the rate screen's pushed entry doesn't linger as a dead end you'd
-    // otherwise have to click "back" through twice.
-    if (currentHistoryDepth() > 0) window.history.back();
-    else setState((s) => ({ ...s, activeScreen: s.rateOrigin === 'history' ? 'history' : 'album', navAction: 'pop' }));
-    showToast(isEditing ? t('toast.ratingUpdated') : t('toast.published'));
-  }, [myRatings, refreshMyRatings, refreshAlbumRatings, refreshMe, showToast, t, patch]);
+    // Rating an album removes it from Listen later (spec 13.20 rule 2) —
+    // tracks stay, so this only ever matches the album-level entry.
+    const laterMatch = laterItems.find((i) => i.type === 'album' && i.albumId === albumId);
+    const removedFromLater = laterMatch ? await removeLaterItem(laterMatch.id) : false;
+    if (removedFromLater) {
+      showToast(isPrivate ? t('toast.savedPrivatelyRemovedLater') : t('toast.publishedRemovedLater'));
+    } else {
+      showToast(isPrivate ? t('toast.savedPrivately') : isEditing ? t('toast.ratingUpdated') : t('toast.published'));
+    }
+  }, [myRatings, refreshMyRatings, refreshAlbumRatings, refreshMe, showToast, t, laterItems, removeLaterItem]);
 
+  // Redesign fix (item 20): the sign-up modal already enforces name length
+  // (2-24) and surfaces server errors — the profile screen's own inline
+  // name/handle fields didn't, so a too-short name or a taken handle just
+  // silently reverted on refreshMe() with no explanation. Returns whether
+  // the save stuck, so the caller can put the field back the way it was.
   const updateProfileName = useCallback(async (name: string) => {
-    await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+    const trimmed = name.trim();
+    if (trimmed.length < 2 || trimmed.length > 24) {
+      showToast(t('profile.nameLengthError'));
+      return false;
+    }
+    const res = await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: trimmed }) });
+    if (!res.ok) { showToast(t('profile.nameSaveFailed')); return false; }
     await refreshMe();
-  }, [refreshMe]);
+    showToast(t('profile.nameSaved'));
+    return true;
+  }, [refreshMe, showToast, t]);
 
   const updateProfileHandle = useCallback(async (handle: string) => {
-    await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle }) });
+    const trimmed = handle.trim().replace(/^@/, '');
+    if (trimmed.length < 3 || trimmed.length > 20) {
+      showToast(t('profile.handleLengthError'));
+      return false;
+    }
+    const res = await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle: trimmed }) });
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      showToast(data?.error === 'handle_taken' ? t('profile.handleTaken') : t('profile.handleSaveFailed'));
+      return false;
+    }
     await refreshMe();
-  }, [refreshMe]);
+    showToast(t('profile.handleSaved'));
+    return true;
+  }, [refreshMe, showToast, t]);
 
   const updateAvatar = useCallback(async (dataUrl: string) => {
     await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ avatarUrl: dataUrl }) });
@@ -593,16 +790,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateBanner = useCallback(async (dataUrl: string) => {
     await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bannerUrl: dataUrl }) });
-    await refreshMe();
-  }, [refreshMe]);
-
-  const updateAccentTheme = useCallback(async (theme: string) => {
-    await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accentTheme: theme }) });
-    await refreshMe();
-  }, [refreshMe]);
-
-  const updateAccentToxicity = useCallback(async (toxicity: string) => {
-    await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accentToxicity: toxicity }) });
     await refreshMe();
   }, [refreshMe]);
 
@@ -617,9 +804,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ region }) });
   }, []);
 
+  // "Detect from my streaming account": turning it on switches the region
+  // to the detected country right away (the server does the same).
+  const updateRegionAuto = useCallback(async (regionAuto: boolean) => {
+    setMe((prev) => (prev ? { ...prev, regionAuto, region: regionAuto && prev.detectedRegion ? prev.detectedRegion : prev.region } : prev));
+    const res = await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ regionAuto }) });
+    if (!res.ok) { setMe((prev) => (prev ? { ...prev, regionAuto: !regionAuto } : prev)); showToast(t('settings.regionAutoFailed')); }
+  }, [showToast, t]);
+
   const updateOpenProfile = useCallback(async (isOpenProfile: boolean) => {
     setMe((prev) => (prev ? { ...prev, isOpenProfile } : prev));
     await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isOpenProfile }) });
+  }, []);
+
+  const updateAppearance = useCallback(async (updates: Partial<{
+    design: Design; mode: Mode; palette: PaletteId; tickerEnabled: boolean; motionEnabled: boolean;
+    timeFormat: TimeFormat; weekStart: WeekStart;
+  }>) => {
+    setMe((prev) => (prev ? { ...prev, ...updates } : prev));
+    await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) });
+  }, []);
+
+  const updatePrivacy = useCallback(async (updates: Partial<{
+    ratingsVisible: boolean; shareLive: boolean; publicReviews: boolean; discoverable: boolean;
+  }>) => {
+    setMe((prev) => (prev ? { ...prev, ...updates } : prev));
+    await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) });
   }, []);
 
   const addFriend = useCallback(async (handle: string) => {
@@ -640,7 +850,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [refreshMe, refreshFriendRequests, showToast, t]);
 
-  const respondToFriendRequest = useCallback(async (requestId: number, action: 'accept' | 'decline') => {
+  const respondToFriendRequest = useCallback(async (requestId: number, action: 'accept' | 'decline' | 'cancel') => {
     const res = await fetch('/api/friends/respond', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -651,7 +861,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return;
     }
     await Promise.all([refreshFriendRequests(), action === 'accept' ? refreshMe() : Promise.resolve()]);
-    showToast(action === 'accept' ? t('toast.friendAdded') : t('toast.friendRequestDeclined'));
+    showToast(action === 'accept' ? t('toast.friendAdded') : action === 'cancel' ? t('toast.friendRequestCancelled') : t('toast.friendRequestDeclined'));
+  }, [refreshFriendRequests, refreshMe, showToast, t]);
+
+  // Returns whether it worked so the caller can keep its confirm UI open on
+  // failure; toasts either way.
+  const markNotificationsRead = useCallback(async () => {
+    setNotifications((n) => ({ items: n.items.map((i) => ({ ...i, read: true })), unread: 0 }));
+    await fetch('/api/notifications/read', { method: 'POST' }).catch(() => {});
+  }, []);
+
+  // Both return whether it was delivered and toast either way; a 429 means
+  // the cooldown (one hi per friend per hour, one recap share per day).
+  const sendHi = useCallback(async (friendId: string) => {
+    const res = await fetch('/api/notifications', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: 'hi', to: friendId }) });
+    showToast(t(res.ok ? 'notify.hiSent' : res.status === 429 ? 'notify.hiTooSoon' : 'notify.failed'));
+    return res.ok;
+  }, [showToast, t]);
+
+  const shareRecapWithFriends = useCallback(async (period: RecapPeriod, offset: number) => {
+    const res = await fetch('/api/notifications', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: 'recap', period, offset }) });
+    if (!res.ok) { showToast(t(res.status === 429 ? 'notify.recapTooSoon' : 'notify.failed')); return false; }
+    const { sent } = await res.json();
+    showToast(sent ? t('notify.recapSent', { count: sent }) : t('notify.noFriends'));
+    return sent > 0;
+  }, [showToast, t]);
+
+  const removeFriend = useCallback(async (friendId: string) => {
+    const res = await fetch('/api/friends', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ friendId }) });
+    if (!res.ok) { showToast(t('toast.friendRemoveFailed')); return false; }
+    await Promise.all([refreshMe(), refreshFriendRequests()]);
+    showToast(t('toast.friendRemoved'));
+    return true;
   }, [refreshFriendRequests, refreshMe, showToast, t]);
 
   const syncSpotify = useCallback(async () => {
@@ -812,9 +1053,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         activeScreen: snap.activeScreen,
         currentAlbumId: snap.currentAlbumId ?? s.currentAlbumId,
         viewingUserId: snap.viewingUserId ?? s.viewingUserId,
+        viewingGroupId: snap.viewingGroupId ?? s.viewingGroupId,
         recapViewUserId: snap.recapViewUserId ?? s.recapViewUserId,
         recapOrigin: snap.recapOrigin ?? s.recapOrigin,
-        rateOrigin: snap.rateOrigin ?? s.rateOrigin,
         navAction: 'pop',
       }));
     };
@@ -836,6 +1077,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           hmoDepth: 0,
           currentAlbumId: id,
           viewingUserId: id,
+          viewingGroupId: id,
           recapViewUserId: id,
           artistId: id,
           artistName: params.get('name') ?? undefined,
@@ -863,21 +1105,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AppContextValue>(() => ({
     state, language: state.language, t, albums: ALBUMS, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds,
-    spotifyObscure, spotifyGenreArtists, myRatings, lovedItems, toggleLoved, friendRequests, recapCache, reviewsVersion,
-    showScreen, goBack, openAlbum, openRateFor, viewFriend, openRecap, closeRecap,
-    setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, recapSeasons,
+    spotifyObscure, spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, laterItems, toggleLaterAlbum, toggleLaterTrack, removeLaterItem, removeAllLater, friendRequests, recapCache, recapLocked, reviewsVersion,
+    showScreen, viewHistory, goBack, openAlbum, viewFriend, viewGroup, openRecap, closeRecap,
+    setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, setRecapOffset, recapSeasons,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
-    registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
-    updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateAccentTheme, updateAccentToxicity, updateLanguage, updateRegion, updateOpenProfile,
-    addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
+    registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
+    updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateLanguage, updateRegion, updateRegionAuto, updateOpenProfile, updateAppearance, updatePrivacy,
+    addFriend, respondToFriendRequest, removeFriend, notifications, markNotificationsRead, sendHi, shareRecapWithFriends, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyObscure,
-    spotifyGenreArtists, myRatings, lovedItems, toggleLoved, friendRequests, recapCache, reviewsVersion, showScreen, goBack, openAlbum, openRateFor,
-    setRecapSeasonKey, recapSeasons,
-    viewFriend, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
+    spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, laterItems, toggleLaterAlbum, toggleLaterTrack, removeLaterItem, removeAllLater, friendRequests, recapCache, recapLocked, reviewsVersion, showScreen, viewHistory, goBack, openAlbum,
+    setRecapSeasonKey, setRecapOffset, recapSeasons,
+    viewFriend, viewGroup, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,
-    registerWithPassword, dismissOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
-    updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateAccentTheme, updateAccentToxicity, updateLanguage, updateRegion, updateOpenProfile,
-    addFriend, respondToFriendRequest, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast]);
+    registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
+    updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateLanguage, updateRegion, updateRegionAuto, updateOpenProfile, updateAppearance, updatePrivacy,
+    addFriend, respondToFriendRequest, removeFriend, notifications, markNotificationsRead, sendHi, shareRecapWithFriends, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

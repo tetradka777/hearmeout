@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
-import { supabase } from '@/lib/supabaseClient';
 import { REVIEW_TAG_LABEL_KEY, isReviewTagId, type ReviewTagId } from '@/lib/reviewTags';
 
 const MAX_SHOWN = 8;
@@ -19,15 +18,14 @@ export function AlbumTagsSummary({ albumId, refreshToken }: { albumId: string; r
   useEffect(() => {
     let cancelled = false;
     setCounts(null);
-    supabase
-      .from('ratings')
-      .select('tags')
-      .eq('album_id', albumId)
-      .then(({ data }) => {
+    // Server-side aggregate (no private ratings, no user ids).
+    fetch(`/api/albums/${encodeURIComponent(albumId)}/stats`)
+      .then((r) => (r.ok ? r.json() : { tags: [] }))
+      .then((d: { tags: string[][] }) => {
         if (cancelled) return;
         const tally = new Map<ReviewTagId, number>();
-        for (const row of (data || []) as { tags: string[] | null }[]) {
-          for (const tag of row.tags || []) {
+        for (const tags of d.tags) {
+          for (const tag of tags) {
             if (!isReviewTagId(tag)) continue;
             tally.set(tag, (tally.get(tag) || 0) + 1);
           }
@@ -43,14 +41,12 @@ export function AlbumTagsSummary({ albumId, refreshToken }: { albumId: string; r
 
   if (!counts || !counts.length) return null;
 
+  // The "Vibes from reviews" caption is rendered by RateScreen (vRate).
   return (
-    <>
-      <div className="section-head" style={{ marginTop: 22 }}><h2>{t('album.tagsTitle')}</h2></div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 22 }}>
-        {counts.map(({ id, count }) => (
-          <span key={id} className="chip" style={{ cursor: 'default' }}>{t(REVIEW_TAG_LABEL_KEY[id])} · {count}</span>
-        ))}
-      </div>
-    </>
+    <div className="chips" style={{ margin: 0 }}>
+      {counts.map(({ id, count }) => (
+        <span key={id} className="chip" style={{ cursor: 'default' }}>{t(REVIEW_TAG_LABEL_KEY[id])} · {count}</span>
+      ))}
+    </div>
   );
 }

@@ -1,24 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Space_Grotesk, Inter, IBM_Plex_Mono } from "next/font/google";
-import "./globals.css";
-
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
-
-const ibmPlexMono = IBM_Plex_Mono({
-  variable: "--font-ibm-plex-mono",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
+import "@/styles/fonts.css";
+import "@/styles/tokens.css";
+import "@/styles/components.css";
 
 // The live URL — used to build absolute Open Graph/Twitter image URLs.
 const SITE_URL = "https://hearmeoutt.art";
@@ -53,20 +36,42 @@ export const viewport: Viewport = {
 
 const THEME_INIT_SCRIPT = `
 try {
-  var t = localStorage.getItem('hmo-theme');
-  document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark';
+  var a = JSON.parse(localStorage.getItem('hmo-appearance') || 'null');
+  var root = document.documentElement;
+  if (a && a.design) root.dataset.design = a.design;
+  if (a && a.palette) root.dataset.palette = a.palette;
+  var mode = a && a.mode;
+  if (mode === 'system' || !mode) {
+    mode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  root.dataset.mode = mode;
+  var osReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (osReducedMotion || (a && a.motionEnabled === false)) root.dataset.motion = 'off';
 } catch (e) {}
+`;
+
+// Dev only: Spotify accepts loopback redirect URIs only as 127.0.0.1 (not
+// "localhost"), and cookies don't cross between the two hosts — signing in
+// on localhost and coming back from Spotify on 127.0.0.1 lost both the
+// session and the OAuth state, so connecting failed silently. Keep the
+// whole dev session on 127.0.0.1.
+const DEV_HOST_SCRIPT = `
+if (location.hostname === 'localhost') {
+  location.replace(location.href.replace('//localhost', '//127.0.0.1'));
+}
 `;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      data-theme="dark"
+      data-design="cream-pop"
+      data-mode="light"
+      data-palette="lemons"
       suppressHydrationWarning
-      className={`${spaceGrotesk.variable} ${inter.variable} ${ibmPlexMono.variable}`}
     >
       <head>
+        {process.env.NODE_ENV === "development" && <script dangerouslySetInnerHTML={{ __html: DEV_HOST_SCRIPT }} />}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body>{children}</body>

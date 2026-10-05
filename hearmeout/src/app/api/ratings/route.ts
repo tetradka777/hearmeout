@@ -11,6 +11,7 @@ export async function POST(request: NextRequest) {
   const albumId = typeof body?.albumId === 'string' ? body.albumId : null;
   const stars = typeof body?.stars === 'number' ? body.stars : null;
   const review = typeof body?.review === 'string' && body.review.trim() ? body.review.trim() : null;
+  const isPrivate = body?.isPrivate === true;
   const tags = Array.isArray(body?.tags)
     ? [...new Set(body.tags.filter((t: unknown): t is string => typeof t === 'string' && isReviewTagId(t)))].slice(0, MAX_REVIEW_TAGS)
     : [];
@@ -19,9 +20,31 @@ export async function POST(request: NextRequest) {
   }
 
   const admin = supabaseAdmin();
+
+  // A revision ("3.5 -> 4.5" in history) only exists once a *different*
+  // score replaces an existing one — the very first rating of an album has
+  // no previous score, and re-saving the same score isn't a revision.
+  const { data: existing } = await admin.from('ratings').select('stars').eq('user_id', userId).eq('album_id', albumId).maybeSingle();
+  const scoreChanged = existing != null && Number(existing.stars) !== stars;
+  const keepPreviousOnNoChange = existing != null && !scoreChanged;
+  const previousStars = scoreChanged ? existing!.stars : null;
+
   const { error } = await admin
     .from('ratings')
-    .upsert({ user_id: userId, album_id: albumId, stars, review, tags }, { onConflict: 'user_id,album_id' });
+    .upsert(
+      {
+        user_id: userId,
+        album_id: albumId,
+        stars,
+        review,
+        tags,
+        is_private: isPrivate,
+        // Only overwrite previous_stars when the score actually changed —
+        // editing just the review/tags shouldn't erase an earlier revision.
+        ...(keepPreviousOnNoChange ? {} : { previous_stars: previousStars }),
+      },
+      { onConflict: 'user_id,album_id' }
+    );
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

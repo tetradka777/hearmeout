@@ -22,3 +22,10 @@ services:
         sync: false
       - key: SPOTIFY_REDIRECT_URI
         sync: false
+      # Signs the session cookie (hearmeout/src/lib/identity.ts). 32+ random
+      # characters; without it nobody can sign in. Changing it signs everyone out.
+      - key: SESSION_SECRET
+        sync: false
+      # Optional: concerts on the artist page (Ticketmaster Discovery API).
+      - key: TICKETMASTER_API_KEY
+        sync: false

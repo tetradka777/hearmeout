@@ -18,13 +18,20 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   const friendIds = (friendRows || []).map((r) => r.friend_id as string);
   if (!friendIds.length) return NextResponse.json({ topFan: null });
 
-  let query = admin.from('listening_events').select('user_id, duration_ms').in('user_id', friendIds);
-  query = name ? query.or(`artist_id.eq.${id},artist.eq.${name}`) : query.eq('artist_id', id);
-  const { data: eventRows, error } = await query;
+  // Two plain .eq() queries merged by row id, instead of interpolating the
+  // URL's id and name into a PostgREST .or() filter string — a "," "(" or
+  // ")" in either value could rewrite that filter.
+  const base = () => admin.from('listening_events').select('id, user_id, duration_ms').in('user_id', friendIds);
+  const [byId, byName] = await Promise.all([
+    base().eq('artist_id', id),
+    name ? base().eq('artist', name) : Promise.resolve({ data: [], error: null }),
+  ]);
+  const error = byId.error || byName.error;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  const eventRows = [...new Map([...(byId.data || []), ...(byName.data || [])].map((r) => [r.id as number, r])).values()];
 
   const msByUser = new Map<string, number>();
-  for (const r of eventRows || []) {
+  for (const r of eventRows) {
     const k = r.user_id as string;
     msByUser.set(k, (msByUser.get(k) || 0) + (r.duration_ms || 0));
   }

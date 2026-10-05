@@ -11,9 +11,6 @@ export async function GET() {
   if (!userId) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
 
   const admin = supabaseAdmin();
-  const { data: prefs } = await admin.from('users').select('is_premium').eq('id', userId).maybeSingle();
-  if (!prefs?.is_premium) return NextResponse.json({ error: 'premium_required' }, { status: 403 });
-
   const now = new Date();
   const oneYearAgo = new Date(now);
   oneYearAgo.setFullYear(now.getFullYear() - 1);
