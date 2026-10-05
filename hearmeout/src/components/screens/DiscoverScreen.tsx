@@ -10,6 +10,7 @@ import { regionDisplayName } from '@/lib/i18n';
 import { AlbumCard } from '../ui/AlbumCard';
 import { LiveLibrarySearch } from '../LiveLibrarySearch';
 import { PopularNowSection } from '../PopularNowSection';
+import { ConcertsFeed } from '../ConcertsFeed';
 import { ObscureAlbums } from '../ObscureAlbums';
 import { GenreTopArtists } from '../GenreTopArtists';
 import { MascotIcon } from '../redesign/icons';
@@ -304,6 +305,8 @@ export function DiscoverScreen(_props: { device: Device }) {
               <PopularNowSection genre={genreFilter} />
             </>
           )}
+
+          {filter !== 'albums' && <ConcertsFeed />}
 
           {filter !== 'artists' && topRatedFiltered.length > 0 && (
             <>
