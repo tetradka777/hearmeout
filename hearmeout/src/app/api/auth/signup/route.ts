@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { setCurrentUserId } from '@/lib/identity';
+import { setCurrentUserId, hasSessionSecret } from '@/lib/identity';
 import { slugifyHandle } from '@/lib/slug';
 import { isStrongEnoughPassword } from '@/lib/authValidation';
 import { INTERNAL_EMAIL_DOMAIN } from '@/lib/authInternalEmail';
@@ -10,6 +10,10 @@ export async function POST(request: NextRequest) {
   const name = typeof body?.name === 'string' ? body.name.trim() : '';
   const password = typeof body?.password === 'string' ? body.password : '';
 
+  if (!hasSessionSecret()) {
+    console.error('signup: SESSION_SECRET is missing or shorter than 32 characters');
+    return NextResponse.json({ error: 'server_config' }, { status: 500 });
+  }
   if (!name) return NextResponse.json({ error: 'name_required' }, { status: 400 });
   if (!isStrongEnoughPassword(password)) return NextResponse.json({ error: 'weak_password' }, { status: 400 });
 
@@ -36,6 +40,7 @@ export async function POST(request: NextRequest) {
     email_confirm: true,
   });
   if (authErr || !authData.user) {
+    console.error('signup: auth.createUser failed', authErr);
     return NextResponse.json({ error: authErr?.message || 'signup_failed' }, { status: 500 });
   }
 
@@ -46,7 +51,8 @@ export async function POST(request: NextRequest) {
     .single();
   if (insertErr || !created) {
     await admin.auth.admin.deleteUser(authData.user.id);
-    return NextResponse.json({ error: insertErr?.message }, { status: 500 });
+    console.error('signup: users insert failed', insertErr);
+    return NextResponse.json({ error: insertErr?.message || 'signup_failed' }, { status: 500 });
   }
 
   await setCurrentUserId(created.id);

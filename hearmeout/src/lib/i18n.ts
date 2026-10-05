@@ -1061,6 +1061,7 @@ const ru = {
   'concerts.popular': 'Самые популярные артисты',
   'concerts.subRegion': 'Концерты по всему миру — сначала в регионе {region}.',
   'concerts.subWorld': 'Концерты по всему миру. Укажите регион в настройках, чтобы ближайшие шли первыми.',
+  'auth.serverConfig': 'Сервер не настроен: не задан SESSION_SECRET. Попробуйте позже.',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2118,6 +2119,7 @@ const en: Dict = {
   'concerts.popular': 'Most popular artists',
   'concerts.subRegion': 'Shows worldwide — {region} first.',
   'concerts.subWorld': 'Shows worldwide. Set your region in Settings to see the nearest first.',
+  'auth.serverConfig': 'The server is not configured (SESSION_SECRET is missing). Please try later.',
 };
 
 const fr: Dict = {
@@ -3172,6 +3174,7 @@ const fr: Dict = {
   'concerts.popular': 'Artistes les plus populaires',
   'concerts.subRegion': 'Concerts dans le monde entier — {region} d’abord.',
   'concerts.subWorld': 'Concerts dans le monde entier. Indique ta région dans les réglages pour voir les plus proches en premier.',
+  'auth.serverConfig': 'Le serveur n’est pas configuré (SESSION_SECRET manquant). Réessaie plus tard.',
 };
 
 const es: Dict = {
@@ -4226,6 +4229,7 @@ const es: Dict = {
   'concerts.popular': 'Artistas más populares',
   'concerts.subRegion': 'Conciertos en todo el mundo, primero en {region}.',
   'concerts.subWorld': 'Conciertos en todo el mundo. Indica tu región en Ajustes para ver primero los más cercanos.',
+  'auth.serverConfig': 'El servidor no está configurado (falta SESSION_SECRET). Inténtalo más tarde.',
 };
 
 const de: Dict = {
@@ -5280,6 +5284,7 @@ const de: Dict = {
   'concerts.popular': 'Beliebteste Künstler',
   'concerts.subRegion': 'Konzerte weltweit — {region} zuerst.',
   'concerts.subWorld': 'Konzerte weltweit. Leg deine Region in den Einstellungen fest, um die nächsten zuerst zu sehen.',
+  'auth.serverConfig': 'Der Server ist nicht konfiguriert (SESSION_SECRET fehlt). Versuch es später.',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };

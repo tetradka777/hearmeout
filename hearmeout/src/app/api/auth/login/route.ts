@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { setCurrentUserId } from '@/lib/identity';
+import { setCurrentUserId, hasSessionSecret } from '@/lib/identity';
 
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
   const rawHandle = typeof body?.handle === 'string' ? body.handle.trim() : '';
   const password = typeof body?.password === 'string' ? body.password : '';
+  if (!hasSessionSecret()) {
+    console.error('login: SESSION_SECRET is missing or shorter than 32 characters');
+    return NextResponse.json({ error: 'server_config' }, { status: 500 });
+  }
   if (!rawHandle || !password) return NextResponse.json({ error: 'invalid_payload' }, { status: 400 });
 
   const handle = `@${rawHandle.replace(/^@/, '').toLowerCase()}`;
