@@ -20,5 +20,7 @@ create index if not exists notifications_actor_idx on notifications (actor_id, k
 
 alter table notifications enable row level security;
 
+-- drop first so re-running this migration is safe
+drop policy if exists "notifications_no_direct_access" on notifications;
 create policy "notifications_no_direct_access" on notifications
   for all using (false);

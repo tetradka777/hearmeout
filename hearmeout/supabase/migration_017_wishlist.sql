@@ -26,5 +26,7 @@ create index if not exists wishlist_user_idx on wishlist (user_id, created_at de
 
 alter table wishlist enable row level security;
 
+-- drop first so re-running this migration is safe
+drop policy if exists "wishlist_no_direct_access" on wishlist;
 create policy "wishlist_no_direct_access" on wishlist
   for all using (false);

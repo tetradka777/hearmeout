@@ -17,5 +17,7 @@ create index if not exists artist_follows_user_idx on artist_follows (user_id, c
 
 alter table artist_follows enable row level security;
 
+-- drop first so re-running this migration is safe
+drop policy if exists "artist_follows_no_direct_access" on artist_follows;
 create policy "artist_follows_no_direct_access" on artist_follows
   for all using (false);

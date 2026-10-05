@@ -23,5 +23,7 @@ create index if not exists listen_later_user_idx on listen_later (user_id, creat
 
 alter table listen_later enable row level security;
 
+-- drop first so re-running this migration is safe
+drop policy if exists "listen_later_no_direct_access" on listen_later;
 create policy "listen_later_no_direct_access" on listen_later
   for all using (false);
