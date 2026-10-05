@@ -1,18 +1,20 @@
 name: Keep Render service awake
 
 # Render's free tier spins the service down after 15 minutes with no
-# incoming requests, so the first real visitor pays for a ~40s cold start.
-# A GitHub Actions cron on a schedule this tight can run a few minutes late
-# under load, so 10 minutes gives comfortable margin under that 15-minute
-# window rather than cutting it close.
+# incoming requests. GitHub runs scheduled workflows late under load (in
+# practice every 20–25 minutes for a */10 schedule), so this asks for every
+# 5 minutes and is only a backup — the main pinger is an external service
+# (cron-job.org or UptimeRobot) hitting /api/health every 5–10 minutes.
 on:
   schedule:
-    - cron: '*/10 * * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch: {}
 
 jobs:
   ping:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Ping the live site
-        run: curl -fsS --max-time 60 -o /dev/null -w "HTTP %{http_code} in %{time_total}s\n" https://hearmeoutt.art/
+        # A cold start can take ~60s; retry a couple of times before failing.
+        run: curl -fsS --retry 3 --retry-delay 10 --retry-all-errors --max-time 90 -o /dev/null -w "HTTP %{http_code} in %{time_total}s\n" https://hearmeoutt.art/api/health
