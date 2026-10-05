@@ -6,11 +6,16 @@
 -- server (service role), so direct access is removed.
 -- Run in Supabase SQL Editor after migration_021_notifications.sql.
 
-drop policy if exists "users are publicly readable" on users;
-drop policy if exists "ratings are publicly readable" on ratings;
-drop policy if exists "friendships are publicly readable" on friendships;
-drop policy if exists "groups are publicly readable" on groups;
-drop policy if exists "group_members are publicly readable" on group_members;
-drop policy if exists "group_votes are publicly readable" on group_votes;
-drop policy if exists "loved_tracks are publicly readable" on loved_tracks;
-drop policy if exists "loved_items are publicly readable" on loved_items;
+-- A DO block, because "drop policy if exists ... on t" still fails when the
+-- table t itself doesn't exist (e.g. loved_tracks, replaced by loved_items).
+do $$
+declare
+  t text;
+begin
+  foreach t in array array['users', 'ratings', 'friendships', 'groups', 'group_members', 'group_votes', 'loved_tracks', 'loved_items'] loop
+    if to_regclass('public.' || t) is not null then
+      execute format('drop policy if exists %I on public.%I', t || ' are publicly readable', t);
+    end if;
+  end loop;
+end
+$$;
