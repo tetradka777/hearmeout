@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { fetchArtistGenres, fetchRecentlyPlayed, refreshAccessToken } from './spotify';
+import { detectRegionFromSpotify } from './regionDetect';
 
 export async function syncSpotifyForUser(admin: SupabaseClient, userId: string): Promise<{ imported: number }> {
   const { data: conn, error: connErr } = await admin
@@ -28,6 +29,8 @@ export async function syncSpotifyForUser(admin: SupabaseClient, userId: string):
       .eq('provider', 'spotify');
   }
 
+  // Keep the account country current for "Detect from my streaming account".
+  await detectRegionFromSpotify(admin, userId, accessToken);
   const items = await fetchRecentlyPlayed(accessToken);
   if (!items.length) return { imported: 0 };
 

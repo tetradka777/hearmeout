@@ -120,7 +120,7 @@ function weekdayName(day: number, language: Language): string {
 }
 
 function LanguageRegionSection() {
-  const { t, me, language, updateLanguage, updateRegion, updateAppearance } = useApp();
+  const { t, me, language, updateLanguage, updateRegion, updateRegionAuto, updateAppearance } = useApp();
   const regionCodes = useMemo(() => getRegionCodes(), []);
   if (!me) return null;
 
@@ -138,7 +138,20 @@ function LanguageRegionSection() {
       </div>
       <div className="sec">
         <h3>{t('profile.region')}</h3>
-        <select className="field" style={{ marginTop: 10, width: '100%' }} value={me.region ?? ''} onChange={(e) => updateRegion(e.target.value || null)}>
+        {/* Spec 7.1: "Detect from my streaming account" (on by default). While
+            it's on and a country is known, the field is locked to it. */}
+        <div className="setrow" style={{ marginTop: 6 }}>
+          <div>
+            <b>{t('settings.regionAuto')}</b>
+            <div><small className="muted">
+              {!me.regionAuto ? t('settings.regionAutoHint')
+                : me.detectedRegion ? t('settings.regionAutoDetected', { country: regionDisplayName(me.detectedRegion, language) })
+                : me.connections.spotify ? t('settings.regionAutoReconnect') : t('settings.regionAutoConnect')}
+            </small></div>
+          </div>
+          <button className="sw" role="switch" aria-checked={me.regionAuto} onClick={() => updateRegionAuto(!me.regionAuto)}><i /></button>
+        </div>
+        <select className="field" style={{ marginTop: 10, width: '100%' }} disabled={me.regionAuto && !!me.detectedRegion} value={me.region ?? ''} onChange={(e) => updateRegion(e.target.value || null)}>
           <option value="">{t('profile.regionNone')}</option>
           {regionCodes.map((code) => <option key={code} value={code}>{regionDisplayName(code, language)}</option>)}
         </select>

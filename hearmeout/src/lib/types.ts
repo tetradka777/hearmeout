@@ -98,6 +98,10 @@ export type Me = PublicProfile & {
   friends: ApiUser[];
   language: import('./i18n').Language;
   region: string | null;
+  // "Detect from my streaming account" (migration 023): on by default;
+  // detectedRegion is the connected Spotify account country, if known.
+  regionAuto: boolean;
+  detectedRegion: string | null;
   hasPassword: boolean;
   bannerUrl: string | null;
   isOpenProfile: boolean;

@@ -7,18 +7,20 @@ import { slugifyHandle } from '@/lib/slug';
 import type { ApiUser, Me } from '@/lib/types';
 import { isInternalEmail } from '@/lib/authInternalEmail';
 import { isDesign, isMode, isPaletteId } from '@/lib/palettes';
+import { fetchRegionAuto } from '@/lib/regionDetect';
 
 export async function GET() {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
 
   const admin = supabaseAdmin();
-  const [profile, { data: prefs }, { data: conns }, { data: friendRows }, isOpenProfile] = await Promise.all([
+  const [profile, { data: prefs }, { data: conns }, { data: friendRows }, isOpenProfile, regionAuto] = await Promise.all([
     getUserProfile(admin, userId, userId),
     admin.from('users').select('language, region, auth_user_id, banner_url, design, mode, palette, ticker_enabled, motion_enabled, time_format, week_start, ratings_visible, share_live, public_reviews, discoverable').eq('id', userId).maybeSingle(),
     admin.from('connections').select('provider').eq('user_id', userId),
     admin.from('friendships').select('friend:friend_id(id, name, handle, avatar_url)').eq('user_id', userId),
     fetchIsOpenProfile(admin, userId),
+    fetchRegionAuto(admin, userId),
   ]);
 
   if (!profile) return NextResponse.json({ error: 'not_found' }, { status: 404 });
@@ -44,6 +46,8 @@ export async function GET() {
     friends,
     language: (prefs?.language as Me['language']) || 'en',
     region: prefs?.region ?? null,
+    regionAuto: regionAuto.regionAuto,
+    detectedRegion: regionAuto.detectedRegion,
     hasPassword: !!prefs?.auth_user_id,
     email,
     bannerUrl: (prefs?.banner_url as string | null) ?? null,
@@ -90,6 +94,15 @@ export async function PATCH(request: NextRequest) {
   if (typeof body?.shareLive === 'boolean') patch.share_live = body.shareLive;
   if (typeof body?.publicReviews === 'boolean') patch.public_reviews = body.publicReviews;
   if (typeof body?.discoverable === 'boolean') patch.discoverable = body.discoverable;
+  // "Detect from my streaming account" (migration 023) — its own update so
+  // a missing column (migration not applied yet) can't fail the rest.
+  if (typeof body?.regionAuto === 'boolean') {
+    const { detectedRegion } = await fetchRegionAuto(admin, userId);
+    const autoPatch: Record<string, string | boolean> = { region_auto: body.regionAuto };
+    if (body.regionAuto && detectedRegion) autoPatch.region = detectedRegion;
+    const { error: autoErr } = await admin.from('users').update(autoPatch).eq('id', userId);
+    if (autoErr) return NextResponse.json({ error: autoErr.message }, { status: 500 });
+  }
   if (!Object.keys(patch).length) return NextResponse.json({ ok: true });
 
   const { error } = await admin.from('users').update(patch).eq('id', userId);

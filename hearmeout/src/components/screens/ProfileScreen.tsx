@@ -171,7 +171,7 @@ export function ProfileScreen(_props: { device: Device }) {
           <h3>{t('profile.quickSettings')}</h3>
           <div className="row" style={{ marginTop: 10 }}>
             <div className="g">{t('profile.region')}</div>
-            <select className="field" style={{ width: 'auto', flex: 1, minWidth: 0 }} value={me.region ?? ''} onChange={(e) => updateRegion(e.target.value || null)}>
+            <select className="field" style={{ width: 'auto', flex: 1, minWidth: 0 }} disabled={me.regionAuto && !!me.detectedRegion} value={me.region ?? ''} onChange={(e) => updateRegion(e.target.value || null)}>
               <option value="">{t('profile.regionNone')}</option>
               {regionCodes.map((code) => <option key={code} value={code}>{regionDisplayName(code, language)}</option>)}
             </select>
