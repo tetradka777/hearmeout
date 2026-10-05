@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
 import { computeMatch } from '@/lib/matchScore';
 import { computeMonthAwards } from '@/lib/monthAwards';
+import { DEFAULT_PRIVACY, fetchPrivacy } from '@/lib/privacy';
 import type { ApiUser, GroupAward, GroupDetail, GroupLeaderboardPeriod, GroupMemberStats, GroupPastAwards, GroupRecord, GroupTastePair, GroupTopAlbum, GroupVoteCandidate } from '@/lib/types';
 
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -51,18 +52,27 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     // candidates all need a real per-member/per-album picture of this
     // month specifically, which the 60-row activity feed can't guarantee
     // for an active group.
-    admin.from('ratings').select('user_id, album_id, stars, created_at').in('user_id', memberIds).gte('created_at', monthStart).limit(6000),
+    admin.from('ratings').select('user_id, album_id, stars, created_at, is_private').in('user_id', memberIds).gte('created_at', monthStart).limit(6000),
     // Past-months awards: listening_events/ratings for the lookback window,
     // bucketed by calendar month in JS below.
     admin.from('listening_events').select('user_id, played_at, duration_ms, genre').in('user_id', memberIds).gte('played_at', pastWindowStart).lt('played_at', monthStart).limit(9000),
-    admin.from('ratings').select('user_id, stars, created_at').in('user_id', memberIds).gte('created_at', pastWindowStart).lt('created_at', monthStart).limit(9000),
+    admin.from('ratings').select('user_id, stars, created_at, is_private').in('user_id', memberIds).gte('created_at', pastWindowStart).lt('created_at', monthStart).limit(9000),
   ]);
+
+  // Per-person score figures (activity, member average, harshest critic,
+  // hot take, past awards) never use "Keep private" ratings, nor ratings of
+  // members who turned off "Ratings visible to friends" (except your own).
+  // Album averages for the whole group stay anonymous aggregates.
+  const privacy = await fetchPrivacy(admin, memberIds);
+  const hiddenScores = new Set(memberIds.filter((id) => id !== userId && !(privacy.get(id) ?? DEFAULT_PRIVACY).ratingsVisible));
+  const personal = <T extends { user_id: unknown; is_private?: unknown }>(rows: T[] | null) =>
+    (rows || []).filter((r) => !r.is_private && !hiddenScores.has(r.user_id as string));
 
   // Activity feed: recent ratings by any member, album title/artist resolved
   // client-side (same convention as everywhere else — ratings.album_id has
   // no FK to the catalog, so the client already knows how to look it up).
   // "Keep private" ratings never show up in a group's shared activity feed.
-  const activity = (ratingsRows || []).filter((r) => !r.is_private).slice(0, 20).map((r) => ({
+  const activity = personal(ratingsRows).slice(0, 20).map((r) => ({
     type: (r.review ? 'review' : 'rating') as 'review' | 'rating',
     user: userById.get(r.user_id as string) || { id: r.user_id as string, name: '?', handle: '', avatarUrl: null },
     albumId: r.album_id as string,
@@ -120,7 +130,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     if (u) awards.push({ label: 'awardNightOwl', winner: u, detail: `${nightOwl.pct}%` });
   }
   const ratingsByUser = new Map<string, number[]>();
-  for (const r of ratingsRows || []) {
+  for (const r of personal(ratingsRows)) {
     const k = r.user_id as string;
     const arr = ratingsByUser.get(k) || [];
     arr.push(Number(r.stars));
@@ -189,9 +199,10 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   }
 
   // ----- This-month-scoped figures for Members cards and Member records -----
-  const monthRatings = monthRatingsRows || [];
+  const monthRatings = (monthRatingsRows || []).filter((r) => !r.is_private);
+  const personalMonthRatings = personal(monthRatingsRows);
   const ratingsThisMonthByUser = new Map<string, { album_id: string; stars: number; created_at: string }[]>();
-  for (const r of monthRatings) {
+  for (const r of personalMonthRatings) {
     const k = r.user_id as string;
     const arr = ratingsThisMonthByUser.get(k) || [];
     arr.push({ album_id: r.album_id as string, stars: Number(r.stars), created_at: r.created_at as string });
@@ -261,7 +272,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   }
   if (latest) records.push({ label: 'recordLatestListener', holder: userById.get(latest.id) || null, value: new Date(latest.at).toLocaleDateString() });
   let hotTake: { id: string; gap: number } | null = null;
-  for (const r of monthRatings) {
+  for (const r of personalMonthRatings) {
     const albumStat = albumStatsThisMonth.get(r.album_id as string);
     if (!albumStat || albumStat.count < 2) continue;
     const gap = Math.abs(Number(r.stars) - albumStat.sum / albumStat.count);
@@ -322,7 +333,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     pastEventsByMonth.set(key, arr);
   }
   const pastRatingsByMonth = new Map<string, { user_id: string; stars: number }[]>();
-  for (const r of pastRatingsRows || []) {
+  for (const r of personal(pastRatingsRows)) {
     const key = (r.created_at as string).slice(0, 7);
     const arr = pastRatingsByMonth.get(key) || [];
     arr.push({ user_id: r.user_id as string, stars: Number(r.stars) });
