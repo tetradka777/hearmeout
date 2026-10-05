@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     const since = new Date(Date.now() - HI_COOLDOWN_MS).toISOString();
     const { data: recent } = await admin.from('notifications').select('id').eq('actor_id', userId).eq('user_id', to).eq('kind', 'hi').gte('created_at', since).limit(1);
     if (recent?.length) return NextResponse.json({ error: 'too_soon' }, { status: 429 });
-    const { error } = await admin.from('notifications').insert({ user_id: to, actor_id: userId, kind: 'hi' });
+    const { error } = await admin.from('notifications').insert({ user_id: to, actor_id: userId, kind: 'hi', payload: {} });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ sent: 1 });
   }
