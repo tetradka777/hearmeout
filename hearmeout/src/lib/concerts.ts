@@ -1,3 +1,5 @@
+import { withSpotifyCache } from './spotifyCache';
+
 // Artist concerts for the artist page's Concerts tab (spec 6.7), from the
 // Ticketmaster Discovery API. Needs TICKETMASTER_API_KEY (free key from
 // developer.ticketmaster.com); without it the tab keeps its "find tickets"
@@ -30,16 +32,15 @@ type TmEvent = {
   _embedded?: { venues?: { name?: string; city?: { name?: string }; country?: { countryCode?: string } }[] };
 };
 
-// Upcoming events for the artist, in `countryCode` when it's a valid ISO
-// code (the account's region), otherwise worldwide. Sorted by date.
-export async function fetchArtistConcerts(artistName: string, countryCode: string | null): Promise<Concert[]> {
+// Upcoming events for the artist worldwide, sorted by date. The viewer's
+// region only changes the order (regionFirst), never what's included.
+export async function fetchArtistConcerts(artistName: string): Promise<Concert[]> {
   const attractions = await tm('/attractions.json', { keyword: artistName, classificationName: 'music', size: '10' });
   const list = ((attractions._embedded as { attractions?: TmAttraction[] } | undefined)?.attractions) || [];
   const match = list.find((a) => a.name.toLowerCase() === artistName.toLowerCase());
   if (!match) return [];
 
-  const params: Record<string, string> = { attractionId: match.id, sort: 'date,asc', size: '20' };
-  if (countryCode && /^[A-Z]{2}$/.test(countryCode)) params.countryCode = countryCode;
+  const params: Record<string, string> = { attractionId: match.id, sort: 'date,asc', size: '50' };
   const events = await tm('/events.json', params);
   const items = ((events._embedded as { events?: TmEvent[] } | undefined)?.events) || [];
   return items
@@ -57,4 +58,19 @@ export async function fetchArtistConcerts(artistName: string, countryCode: strin
         url: e.url ?? null,
       };
     });
+}
+
+// Concerts in the viewer's country first, then everything else; each part
+// stays in date order.
+export function regionFirst(list: Concert[], countryCode: string | null): Concert[] {
+  const cc = countryCode && /^[A-Z]{2}$/.test(countryCode) ? countryCode : null;
+  if (!cc) return list;
+  return [...list.filter((c) => c.country === cc), ...list.filter((c) => c.country !== cc)];
+}
+
+// One artist's worldwide concerts through the shared API cache (6h), so the
+// artist tab and the Discover concerts list cost Ticketmaster one lookup
+// per artist per six hours, whoever asks.
+export function cachedArtistConcerts(artistName: string): Promise<Concert[]> {
+  return withSpotifyCache(`concerts:v2:${artistName.toLowerCase()}`, 6 * 3600, () => fetchArtistConcerts(artistName));
 }

@@ -292,7 +292,8 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
         </div>
       );
     } else {
-      // Concerts (Ticketmaster, lib/concerts.ts) in the account's region.
+      // Concerts (Ticketmaster, lib/concerts.ts) worldwide, the account's
+      // region first.
       // Without a TICKETMASTER_API_KEY on the server, or on an error, the tab
       // falls back to a ticket search for the artist — never invented dates.
       const region = me?.region ? regionDisplayName(me.region, language) : null;
@@ -314,7 +315,7 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
                 <span className="num" style={{ fontSize: 22, width: 72 }}>{d.toLocaleDateString(toLocale(language), { day: 'numeric', month: 'short', timeZone: 'UTC' })}</span>
                 <span className="g">
                   <b>{c.name}</b>
-                  <small className="muted" style={{ fontWeight: 600 }}>{[c.venue, c.city].filter(Boolean).join(' · ')}{c.time ? ` · ${c.time.slice(0, 5)}` : ''}</small>
+                  <small className="muted" style={{ fontWeight: 600 }}>{[c.venue, c.city, c.country && c.country !== me?.region ? regionDisplayName(c.country, language) : null].filter(Boolean).join(' · ')}{c.time ? ` · ${c.time.slice(0, 5)}` : ''}</small>
                 </span>
                 {c.url && <a className="btn ghost" href={c.url} target="_blank" rel="noreferrer">{t('artist.tickets')}</a>}
               </div>
@@ -323,7 +324,7 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
             <div className="row">
               <span className="g">
                 <b>{art.name}</b>
-                <small className="muted" style={{ fontWeight: 600 }}>{list ? (region ? t('artist.concertsNone', { region }) : t('artist.concertsNoneAnywhere')) : t('artist.concertsEmpty')}</small>
+                <small className="muted" style={{ fontWeight: 600 }}>{list ? t('artist.concertsNoneAnywhere') : t('artist.concertsEmpty')}</small>
               </span>
               {searchLink}
             </div>
