@@ -50,6 +50,17 @@ try {
 } catch (e) {}
 `;
 
+// Dev only: Spotify accepts loopback redirect URIs only as 127.0.0.1 (not
+// "localhost"), and cookies don't cross between the two hosts — signing in
+// on localhost and coming back from Spotify on 127.0.0.1 lost both the
+// session and the OAuth state, so connecting failed silently. Keep the
+// whole dev session on 127.0.0.1.
+const DEV_HOST_SCRIPT = `
+if (location.hostname === 'localhost') {
+  location.replace(location.href.replace('//localhost', '//127.0.0.1'));
+}
+`;
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
@@ -60,6 +71,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <head>
+        {process.env.NODE_ENV === "development" && <script dangerouslySetInnerHTML={{ __html: DEV_HOST_SCRIPT }} />}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body>{children}</body>
