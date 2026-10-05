@@ -7,7 +7,7 @@ import { CoverArt } from '../ui/CoverArt';
 import { BookmarkIcon, HeartIcon } from '../ui/Icons';
 import { usePlayer } from '@/lib/PlayerContext';
 import type { AlbumDetail } from '@/lib/spotifyCatalog';
-import { toLocale, pluralForKey, type Language } from '@/lib/i18n';
+import { toLocale, type Language } from '@/lib/i18n';
 import type { WeekStart } from '@/lib/palettes';
 import { formatHour } from '@/lib/format';
 import { recapLine } from '@/lib/recapLine';
@@ -37,7 +37,7 @@ function parseDay(iso: string): Date {
   return new Date(Date.UTC(y, m - 1, d));
 }
 
-function ListeningCalendar({ data, t, language, weekStart }: { data: StatsData; t: ReturnType<typeof useApp>['t']; language: Language; weekStart: WeekStart }) {
+function ListeningCalendar({ data, t, weekStart }: { data: StatsData; t: ReturnType<typeof useApp>['t']; language: Language; weekStart: WeekStart }) {
   const { periodType, calendar } = data;
   const scrollRef = useRef<HTMLDivElement>(null);
   const calRef = useRef<HTMLDivElement>(null);
@@ -73,7 +73,7 @@ function ListeningCalendar({ data, t, language, weekStart }: { data: StatsData; 
     fit();
     window.addEventListener('resize', fit);
     return () => window.removeEventListener('resize', fit);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [data]);
 
   const dayLabel = (d: Date) => `${DN[d.getUTCDay()]} ${d.getUTCDate()} ${MN[d.getUTCMonth()]}`;

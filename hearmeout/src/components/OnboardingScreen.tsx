@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import { CoverArt } from './ui/CoverArt';
 import { StarSlider } from './redesign/Stars';
@@ -46,7 +46,17 @@ function FindPeopleStep() {
 
 function CalibrateStep() {
   const { t, albums, spotifyCovers, myRatings, publishRating } = useApp();
-  const picks = useMemo(() => [...albums].sort(() => 0.5 - Math.random()).slice(0, 3), [albums]);
+  // Three random catalog albums, picked once per mount (lazy state, so the
+  // pick doesn't change on re-render). Fisher–Yates rather than
+  // sort(() => 0.5 - Math.random()), which is biased.
+  const [picks] = useState(() => {
+    const pool = [...albums];
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    return pool.slice(0, 3);
+  });
   const [values, setValues] = useState<Record<string, number>>({});
   // Publish once ~400ms after the last pointer move, not on every tick of
   // the drag (redesign fix B7) — StarSlider's onChange fires continuously

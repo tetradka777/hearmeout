@@ -18,7 +18,7 @@ const AWARD_LABEL_KEY: Record<string, string> = {
 
 // Group page (spec 6.6): a real full-screen route reached via viewGroup,
 // with its own back crumb — not a locally-selected panel any more.
-export function GroupScreen({ device }: { device: Device }) {
+export function GroupScreen({ device: _device }: { device: Device }) {
   const { t, language, me, state, goBack, showScreen, albums, liveAlbums, openAlbum, showToast, viewFriend } = useApp();
   const [detail, setDetail] = useState<GroupDetail | null>(null);
   const [inviteHandle, setInviteHandle] = useState('');
@@ -32,7 +32,7 @@ export function GroupScreen({ device }: { device: Device }) {
     if (!groupId) return;
     fetch(`/api/groups/${groupId}?period=${p}`).then((r) => (r.ok ? r.json() : null)).then(setDetail);
   };
-  useEffect(() => { setDetail(null); setLeavingConfirm(false); setInviteErr(''); setInviteHandle(''); load('month'); setPeriod('month'); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [groupId]);
+  useEffect(() => { setDetail(null); setLeavingConfirm(false); setInviteErr(''); setInviteHandle(''); load('month'); setPeriod('month');   }, [groupId]);
 
   const changePeriod = (p: GroupLeaderboardPeriod) => { setPeriod(p); load(p); };
 

@@ -5,7 +5,6 @@ import { useApp } from '@/lib/AppContext';
 import type { Device, DiscoverMatchPerson } from '@/lib/types';
 import { userAvatarStyle, starsText, formatRelative } from '@/lib/format';
 import { regionDisplayName } from '@/lib/i18n';
-import { CoverArt } from '../ui/CoverArt';
 import { AlbumCard } from '../ui/AlbumCard';
 import { LiveLibrarySearch } from '../LiveLibrarySearch';
 import { PopularNowSection } from '../PopularNowSection';

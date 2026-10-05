@@ -15,7 +15,7 @@ type Section = 'appearance' | 'language' | 'account' | 'connections' | 'privacy'
 // Design + Mode + 13-palette picker (none of it premium-gated — premium
 // is being removed from the product). Privacy is a new section.
 
-function DesignSection({ device }: { device: Device }) {
+function DesignSection({ device: _device }: { device: Device }) {
   const { t, me, updateAppearance } = useApp();
   if (!me) return null;
   const design = me.design;

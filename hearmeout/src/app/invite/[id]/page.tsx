@@ -1,5 +1,9 @@
 'use client';
 
+/* eslint-disable @next/next/no-html-link-for-pages, @next/next/no-location-assign-relative-destination --
+   This page lives outside AppProvider; links into the app ("/", "/?auth=…")
+   must be full page loads so the app shell boots fresh (RegisterModal reads
+   ?auth= at module load, before the first history entry rewrites "/"). */
 import { use, useEffect, useState } from 'react';
 import { userAvatarStyle } from '@/lib/format';
 import { pickLanguage, translate, type Language, type TranslationKey } from '@/lib/i18n';

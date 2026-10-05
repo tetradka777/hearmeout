@@ -121,7 +121,7 @@ export function HistoryScreen(_props: { device: Device }) {
     else if (filter === 'reviewed') list = list.filter((r) => !!r.review);
     else if (filter === 'private') list = list.filter((r) => r.isPrivate);
     return [...list].sort((a, b) => (sort === 'newest' ? 1 : -1) * (new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-  }, [myRatings, albums, state.historyQuery, filter, sort]);
+  }, [myRatings, albums, liveAlbums, state.historyQuery, filter, sort]);
 
   const groups = useMemo(() => {
     const map = new Map<string, RatingRecord[]>();

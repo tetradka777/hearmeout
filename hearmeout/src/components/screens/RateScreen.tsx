@@ -66,7 +66,7 @@ function FriendsWhoRated({ albumId }: { albumId: string }) {
 // ratings, tracklist, community stats and reviews alongside the rating
 // widget itself — there's no click-through from "browse" to "rate". This
 // screen matches that: it's always live, not a form you submit and leave.
-export function RateScreen({ device }: { device: Device }) {
+export function RateScreen({ device: _device }: { device: Device }) {
   const {
     state, t, language, albums, liveAlbums, failedAlbumIds, albumRatings, myRatings, spotifyCovers,
     reviewsVersion, openSpotifyArtist, ensureLiveAlbum, lovedItems, toggleLoved, laterItems, toggleLaterAlbum, toggleLaterTrack, me,

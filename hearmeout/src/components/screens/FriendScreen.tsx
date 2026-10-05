@@ -94,7 +94,7 @@ function MatchLine({ points }: { points: number[] }) {
   );
 }
 
-export function FriendScreen({ device }: { device: Device }) {
+export function FriendScreen({ device: _device }: { device: Device }) {
   const { t, language, state, me, myRatings, friendRequests, addFriend, respondToFriendRequest, removeFriend, sendHi, goBack, showScreen, albums, liveAlbums, spotifyCovers, openAlbum } = useApp();
   const [confirmRemove, setConfirmRemove] = useState(false);
   const snapshotSent = useRef<string | null>(null);

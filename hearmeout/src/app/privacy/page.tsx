@@ -1,3 +1,7 @@
+/* eslint-disable @next/next/no-html-link-for-pages --
+   This page lives outside AppProvider; links into the app ("/", "/?auth=…")
+   must be full page loads so the app shell boots fresh (RegisterModal reads
+   ?auth= at module load, before the first history entry rewrites "/"). */
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { pickLanguage, translate, type TranslationKey } from '@/lib/i18n';
