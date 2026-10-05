@@ -22,7 +22,7 @@ function useAlbumTitle(albumId: string) {
   return (liveAlbums[albumId] || albums.find((a) => a.id === albumId))?.title ?? null;
 }
 
-function LaterRow({ item, onPlay }: { item: LaterItem; onPlay: (item: LaterItem) => void }) {
+export function LaterRow({ item, onPlay }: { item: LaterItem; onPlay: (item: LaterItem) => void }) {
   const { t, language, openAlbum, removeLaterItem, showToast } = useApp();
   const albumTitle = useAlbumTitle(item.albumId);
   const subtitle = item.type === 'track' && albumTitle ? `${item.artist} · ${albumTitle}` : item.artist;
@@ -73,9 +73,26 @@ function LaterRow({ item, onPlay }: { item: LaterItem; onPlay: (item: LaterItem)
 type Filter = 'all' | 'album' | 'track';
 type Sort = 'new' | 'old';
 
-export function LaterScreen(_props: { device: Device }) {
-  const { t, language, laterItems, removeAllLater, showToast, albums, liveAlbums, ensureLiveAlbum } = useApp();
+// Play button: a track plays alone, an album plays its tracklist.
+export function useLaterPlay() {
+  const { albums, liveAlbums, ensureLiveAlbum } = useApp();
   const { playQueue } = usePlayer();
+  const play = (item: LaterItem) => {
+    if (item.type === 'track') {
+      const track: QueueTrack = { title: item.title, artist: item.artist ?? '', cover: item.cover, albumId: item.albumId };
+      playQueue([track], 0);
+      return;
+    }
+    const album = liveAlbums[item.albumId] || albums.find((a) => a.id === item.albumId);
+    if (!album) { ensureLiveAlbum(item.albumId); return; }
+    const tracks: QueueTrack[] = album.tracklist.map((tr) => ({ title: tr, artist: album.artist, cover: item.cover ?? album.cover, albumId: album.id, spotifyId: album.spotifyId }));
+    if (tracks.length) playQueue(tracks, 0);
+  };
+  return play;
+}
+
+export function LaterScreen(_props: { device: Device }) {
+  const { t, language, laterItems, removeAllLater, showToast, showScreen } = useApp();
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
@@ -95,17 +112,7 @@ export function LaterScreen(_props: { device: Device }) {
     .filter((i) => !debouncedQuery || `${i.title} ${i.artist ?? ''}`.toLowerCase().includes(debouncedQuery))
     .sort((a, b) => (sort === 'old' ? 1 : -1) * (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()));
 
-  const play = (item: LaterItem) => {
-    if (item.type === 'track') {
-      const track: QueueTrack = { title: item.title, artist: item.artist ?? '', cover: item.cover, albumId: item.albumId };
-      playQueue([track], 0);
-      return;
-    }
-    const album = liveAlbums[item.albumId] || albums.find((a) => a.id === item.albumId);
-    if (!album) { ensureLiveAlbum(item.albumId); return; }
-    const tracks: QueueTrack[] = album.tracklist.map((tr) => ({ title: tr, artist: album.artist, cover: item.cover ?? album.cover, albumId: album.id, spotifyId: album.spotifyId }));
-    if (tracks.length) playQueue(tracks, 0);
-  };
+  const play = useLaterPlay();
 
   const summary = laterItems.length
     ? t('later.summaryTemplate', {
@@ -122,13 +129,12 @@ export function LaterScreen(_props: { device: Device }) {
       <h1 className="big">{t('nav.later')}</h1>
       <p style={{ fontWeight: 800, margin: '-6px 0 18px' }}>{summary}</p>
 
-      {laterItems.length > 0 && (
-        <>
+      <>
           <input
             className="field"
             type="search"
             placeholder={t('later.searchPlaceholder')}
-            aria-label={t('later.searchPlaceholder')}
+            aria-label={t('later.searchAria')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             style={{ maxWidth: 420, marginBottom: 12 }}
@@ -138,19 +144,19 @@ export function LaterScreen(_props: { device: Device }) {
             <button className={`chip${filter === 'album' ? ' on' : ''}`} onClick={() => setFilter('album')}>{t('later.chipAlbums', { n: nAlbums })}</button>
             <button className={`chip${filter === 'track' ? ' on' : ''}`} onClick={() => setFilter('track')}>{t('later.chipTracks', { n: nTracks })}</button>
           </div>
-          <div className="chips" role="group" aria-label={t('later.sortGroupLabel')} style={{ marginTop: 8 }}>
+          <div className="chips" role="group" aria-label={t('later.sortGroupLabel')}>
             <button className={`chip${sort === 'new' ? ' on' : ''}`} onClick={() => setSort('new')}>{t('later.sortNewest')}</button>
             <button className={`chip${sort === 'old' ? ' on' : ''}`} onClick={() => setSort('old')}>{t('later.sortOldest')}</button>
           </div>
-        </>
-      )}
+      </>
 
-      <div style={{ marginTop: 14 }}>
+      <div>
         {!laterItems.length ? (
           <div className="tile t-soft2 empty">
             <MascotIcon />
             <h3>{t('later.emptyTitle')}</h3>
             <p className="muted" style={{ fontWeight: 600 }}>{t('later.emptyBody')}</p>
+            <button className="btn" onClick={() => showScreen('discover')}>{t('later.findMusic')}</button>
           </div>
         ) : !filtered.length ? (
           <div className="tile t-soft2 empty">

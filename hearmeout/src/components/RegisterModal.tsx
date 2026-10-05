@@ -70,7 +70,10 @@ export function RegisterModal() {
   const [name, setName] = useState('');
   const [handle, setHandle] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  // Errors sit under their own field (prototype authHtml(): #e1 / #e2).
+  const [error1, setError1] = useState('');
+  const [error2, setError2] = useState('');
+  const clearErrors = () => { setError1(''); setError2(''); };
   const [submitting, setSubmitting] = useState(false);
   const [pendingInviteName, setPendingInviteName] = useState<string | null>(null);
 
@@ -89,14 +92,25 @@ export function RegisterModal() {
     return t(ERROR_KEY[code] || fallback);
   }
 
+  // Same checks and messages as the prototype's doAuth(): name 2–24,
+  // password 8+, handle 3–20 of a-z 0-9 _. A wrong handle or password is
+  // reported under the password field without saying which one was wrong.
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (mode === 'register' && !name.trim()) { setError(t('register.nameRequired')); return; }
-    if (mode === 'login' && !handle.trim()) { setError(t('login.handleRequired')); return; }
-    if (!password) { setError(t('register.passwordRequired')); return; }
+    clearErrors();
+    let ok = true;
+    if (mode === 'register') {
+      const n = name.trim();
+      if (n.length < 2 || n.length > 24) { setError1(t('register.nameLength')); ok = false; }
+      if (password.length < 8) { setError2(t('register.weakPassword')); ok = false; }
+    } else {
+      const h = handle.trim().replace(/^@/, '').toLowerCase();
+      if (!/^[a-z0-9_]{3,20}$/.test(h)) { setError1(t('login.handleFormat')); ok = false; }
+      if (!password) { setError2(t('register.passwordRequired')); ok = false; }
+    }
+    if (!ok) return;
 
     setSubmitting(true);
-    setError(null);
     try {
       if (mode === 'register') {
         await registerWithPassword(name.trim(), password);
@@ -104,38 +118,41 @@ export function RegisterModal() {
         await loginWithPassword(handle.trim(), password);
       }
     } catch (err) {
-      setError(mapError(err, mode === 'register' ? 'register.failed' : 'login.failed'));
+      const code = err instanceof Error ? err.message : '';
+      const message = mapError(err, mode === 'register' ? 'register.failed' : 'login.failed');
+      if (code === 'name_required') setError1(message);
+      else setError2(message);
       setSubmitting(false);
     }
   }
 
   return (
     <div className="rd">
-      <LandingBackground onAuth={(m) => { setAuthOpen(m); setError(null); }} />
+      <LandingBackground onAuth={(m) => { setAuthOpen(m); clearErrors(); }} />
       {authOpen && (
         <div className="modalbg">
-          <form onSubmit={handleSubmit} className="tile modal" role="dialog" aria-modal="true" style={{ maxWidth: 360, width: '100%', padding: 28 }}>
-            <h2 style={{ marginBottom: 6 }}>{mode === 'register' ? t('register.titleSignup') : t('login.title')}</h2>
+          <form onSubmit={handleSubmit} className="modal tile" role="dialog" aria-modal="true" aria-labelledby="mt" noValidate>
+            <h2 id="mt" style={{ marginBottom: 6 }}>{mode === 'register' ? t('register.titleSignup') : t('login.title')}</h2>
             <p className="muted" style={{ fontWeight: 600, marginBottom: 14 }}>{mode === 'register' ? t('register.subtitleSignup') : t('login.subtitle')}</p>
-            {pendingInviteName && <p className="tag" style={{ marginBottom: 14, display: 'inline-block' }}>{t('register.pendingInviteNote', { name: pendingInviteName })}</p>}
-
             {mode === 'register' ? (
               <>
                 <label htmlFor="au1">{t('register.nameLabel')}</label>
-                <input id="au1" className="field" style={{ width: '100%', marginTop: 6, marginBottom: 10 }} value={name} onChange={(e) => setName(e.target.value)} placeholder={t('register.namePlaceholder')} autoComplete="name" autoFocus />
+                <input id="au1" className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('register.namePlaceholder')} autoComplete="name" autoFocus aria-invalid={!!error1} aria-describedby="e1" />
               </>
             ) : (
               <>
                 <label htmlFor="au1">{t('login.handleLabel')}</label>
-                <input id="au1" className="field" style={{ width: '100%', marginTop: 6, marginBottom: 10 }} value={handle} onChange={(e) => setHandle(e.target.value)} placeholder={t('login.handlePlaceholder')} autoComplete="username" autoFocus />
+                <input id="au1" className="field" value={handle} onChange={(e) => setHandle(e.target.value)} placeholder={t('login.handlePlaceholder')} autoComplete="username" autoFocus aria-invalid={!!error1} aria-describedby="e1" />
               </>
             )}
+            <p className="ferr" id="e1" role="alert">{error1}</p>
             <label htmlFor="au2" style={{ marginTop: 10 }}>{t('register.passwordLabel')}</label>
-            <input id="au2" type="password" className="field" style={{ width: '100%', marginTop: 6, marginBottom: 14 }} value={password} onChange={(e) => setPassword(e.target.value)} placeholder={mode === 'register' ? t('register.passwordPlaceholder') : t('login.passwordPlaceholder')} autoComplete={mode === 'register' ? 'new-password' : 'current-password'} />
+            <input id="au2" type="password" className="field" aria-invalid={!!error2} aria-describedby="e2" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={mode === 'register' ? t('register.passwordPlaceholder') : t('login.passwordPlaceholder')} autoComplete={mode === 'register' ? 'new-password' : 'current-password'} />
 
-            {error && <p className="ferr" role="alert">{error}</p>}
+            <p className="ferr" id="e2" role="alert">{error2}</p>
+            {pendingInviteName && <p className="tag" style={{ marginTop: 10 }}>{t('register.pendingInviteNote', { name: pendingInviteName })}</p>}
 
-            <div className="acts" style={{ marginTop: error ? 10 : 0 }}>
+            <div className="acts">
               <button className="btn lg" disabled={submitting}>
                 {submitting
                   ? (mode === 'register' ? t('register.submitting') : t('login.submitting'))
@@ -143,7 +160,7 @@ export function RegisterModal() {
               </button>
             </div>
 
-            <button type="button" className="link" style={{ marginTop: 14, display: 'inline-block' }} onClick={() => { setAuthOpen((m) => (m === 'register' ? 'login' : 'register')); setError(null); }}>
+            <button type="button" className="link" style={{ marginTop: 14, display: 'inline-block' }} onClick={() => { setAuthOpen((m) => (m === 'register' ? 'login' : 'register')); clearErrors(); }}>
               {mode === 'register' ? t('register.switchToLogin') : t('login.switchToRegister')}
             </button>
           </form>

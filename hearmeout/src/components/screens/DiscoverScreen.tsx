@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device, DiscoverMatchPerson } from '@/lib/types';
-import { userAvatarStyle, starsText, formatRelative } from '@/lib/format';
+import { userAvatarStyle, formatRelative } from '@/lib/format';
+import { CoverArt } from '../ui/CoverArt';
+import { Stars } from '../redesign/Stars';
 import { regionDisplayName } from '@/lib/i18n';
 import { AlbumCard } from '../ui/AlbumCard';
 import { LiveLibrarySearch } from '../LiveLibrarySearch';
@@ -11,7 +13,6 @@ import { PopularNowSection } from '../PopularNowSection';
 import { ObscureAlbums } from '../ObscureAlbums';
 import { GenreTopArtists } from '../GenreTopArtists';
 import { MascotIcon } from '../redesign/icons';
-import { accentMix } from '@/lib/accentGradient';
 
 // Discover: this is where the old Home/catalog-browser content lives now
 // (redesign spec 13.3 — "Discover is where the old catalog lives"). Empty
@@ -33,22 +34,20 @@ function PersonRow({ person }: { person: PersonResult }) {
   return (
     <div className="row">
       <button className="rowlink" onClick={() => viewFriend(person.id)}>
-        <div className="dot" style={userAvatarStyle(person)}>{person.name[0]}</div>
-        <div className="g">
+        <span className="dot" style={userAvatarStyle(person)}>{!person.avatarUrl && person.name[0]}</span>
+        <span className="g">
           <b>{person.name}</b>
-          <div className="muted">
-            {person.score != null
-              ? <>{person.handle} · {t('match.discoverRowSubtitle', { score: person.score, count: person.sharedAlbums ?? 0 })}</>
-              : person.handle}
-          </div>
-        </div>
+          <small className="muted" style={{ fontWeight: 600 }}>
+            @{person.handle.replace(/^@/, '')}{person.score != null ? ` · ${t('match.discoverRowSubtitle', { score: person.score, count: person.sharedAlbums ?? 0 })}` : ''}
+          </small>
+        </span>
       </button>
       {isMe ? null : isFriend ? (
-        <span className="tag">{t('friend.alreadyFriend')}</span>
+        <span className="tag">{t('friend.friendsTag')}</span>
       ) : isPending ? (
         <span className="tag">{t('friend.requestSent')}</span>
       ) : (
-        <button className="btn" onClick={() => addFriend(person.handle)}>{t('friend.addThem')}</button>
+        <button className="btn" style={{ padding: '8px 16px' }} onClick={() => addFriend(person.handle)}>{t('friend.addFriend')}</button>
       )}
     </div>
   );
@@ -89,7 +88,7 @@ function ArtistChip({ name, avg }: { name: string; avg: number | null }) {
 type SiteReview = { stars: number; review: string; createdAt: string; albumId: string; user: { name: string; handle: string; avatarUrl: string | null } };
 
 function SiteReviewsBlock() {
-  const { t, language, albums, liveAlbums, openAlbum } = useApp();
+  const { t, language, albums, liveAlbums, spotifyCovers, openAlbum } = useApp();
   const [reviews, setReviews] = useState<SiteReview[] | null>(null);
 
   useEffect(() => {
@@ -102,43 +101,35 @@ function SiteReviewsBlock() {
     return () => { cancelled = true; };
   }, []);
 
-  if (reviews === null) return <p className="muted">{t('reviews.loading')}</p>;
+  if (reviews === null) return <p className="muted" style={{ fontWeight: 600 }}>{t('reviews.loading')}</p>;
   const resolved = reviews
     .map((r) => ({ r, a: liveAlbums[r.albumId] || albums.find((x) => x.id === r.albumId) }))
     .filter((x): x is { r: SiteReview; a: NonNullable<typeof x.a> } => !!x.a)
     .slice(0, 5);
-  if (!resolved.length) return <p className="muted">{t('reviews.empty')}</p>;
+  if (!resolved.length) return <p className="muted" style={{ fontWeight: 600 }}>{t('reviews.empty')}</p>;
 
   return (
-    <div className="stack">
+    <div className="bento b3">
       {resolved.map(({ r, a }, i) => (
-        <div className="tile" key={i} onClick={() => openAlbum(a.id)} style={{ cursor: 'pointer' }}>
-          <div className="setrow" style={{ border: 0, padding: 0, marginBottom: 8 }}>
-            <div className="row" style={{ padding: 0 }}>
-              <div className="dot" style={userAvatarStyle(r.user)}>{r.user.handle[1]?.toUpperCase()}</div>
-              <b>{r.user.handle}</b>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ color: accentMix(r.stars / 5) }}>{starsText(r.stars)}</div>
-              <small className="muted">{formatRelative(r.createdAt, language)}</small>
-            </div>
+        <button className="tile" key={i} onClick={() => openAlbum(a.id)} style={{ textAlign: 'left' }}>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10 }}>
+            <CoverArt url={spotifyCovers[a.id] || a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: 46, height: 46 }} />
+            <div><b>{a.title}</b><br /><small className="muted" style={{ fontWeight: 700 }}>{r.user.name} · {formatRelative(r.createdAt, language)}</small></div>
+            <span className="num" style={{ marginLeft: 'auto', fontSize: 30, color: 'var(--acct)' }}>{r.stars.toFixed(1)}</span>
           </div>
-          <p style={{ marginBottom: 4 }}>{r.review}</p>
-          <small className="muted">{a.title} — {a.artist}</small>
-        </div>
+          <p className="quote" style={{ fontSize: 17 }}>&ldquo;{r.review}&rdquo;</p>
+        </button>
       ))}
     </div>
   );
 }
 
-export function DiscoverScreen({ device }: { device: Device }) {
-  const { t, language, me, state, albums, albumRatings, setSearchQuery, setActiveGenre, setSortBy, showScreen } = useApp();
+export function DiscoverScreen(_props: { device: Device }) {
+  const { t, language, me, state, albums, albumRatings, spotifyCovers, openAlbum, setSearchQuery, setActiveGenre, setSortBy, showScreen } = useApp();
   const [filter, setFilter] = useState<Filter>('all');
   const [people, setPeople] = useState<PersonResult[] | null>(null);
   const [mbFound, setMbFound] = useState<boolean | null>(null);
   const [discoverPeople, setDiscoverPeople] = useState<DiscoverMatchPerson[] | null>(null);
-  const rowClass = device === 'mobile' ? 'hrow' : 'fp';
-  const gridClass = 'fp';
 
   const query = state.searchQuery;
   const q = query.trim().toLowerCase();
@@ -215,12 +206,12 @@ export function DiscoverScreen({ device }: { device: Device }) {
 
   const catalogFiltered = genreFilter === 'Всё' ? albums : albums.filter((a) => a.genreBucket === genreFilter);
   const sorted = [...catalogFiltered].sort((a, b) => {
-    if (state.sortBy === 'year') return a.year - b.year;
-    if (state.sortBy === 'genre') return a.genreBucket.localeCompare(b.genreBucket) || a.year - b.year;
-    return a.artist.localeCompare(b.artist);
+    if (state.sortBy === 'year') return b.year - a.year || a.title.localeCompare(b.title);
+    if (state.sortBy === 'genre') return a.genreBucket.localeCompare(b.genreBucket) || a.title.localeCompare(b.title);
+    return a.artist.localeCompare(b.artist) || a.title.localeCompare(b.title);
   });
 
-  const regionLabel = me.region ? regionDisplayName(me.region, language) : t('profile.regionNone');
+  const regionLabel = me.region ? regionDisplayName(me.region, language) : t('discover.globalRegion');
 
   const albumsContribute = filter === 'all' || filter === 'albums';
   const artistsContribute = filter === 'all' || filter === 'artists';
@@ -240,15 +231,15 @@ export function DiscoverScreen({ device }: { device: Device }) {
 
   return (
     <>
-      <div className="eyebrow muted">{t('discover.eyebrow')}</div>
+      <p className="eyebrow muted">{t('discover.eyebrow')}</p>
       <h1 className="big">{t('discover.title')}</h1>
-      <input className="field" type="search" style={{ maxWidth: 520, marginBottom: 16 }} placeholder={t('discover.searchPlaceholder')} aria-label={t('discover.searchPlaceholder')} value={query} onChange={(e) => setSearchQuery(e.target.value)} />
-      <div className="chips" role="group" aria-label={t('discover.filterAll')}>
+      <input className="field" type="search" style={{ maxWidth: 520, marginBottom: 16 }} placeholder={t('discover.searchPlaceholder')} aria-label={t('discover.searchAria')} value={query} onChange={(e) => setSearchQuery(e.target.value)} />
+      <div className="chips" role="group" aria-label={t('discover.whatToShow')}>
         {FILTERS.map((f) => (
           <button key={f.key} className={`chip ${filter === f.key ? 'on' : ''}`} onClick={() => setFilter(f.key)}>{f.label}</button>
         ))}
       </div>
-      <div className="chips" role="group">
+      <div className="chips" role="group" aria-label={t('discover.genreAria')}>
         {GENRES.map((g) => (
           <button key={g} className={`chip ${g === genreFilter ? 'on' : ''}`} onClick={() => setActiveGenre(g)}>
             {g === 'Всё' ? t('catalog.genreAll') : g}
@@ -264,7 +255,7 @@ export function DiscoverScreen({ device }: { device: Device }) {
           {hasAlbums && (
             <>
               <h2>{t('discover.albumsHeading')}</h2>
-              <div className={gridClass}>{albumResults.map((a) => <AlbumCard key={a.id} album={a} />)}</div>
+              <div className="cgrid">{albumResults.map((a) => <AlbumCard key={a.id} album={a} />)}</div>
             </>
           )}
           {hasArtists && (
@@ -298,9 +289,11 @@ export function DiscoverScreen({ device }: { device: Device }) {
       ) : filter === 'people' ? (
         <>
           <h2>{t('discover.peopleYouMayKnow')}</h2>
-          {discoverPeople && discoverPeople.length > 0 && (
-            <div className="tile">{discoverPeople.map((p) => <PersonRow key={p.id} person={p} />)}</div>
-          )}
+          <div className="tile">
+            {discoverPeople === null ? <p className="muted" style={{ fontWeight: 600 }}>{t('discover.searching')}</p>
+              : discoverPeople.length ? discoverPeople.map((p) => <PersonRow key={p.id} person={p} />)
+              : <p className="muted" style={{ fontWeight: 600 }}>{t('match.allFriendsMatched')}</p>}
+          </div>
         </>
       ) : (
         <>
@@ -308,14 +301,26 @@ export function DiscoverScreen({ device }: { device: Device }) {
             <>
               <h2>{t('catalog.popularNow')}</h2>
               <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 12px' }}>{t('catalog.popularNowSubtitle')}</p>
-              <PopularNowSection rowClass={rowClass} genre={genreFilter} />
+              <PopularNowSection genre={genreFilter} />
             </>
           )}
 
           {filter !== 'artists' && topRatedFiltered.length > 0 && (
             <>
               <h2 style={{ marginTop: 34 }}>{t('catalog.topRated')}</h2>
-              <div className={rowClass}>{topRatedFiltered.map((a, i) => <AlbumCard key={a.id} album={a} rankBadge={i + 1} />)}</div>
+              <div className="bento b3">
+                {topRatedFiltered.map((a, i) => (
+                  <button className={`tile${i === 0 ? ' t-ac' : ''}`} key={a.id} onClick={() => openAlbum(a.id)} style={{ textAlign: 'left', display: 'flex', gap: 14, alignItems: 'center' }}>
+                    <span className="num" style={{ fontSize: 54 }}>{i + 1}</span>
+                    <CoverArt url={spotifyCovers[a.id] || a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: 64, height: 64 }} />
+                    <div style={{ minWidth: 0 }}>
+                      <b>{a.title}</b><br />
+                      <small className="muted" style={{ fontWeight: 700 }}>{a.artist}</small><br />
+                      <span className="stars"><Stars value={albumRatings[a.id].avg} size={13} /></span> <small style={{ fontWeight: 800 }}>{albumRatings[a.id].avg.toFixed(1)} · {albumRatings[a.id].count}</small>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </>
           )}
 
@@ -323,14 +328,14 @@ export function DiscoverScreen({ device }: { device: Device }) {
             <>
               <h2 style={{ marginTop: 34 }}>{t('catalog.obscureArtists')} · Electronic</h2>
               <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 12px' }}>{t('discover.obscureSubtitle', { region: regionLabel })}</p>
-              <ObscureAlbums genre="Electronic" rowClass={rowClass} />
+              <ObscureAlbums genre="Electronic" />
             </>
           )}
 
           {filter !== 'albums' && (
             <>
               <h2 style={{ marginTop: 34 }}>{t('catalog.genreTops')}</h2>
-              <GenreTopArtists rowClass={rowClass} onlyGenre={genreFilter} region={regionLabel} />
+              <GenreTopArtists onlyGenre={genreFilter} region={regionLabel} />
             </>
           )}
 
@@ -338,13 +343,13 @@ export function DiscoverScreen({ device }: { device: Device }) {
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginTop: 34 }}>
                 <h2 style={{ margin: 0 }}>{t('catalog.fullCatalog')}</h2>
-                <div className="chips" style={{ margin: 0 }} role="group" aria-label={t('catalog.sortYear')}>
+                <div className="chips" style={{ margin: 0 }} role="group" aria-label={t('catalog.sortAria')}>
                   {SORT_OPTIONS.map((s) => (
                     <button key={s.key} className={`chip ${state.sortBy === s.key ? 'on' : ''}`} onClick={() => setSortBy(s.key)}>{s.label}</button>
                   ))}
                 </div>
               </div>
-              <div className={gridClass} style={{ marginTop: 14 }}>{sorted.map((a) => <AlbumCard key={a.id} album={a} />)}</div>
+              <div className="cgrid" style={{ marginTop: 14 }}>{sorted.map((a) => <AlbumCard key={a.id} album={a} />)}</div>
 
               <h2 style={{ marginTop: 34 }}>{t('discover.reviewsWorthReading')}</h2>
               <SiteReviewsBlock />

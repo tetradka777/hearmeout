@@ -19,6 +19,7 @@ import { DiscoverScreen } from './screens/DiscoverScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { StatesScreen } from './screens/StatesScreen';
 import { LaterScreen } from './screens/LaterScreen';
+import { OnboardingScreen } from './OnboardingScreen';
 
 // Every screen mounts once and stays mounted (shown/hidden, not
 // unmounted/remounted) so in-progress state — draft reviews, scroll
@@ -52,8 +53,11 @@ export function AppShell() {
 
   return (
     <RedesignShell>
+      {/* Onboarding is a page in the main column (vOnboarding), shown in
+          place of the active screen while the welcome tour is open. */}
+      {state.justRegistered && <OnboardingScreen />}
       {SCREENS.map(({ name, Component }) => (
-        <div key={name} style={state.activeScreen === name ? undefined : { display: 'none' }}>
+        <div key={name} style={state.activeScreen === name && !state.justRegistered ? undefined : { display: 'none' }}>
           <Component device={state.view} />
         </div>
       ))}

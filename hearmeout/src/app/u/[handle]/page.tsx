@@ -141,8 +141,12 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                 {top4.length ? (
                   <div className="t4">
                     {top4.map((a, i) => (
-                      <div key={a.id} className="cov" role="img" aria-label={a.title} style={{ aspectRatio: '1', backgroundImage: a.cover ? `url('${a.cover}')` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' }}>
-                        <span className="bdg">{i + 1}</span>
+                      <div key={a.id}>
+                        <div className="cvw">
+                          <div className="cov" role="img" aria-label={a.title} style={{ aspectRatio: '1', width: '100%', backgroundImage: a.cover ? `url('${a.cover}')` : undefined, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+                          <span className="bdg">{i + 1}</span>
+                        </div>
+                        <b style={{ display: 'block', marginTop: 8, fontSize: 14 }}>{a.title}</b>
                       </div>
                     ))}
                   </div>

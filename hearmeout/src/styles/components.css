@@ -9,6 +9,10 @@
    is in Toxic". The prototype's own `data-v="v1"/"v3"` and `data-m` map to
    our `data-design="cream-pop"/"toxic"` and `data-mode`. */
 
+/* The page itself (overscroll on phones, outside .rd) takes the view colour,
+   not the browser default white. Tokens live on <html> via data-design /
+   data-mode / data-palette, so --bg resolves here. */
+html { background: var(--bg); }
 .rd { min-height: 100vh; background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 16px; line-height: 1.5; }
 .rd *, .rd *::before, .rd *::after { box-sizing: border-box; }
 .rd button, .rd input, .rd textarea, .rd select { font: inherit; color: inherit; }
@@ -277,6 +281,18 @@
 .rd .optcard .chk { position: absolute; top: 22px; right: 22px; width: 28px; height: 28px; border-radius: 50%; background: var(--acct); color: var(--bg); display: grid; place-items: center; font-weight: 800; opacity: 0; z-index: 3; }
 .rd .optcard[aria-checked="true"] .chk { opacity: 1; }
 .rd .optcard b { display: block; font: 800 20px var(--font-display); letter-spacing: -.02em; }
+/* pvHtml(): design preview inside an option card. The card sets
+   data-design/data-mode on .pv so the tokens resolve for that design. */
+.rd .pv.site { min-height: 0; height: 158px; border-radius: 14px; padding: 10px; display: flex; gap: 8px; overflow: hidden; margin-bottom: 12px; position: relative; background: var(--bg); color: var(--fg); }
+.rd .pv .col { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.rd .pv .nv { height: 16px; border-radius: 99px; background: var(--paper); outline: var(--bw) solid var(--tb); outline-offset: calc(var(--bw) * -1); }
+.rd .pv .tk { height: 11px; border-radius: 99px; background: var(--tk-bg); }
+.rd .pv .rw { display: flex; gap: 6px; flex: 1; }
+.rd .pv .rw i { flex: 1; border-radius: 10px; outline: var(--bw) solid var(--tb); outline-offset: calc(var(--bw) * -1); }
+.rd .pv .pl { height: 18px; border-radius: 8px; background: var(--chr-bg); }
+.rd .pv[data-v="v1"] .i1 { background: var(--ink); } .rd .pv[data-v="v1"] .i3 { background: var(--pop); }
+.rd .pv[data-v="v3"] .i1 { background: linear-gradient(150deg, color-mix(in srgb, var(--ink) 60%, #1a1a17), #10100e); } .rd .pv[data-v="v3"] .i3 { background: var(--paper2); }
+.rd .pv .i2 { background: var(--acc); }
 .rd .palgroup { font-weight: 800; font-size: 13px; margin: 6px 0 10px; }
 .rd .palgrid { display: grid; gap: 10px; grid-template-columns: repeat(2,minmax(0,1fr)); margin-bottom: 18px; }
 .rd .palbtn { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 18px; background: var(--paper); outline: var(--bw) solid var(--tb); outline-offset: calc(var(--bw) * -1); font-weight: 800; text-align: left; color: var(--fg); position: relative; }

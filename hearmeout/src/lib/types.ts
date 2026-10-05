@@ -11,6 +11,8 @@ export type Album = {
   unknown?: boolean;
   listeners?: string;
   tracklist: string[];
+  // Per-track length in ms, parallel to tracklist (live Spotify detail only).
+  trackDurations?: (number | null)[];
   // Position in a real "most-streamed on Spotify (all-time)" ranking
   // (sourced from kworb.net) — lower is more streamed. Only set on the
   // catalog-expansion batch; used to power "Популярно сейчас" with a real,
@@ -140,9 +142,9 @@ export type AppNotification = {
 // Home feed (redesign spec 6.1, 8 "Feed events"). Album/track metadata is
 // resolved on the client from the catalog (same convention as ratings.
 // album_id everywhere else in this app) — the server only returns ids.
-export type FeedFirstPlayEvent = { type: 'first_play'; user: ApiUser; trackTitle: string; artist: string; at: string };
+export type FeedFirstPlayEvent = { type: 'first_play'; user: ApiUser; trackTitle: string; artist: string; albumId: string | null; cover: string | null; at: string };
 export type FeedRatingEvent = { type: 'rating_review'; user: ApiUser; albumId: string; stars: number; review: string; at: string };
-export type FeedSessionEvent = { type: 'session'; plays: number; minutes: number; at: string };
+export type FeedSessionEvent = { type: 'session'; plays: number; minutes: number; artists: number; albumId: string | null; cover: string | null; at: string };
 export type FeedEvent = FeedFirstPlayEvent | FeedRatingEvent | FeedSessionEvent;
 export type FeedDisagreement = { friend: ApiUser; albumId: string; mine: number; theirs: number; at: string };
 export type FeedResponse = { hero: FeedDisagreement | null; events: FeedEvent[]; recentAlbumIds: string[] };

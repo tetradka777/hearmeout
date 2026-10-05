@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import { userAvatarStyle, formatRelative } from '@/lib/format';
 import type { AlbumReview } from '@/lib/types';
-import { Stars } from './redesign/Stars';
 
 type ReviewWithTime = AlbumReview & { createdAt: string };
 
@@ -24,21 +23,22 @@ export function AlbumReviews({ albumId, refreshToken }: { albumId: string; refre
   }, [albumId, refreshToken]);
 
   if (reviews === null) return <div className="muted">{t('reviews.loading')}</div>;
-  if (!reviews.length) return <div className="tile empty"><p>{t('reviews.empty')}</p></div>;
+  if (!reviews.length) return <p className="muted">{t('reviews.empty')}</p>;
 
+  // vRate() Reviews tile: avatar, "name · date", the quote at 17px and the
+  // score as a 30px accent number on the right.
   return (
-    <div className="stack">
+    <>
       {reviews.map((r, i) => (
-        <div className="tile t-soft2" key={i}>
-          <div className="ft top" style={{ marginBottom: 10 }}>
-            <div className="dot" style={userAvatarStyle(r.user)}>{r.user.name[0]}</div>
-            <div className="who"><b>{r.user.handle}</b></div>
-            <Stars value={r.stars} size={14} />
-            <small className="muted" style={{ marginLeft: 'auto' }}>{formatRelative(r.createdAt, language)}</small>
-          </div>
-          <p className="quote">&ldquo;{r.review}&rdquo;</p>
+        <div className="row" style={{ alignItems: 'flex-start' }} key={i}>
+          <div className="dot" style={userAvatarStyle(r.user)}>{!r.user.avatarUrl && r.user.name[0]}</div>
+          <span className="g">
+            <b>{r.user.name} <small className="muted" style={{ fontWeight: 700 }}>· {formatRelative(r.createdAt, language)}</small></b>
+            <span className="quote" style={{ fontSize: 17, display: 'block', marginTop: 4 }}>&ldquo;{r.review}&rdquo;</span>
+          </span>
+          <span className="num" style={{ fontSize: 30, color: 'var(--acct)' }}>{r.stars.toFixed(1)}</span>
         </div>
       ))}
-    </div>
+    </>
   );
 }

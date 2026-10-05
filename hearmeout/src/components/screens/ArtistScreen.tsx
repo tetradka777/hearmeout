@@ -10,7 +10,6 @@ import { coverArtUrl } from '@/lib/musicbrainz';
 import { regionDisplayName, toLocale } from '@/lib/i18n';
 import { CoverArt } from '../ui/CoverArt';
 import { BookmarkIcon, HeartIcon, PlayIcon } from '../ui/Icons';
-import { ArtistAvatar } from '../ui/ArtistAvatar';
 import { Stars } from '../redesign/Stars';
 import { userAvatarStyle } from '@/lib/format';
 
@@ -171,6 +170,8 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
     const tracks = Array.isArray(topTracks) ? topTracks : [];
     const queue: QueueTrack[] = tracks.map((tr) => ({ title: tr.title, artist: art.name, cover: tr.albumCover, albumId: tr.albumId, spotifyId: tr.albumId }));
 
+    const lovedTrack = (title: string) => lovedItems.some((li) => li.type === 'track' && li.title === title && li.artist === art.name);
+
     const toggleFollow = async () => {
       const next = !following;
       setFollowing(next);
@@ -207,7 +208,15 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
                     ? <span className="tag" style={{ background: 'var(--acc)', color: 'var(--onacc)' }}>{t('artist.youScore', { score: score.toFixed(1) })}</span>
                     : <span className="tag">{t('artist.notRated')}</span>}
                   <button
-                    className={`ib love${saved ? ' on' : ''}`}
+                    className={`ib love${lovedTrack(tr.title) ? ' on' : ''}`}
+                    aria-pressed={lovedTrack(tr.title)}
+                    aria-label={lovedTrack(tr.title) ? t('album.removeFromLoved') : t('album.addToLoved')}
+                    onClick={() => toggleLoved('track', tr.title, art.name, tr.id, tr.albumCover)}
+                  >
+                    <HeartIcon />
+                  </button>
+                  <button
+                    className={`ib love later${saved ? ' on' : ''}`}
                     aria-pressed={saved}
                     aria-label={saved ? t('track.removeLater') : t('track.saveLater')}
                     onClick={() => toggleLaterTrack(tr.albumId, trackIndex, tr.title, art.name, tr.albumCover)}
@@ -332,7 +341,6 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
 
     return (
       <>
-        <button className="crumb" onClick={() => goBack('catalog')}>‹ {t('artist.back')}</button>
         <div className="tile t-ink glow" style={{ display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
           <CoverArt url={art.photo ?? undefined} fallbackLetter={art.name[0] || '?'} className="ph" />
           <div style={{ flex: 1, minWidth: 200 }}>
@@ -361,8 +369,8 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
             <button className="play" disabled={!queue.length} onClick={() => queue.length && playQueue(queue, 0)} aria-label={t('artist.playTop')}><PlayIcon size={18} /></button>
-            <button className={`btn ghost love${isLoved ? ' on' : ''}`} aria-pressed={isLoved} onClick={() => toggleLoved('artist', art.name, null, art.id, art.photo ?? null)}>
-              <HeartIcon /> {isLoved ? t('artist.loved') : t('artist.love')}
+            <button className={`btn ghost love${isLoved ? ' on' : ''}`} aria-pressed={isLoved} aria-label={isLoved ? t('album.removeFromLoved') : t('album.addToLoved')} onClick={() => toggleLoved('artist', art.name, null, art.id, art.photo ?? null)}>
+              <HeartIcon />
             </button>
             <button className={`btn lg${following ? '' : ' ghost'}`} aria-pressed={following} onClick={toggleFollow}>
               {following ? t('artist.following') : t('artist.follow')}
@@ -372,7 +380,7 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
 
         <div className="bento" style={{ margin: '14px 0' }}>
           <div className="tile t-soft2">
-            <h3 style={{ marginBottom: 8 }}>{t('artist.yourAndArtist')}</h3>
+            <h3 style={{ marginBottom: 8 }}>{t('artist.yourAndArtist', { name: art.name })}</h3>
             {yourStats ? (
               <>
                 <div className="vsline">
@@ -419,35 +427,33 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
     body = <div className="tile empty"><p>{t('artist.notFound')}</p></div>;
   } else {
     body = (
-      <div className="sec">
-        <h2>{t('artist.albums')}</h2>
-        <div className="cgrid">
+      <>
+        <h2 style={{ marginTop: 22 }}>{t('artist.albums')}</h2>
+        <div className="t4">
           {art.albums.map((g) => {
             const year = g['first-release-date'] ? g['first-release-date'].slice(0, 4) : '—';
-            const cover = coverArtUrl(g.id);
             return (
-              <button className="cvw" key={g.id} onClick={() => openMbGroup(g.title, art.name, g.id)} style={{ textAlign: 'left', width: '100%', opacity: resolvingGroup === g.id ? 0.6 : 1 }}>
-                <CoverArt url={cover} fallbackLetter={art.name[0] || '?'} className="cov" style={{ width: '100%', aspectRatio: '1' }} />
-                <div style={{ marginTop: 8 }}><b>{g.title}</b><div className="muted">{year}</div></div>
+              <button key={g.id} onClick={() => openMbGroup(g.title, art.name, g.id)} style={{ textAlign: 'left', color: 'inherit', opacity: resolvingGroup === g.id ? 0.6 : 1 }}>
+                <CoverArt url={coverArtUrl(g.id)} fallbackLetter={g.title[0] || '?'} className="cov mb" style={{ width: '100%', aspectRatio: '1' }} />
+                <b style={{ display: 'block', marginTop: 8, fontSize: 14 }}>{g.title}</b>
+                <small className="muted" style={{ fontWeight: 600 }}>{year}</small>
               </button>
             );
           })}
         </div>
-      </div>
+      </>
     );
   }
 
   return (
     <>
-      <button className="crumb" onClick={() => goBack('catalog')}>‹ {t('artist.back')}</button>
-      <div className="tile t-ink hero">
-        <ArtistAvatar name={art.name} className="ph" fallbackStyle={{ fontSize: 32 }} />
-        <h1 style={{ marginTop: 14 }}>{art.name}</h1>
-        <p className="muted">{t('artist.subtitle')}</p>
-        <div className="acts">
-          <button className={`btn ghost love${isLoved ? ' on' : ''}`} onClick={() => toggleLoved('artist', art.name, null, art.id, null)}>
-            <HeartIcon /> {isLoved ? t('artist.loved') : t('artist.love')}
-          </button>
+      <button className="crumb" onClick={() => goBack('discover')}>‹ {t('artist.backDiscover')}</button>
+      <div className="tile t-ink glow" style={{ display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap' }}>
+        <span className="ph">{art.name[0]}</span>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <p className="eyebrow muted" style={{ margin: 0 }}>{t('artist.mbEyebrow')}</p>
+          <h1 className="big" style={{ margin: 0, fontSize: 'clamp(34px,7vw,56px)' }}>{art.name}</h1>
+          <p className="muted" style={{ fontWeight: 600, marginTop: 4 }}>{t('artist.mbSimpleView')}</p>
         </div>
       </div>
       {body}

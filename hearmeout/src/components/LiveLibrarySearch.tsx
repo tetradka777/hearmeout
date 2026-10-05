@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
-import { searchLibrary, coverArtUrl, type LibraryArtist, type LibraryReleaseGroup } from '@/lib/musicbrainz';
-import { CoverArt } from './ui/CoverArt';
-import { ArtistAvatar } from './ui/ArtistAvatar';
+import { searchLibrary, type LibraryArtist, type LibraryReleaseGroup } from '@/lib/musicbrainz';
 
 export function LiveLibrarySearch({ query, onResult }: { query: string; onResult?: (hasResults: boolean) => void }) {
   const { t, openArtist, openAlbum, showToast } = useApp();
@@ -52,45 +50,34 @@ export function LiveLibrarySearch({ query, onResult }: { query: string; onResult
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, t]);
 
-  if (loading) return <p className="muted">{t('liveSearch.searching', { query })}</p>;
-  if (error) return <p className="muted">{error}</p>;
+  if (loading) return <p className="muted" style={{ fontWeight: 600 }}>{t('liveSearch.searching', { query })}</p>;
+  if (error) return <p className="muted" style={{ fontWeight: 600 }}>{error}</p>;
   if (!result || (!result.artists.length && !result.groups.length)) {
-    return <p className="muted">{t('liveSearch.empty')}</p>;
+    return <p className="muted" style={{ fontWeight: 600 }}>{t('liveSearch.empty')}</p>;
   }
 
+  // discoverHtml() "From the open library": one soft tile of rows — letter dot,
+  // name, "type · details" and an "open library" tag.
   return (
-    <>
-      {result.artists.length > 0 && (
-        <>
-          <div className="setrow" style={{ border: 0, padding: 0, marginBottom: 10 }}><h3 style={{ marginBottom: 0 }}>{t('liveSearch.artists')}</h3></div>
-          <div className="hrow">
-            {result.artists.map((ar) => (
-              <button className="cvw" key={ar.id} onClick={() => openArtist(ar.id, ar.name)} style={{ textAlign: 'left' }}>
-                <ArtistAvatar name={ar.name} className="cov" />
-                <div style={{ marginTop: 8 }}><b>{ar.name}</b><div className="muted">{ar.type || t('liveSearch.artistType')}</div></div>
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-      {result.groups.length > 0 && (
-        <>
-          <div className="setrow" style={{ border: 0, padding: 0, marginBottom: 10 }}><h3 style={{ marginBottom: 0 }}>{t('liveSearch.albums')}</h3></div>
-          <div className="fp">
-            {result.groups.map((g) => {
-              const artist = (g['artist-credit'] || []).map((c) => c.name).join(', ') || t('liveSearch.unknownArtist');
-              const year = g['first-release-date'] ? g['first-release-date'].slice(0, 4) : '—';
-              const cover = coverArtUrl(g.id);
-              return (
-                <button className="cvw" key={g.id} onClick={() => openGroup(g.title, artist, g.id)} style={{ textAlign: 'left', width: '100%', cursor: 'pointer', opacity: resolving === g.id ? 0.6 : 1 }}>
-                  <CoverArt url={cover} fallbackLetter={artist[0] || '?'} className="cov" style={{ width: '100%', aspectRatio: '1' }} />
-                  <div style={{ marginTop: 8 }}><b>{g.title}</b><div className="muted">{artist} · {year}</div></div>
-                </button>
-              );
-            })}
-          </div>
-        </>
-      )}
-    </>
+    <div className="tile t-soft2">
+      {result.artists.map((ar) => (
+        <button className="row" key={ar.id} onClick={() => openArtist(ar.id, ar.name)}>
+          <span className="dot">{ar.name[0]}</span>
+          <span className="g"><b>{ar.name}</b><small className="muted" style={{ fontWeight: 600 }}>{t('liveSearch.artistType')}{ar.type ? ` · ${ar.type}` : ''}</small></span>
+          <span className="tag">{t('liveSearch.openLibraryTag')}</span>
+        </button>
+      ))}
+      {result.groups.map((g) => {
+        const artist = (g['artist-credit'] || []).map((c) => c.name).join(', ') || t('liveSearch.unknownArtist');
+        const year = g['first-release-date'] ? g['first-release-date'].slice(0, 4) : '';
+        return (
+          <button className="row" key={g.id} onClick={() => openGroup(g.title, artist, g.id)} style={{ opacity: resolving === g.id ? 0.6 : 1 }}>
+            <span className="dot">{g.title[0]}</span>
+            <span className="g"><b>{g.title}</b><small className="muted" style={{ fontWeight: 600 }}>{t('liveSearch.albumType')} · {artist}{year ? ` · ${year}` : ''}</small></span>
+            <span className="tag">{t('liveSearch.openLibraryTag')}</span>
+          </button>
+        );
+      })}
+    </div>
   );
 }

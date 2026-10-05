@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { useApp } from '@/lib/AppContext';
 import { drawBlendPoster } from '@/lib/posterCanvas';
 
-export function BlendButton({ me, friend, friendName, matchPct }: { me: string; friend: string; friendName: string; matchPct: number | null }) {
+export function BlendButton({ me, friend, friendName, matchPct, className = 'btn ghost' }: { me: string; friend: string; friendName: string; matchPct: number | null; className?: string }) {
   const { t, ensureRecap, recapCache } = useApp();
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -30,7 +30,7 @@ export function BlendButton({ me, friend, friendName, matchPct }: { me: string; 
 
   return (
     <>
-      <button className="btn ghost" onClick={download}>{t('friend.downloadBlend')}</button>
+      <button className={className} onClick={download}>{t('friend.downloadBlend')}</button>
       <canvas ref={canvasRef} style={{ display: 'none' }} />
     </>
   );

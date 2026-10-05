@@ -4,13 +4,14 @@ import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device, PublicProfile, RecapData, RecapPeriod } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
-import { toLocale, type Language, type TranslationKey } from '@/lib/i18n';
+import { toLocale, pluralForKey, type Language, type TranslationKey } from '@/lib/i18n';
 import { recapLine } from '@/lib/recapLine';
 import { completedWeekRange, isoWeekNumber } from '@/lib/weeks';
 import { parseSeasonKey } from '@/lib/seasons';
 import { drawStoryCard } from '@/lib/posterCanvas';
 import { CoverArt } from '../ui/CoverArt';
-import { PreviewButton } from '../redesign/PreviewButton';
+import { CloseIcon } from '../ui/Icons';
+import { usePlayer } from '@/lib/PlayerContext';
 
 const PERIODS: RecapPeriod[] = ['day', 'week', 'month', 'season'];
 const PERIOD_KEY: Record<RecapPeriod, TranslationKey> = { day: 'recap.day', week: 'recap.week', month: 'recap.month', season: 'recap.season' };
@@ -46,6 +47,7 @@ export function RecapScreen(_props: { device: Device }) {
     setRecapPeriod, setRecapSeasonKey, setRecapOffset, recapSeasons, openAlbum, openSpotifyArtist,
     viewFriend, openRecap, showScreen, showToast, shareRecapWithFriends,
   } = useApp();
+  const { currentTrack, playing, toggle, playQueue } = usePlayer();
   const targetId = state.recapViewUserId === 'me' ? me?.id : state.recapViewUserId;
   const isMe = state.recapViewUserId === 'me' || (!!me && state.recapViewUserId === me.id);
   const [profile, setProfile] = useState<PublicProfile | null>(null);
@@ -93,7 +95,7 @@ export function RecapScreen(_props: { device: Device }) {
   const hours = r ? Math.round(r.minutes / 60) : 0;
 
   const storyNumbers = r ? [
-    { value: `${hours}h`, label: t('recap.listened') },
+    { value: `${hours}${t('unit.h')}`, label: t('recap.listened') },
     { value: String(r.newArtists), label: t('recap.newArtists') },
     { value: r.avgScore != null ? r.avgScore.toFixed(1) : '—', label: t('recap.avgScore') },
     { value: String(r.awards.length), label: t('recap.awardsCount') },
@@ -161,12 +163,31 @@ export function RecapScreen(_props: { device: Device }) {
     );
   }
 
+  const top = (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+      <button className="crumb" onClick={closeRecap}>‹ {isMe ? t('nav.home') : name}</button>
+      <button className="ib" onClick={closeRecap} aria-label={t('recap.close')}><CloseIcon /></button>
+    </div>
+  );
+  if (locked) {
+    return (
+      <>
+        {top}
+        <div className="tile t-soft2 empty" style={{ marginTop: 12 }}>
+          <span className="num" style={{ fontSize: 54 }}>🔒</span>
+          <h3>{t('recap.lockedTitle', { name })}</h3>
+          <p className="muted" style={{ fontWeight: 600 }}>{t('recap.lockedHint')}</p>
+        </div>
+      </>
+    );
+  }
+  const song = r?.topSongs[0];
+  const songQueue = song ? [{ title: song.title, artist: song.artist, cover: song.cover, albumId: song.albumId }] : [];
+  const onSong = !!song && playing && currentTrack?.title === song.title && currentTrack?.albumId === song.albumId;
+
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-        <button className="crumb" onClick={closeRecap}>‹ {isMe ? t('nav.home') : name}</button>
-        <button className="ib" onClick={closeRecap} aria-label={t('recap.close')}>✕</button>
-      </div>
+      {top}
       <p className="eyebrow muted" style={{ marginTop: 8 }}>
         {period === 'week' ? t(me.weekStart === 'sun' ? 'recap.generatedSun' : 'recap.generatedMon', { range }) : range}
       </p>
@@ -175,7 +196,7 @@ export function RecapScreen(_props: { device: Device }) {
       <div className="rhead">
         <span className="avt" style={userAvatarStyle({ avatarUrl })}>{name[0]?.toUpperCase()}</span>
         <div><b>{name}</b><br /><small className="muted" style={{ fontWeight: 700 }}>{range}</small></div>
-        {vibe && <span className="vibe">{vibe}</span>}
+        {vibe && r && r.trackCount > 0 && <span className="vibe">{vibe}</span>}
       </div>
 
       <div className="chips" role="group" aria-label={t('recap.periodLabel')}>
@@ -185,13 +206,7 @@ export function RecapScreen(_props: { device: Device }) {
       </div>
       {subChips}
 
-      {locked ? (
-        <div className="tile t-soft2 empty" style={{ marginTop: 12 }}>
-          <span className="num" style={{ fontSize: 54 }}>🔒</span>
-          <h3>{t('recap.lockedTitle', { name })}</h3>
-          <p className="muted" style={{ fontWeight: 600 }}>{t('recap.lockedHint')}</p>
-        </div>
-      ) : !r || !line ? (
+      {!r || !line ? (
         <p className="muted" style={{ marginTop: 14 }}>{t('recap.loading')}</p>
       ) : (
         <div className="two" style={{ alignItems: 'start' }}>
@@ -219,7 +234,13 @@ export function RecapScreen(_props: { device: Device }) {
                   <h3>{r.topSongs[0].title}</h3>
                   <p style={{ fontWeight: 600 }}>{r.topSongs[0].artist}</p>
                 </button>
-                <PreviewButton tracks={[{ title: r.topSongs[0].title, artist: r.topSongs[0].artist, cover: r.topSongs[0].cover, albumId: r.topSongs[0].albumId }]} size={56} />
+                <button
+                  className="play"
+                  onClick={() => (onSong || (currentTrack?.title === song!.title && currentTrack?.albumId === song!.albumId) ? toggle() : playQueue(songQueue, 0))}
+                  aria-label={`${onSong ? t('player.pause') : t('player.play')} ${song!.title}`}
+                >
+                  {onSong ? '❚❚' : '▶'}
+                </button>
               </div>
             )}
 
@@ -229,7 +250,7 @@ export function RecapScreen(_props: { device: Device }) {
                 <button className="row" key={`${a.id ?? a.name}-${i}`} onClick={() => a.id && openSpotifyArtist(a.id)} style={{ cursor: a.id ? 'pointer' : 'default' }}>
                   <span className="num" style={{ fontSize: 24, width: 20 }}>{i + 1}</span>
                   <b className="g">{a.name}</b>
-                  <span className="muted" style={{ fontWeight: 800 }}>{t('stats.playsCount', { count: a.plays })}</span>
+                  <span className="muted" style={{ fontWeight: 800 }}>{t('stats.playsCount', { count: a.plays, word: pluralForKey(language, a.plays, 'stats.playOne', 'stats.playFew', 'stats.playMany') })}</span>
                 </button>
               )) : <p className="muted">{t('recap.noData')}</p>}
             </div>

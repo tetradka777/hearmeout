@@ -120,7 +120,8 @@ export async function resolveSpotifyArtistId(name: string): Promise<string | nul
   return data.artists?.items?.[0]?.id ?? null;
 }
 
-export type AlbumTrack = { id: string; title: string; trackNumber: number };
+// durationMs is optional: details cached before it was added lack it.
+export type AlbumTrack = { id: string; title: string; trackNumber: number; durationMs?: number | null };
 export type AlbumDetail = {
   id: string;
   title: string;
@@ -163,10 +164,11 @@ export async function fetchSpotifyAlbumDetail(id: string): Promise<AlbumDetail |
     genreBucket: bucketForGenres([...(a.genres || []), ...(artist?.genres || [])]),
     artist: (a.artists || []).map((x: { name: string }) => x.name).join(', '),
     artistId: a.artists?.[0]?.id ?? null,
-    tracklist: (a.tracks?.items || []).map((t: { id: string; name: string; track_number: number }) => ({
+    tracklist: (a.tracks?.items || []).map((t: { id: string; name: string; track_number: number; duration_ms?: number }) => ({
       id: t.id,
       title: t.name,
       trackNumber: t.track_number,
+      durationMs: t.duration_ms ?? null,
     })),
   };
 }

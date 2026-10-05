@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import { AppShell } from './AppShell';
 import { RegisterModal } from './RegisterModal';
-import { OnboardingScreen } from './OnboardingScreen';
 import { pickLanguage, translate, type TranslationKey } from '@/lib/i18n';
 
 // The prototype's JOKES (reference/app.js), localized. The splash shows
@@ -54,7 +53,6 @@ export function AppGate() {
     content = (
       <>
         <AppShell />
-        {state.justRegistered && <OnboardingScreen />}
       </>
     );
   }

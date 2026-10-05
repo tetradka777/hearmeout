@@ -1,77 +1,108 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
-import type { Device, PublicProfile, StatsData } from '@/lib/types';
+import type { ApiUser, Device, PublicProfile, StatsData } from '@/lib/types';
 import { formatRelative, userAvatarStyle } from '@/lib/format';
 import { computeMatch } from '@/lib/matchScore';
-import { RecapOpenButton, Top4Grid } from '../ProfileBlocks';
 import { CoverArt } from '../ui/CoverArt';
 import { toLocale, pluralForKey, type TranslationKey } from '@/lib/i18n';
 import { isDemoAccountId } from '@/lib/demoAccounts';
 import { BlendButton } from '../BlendButton';
+import { MascotIcon } from '../redesign/icons';
+import { MATCH_FRIEND_EVENT } from '@/lib/uiEvents';
+import { useFriendScores } from '@/lib/useFriendScores';
 
-// Shared row style for both "Both scores" (mutually-rated albums only) and
-// "Latest ratings" (friend's own recent ratings, yours alongside if you
-// have one) — the prototype uses the identical two-big-numbers layout for
-// both, differing only in which list feeds it and whether a "big gap" tag
-// and the one highlighted "biggest disagreement" row apply.
-function ScoreCompareRow({ albumId, mine, theirs, friendName, highlight }: {
-  albumId: string; mine: number | null; theirs: number; friendName: string; highlight?: boolean;
-}) {
-  const { t, albums, liveAlbums, spotifyCovers, openAlbum } = useApp();
+function useAlbumInfo(albumId: string) {
+  const { albums, liveAlbums, spotifyCovers } = useApp();
   const a = liveAlbums[albumId] || albums.find((x) => x.id === albumId);
-  if (!a) return null;
-  const cover = spotifyCovers[a.id] || a.cover;
-  const bigGap = mine != null && Math.abs(mine - theirs) >= 1.5;
+  return { title: a?.title ?? albumId, artist: a?.artist ?? '', cover: a ? spotifyCovers[a.id] || a.cover : undefined };
+}
+
+function ScoreCell({ value, label, size, accent }: { value: number | null; label: string; size: number; accent?: boolean }) {
   return (
-    <button className={`row${bigGap ? ' gapbig' : ''}${highlight ? ' bigd' : ''}`} onClick={() => openAlbum(a.id)} style={{ cursor: 'pointer' }}>
-      <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: highlight ? 56 : 44, height: highlight ? 56 : 44 }} />
-      <div className="g">
-        <b>{highlight ? t('friend.biggestGap') : a.title}</b>
-        <div className="muted">
-          {highlight
-            ? `${a.title} · ${t('friend.starsApart', { diff: mine != null ? Math.abs(mine - theirs).toFixed(1) : '—' })}`
-            : a.artist}
-        </div>
-      </div>
-      {bigGap && !highlight && <span className="tag" style={{ background: 'var(--acc)', color: 'var(--onacc)' }}>{t('friend.bigGapTag')}</span>}
-      <span style={{ textAlign: 'center', minWidth: 48 }}>
-        <span className="num" style={{ fontSize: highlight ? 28 : 24, color: 'var(--acct)' }}>{theirs.toFixed(1)}</span>
-        <br /><small className="muted" style={{ fontWeight: 700 }}>{friendName}</small>
+    <span style={{ textAlign: 'center', minWidth: 48 }}>
+      <span className="num" style={{ fontSize: size, color: accent ? 'var(--acct)' : undefined }}>{value != null ? value.toFixed(1) : '–'}</span>
+      <br /><small className="muted" style={{ fontWeight: 700 }}>{label}</small>
+    </span>
+  );
+}
+
+// vFriend() "Both scores": you first, then the friend.
+function BothRow({ albumId, mine, theirs, name, biggest }: { albumId: string; mine: number; theirs: number; name: string; biggest?: boolean }) {
+  const { t, openAlbum } = useApp();
+  const a = useAlbumInfo(albumId);
+  const size = biggest ? 56 : 44;
+  return (
+    <button className={`row${biggest ? ' bigd' : ''}`} onClick={() => openAlbum(albumId)}>
+      <CoverArt url={a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: size, height: size }} />
+      <span className="g">
+        <b>{biggest ? t('friend.biggestGap') : a.title}</b>
+        <small className="muted" style={{ fontWeight: 600 }}>{biggest ? `${a.title} · ${t('friend.starsApart', { diff: Math.abs(mine - theirs).toFixed(1) })}` : a.artist}</small>
       </span>
-      <span style={{ textAlign: 'center', minWidth: 48 }}>
-        {mine != null ? <span className="num" style={{ fontSize: highlight ? 28 : 24 }}>{mine.toFixed(1)}</span> : <small className="muted">{t('friend.notRatedByYou')}</small>}
-        {mine != null && <><br /><small className="muted" style={{ fontWeight: 700 }}>{t('friend.you')}</small></>}
-      </span>
+      <ScoreCell value={mine} label={t('friend.you')} size={biggest ? 28 : 24} />
+      <ScoreCell value={theirs} label={name} size={biggest ? 28 : 24} accent />
     </button>
   );
 }
 
-function PersonListRow({ user, action }: { user: NonNullable<PublicProfile['friends']>[number]; action?: ReactNode }) {
-  const { viewFriend } = useApp();
+// "Latest ratings": the friend's score first, yours next to it, and a
+// "big gap" tag at 1.5 stars or more.
+function LatestRow({ albumId, mine, theirs, name }: { albumId: string; mine: number | null; theirs: number; name: string }) {
+  const { t, openAlbum } = useApp();
+  const a = useAlbumInfo(albumId);
+  const big = mine != null && Math.abs(mine - theirs) >= 1.5;
   return (
-    <div className="row">
-      <button className="rowlink" onClick={() => viewFriend(user.id)}>
-        <div className="dot" style={userAvatarStyle(user)}>{user.name[0]}</div>
-        <div className="g"><b>{user.name}</b><div className="muted">{user.handle}</div></div>
-      </button>
-      {action}
+    <button className={`row${big ? ' gapbig' : ''}`} onClick={() => openAlbum(albumId)}>
+      <CoverArt url={a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: 44, height: 44 }} />
+      <span className="g"><b>{a.title}</b><small className="muted" style={{ fontWeight: 600 }}>{a.artist}</small></span>
+      {big && <span className="tag" style={{ background: 'var(--acc)', color: 'var(--onacc)' }}>{t('friend.bigGapTag')}</span>}
+      <ScoreCell value={theirs} label={name} size={24} accent />
+      <ScoreCell value={mine} label={t('friend.you')} size={24} />
+    </button>
+  );
+}
+
+function Top4Tile({ ids, scores }: { ids: string[]; scores: Map<string, number> }) {
+  const { t, albums, liveAlbums, spotifyCovers, openAlbum } = useApp();
+  const shown = ids.map((id) => ({ id, a: liveAlbums[id] || albums.find((x) => x.id === id) })).filter((x) => x.a);
+  if (!shown.length) return <p className="muted" style={{ fontWeight: 600 }}>{t('profile.noRatingsYet')}</p>;
+  return (
+    <div className="t4">
+      {shown.map(({ id, a }) => (
+        <button key={id} onClick={() => openAlbum(id)} style={{ textAlign: 'left', color: 'inherit' }}>
+          <div className="cvw">
+            <CoverArt url={spotifyCovers[a!.id] || a!.cover} fallbackLetter={a!.artist[0] || '?'} className="cov" style={{ width: '100%', aspectRatio: '1' }} />
+            {scores.has(id) && <span className="bdg">{scores.get(id)!.toFixed(1)}</span>}
+          </div>
+          <b style={{ display: 'block', marginTop: 8, fontSize: 14 }}>{a!.title}</b>
+        </button>
+      ))}
     </div>
   );
 }
 
-function FriendsOfFriendRow({ user }: { user: NonNullable<PublicProfile['friends']>[number] }) {
-  const { t, me, friendRequests, addFriend } = useApp();
+// personRow() + friendBtn(n, true): avatar, name, "@handle", then the
+// relationship button.
+function PersonRow({ user }: { user: ApiUser }) {
+  const { t, me, friendRequests, addFriend, respondToFriendRequest, viewFriend } = useApp();
   if (!me) return null;
-  const isMe = user.id === me.id;
-  const isFriend = me.friends.some((fr) => fr.id === user.id);
-  const isPending = friendRequests.outgoing.some((r) => r.user.id === user.id);
+  const sm = { padding: '8px 16px' };
+  const out = friendRequests.outgoing.find((r) => r.user.id === user.id);
+  const inc = friendRequests.incoming.find((r) => r.user.id === user.id);
+  const btn = user.id === me.id ? null
+    : me.friends.some((f) => f.id === user.id) ? <span className="tag">{t('friend.friendsTag')}</span>
+    : out ? <button className="btn ghost" style={sm} onClick={() => respondToFriendRequest(out.id, 'cancel')}>{t('friend.requestSent')}</button>
+    : inc ? <button className="btn" style={sm} onClick={() => respondToFriendRequest(inc.id, 'accept')}>{t('friends.accept')}</button>
+    : <button className="btn" style={sm} onClick={() => addFriend(user.handle)}>{t('friend.addFriend')}</button>;
   return (
-    <PersonListRow user={user} action={
-      isMe ? null : isFriend ? <span className="tag">{t('friend.alreadyFriend')}</span> : isPending ? <span className="tag">{t('friend.requestSent')}</span> :
-      <button className="chip" onClick={() => addFriend(user.handle)}>{t('friend.addThem')}</button>
-    } />
+    <div className="row">
+      <button className="rowlink" onClick={() => viewFriend(user.id)}>
+        <span className="dot" style={userAvatarStyle(user)}>{!user.avatarUrl && user.name[0]}</span>
+        <span className="g"><b>{user.name}</b><small className="muted" style={{ fontWeight: 600 }}>@{user.handle.replace(/^@/, '')}</small></span>
+      </button>
+      {btn}
+    </div>
   );
 }
 
@@ -79,6 +110,7 @@ function FriendsOfFriendRow({ user }: { user: NonNullable<PublicProfile['friends
 // with a dot per point (the last one larger), axis labels underneath.
 function MatchLine({ points }: { points: number[] }) {
   const { t } = useApp();
+  if (points.length < 2) return <p className="muted" style={{ fontWeight: 600 }}>{t('friend.lineEmpty')}</p>;
   const W = 300, H = 110;
   const mn = Math.min(...points) - 4, mx = Math.max(...points) + 4;
   const xy = points.map((v, i) => [8 + (i * (W - 16)) / (points.length - 1), H - 8 - ((v - mn) / (mx - mn || 1)) * (H - 16)] as const);
@@ -95,7 +127,7 @@ function MatchLine({ points }: { points: number[] }) {
 }
 
 export function FriendScreen({ device: _device }: { device: Device }) {
-  const { t, language, state, me, myRatings, friendRequests, addFriend, respondToFriendRequest, removeFriend, sendHi, goBack, showScreen, albums, liveAlbums, spotifyCovers, openAlbum } = useApp();
+  const { t, language, state, me, myRatings, friendRequests, addFriend, respondToFriendRequest, removeFriend, sendHi, showScreen, openRecap, viewFriend, openSpotifyArtist, albums, liveAlbums, spotifyCovers, openAlbum } = useApp();
   const [confirmRemove, setConfirmRemove] = useState(false);
   const snapshotSent = useRef<string | null>(null);
   const [f, setF] = useState<PublicProfile | null>(null);
@@ -103,6 +135,7 @@ export function FriendScreen({ device: _device }: { device: Device }) {
   const [matchHistory, setMatchHistory] = useState<{ pct: number; date: string }[] | null>(null);
   const [myStats, setMyStats] = useState<StatsData | null>(null);
   const [friendStats, setFriendStats] = useState<StatsData | null>(null);
+  const myFriendScores = useFriendScores(me, 50);
 
   useEffect(() => {
     if (!state.viewingUserId) { setF(null); setLoading(false); return; }
@@ -123,6 +156,8 @@ export function FriendScreen({ device: _device }: { device: Device }) {
     return map;
   }, [myRatings]);
 
+  const theirScoreByAlbum = useMemo(() => new Map((f?.recentRatings ?? []).map((r) => [r.albumId, r.stars])), [f]);
+
   const shared = useMemo(() => {
     if (!f?.recentRatings) return [];
     return f.recentRatings
@@ -134,12 +169,12 @@ export function FriendScreen({ device: _device }: { device: Device }) {
     if (!shared.length) return null;
     return [...shared].sort((a, b) => Math.abs(b.mine - b.theirs) - Math.abs(a.mine - a.theirs))[0];
   }, [shared]);
-  const avgGap = useMemo(() => shared.length ? shared.reduce((s, x) => s + Math.abs(x.mine - x.theirs), 0) / shared.length : null, [shared]);
-  const agreeCount = useMemo(() => shared.filter((x) => Math.abs(x.mine - x.theirs) <= 0.5).length, [shared]);
+  const avgGap = shared.length ? shared.reduce((s, x) => s + Math.abs(x.mine - x.theirs), 0) / shared.length : null;
+  const agreeCount = shared.filter((x) => Math.abs(x.mine - x.theirs) <= 0.5).length;
 
   const mutualFriends = useMemo(() => {
     if (!f?.friends || !me) return [];
-    return me.friends.filter((mf) => f.friends!.some((ff) => ff.id === mf.id));
+    return me.friends.filter((mf) => mf.id !== f.id && f.friends!.some((ff) => ff.id === mf.id));
   }, [f, me]);
 
   // Genre overlap tile: both people's genres (prototype: union, top 5 by
@@ -155,9 +190,19 @@ export function FriendScreen({ device: _device }: { device: Device }) {
   // Same taste-match % as Match and Home (lib/matchScore.ts).
   const matchScore = useMemo(() => (f && me ? computeMatch(me.genres, f.genres) : null), [f, me]);
   // Sum of per-genre min(you%, them%) across the shown genres — the
-  // prototype's "{N}% shared" headline on the Genre overlap tile, a
-  // different (simpler, unnormalized) metric than the taste-match % above.
-  const sharedGenrePct = useMemo(() => overlap.length ? Math.round(overlap.reduce((s, o) => s + Math.min(o.me, o.friend), 0)) : null, [overlap]);
+  // prototype's "{N}% shared" headline on the Genre overlap tile.
+  const sharedGenrePct = Math.round(overlap.reduce((s, o) => s + Math.min(o.me, o.friend), 0));
+
+  // "Top artists, last 6 months": the friend's top names first, then
+  // yours, five in all, each with both people's hours.
+  const artistRows = useMemo(() => {
+    if (!myStats || !friendStats) return [];
+    const hours = (d: StatsData, name: string) => d.topArtists.find((a) => a.name === name)?.hours ?? 0;
+    const seen = new Map<string, string | null>();
+    for (const a of [...friendStats.topArtists, ...myStats.topArtists]) if (!seen.has(a.name)) seen.set(a.name, a.id || null);
+    return [...seen.entries()].slice(0, 5).map(([name, id]) => ({ name, id, me: Math.round(hours(myStats, name)), them: Math.round(hours(friendStats, name)) }));
+  }, [myStats, friendStats]);
+  const maxHours = Math.max(1, ...artistRows.flatMap((r) => [r.me, r.them]));
 
   useEffect(() => {
     if (!f || f.locked || matchScore == null || snapshotSent.current === f.id) return;
@@ -170,7 +215,7 @@ export function FriendScreen({ device: _device }: { device: Device }) {
     let cancelled = false;
     fetch(`/api/match/${f.id}/history`).then((r) => (r.ok ? r.json() : { history: [] })).then((d) => { if (!cancelled) setMatchHistory(d.history); });
     return () => { cancelled = true; };
-  }, [f?.id, f?.locked]);
+  }, [f?.id, f?.locked]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!f || f.locked) { setMyStats(null); setFriendStats(null); return; }
@@ -180,15 +225,16 @@ export function FriendScreen({ device: _device }: { device: Device }) {
       fetch(`/api/stats?range=6m&userId=${f.id}`).then((r) => (r.ok ? r.json() : null)),
     ]).then(([mine, theirs]) => { if (!cancelled) { setMyStats(mine); setFriendStats(theirs); } });
     return () => { cancelled = true; };
-  }, [f?.id]);
+  }, [f?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) return <div className="muted">{t('friend.loadingProfile')}</div>;
   if (!f || !me) {
     return (
-      <>
-        <button className="crumb" onClick={() => goBack('profile')}>‹ {t('friend.back')}</button>
-        <div className="tile empty"><p>{t('friend.notFound')}</p></div>
-      </>
+      <div className="tile empty">
+        <MascotIcon />
+        <h3>{t('friend.notFound')}</h3>
+        <button className="btn" onClick={() => showScreen('discover')}>{t('friend.findPeople')}</button>
+      </div>
     );
   }
 
@@ -197,12 +243,11 @@ export function FriendScreen({ device: _device }: { device: Device }) {
   const incoming = friendRequests.incoming.find((r) => r.user.id === f.id);
   const isFullView = !!f.recentRatings;
   const firstName = f.name.split(' ')[0];
+  const demo = isDemoAccountId(f.id);
 
   // statusBlock() in reference/app.js: Friends ✓ (inline remove confirm),
   // Request sent · cancel, Accept/Decline, or Add friend.
-  const statusButton = isDemoAccountId(f.id) ? (
-    <span className="tag">{t('friend.demoLabel')}</span>
-  ) : isFriend ? (
+  const statusButton = demo ? null : isFriend ? (
     confirmRemove ? (
       <span className="conf">
         <b>{t('friend.removeConfirm', { name: firstName })}</b>
@@ -220,23 +265,40 @@ export function FriendScreen({ device: _device }: { device: Device }) {
       <button className="btn ghost" onClick={() => respondToFriendRequest(incoming.id, 'decline')}>{t('friend.decline')}</button>
     </>
   ) : (
-    <button className="btn" onClick={() => addFriend(f.handle)}>{t('friend.addThem')}</button>
+    <button className="btn" onClick={() => addFriend(f.handle)}>{t('friend.addFriend')}</button>
   );
 
-  // "Say hi": an in-app notification to the friend (migration 021).
-  const sayHi = () => { sendHi(f.id); };
+  const head = (
+    <div className="tile t-ink glow" style={{ display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
+      <span className="avt lgA" style={userAvatarStyle(f)}>{!f.avatarUrl && f.name[0].toUpperCase()}</span>
+      <div style={{ flex: 1, minWidth: 190 }}>
+        <p className="eyebrow muted" style={{ margin: 0 }}>
+          {isFriend ? t('friend.eyebrowFriend') : t('friend.eyebrowPerson')}
+          {demo && <> · <span className="tag">{t('friends.demoTag')}</span></>}
+        </p>
+        <h1 className="big" style={{ margin: 0, fontSize: 'clamp(34px,7vw,60px)' }}>{f.name}</h1>
+        <p className="muted" style={{ fontWeight: 600 }}>
+          @{f.handle.replace(/^@/, '')}
+          {isFriend && f.friendsSince ? ` · ${t('friend.friendsSince', { date: new Date(f.friendsSince).toLocaleDateString(toLocale(language), { month: 'long' }) })}` : ''}
+        </p>
+        {!f.locked && f.nowPlaying && (
+          <p className="nowl"><span className="eqs"><span className="eq"><b /><b /><b /></span></span> {t('friend.nowPlaying', { title: f.nowPlaying.title, artist: f.nowPlaying.artist })}</p>
+        )}
+        <div className="acts" style={{ marginTop: 12 }}>{statusButton}</div>
+      </div>
+      {!f.locked && (
+        <div style={{ textAlign: 'right' }}>
+          <span className="num" style={{ fontSize: 72, color: 'var(--acct)' }}>{matchScore != null ? `${matchScore}%` : '–'}</span>
+          <br /><small style={{ fontWeight: 800 }}>{t('friend.matchScore')}</small>
+        </div>
+      )}
+    </div>
+  );
 
   if (f.locked) {
     return (
       <>
-        <button className="crumb" onClick={() => goBack('profile')}>‹ {t('friend.back')}</button>
-        <div className="tile t-ink hero">
-          <div className="eyebrow muted">{isFriend ? t('friend.eyebrowFriend') : t('friend.eyebrowPerson')}</div>
-          <div className="dot" style={{ ...userAvatarStyle(f), width: 76, height: 76, fontSize: 28 }}>{f.name[0]}</div>
-          <h1>{f.name}</h1>
-          <p className="muted">{f.handle}</p>
-          <div className="acts">{statusButton}</div>
-        </div>
+        {head}
         <div className="tile t-soft2 empty" style={{ marginTop: 14 }}>
           <span className="num" style={{ fontSize: 54 }}>🔒</span>
           <h3>{t('friend.closedProfileTitle')}</h3>
@@ -246,123 +308,77 @@ export function FriendScreen({ device: _device }: { device: Device }) {
     );
   }
 
+  const compare = () => { showScreen('match'); window.dispatchEvent(new CustomEvent(MATCH_FRIEND_EVENT, { detail: f.id })); };
+  const snaps = matchHistory?.map((h) => h.pct) ?? (matchScore != null ? [matchScore] : []);
+  const lp = f.lastPlayed ?? f.nowPlaying;
+
   return (
     <>
-      <button className="crumb" onClick={() => goBack('profile')}>‹ {t('friend.back')}</button>
+      {head}
 
-      <div className="tile t-ink hero">
-        <div className="duel" style={{ alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <div className="eyebrow muted">{isFriend ? t('friend.eyebrowFriend') : t('friend.eyebrowPerson')}</div>
-            <div className="dot" style={{ ...userAvatarStyle(f), width: 76, height: 76, fontSize: 28 }}>{f.name[0]}</div>
-            <h1 style={{ marginTop: 14 }}>{f.name}</h1>
-            <p className="muted">
-              {f.handle}
-              {isFriend && f.friendsSince ? ` · ${t('friend.friendsSince', { date: new Date(f.friendsSince).toLocaleDateString(toLocale(language), { month: 'long', year: 'numeric' }) })}` : ''}
-            </p>
-            {f.nowPlaying && (
-              <div className="nowl"><span className="eq"><b /><b /><b /></span>{t('friend.nowPlaying', { title: f.nowPlaying.title, artist: f.nowPlaying.artist })}</div>
-            )}
-            <div className="acts">{statusButton}</div>
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            {matchScore != null ? (
-              <><span className="pcts">{matchScore}%</span><div className="muted">{t('friend.matchScore')}</div></>
-            ) : <div className="muted">{t('friend.notEnoughCompare')}</div>}
-          </div>
-        </div>
+      <div className="acts" style={{ margin: '14px 0 6px' }}>
+        <button className="btn lg" onClick={compare}>{t('friend.compare')}</button>
+        <button className="btn ghost lg" onClick={() => openRecap(f.id)}>{t('friend.recapOf', { name: firstName })}</button>
+        <BlendButton me={me.id} friend={f.id} friendName={firstName} matchPct={matchScore} className="btn ghost lg" />
+        {isFriend && <button className="btn ghost lg" onClick={() => sendHi(f.id)}>{t('friend.sayHi')}</button>}
       </div>
 
-      <div className="acts" style={{ marginTop: 14, marginBottom: 14 }}>
-        <button className="btn" onClick={() => showScreen('match')}>{t('friend.compare')}</button>
-        <RecapOpenButton userId={f.id} label={t('friend.recapOf', { name: firstName })} />
-        <BlendButton me={me.id} friend={f.id} friendName={firstName} matchPct={matchScore} />
-        {isFriend && <button className="btn ghost" onClick={sayHi}>{t('friend.sayHi')}</button>}
+      <div className="stats3">
+        <div className="tile t-pop"><span className="num">{shared.length}</span><small>{t('friend.sharedRatings')}</small></div>
+        <div className="tile t-ac"><span className="num">{avgGap != null ? avgGap.toFixed(1) : '–'}</span><small>{t('friend.avgGap')}</small></div>
+        <div className="tile t-ink"><span className="num">{agreeCount}</span><small>{t('friend.youAgree')}</small></div>
       </div>
-
-      {isFullView && shared.length > 0 && (
-        <div className="stats3">
-          <div className="tile t-pop"><span className="num">{shared.length}</span><small>{t('friend.sharedRatings')}</small></div>
-          <div className="tile t-ac"><span className="num">{avgGap?.toFixed(1) ?? '—'}</span><small>{t('friend.avgGap')}</small></div>
-          <div className="tile t-ink"><span className="num">{agreeCount}</span><small>{t('friend.youAgree')}</small></div>
-        </div>
-      )}
 
       <div className="bento b3">
-        {isFullView && shared.length > 0 && (
-          <div className="tile s2">
-            <h3>{t('friend.bothLabel')}</h3>
-            <div className="stack" style={{ marginTop: 10 }}>
-              {biggestGap && <ScoreCompareRow albumId={biggestGap.albumId} mine={biggestGap.mine} theirs={biggestGap.theirs} friendName={firstName} highlight />}
-              {shared.map((s) => <ScoreCompareRow key={s.albumId} albumId={s.albumId} mine={s.mine} theirs={s.theirs} friendName={firstName} />)}
+        <div className="tile s2">
+          <h2>{t('friend.bothLabel')}</h2>
+          {biggestGap
+            ? <BothRow albumId={biggestGap.albumId} mine={biggestGap.mine} theirs={biggestGap.theirs} name={firstName} biggest />
+            : <p className="muted" style={{ fontWeight: 600 }}>{isFullView ? t('friend.noSharedYet') : t('friend.reducedNote')}</p>}
+          {shared.map((s) => <BothRow key={s.albumId} albumId={s.albumId} mine={s.mine} theirs={s.theirs} name={firstName} />)}
+        </div>
+
+        <div className="tile t-soft2">
+          <h2>{t('friend.matchTrend')}</h2>
+          <MatchLine points={snaps} />
+          <p className="muted" style={{ fontSize: 13, fontWeight: 600, marginTop: 8 }}>
+            {t('friend.snapshotsCaption', { count: snaps.length, word: pluralForKey(language, snaps.length, 'friend.snapshotOne', 'friend.snapshotFew', 'friend.snapshotMany') })}
+          </p>
+        </div>
+
+        <div className="tile">
+          <h2>{t('friend.genreOverlap')}</h2>
+          <p style={{ fontWeight: 800, margin: '-6px 0 12px' }}><span className="num" style={{ fontSize: 34, color: 'var(--acct)' }}>{sharedGenrePct}%</span> {t('friend.sharedLabel')}</p>
+          {overlap.map((o) => (
+            <div className="cmp" key={o.g}>
+              <small style={{ fontWeight: 800 }}>{o.g}</small>
+              <div className="cmpb"><i className="a" style={{ width: `${o.me}%` }} /><b>{o.me}%</b></div>
+              <div className="cmpb"><i className="b" style={{ width: `${o.friend}%` }} /><b>{o.friend}%</b></div>
             </div>
-          </div>
-        )}
+          ))}
+          <p className="muted" style={{ fontSize: 12, fontWeight: 700, marginTop: 8 }}><span className="lg1" /> {t('friend.youLower')} <span className="lg2" /> {firstName}</p>
+        </div>
 
-        {matchHistory && matchHistory.length >= 2 && (
-          <div className="tile t-soft2">
-            <h3>{t('friend.matchTrend')}</h3>
-            <MatchLine points={matchHistory.map((h) => h.pct)} />
-            <p className="muted" style={{ fontSize: 13, fontWeight: 600, marginTop: 8 }}>
-              {t('friend.snapshotsCaption', { count: matchHistory.length, word: pluralForKey(language, matchHistory.length, 'friend.snapshotOne', 'friend.snapshotFew', 'friend.snapshotMany') })}
-            </p>
-          </div>
-        )}
+        <div className="tile s2">
+          <h2>{t('friend.topArtistsCompare')}</h2>
+          <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 10px' }}>{t('friend.topArtistsSubtitle', { name: firstName })}</p>
+          {artistRows.length ? artistRows.map((r) => (
+            <button className="cmp" key={r.name} onClick={() => r.id && openSpotifyArtist(r.id)} style={{ textAlign: 'left', width: '100%' }}>
+              <small style={{ fontWeight: 800 }}>{r.name}</small>
+              <div className="cmpb"><i className="a" style={{ width: `${Math.round((r.me / maxHours) * 100)}%` }} /><b>{r.me}{t('unit.h')}</b></div>
+              <div className="cmpb"><i className="b" style={{ width: `${Math.round((r.them / maxHours) * 100)}%` }} /><b>{r.them}{t('unit.h')}</b></div>
+            </button>
+          )) : <p className="muted" style={{ fontWeight: 600 }}>{myStats && friendStats ? t('stats.notEnough') : t('stats.loading')}</p>}
+        </div>
 
-        {overlap.length > 0 && (
-          <div className="tile">
-            <h3>{t('friend.genreOverlap')}</h3>
-            {sharedGenrePct != null && (
-              <p style={{ fontWeight: 800, margin: '-6px 0 12px' }}><span className="num" style={{ fontSize: 34, color: 'var(--acct)' }}>{sharedGenrePct}%</span> {t('friend.sharedLabel')}</p>
-            )}
-            {overlap.map((o) => (
-              <div className="cmp" key={o.g}>
-                <small style={{ fontWeight: 800 }}>{o.g}</small>
-                <div className="cmpb"><i className="a" style={{ width: `${o.me}%` }} /><b>{o.me}%</b></div>
-                <div className="cmpb"><i className="b" style={{ width: `${o.friend}%` }} /><b>{o.friend}%</b></div>
-              </div>
-            ))}
-            <div className="acts" style={{ marginTop: 10 }}>
-              <span><i className="lg1" />{t('friend.you')}</span>
-              <span><i className="lg2" />{firstName}</span>
-            </div>
-          </div>
-        )}
-
-        {myStats && friendStats && (myStats.topArtists.length > 0 || friendStats.topArtists.length > 0) && (
-          <div className="tile s2">
-            <h3>{t('friend.topArtistsCompare')}</h3>
-            <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 10px' }}>{t('friend.topArtistsSubtitle', { name: firstName })}</p>
-            <div className="two" style={{ marginTop: 10 }}>
-              {[{ label: t('friend.you'), stats: myStats }, { label: firstName, stats: friendStats }].map(({ label, stats }, side) => {
-                const top = stats.topArtists.slice(0, 5);
-                const max = Math.max(1, ...top.map((a) => a.hours));
-                return (
-                  <div key={side}>
-                    <b>{label}</b>
-                    {top.length ? top.map((a) => (
-                      <div className="row" key={a.id || a.name}>
-                        <div className="g"><b>{a.name}</b></div>
-                        <div className="meter"><i style={{ width: `${(a.hours / max) * 100}%` }} /></div>
-                      </div>
-                    )) : <p className="muted">{t('stats.notEnough')}</p>}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {isFullView && f.lastPlayed && (() => {
-          const lp = f.lastPlayed;
+        {lp && (() => {
           const a = lp.albumId ? liveAlbums[lp.albumId] || albums.find((x) => x.id === lp.albumId) : undefined;
           const cover = (a && (spotifyCovers[a.id] || a.cover)) || lp.cover || undefined;
-          const live = !!f.nowPlaying;
           return (
             <button className="tile t-pop" onClick={() => a && openAlbum(a.id)} style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap', textAlign: 'left', cursor: a ? 'pointer' : 'default' }}>
               <CoverArt url={cover} fallbackLetter={lp.artist[0] || '?'} className="cov" style={{ width: 72, height: 72 }} />
               <div>
-                <small style={{ fontWeight: 800 }}>{live ? t('friend.listeningNow') : t('friend.lastPlayedAgo', { time: formatRelative(lp.startedAt, language) })}</small>
+                <small style={{ fontWeight: 800 }}>{f.nowPlaying ? t('friend.listeningNow') : t('friend.lastPlayedAgo', { time: formatRelative(lp.startedAt, language) })}</small>
                 <h3>{a?.title ?? lp.title}</h3>
                 <p className="muted" style={{ fontWeight: 600 }}>{lp.artist}</p>
               </div>
@@ -370,53 +386,48 @@ export function FriendScreen({ device: _device }: { device: Device }) {
           );
         })()}
 
+        <div className="tile s2">
+          <h2>{t('friend.top4', { name: firstName })}</h2>
+          <Top4Tile ids={f.top4Albums} scores={theirScoreByAlbum} />
+        </div>
+
+        <div className="tile">
+          <h2>{t('friend.awards')}</h2>
+          <div className="chips" style={{ margin: 0 }}>
+            {f.awards?.length
+              ? f.awards.map((aw) => <span className="chip on" key={aw.label}>{t(`groups.${aw.label}` as TranslationKey)}</span>)
+              : <span className="muted" style={{ fontWeight: 600 }}>{t('friend.noAwards')}</span>}
+          </div>
+        </div>
+
         {isFullView && (
-          <div className="tile s2">
-            <h3>{t('friend.top4')}</h3>
-            <div style={{ marginTop: 10 }}><Top4Grid ids={f.top4Albums} /></div>
-          </div>
-        )}
-
-        {isFullView && f.awards && (
-          <div className="tile">
-            <h3>{t('friend.awards')}</h3>
-            <div className="chips" style={{ margin: 0 }}>
-              {f.awards.length
-                ? f.awards.map((aw) => <span className="chip on" key={aw.label}>{t(`groups.${aw.label}` as TranslationKey)} · {aw.detail}</span>)
-                : <span className="muted" style={{ fontWeight: 600 }}>{t('friend.noAwards')}</span>}
-            </div>
-          </div>
-        )}
-
-        {!isFullView && (
-          <div className="tile t-soft2">
-            <p className="muted" style={{ fontWeight: 600 }}>{t('friend.reducedNote')}</p>
-          </div>
-        )}
-
-        {isFullView && f.recentRatings && f.recentRatings.length > 0 && (
           <div className="tile s3">
-            <h3>{t('friend.latestRatings')}</h3>
+            <h2>{t('friend.latestRatings')}</h2>
             <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 8px' }}>{t('friend.latestRatingsSubtitle')}</p>
-            <div className="stack" style={{ marginTop: 10 }}>
-              {f.recentRatings.map((r) => <ScoreCompareRow key={r.albumId} albumId={r.albumId} mine={myScoreByAlbum.get(r.albumId) ?? null} theirs={r.stars} friendName={firstName} />)}
-            </div>
+            {f.recentRatings!.length
+              ? [...f.recentRatings!].sort((a, b) => b.stars - a.stars).slice(0, 8).map((r) => <LatestRow key={r.albumId} albumId={r.albumId} mine={myScoreByAlbum.get(r.albumId) ?? null} theirs={r.stars} name={firstName} />)
+              : <p className="muted" style={{ fontWeight: 600 }}>{t('profile.noRatingsYet')}</p>}
           </div>
         )}
 
-        {isFullView && mutualFriends.length > 0 && (
-          <div className="tile">
-            <h3>{t('friend.mutualFriends')}</h3>
-            <div className="stack" style={{ marginTop: 10 }}>{mutualFriends.map((u) => <PersonListRow key={u.id} user={u} />)}</div>
-          </div>
-        )}
+        <div className="tile">
+          <h2>{t('friend.mutualFriends')}</h2>
+          {mutualFriends.length ? mutualFriends.map((u) => (
+            <button className="row" key={u.id} onClick={() => viewFriend(u.id)}>
+              <span className="dot" style={userAvatarStyle(u)}>{!u.avatarUrl && u.name[0]}</span>
+              <b className="g">{u.name}</b>
+              <span className="num" style={{ fontSize: 26 }}>{myFriendScores[u.id]?.pct != null ? `${myFriendScores[u.id]!.pct}%` : '–'}</span>
+            </button>
+          )) : <p className="muted" style={{ fontWeight: 600 }}>{t('friend.noMutual')}</p>}
+        </div>
 
-        {isFullView && f.friends && (
+        {f.friends && (
           <div className="tile s2">
-            <h3>{t('friend.friendsOf', { name: firstName })}</h3>
-            <div className="stack" style={{ marginTop: 10 }}>
-              {f.friends.length ? f.friends.map((u) => <FriendsOfFriendRow key={u.id} user={u} />) : <p className="muted">{t('friend.noFriends')}</p>}
-            </div>
+            <h2>{t('friend.friendsOf', { name: firstName })}</h2>
+            <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 8px' }}>{t('friend.friendsOfSub', { name: firstName })}</p>
+            {f.friends.filter((u) => u.id !== me.id && !me.friends.some((m) => m.id === u.id)).length
+              ? f.friends.filter((u) => u.id !== me.id && !me.friends.some((m) => m.id === u.id)).map((u) => <PersonRow key={u.id} user={u} />)
+              : <p className="muted" style={{ fontWeight: 600 }}>{t('friend.noFriends')}</p>}
           </div>
         )}
       </div>

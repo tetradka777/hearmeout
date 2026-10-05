@@ -34,13 +34,13 @@ function HistoryRow({ rating }: { rating: RatingRecord }) {
   return (
     <button className="row" onClick={() => openAlbum(rating.albumId)} style={{ cursor: 'pointer', width: '100%' }}>
       <CoverArt url={cover} fallbackLetter={artist[0] || '?'} className="cov" style={{ width: 48, height: 48 }} />
-      <div className="g">
+      <span className="g">
         <b>{title}</b>
         <small className="muted" style={{ fontWeight: 600 }}>{artist}{artist ? ' · ' : ''}{date}{rating.isPrivate ? ` · ${t('history.privateBadge')}` : ''}</small>
-      </div>
+      </span>
       {rating.review && <span className="tag">{t('history.reviewBadge')}</span>}
       {rating.previousStars != null && <span className="rev">{rating.previousStars.toFixed(1)} → {rating.stars.toFixed(1)}</span>}
-      <Stars value={rating.stars} size={14} />
+      <span className="stars"><Stars value={rating.stars} size={14} /></span>
       <span className="num" style={{ fontSize: 26, width: 44, textAlign: 'right' }}>{rating.stars.toFixed(1)}</span>
     </button>
   );
@@ -50,15 +50,16 @@ function HistoryRow({ rating }: { rating: RatingRecord }) {
 // vHistory()'s sparkHtml(): a real SVG line chart (not bars) over the last
 // 6 months that actually have a rating, with hoverable/focusable points and
 // an aria-live readout — not just a title attribute tooltip.
-function AverageByMonthChart({ months }: { months: { key: string; label: string; avg: number; count: number }[] }) {
-  const { t } = useApp();
+function AverageByMonthChart({ months }: { months: { key: string; label: string; avg: number | null; count: number }[] }) {
+  const { t, language } = useApp();
   const [hover, setHover] = useState<{ label: string; avg: number; count: number } | null>(null);
   const W = 300, H = 100;
-  const pts = months.map((m, i) => ({
+  const pts = months.flatMap((m, i) => (m.avg == null ? [] : [{
     ...m,
-    x: months.length > 1 ? 18 + (i * (W - 36)) / (months.length - 1) : W / 2,
+    avg: m.avg,
+    x: 18 + (i * (W - 36)) / Math.max(1, months.length - 1),
     y: H - 16 - ((Math.max(1, Math.min(5, m.avg)) - 1) / 4) * (H - 32),
-  }));
+  }]));
   return (
     <>
       <svg className="lc" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t('history.monthlyChartAriaLabel')}>
@@ -75,15 +76,14 @@ function AverageByMonthChart({ months }: { months: { key: string; label: string;
             r={6}
             fill="var(--acct)"
             onMouseEnter={() => setHover(p)}
-            onMouseLeave={() => setHover(null)}
             onFocus={() => setHover(p)}
-            onBlur={() => setHover(null)}
+            onClick={() => setHover(p)}
           />
         ))}
       </svg>
       <div className="axis sp6" aria-hidden="true">{months.map((m) => <span key={m.key}>{m.label}</span>)}</div>
       <div className="calread" aria-live="polite" style={{ minHeight: 0, padding: '8px 12px', marginTop: 8 }}>
-        {hover ? t('history.monthlyHoverValue', { label: hover.label, avg: hover.avg.toFixed(1), count: hover.count }) : t('history.monthlyHoverHint')}
+        {hover ? t('history.monthlyHoverValue', { label: hover.label, avg: hover.avg.toFixed(1), count: hover.count, ratingWord: pluralForKey(language, hover.count, 'album.ratingOne', 'album.ratingFew', 'album.ratingMany') }) : t('history.monthlyHoverHint')}
       </div>
     </>
   );
@@ -154,8 +154,18 @@ export function HistoryScreen(_props: { device: Device }) {
     }
     return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
   }, [myRatings, language]);
-  // "Average by month": last 6 months that actually have a rating.
-  const avgByMonth = useMemo(() => byMonth.slice(-6).map(([key, v]) => ({ key, label: v.label, avg: v.sum / v.count, count: v.count })), [byMonth]);
+  // "Average by month" (sparkHtml): a fixed axis of the last 6 calendar
+  // months; a point only where that month has ratings.
+  const avgByMonth = useMemo(() => {
+    const m = new Map(byMonth);
+    const now = new Date();
+    return Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
+      const v = m.get(key);
+      return { key, label: d.toLocaleDateString(toLocale(language), { month: 'short' }), avg: v ? v.sum / v.count : null, count: v?.count ?? 0 };
+    });
+  }, [byMonth, language]);
   // "Ratings per month": every month that has one, uncapped, by count.
   const countByMonth = useMemo(() => byMonth.map(([key, v]) => ({ key, label: v.label, avg: v.sum / v.count, count: v.count })), [byMonth]);
   const maxMonthCount = Math.max(1, ...countByMonth.map((m) => m.count));
@@ -241,10 +251,10 @@ export function HistoryScreen(_props: { device: Device }) {
           <h2>{t('history.scoreDistTitle')}</h2>
           {myRatings.length ? (
             <>
-              <div className="h50" style={{ marginTop: 10 }}>
-                {scoreBuckets.map((n, i) => <i key={i} style={{ height: n ? `${Math.max(6, (n / maxBucket) * 100)}%` : '2%' }} title={`${((i + 1) / 10).toFixed(1)} ★ · ${n}`} />)}
+              <div className="h50" role="img" aria-label={t('album.ratingDistribution')}>
+                {scoreBuckets.map((n, i) => <i key={i} style={{ height: `${Math.max(3, Math.round((n / maxBucket) * 100))}%` }} title={`${((i + 1) / 10).toFixed(1)}: ${n}`} />)}
               </div>
-              <div className="h50ax"><span>0.1</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+              <div className="h50ax" aria-hidden="true"><span>0.1</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
               <p className="muted" style={{ marginTop: 10, fontSize: 14, fontWeight: 600 }}>{t('history.scoreDistModeCaption', { mode: scoreMode.toFixed(1) })}</p>
             </>
           ) : <p className="muted">{t('history.notEnoughForChart')}</p>}
@@ -252,7 +262,7 @@ export function HistoryScreen(_props: { device: Device }) {
 
         <div className="tile t-soft2">
           <h2>{t('history.monthlySparkTitle')}</h2>
-          {avgByMonth.length >= 2 ? <AverageByMonthChart months={avgByMonth} /> : <p className="muted">{t('history.notEnoughForChart')}</p>}
+          <AverageByMonthChart months={avgByMonth} />
         </div>
 
         <div className="tile">
@@ -272,7 +282,7 @@ export function HistoryScreen(_props: { device: Device }) {
         <div className="tile">
           <h2>{t('history.highlightsTitle')}</h2>
           {highlights ? (
-            <div className="stack" style={{ marginTop: 10 }}>
+            <>
               <button className="row" onClick={() => openAlbum(highlights.highest.albumId)}>
                 <CoverArt url={spotifyCovers[highlights.highest.albumId] || albumFor(highlights.highest.albumId)?.cover} fallbackLetter={albumFor(highlights.highest.albumId)?.artist[0] || '?'} className="cov" style={{ width: 48, height: 48 }} />
                 <div className="g"><b>{t('history.highestRated')}</b><small className="muted" style={{ fontWeight: 600 }}>{albumTitle(highlights.highest.albumId)}</small></div>
@@ -290,13 +300,13 @@ export function HistoryScreen(_props: { device: Device }) {
                   <span className="rev">{highlights.changedMind.previousStars!.toFixed(1)} → {highlights.changedMind.stars.toFixed(1)}</span>
                 </button>
               )}
-            </div>
+            </>
           ) : <p className="muted">{t('history.notEnoughForChart')}</p>}
         </div>
 
         <div className="tile t-pop">
           <h2>{t('history.habitsTitle')}</h2>
-          <div className="row"><span className="g"><b>{t('history.reviewsWritten')}</b></span><b>{habits.reviewed} / {habits.total}</b></div>
+          <div className="row"><span className="g"><b>{t('history.reviewsWritten')}</b></span><b>{t('history.nOfTotal', { n: habits.reviewed, total: habits.total })}</b></div>
           <div className="meter" style={{ margin: '2px 0 10px' }}><i style={{ width: `${habits.total ? (habits.reviewed / habits.total) * 100 : 0}%` }} /></div>
           <div className="row"><span className="g"><b>{t('history.keptPrivateLabel')}</b></span><b>{habits.privateCount}</b></div>
           <div className="row"><span className="g"><b>{t('history.favouriteTags')}</b></span></div>
@@ -324,14 +334,17 @@ export function HistoryScreen(_props: { device: Device }) {
         {filtered.length ? (
           groups.map(([key, rows]) => {
             const avg = rows.reduce((s, r) => s + r.stars, 0) / rows.length;
-            const label = new Date(rows[0].createdAt).toLocaleDateString(toLocale(language), { month: 'long', year: 'numeric' });
+            // vHistory() heads each group with the full month name; the year
+            // is added only for months outside the current year.
+            const first = new Date(rows[0].createdAt);
+            const label = first.toLocaleDateString(toLocale(language), first.getFullYear() === new Date().getFullYear() ? { month: 'long' } : { month: 'long', year: 'numeric' });
             return (
               <div className="tile" key={key} style={{ marginBottom: 14 }}>
-                <div className="setrow" style={{ border: 0, padding: 0, marginBottom: 6, alignItems: 'baseline' }}>
-                  <h2 style={{ margin: 0 }}>{label}</h2>
-                  <small className="muted" style={{ fontWeight: 700 }}>{t('history.monthSummary', { count: rows.length, avg: avg.toFixed(1) })}</small>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                  <h2 style={{ margin: 0, textTransform: 'capitalize' }}>{label}</h2>
+                  <span className="muted" style={{ fontWeight: 700 }}>{t('history.monthSummary', { count: rows.length, avg: avg.toFixed(1) })}</span>
                 </div>
-                <div className="stack">{rows.map((r) => <HistoryRow key={r.albumId} rating={r} />)}</div>
+                {rows.map((r) => <HistoryRow key={r.albumId} rating={r} />)}
               </div>
             );
           })

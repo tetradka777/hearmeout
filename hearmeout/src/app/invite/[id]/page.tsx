@@ -107,7 +107,7 @@ export default function InvitePage({ params }: { params: Promise<{ id: string }>
 
     body = (
       <>
-        <span className="dot" style={{ ...userAvatarStyle(inviter), width: 76, height: 76, fontSize: 28 }}>{inviter.name[0].toUpperCase()}</span>
+        <span className="avt lgA" style={userAvatarStyle(inviter)}>{!inviter.avatarUrl && inviter.name[0].toUpperCase()}</span>
         <p className="eyebrow muted" style={{ margin: 0 }}>{host}/invite/{inviter.handle.replace(/^@/, '')}</p>
         <h1 className="big" style={{ margin: 0, fontSize: 'clamp(30px,6vw,48px)' }}>{t('invite.title', { name: inviter.name })}</h1>
         <p className="muted" style={{ fontWeight: 600, maxWidth: '40ch' }}>{t('invite.body', { name: first })}</p>

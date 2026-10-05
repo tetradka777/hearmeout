@@ -5,10 +5,12 @@ import { useApp } from '@/lib/AppContext';
 import type { ApiUser, Device, DiscoverMatchPerson, GroupSummary, PublicProfile, StatsData } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
 import { computeMatch } from '@/lib/matchScore';
-import { toLocale } from '@/lib/i18n';
+import { toLocale, pluralForKey } from '@/lib/i18n';
 import { CoverArt } from '../ui/CoverArt';
 import { MascotIcon } from '../redesign/icons';
 import { BlendButton } from '../BlendButton';
+import { MATCH_FRIEND_EVENT } from '@/lib/uiEvents';
+import { PROFILE_TAB_EVENT } from '../redesign/AvatarMenu';
 
 type FriendInfo = { profile: PublicProfile | null; score: number | null; stats6m: StatsData | null; weekHours: number | null };
 
@@ -50,13 +52,19 @@ function useCountUp(target: number | null, replayKey: unknown): number | null {
 // numbers here are real (computeMatch, shared ratings, /api/stats), unlike
 // the prototype's own hardcoded demo data.
 export function MatchScreen(_props: { device: Device }) {
-  const { t, language, me, state, myRatings, albums, liveAlbums, spotifyCovers, openAlbum, viewFriend, viewGroup, showScreen, addFriend } = useApp();
+  const { t, language, me, state, myRatings, albums, liveAlbums, spotifyCovers, openAlbum, viewFriend, viewGroup, showScreen, addFriend, friendRequests } = useApp();
   const [info, setInfo] = useState<Record<string, FriendInfo>>({});
   const [groups, setGroups] = useState<GroupSummary[] | null>(null);
   const [discover, setDiscover] = useState<DiscoverMatchPerson[] | null>(null);
   const [myStats6m, setMyStats6m] = useState<StatsData | null>(null);
   const [myWeekHours, setMyWeekHours] = useState<number | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // "Compare with …" / Taste match rows elsewhere pick the friend here.
+  useEffect(() => {
+    const onPick = (e: Event) => setSelectedId((e as CustomEvent<string>).detail);
+    window.addEventListener(MATCH_FRIEND_EVENT, onPick);
+    return () => window.removeEventListener(MATCH_FRIEND_EVENT, onPick);
+  }, []);
   const [history, setHistory] = useState<{ pct: number; date: string }[] | null>(null);
 
   useEffect(() => {
@@ -126,13 +134,13 @@ export function MatchScreen(_props: { device: Device }) {
   if (!me.friends.length) {
     return (
       <>
-        <div className="eyebrow muted">{t('match.eyebrow')}</div>
+        <p className="eyebrow muted">{t('match.eyebrow')}</p>
         <h1 className="big">{t('match.title')}</h1>
         <div className="tile t-soft2 empty">
           <MascotIcon />
           <h3>{t('friends.empty')}</h3>
-          <p className="muted">{t('match.addFriendHint')}</p>
-          <button className="btn" onClick={() => showScreen('profile')}>{t('friends.addFriendsTile')}</button>
+          <p className="muted" style={{ fontWeight: 600 }}>{t('match.addFriendHint')}</p>
+          <button className="btn" onClick={() => { showScreen('profile'); window.dispatchEvent(new CustomEvent(PROFILE_TAB_EVENT, { detail: 'friends' })); }}>{t('friends.addFriendsTile')}</button>
         </div>
       </>
     );
@@ -163,12 +171,12 @@ export function MatchScreen(_props: { device: Device }) {
 
   return (
     <>
-      <div className="eyebrow muted">{t('match.eyebrow')}</div>
+      <p className="eyebrow muted">{t('match.eyebrow')}</p>
       <h1 className="big">{t('match.youAndName', { name: active?.name ?? '' })}</h1>
       <div className="chips">
         {ranked.map((f) => (
           <button key={f.id} className={`chip${f.id === activeId ? ' on' : ''}`} onClick={() => setSelectedId(f.id)}>
-            <span className="dot" style={{ ...userAvatarStyle(f), width: 20, height: 20, fontSize: 11, marginRight: 6, display: 'inline-flex' }}>{f.name[0]}</span>
+            <span className="dot" style={userAvatarStyle(f)}>{!f.avatarUrl && f.name[0]}</span>
             {f.name}
           </button>
         ))}
@@ -181,7 +189,7 @@ export function MatchScreen(_props: { device: Device }) {
           </span>
         )}
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6 }}>
-          <span className="num pct">{shownPct ?? '—'}</span><span className="num pcts">%</span>
+          <span className="num pct">{shownPct ?? '–'}</span>{shownPct != null && <span className="num pcts">%</span>}
         </div>
         <p style={{ fontWeight: 800, marginTop: 16 }}>{t('match.tasteMatchSummary', { count: sharedArt.length })}</p>
         <div className="dotm" role="img" aria-label={t('match.percentMatchAria', { pct: pct ?? 0 })}>
@@ -203,20 +211,21 @@ export function MatchScreen(_props: { device: Device }) {
                 <div className="gap" key={g.albumId}>
                   <button className="hd" onClick={() => openAlbum(g.albumId)}>
                     {a && <CoverArt url={spotifyCovers[a.id] || a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: 54, height: 54 }} />}
-                    <div><b>{a?.title ?? g.albumId}</b><br /><small className="muted">{t('match.apart', { value: (hi - lo).toFixed(1) })}</small></div>
+                    <div><b>{a?.title ?? g.albumId}</b><br /><small className="muted" style={{ fontWeight: 700 }}>{t('match.apart', { value: (hi - lo).toFixed(1) })}</small></div>
                   </button>
                   <div className="tr">
                     <i className="fill" style={{ left: `${(lo / 5) * 100}%`, width: `${((hi - lo) / 5) * 100}%` }} />
-                    <b className="m you" style={{ left: `${(g.mine / 5) * 100}%` }}>{t('friend.you')[0]}</b>
+                    <b className="m you" style={{ left: `${(g.mine / 5) * 100}%` }}>{t('friend.youLower')[0]}</b>
                     <b className="m fr" style={{ left: `${(g.theirs / 5) * 100}%` }}>{(active?.name ?? '?')[0]}</b>
                   </div>
                   <div className="lab">
-                    <span>{t('friend.you')} {g.mine.toFixed(1)}</span>
-                    <span>{active?.name} {g.theirs.toFixed(1)}</span>
+                    {g.mine <= g.theirs
+                      ? <><span>{t('friend.youLower')} {g.mine.toFixed(1)}</span><span>{active?.name} {g.theirs.toFixed(1)}</span></>
+                      : <><span>{active?.name} {g.theirs.toFixed(1)}</span><span>{t('friend.youLower')} {g.mine.toFixed(1)}</span></>}
                   </div>
                 </div>
               );
-            }) : <p className="muted">{t('match.notEnoughForGaps')}</p>}
+            }) : <p className="muted" style={{ fontWeight: 600 }}>{t('match.notEnoughForGaps')}</p>}
           </div>
         </div>
         <div className="stack">
@@ -226,7 +235,7 @@ export function MatchScreen(_props: { device: Device }) {
               <div className="chips" style={{ margin: 0 }}>
                 {sharedArt.map((n) => <span className="chip" key={n}>{n}</span>)}
               </div>
-            ) : <p className="muted">{t('match.noSharedArtists')}</p>}
+            ) : <p className="muted" style={{ fontWeight: 600 }}>{t('match.noSharedArtists')}</p>}
           </div>
           {active && (
             <div className="tile t-ac" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
@@ -239,16 +248,16 @@ export function MatchScreen(_props: { device: Device }) {
           )}
           <div className="tile">
             <h2>{t('match.weeklyLeaderboard')}</h2>
-            <div className="stack" style={{ marginTop: 10 }}>
+            <>
               {leaderboard.map((l, i) => (
                 <div className="row" key={l.id}>
                   <span className="num" style={{ fontSize: 28, width: 20 }}>{i + 1}</span>
                   <b style={{ width: 64 }}>{l.name}</b>
                   <div className="meter"><i style={{ width: `${(l.hours / maxHours) * 100}%` }} /></div>
-                  <b style={{ width: 44, textAlign: 'right' }}>{l.hours}h</b>
+                  <b style={{ width: 44, textAlign: 'right' }}>{l.hours}{t('unit.h')}</b>
                 </div>
               ))}
-            </div>
+            </>
           </div>
         </div>
       </div>
@@ -258,11 +267,11 @@ export function MatchScreen(_props: { device: Device }) {
           <h2>{t('match.yourFriendsByMatch')}</h2>
           <div className="tile">
             {ranked.map((f, i) => (
-              <button className="row" key={f.id} onClick={() => viewFriend(f.id)} style={{ cursor: 'pointer' }}>
+              <button className="row" key={f.id} onClick={() => { setSelectedId(f.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
                 <span className="num" style={{ fontSize: 26, width: 22 }}>{i + 1}</span>
-                <div className="dot" style={userAvatarStyle(f)}>{f.name[0]}</div>
-                <div className="g"><b>{f.name}</b><small className="muted">{t('match.sharedArtistsCount', { count: sharedArtistNames(myStats6m, info[f.id]?.stats6m ?? null).length })}</small></div>
-                <span className="num" style={{ fontSize: 32, color: 'var(--acct)' }}>{info[f.id]?.score ?? '—'}%</span>
+                <span className="dot" style={userAvatarStyle(f)}>{!f.avatarUrl && f.name[0]}</span>
+                <span className="g"><b>{f.name}</b><small className="muted" style={{ fontWeight: 600 }}>{t('match.sharedArtistsCount', { count: sharedArtistNames(myStats6m, info[f.id]?.stats6m ?? null).length })}</small></span>
+                <span className="num" style={{ fontSize: 32, color: 'var(--acct)' }}>{info[f.id]?.score != null ? `${info[f.id]!.score}%` : '–'}</span>
               </button>
             ))}
           </div>
@@ -273,19 +282,21 @@ export function MatchScreen(_props: { device: Device }) {
             {discover !== null && discover.length ? discover.map((p) => (
               <div className="row" key={p.id}>
                 <button className="rowlink" onClick={() => viewFriend(p.id)}>
-                  <div className="dot" style={userAvatarStyle(p)}>{p.name[0]}</div>
-                  <div className="g"><b>{p.name}</b><small className="muted">@{p.handle} · {t('match.discoverRowSubtitle', { score: p.score, count: p.sharedAlbums })}</small></div>
+                  <span className="dot" style={userAvatarStyle(p)}>{!p.avatarUrl && p.name[0]}</span>
+                  <span className="g"><b>{p.name}</b><small className="muted" style={{ fontWeight: 600 }}>@{p.handle.replace(/^@/, '')} · {t('match.discoverRowSubtitle', { score: p.score, count: p.sharedAlbums })}</small></span>
                 </button>
-                <button className="chip" onClick={() => addFriend(p.handle)}>{t('friend.addThem')}</button>
+                {friendRequests.outgoing.some((r) => r.user.id === p.id)
+                  ? <span className="tag">{t('friend.requestSent')}</span>
+                  : <button className="btn" style={{ padding: '8px 16px' }} onClick={() => addFriend(p.handle)}>{t('friend.addFriend')}</button>}
               </div>
-            )) : <p className="muted">{t('match.allFriendsMatched')}</p>}
+            )) : <p className="muted" style={{ fontWeight: 600 }}>{t('match.allFriendsMatched')}</p>}
           </div>
         </div>
       </div>
 
       <div className="sec">
-        <div className="setrow" style={{ border: 0, padding: 0 }}>
-          <h2 style={{ marginBottom: 0 }}>{t('groups.yourGroups')}</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+          <h2 style={{ margin: 0 }}>{t('groups.yourGroups')}</h2>
           <button className="btn ghost" onClick={() => showScreen('groups')}>{t('groups.openAll')}</button>
         </div>
         {groups === null ? (
@@ -295,14 +306,14 @@ export function MatchScreen(_props: { device: Device }) {
         ) : (
           <div className="bento b3">
             {groups.slice(0, 3).map((g) => (
-              <button className="tile gl" key={g.id} onClick={() => viewGroup(g.id)} style={{ textAlign: 'left', cursor: 'pointer' }}>
+              <button className="tile gl" key={g.id} onClick={() => viewGroup(g.id)} style={{ textAlign: 'left' }}>
                 <h3>{g.name}</h3>
-                <div className="hrow" style={{ margin: '12px 0 8px', gap: 6, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 6, margin: '12px 0 8px', flexWrap: 'wrap' }}>
                   {g.members.map((m) => (
-                    <span key={m.id} className="dot" style={{ ...userAvatarStyle(m), width: 28, height: 28, fontSize: 12 }}>{m.name[0]}</span>
+                    <span key={m.id} className="dot" style={userAvatarStyle(m)}>{!m.avatarUrl && m.name[0]}</span>
                   ))}
                 </div>
-                <small className="muted">{t('groups.memberCount', { count: g.memberCount })}{g.newPlays > 0 ? ` · ${t('groups.newPlaysTag', { count: g.newPlays })}` : ''}</small>
+                <small className="muted" style={{ fontWeight: 700 }}>{t('groups.memberCount', { count: g.memberCount, word: pluralForKey(language, g.memberCount, 'groups.memberOne', 'groups.memberFew', 'groups.memberMany') })}{g.newPlays > 0 ? ` · ${t('groups.newPlaysTag', { count: g.newPlays })}` : ''}</small>
               </button>
             ))}
           </div>

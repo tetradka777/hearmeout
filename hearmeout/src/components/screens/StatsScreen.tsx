@@ -9,21 +9,25 @@ import { usePlayer } from '@/lib/PlayerContext';
 import type { AlbumDetail } from '@/lib/spotifyCatalog';
 import { toLocale, type Language } from '@/lib/i18n';
 import type { WeekStart } from '@/lib/palettes';
-import { formatHour } from '@/lib/format';
+import { formatHour, formatRelative } from '@/lib/format';
 import { recapLine } from '@/lib/recapLine';
 import { completedWeekRange, isoWeekNumber } from '@/lib/weeks';
 
-const DN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+type T = ReturnType<typeof useApp>['t'];
 
-function durLong(min: number): string {
+// Day / month names and durations in the interface language (the API's own
+// labels are English placeholders).
+const wdShort = (d: Date, lang: Language) => d.toLocaleDateString(toLocale(lang), { weekday: 'short', timeZone: 'UTC' });
+const monShort = (d: Date, lang: Language) => d.toLocaleDateString(toLocale(lang), { month: 'short', timeZone: 'UTC' });
+const dayLabelOf = (d: Date, lang: Language) => d.toLocaleDateString(toLocale(lang), { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+function durLong(min: number, t: T): string {
   const h = Math.floor(min / 60), m = min % 60;
-  return h ? `${h}h ${m ? m + 'm' : ''}`.trim() : `${m}m`;
+  return h ? `${h} ${t('unit.h')}${m ? ` ${m} ${t('unit.m')}` : ''}` : `${m} ${t('unit.m')}`;
 }
-function durShort(min: number): string {
+function durShort(min: number, t: T): string {
   if (!min) return '–';
   const h = Math.floor(min / 60), m = min % 60;
-  return h ? `${h}h${String(m).padStart(2, '0')}` : `${m}m`;
+  return h ? `${h}${t('unit.h')}${String(m).padStart(2, '0')}` : `${m}${t('unit.m')}`;
 }
 function level(minutes: number): number {
   if (minutes === 0) return 0;
@@ -37,7 +41,7 @@ function parseDay(iso: string): Date {
   return new Date(Date.UTC(y, m - 1, d));
 }
 
-function ListeningCalendar({ data, t, weekStart }: { data: StatsData; t: ReturnType<typeof useApp>['t']; language: Language; weekStart: WeekStart }) {
+function ListeningCalendar({ data, t, language, weekStart }: { data: StatsData; t: T; language: Language; weekStart: WeekStart }) {
   const { periodType, calendar } = data;
   const scrollRef = useRef<HTMLDivElement>(null);
   const calRef = useRef<HTMLDivElement>(null);
@@ -76,13 +80,13 @@ function ListeningCalendar({ data, t, weekStart }: { data: StatsData; t: ReturnT
      
   }, [data]);
 
-  const dayLabel = (d: Date) => `${DN[d.getUTCDay()]} ${d.getUTCDate()} ${MN[d.getUTCMonth()]}`;
+  const dayLabel = (d: Date) => dayLabelOf(d, language);
   const dayBtn = (d: StatsCalendarDay, cls: string, inner: React.ReactNode) => (
     <button
       key={d.date}
       className={`cd ${cls} l${level(d.minutes)}${d.date === todayKey ? ' today' : ''}${selected === d.date ? ' sel' : ''}`}
       onClick={() => setSelected(d.date)}
-      aria-label={`${dayLabel(parseDay(d.date))}: ${d.minutes ? durLong(d.minutes) : t('stats.calNoListening')}`}
+      aria-label={`${dayLabel(parseDay(d.date))}: ${d.minutes ? durLong(d.minutes, t) : t('stats.calNoListening')}`}
     >
       {inner}
     </button>
@@ -97,9 +101,9 @@ function ListeningCalendar({ data, t, weekStart }: { data: StatsData; t: ReturnT
       <div className="calweek">
         {calendar.days.map((d) => {
           const date = parseDay(d.date);
-          const wd = <><span className="wd">{DN[date.getUTCDay()]}</span><span className="dn">{date.getUTCDate()}</span></>;
+          const wd = <><span className="wd">{wdShort(date, language)}</span><span className="dn">{date.getUTCDate()}</span></>;
           if (d.future) return <div key={d.date} className="cd cw fut">{wd}<span className="hm">–</span></div>;
-          return dayBtn(d, 'cw', <>{wd}<span className="hm">{durShort(d.minutes)}</span></>);
+          return dayBtn(d, 'cw', <>{wd}<span className="hm">{durShort(d.minutes, t)}</span></>);
         })}
       </div>
     );
@@ -115,7 +119,7 @@ function ListeningCalendar({ data, t, weekStart }: { data: StatsData; t: ReturnT
     calendar.days.forEach((d, idx) => {
       const col = Math.floor((leading + idx) / 7) + 1;
       const date = parseDay(d.date);
-      if (date.getUTCDate() === 1 && periodType === 'season') months.push({ col, label: MN[date.getUTCMonth()] });
+      if (date.getUTCDate() === 1 && periodType === 'season') months.push({ col, label: monShort(date, language) });
       if (d.future) { cells.push(<i key={d.date} className="cd fut"><span className="n">{date.getUTCDate()}</span></i>); return; }
       cells.push(dayBtn(d, '', <span className="n">{date.getUTCDate()}</span>));
     });
@@ -133,13 +137,13 @@ function ListeningCalendar({ data, t, weekStart }: { data: StatsData; t: ReturnT
 
   return (
     <div className="tile s3">
-      <h3>{t('stats.calendarTitle')}</h3>
-      <p className="muted">{t('stats.calendarHelp')}</p>
-      <div className="cal" ref={calRef} style={{ marginTop: 10 }}>
+      <h2>{t('stats.calendarTitle')}</h2>
+      <p className="muted" style={{ margin: '-6px 0 18px', fontWeight: 600 }}>{t('stats.calendarHelp')}</p>
+      <div className="cal" ref={calRef}>
         <div className="calstats">
           <div><span className="num">{calendar.activeDays}<small className="muted" style={{ fontSize: 15, fontWeight: 700 }}> / {calendar.totalDays}</small></span><small>{t('stats.calDaysListened')}</small></div>
           <div><span className="num">{calendar.longestStreak}</span><small>{t('stats.calLongestStreak')}</small></div>
-          <div><span className="num">{calendar.bestDay ? durLong(calendar.bestDay.minutes) : '–'}</span><small>{calendar.bestDay ? `${t('stats.calBestDay')} · ${dayLabel(parseDay(calendar.bestDay.date))}` : t('stats.calBestDay')}</small></div>
+          <div><span className="num">{calendar.bestDay ? durLong(calendar.bestDay.minutes, t) : '–'}</span><small>{calendar.bestDay ? `${t('stats.calBestDay')} · ${dayLabel(parseDay(calendar.bestDay.date))}` : t('stats.calBestDay')}</small></div>
         </div>
         <div className="calscroll" ref={scrollRef} data-w={gridW} data-max={gridMax}>{gridEl}</div>
         <div className="calread" aria-live="polite">
@@ -147,13 +151,13 @@ function ListeningCalendar({ data, t, weekStart }: { data: StatsData; t: ReturnT
             readoutDay.minutes === 0 ? (
               <><span className="d">{dayLabel(parseDay(readoutDay.date))}</span><span className="muted">{t('stats.calNoListening')}</span></>
             ) : (
-              <><span className="d">{dayLabel(parseDay(readoutDay.date))}</span><span className="big">{durLong(readoutDay.minutes)}</span><span className="muted">{t('stats.calTracksMostPlayed', { tracks: readoutDay.tracks, artist: readoutDay.topArtist || '—' })}</span></>
+              <><span className="d">{dayLabel(parseDay(readoutDay.date))}</span><span className="big">{durLong(readoutDay.minutes, t)}</span><span className="muted">{t('stats.calTracksMostPlayed', { tracks: readoutDay.tracks, artist: readoutDay.topArtist || '—' })}</span></>
             )
           ) : <span className="muted">{t('stats.calNoListening')}</span>}
         </div>
         <div className="callegend">
           <span>{t('stats.calLegendLabel')}</span>
-          {[['0', 0], ['<1h', 1], ['1–2h', 2], ['2–4h', 3], ['4h+', 4]].map(([label, l]) => (
+          {[['0', 0], [`<1${t('unit.h')}`, 1], [`1–2${t('unit.h')}`, 2], [`2–4${t('unit.h')}`, 3], [`4${t('unit.h')}+`, 4]].map(([label, l]) => (
             <div key={l}><i className={`cd l${l}`} />{label}</div>
           ))}
         </div>
@@ -223,7 +227,7 @@ export function StatsScreen(_props: { device: Device }) {
 
   if (!me) return null;
 
-  const maxArtistHours = Math.max(1, ...(data?.topArtists.map((a) => a.hours) ?? [1]));
+  const maxArtistPlays = Math.max(1, ...(data?.topArtists.map((a) => a.plays) ?? [1]));
   const maxHeat = Math.max(1, ...(data?.heatmap ?? [1]));
   const maxBar = Math.max(1, ...(data?.bars.map((b) => b.hours) ?? [1]));
 
@@ -233,154 +237,176 @@ export function StatsScreen(_props: { device: Device }) {
     { key: 'season', label: t('stats.periodSeason') },
   ];
 
+  const periodText = (() => {
+    if (!data || !data.calendar.days.length) return null;
+    const loc = toLocale(language);
+    const days = data.calendar.days;
+    const first = parseDay(days[0].date), last = parseDay(days[days.length - 1].date);
+    if (periodType === 'week') {
+      const fmt = new Intl.DateTimeFormat(loc, { day: 'numeric', month: 'short', timeZone: 'UTC' });
+      return { label: fmt.formatRange(first, last), sub: offset === 0 ? t('stats.thisWeek').toLowerCase() : offset === -1 ? t('stats.lastWeek').toLowerCase() : '' };
+    }
+    if (periodType === 'month') {
+      const label = first.toLocaleDateString(loc, { month: 'long', year: 'numeric', timeZone: 'UTC' });
+      return { label: label.charAt(0).toUpperCase() + label.slice(1), sub: offset === 0 ? t('stats.thisMonth').toLowerCase() : offset === -1 ? t('stats.lastMonth').toLowerCase() : '' };
+    }
+    const chip = data.seasonChips.find((c) => c.key === seasonKey);
+    const name = t(`season.${seasonKey === 'winterd' ? 'winter' : seasonKey}` as never);
+    return { label: `${name} ${chip?.year ?? first.getUTCFullYear()}`, sub: chip?.current ? t('stats.seasonInProgress') : t('stats.seasonComplete') };
+  })();
+  const word = t(periodType === 'season' ? 'stats.wordSeason' : periodType === 'month' ? 'stats.wordMonth' : 'stats.wordWeek');
+  const tf = me.timeFormat ?? '24';
+  const peak = data?.peakHour != null ? formatHour(data.peakHour, tf) : '–';
+  const GENRE_SHADE = [100, 70, 46, 28, 18, 10];
+  const barsAxis = (() => {
+    if (!data || !data.bars.length || !data.calendar.days.length) return null;
+    const loc = toLocale(language);
+    const day = (iso: string) => new Date(`${iso}T12:00:00Z`);
+    const days = data.calendar.days;
+    if (periodType === 'week') {
+      return <div className="axis wk" aria-hidden="true">{days.map((d) => <span key={d.date}>{day(d.date).toLocaleDateString(loc, { weekday: 'short', timeZone: 'UTC' })}</span>)}</div>;
+    }
+    const fmt: Intl.DateTimeFormatOptions = periodType === 'month' ? { day: 'numeric', month: 'short', timeZone: 'UTC' } : { month: 'short', timeZone: 'UTC' };
+    return <div className="axis" aria-hidden="true"><span>{day(days[0].date).toLocaleDateString(loc, fmt)}</span><span>{day(days[days.length - 1].date).toLocaleDateString(loc, fmt)}</span></div>;
+  })();
+  const deltaTxt = !data ? '' : data.comparisonNote === 'first_season' ? t('stats.firstSeason')
+    : data.comparisonPct != null ? `${data.comparisonPct >= 0 ? '+' : '−'}${Math.abs(data.comparisonPct)}% ${t(periodType === 'season' ? 'stats.vsPreviousSeason' : periodType === 'month' ? (offset === 0 ? 'stats.vsLastMonth' : 'stats.vsMonthBefore') : (offset === 0 ? 'stats.vsLastWeek' : 'stats.vsWeekBefore'))}` : '';
+
   return (
     <>
-      <div className="eyebrow">{t('stats.eyebrow')}</div>
+      <p className="eyebrow muted">{me.connections.spotify ? t('stats.eyebrowSynced') : t('stats.eyebrow')}</p>
       <h1 className="big">{t('stats.title')}</h1>
-      <div className="chips">
+      <div className="chips" role="group" aria-label={t('recap.periodLabel')}>
         {PERIOD_TYPES.map((p) => (
-          <button key={p.key} className={`chip ${periodType === p.key ? 'on' : ''}`} onClick={() => setPeriodType(p.key)}>{p.label}</button>
+          <button key={p.key} className={`chip${periodType === p.key ? ' on' : ''}`} onClick={() => setPeriodType(p.key)}>{p.label}</button>
         ))}
       </div>
 
-      {periodType === 'season' ? (
-        data && data.seasonChips.length > 0 && (
-          <div className="chips" style={{ marginTop: 8 }}>
-            {data.seasonChips.map((c) => (
-              <button key={c.key} className={`chip ${seasonKey === c.key ? 'on' : ''}`} onClick={() => setSeasonKey(c.key)}>
+      <div className="pnav">
+        {periodType === 'season' ? (
+          <div className="chips" style={{ margin: 0 }} role="group" aria-label={t('stats.periodSeason')}>
+            {(data?.seasonChips ?? []).map((c) => (
+              <button key={c.key} className={`chip${seasonKey === c.key ? ' on' : ''}`} onClick={() => setSeasonKey(c.key)}>
                 {t(`season.${c.key === 'winterd' ? 'winter' : c.key}` as never)}{c.current ? ` · ${t('stats.seasonNow')}` : ''}
               </button>
             ))}
           </div>
-        )
-      ) : (
-        <div className="chips" style={{ marginTop: 8 }}>
-          <button className={`chip ${offset === 0 ? 'on' : ''}`} onClick={() => setOffset(0)}>{periodType === 'week' ? t('stats.thisWeek') : t('stats.thisMonth')}</button>
-          <button className={`chip ${offset === -1 ? 'on' : ''}`} onClick={() => setOffset(-1)}>{periodType === 'week' ? t('stats.lastWeek') : t('stats.lastMonth')}</button>
-        </div>
-      )}
-      {data && <p className="muted" style={{ marginTop: 6 }}>{data.periodLabel} · {data.periodSub}</p>}
+        ) : (
+          <div className="segs" role="group" aria-label={t('recap.periodLabel')}>
+            <button className={`chip${offset === 0 ? ' on' : ''}`} onClick={() => setOffset(0)}>{periodType === 'week' ? t('stats.thisWeek') : t('stats.thisMonth')}</button>
+            <button className={`chip${offset === -1 ? ' on' : ''}`} onClick={() => setOffset(-1)}>{periodType === 'week' ? t('stats.lastWeek') : t('stats.lastMonth')}</button>
+          </div>
+        )}
+        {data && periodText && (
+          <div style={{ marginLeft: 6 }}>
+            <div className="lab">{periodText.label}</div>
+            <small className="muted" style={{ fontWeight: 700 }}>{periodText.sub}</small>
+          </div>
+        )}
+      </div>
 
       {!data ? (
-        <p className="muted">{t('stats.loading')}</p>
-      ) : data.trackCount === 0 && data.calendar.activeDays === 0 ? (
-        <div className="tile empty">
-          <p>{t('stats.empty')}</p>
-        </div>
+        <p className="muted" style={{ fontWeight: 600 }}>{t('stats.loading')}</p>
       ) : (
         <>
           <div className="bento b3">
             <div className="tile t-ac s2">
               <span className="num" style={{ fontSize: 'clamp(96px,20vw,170px)', display: 'block' }}>{data.hours}</span>
-              <p style={{ fontWeight: 800, marginTop: 12 }}>
-                {t('stats.hoursOfMusic')}
-                {data.comparisonNote === 'first_season' ? ` · ${t('stats.firstSeason')}` : data.comparisonPct != null ? ` · ${data.comparisonPct >= 0 ? '+' : '−'}${Math.abs(data.comparisonPct)}% ${t(periodType === 'season' ? 'stats.vsPreviousSeason' : periodType === 'month' ? (offset === 0 ? 'stats.vsLastMonth' : 'stats.vsMonthBefore') : (offset === 0 ? 'stats.vsLastWeek' : 'stats.vsWeekBefore'))}` : ''}
-              </p>
+              <p style={{ fontWeight: 800, marginTop: 12 }}>{t('stats.hoursOfMusic')}{deltaTxt ? ` · ${deltaTxt}` : ''}</p>
             </div>
+            <div className="stack">
+              <div className="tile t-pop"><span className="num" style={{ fontSize: 44 }}>{data.trackCount.toLocaleString(toLocale(language))}</span><br /><small style={{ fontWeight: 700 }}>{t('stats.tracks')}</small></div>
+              <div className="tile t-ink"><span className="num" style={{ fontSize: 44 }}>{data.artistCount}</span><br /><small style={{ fontWeight: 700 }}>{t('stats.artistsNew', { count: data.newArtistCount })}</small></div>
+            </div>
+
+            <div className="s3 stats3" style={{ margin: 0 }}>
+              <div className="tile t-soft2"><span className="num">{data.avgRating ? Number(data.avgRating).toFixed(1) : '–'}</span><small>{t('stats.avgRatingIn', { word })}</small></div>
+              <div className="tile"><span className="num" style={{ color: 'var(--acct)' }}>{peak}</span><small>{t('stats.peakHour')}</small></div>
+              <div className="tile t-pop"><span className="num">{data.topArtists.length}</span><small>{t('stats.artistsTracked')}</small></div>
+            </div>
+
+            <ListeningCalendar data={data} t={t} language={language} weekStart={me.weekStart ?? 'mon'} />
+
             <div className="tile">
-              <div className="stack">
-                <div><span className="num">{data.trackCount.toLocaleString(toLocale(language))}</span><small className="muted">{t('stats.tracks')}</small></div>
-                <div><span className="num">{data.artistCount}</span><small className="muted">{t('stats.artistsNew', { count: data.newArtistCount })}</small></div>
+              <h2>{periodType === 'season' ? t('stats.hoursPerWeek') : t('stats.hoursPerDay')}</h2>
+              <div className={`bars${periodType === 'month' ? ' dense' : ''}`} role="img" aria-label={periodType === 'season' ? t('stats.hoursPerWeek') : t('stats.hoursPerDay')}>
+                {data.bars.map((b, i) => <i key={i} style={{ height: `${Math.max(3, Math.round((b.hours / maxBar) * 100))}%`, opacity: b.future ? 0.25 : 1 }} title={`${b.label}: ${b.hours}h`} />)}
               </div>
+              {barsAxis}
             </div>
 
-            <div className="tile"><span className="num">{data.avgRating || '—'}</span><small className="muted">{t(periodType === 'season' ? 'stats.avgRatingSeason' : periodType === 'month' ? 'stats.avgRatingMonth' : 'stats.avgRatingWeek')}</small></div>
-            <div className="tile"><span className="num">{data.peakHour != null ? formatHour(data.peakHour, me?.timeFormat ?? '24') : '—'}</span><small className="muted">{t('stats.peakHour')}</small></div>
-            <div className="tile"><span className="num">{data.topArtists.length}</span><small className="muted">{t('stats.artistsTracked')}</small></div>
-
-            <ListeningCalendar data={data} t={t} language={language} weekStart={me?.weekStart ?? 'mon'} />
-
-            <div className="tile">
-              <h3>{periodType === 'season' ? t('stats.hoursPerWeek') : t('stats.hoursPerDay')}</h3>
-              {data.bars.length ? (
-                <>
-                  <div className="bars" style={{ marginTop: 10 }}>
-                    {data.bars.map((b, i) => <i key={i} style={{ height: b.hours ? `${Math.max(6, (b.hours / maxBar) * 100)}%` : '2%', opacity: b.future ? 0.25 : 1 }} title={`${b.label}: ${b.hours}h`} />)}
-                  </div>
-                  <div className="axis">
-                    {data.bars.map((b, i) => {
-                      const step = data.bars.length > 10 ? Math.ceil(data.bars.length / 6) : 1;
-                      return <span key={i}>{i % step === 0 || i === data.bars.length - 1 ? b.label : ''}</span>;
-                    })}
-                  </div>
-                </>
-              ) : <p className="muted">{t('stats.notEnough')}</p>}
+            <div className="tile t-soft2">
+              <h2>{t('stats.topArtists')}</h2>
+              {data.topArtists.length ? data.topArtists.slice(0, 4).map((a, i) => (
+                <div className="row" key={a.id || a.name}>
+                  <span className="num" style={{ fontSize: 24, width: 18 }}>{i + 1}</span>
+                  <b className="g">{a.name}</b>
+                  <div className="meter" style={{ flex: 'none', width: 80 }}><i style={{ width: `${Math.round((a.plays / maxArtistPlays) * 100)}%` }} /></div>
+                  <b style={{ width: 36, textAlign: 'right' }}>{a.plays}</b>
+                </div>
+              )) : <p className="muted" style={{ fontWeight: 600 }}>{t('stats.notEnough')}</p>}
+              <p className="muted" style={{ fontSize: 13, fontWeight: 600, marginTop: 8 }}>{t('stats.playsInThis', { word })}</p>
             </div>
 
             <div className="tile">
-              <h3>{t('stats.topArtists')}</h3>
-              <div className="stack" style={{ marginTop: 10 }}>
-                {data.topArtists.length ? data.topArtists.slice(0, 4).map((a, i) => (
-                  <div className="row" key={a.id || a.name}>
-                    <span className="muted" style={{ width: 20 }}>{i + 1}</span>
-                    <CoverArt url={a.cover ?? undefined} fallbackLetter={a.name[0] || '?'} className="cov" style={{ width: 36, height: 36 }} />
-                    <div className="g">
-                      <b>{a.name}</b>
-                      <div className="meter" style={{ marginTop: 4 }}><i style={{ width: `${(a.hours / maxArtistHours) * 100}%` }} /></div>
-                    </div>
-                    <small className="muted">{t('stats.playsCount', { count: a.plays })}</small>
-                  </div>
-                )) : <p className="muted">{t('stats.notEnough')}</p>}
+              <h2>{t('stats.whenYouListen')}</h2>
+              <div className="tod" role="img" aria-label={t('stats.todAria', { hour: peak })}>
+                {data.heatmap.map((n, h) => <i key={h} className={h === data.peakHour ? 'pk' : ''} style={{ height: `${Math.max(4, Math.round((n / maxHeat) * 100))}%` }} title={formatHour(h, tf)} />)}
               </div>
-            </div>
-
-            <div className="tile">
-              <h3>{t('stats.whenYouListen')}</h3>
-              <div className="tod" style={{ marginTop: 10 }}>
-                {data.heatmap.map((n, h) => <i key={h} className={n === maxHeat && n > 0 ? 'pk' : ''} style={{ height: `${Math.max(4, (n / maxHeat) * 100)}%` }} title={`${formatHour(h, me?.timeFormat ?? '24')} — ${n}`} />)}
-              </div>
-              <div className="todax"><span>00</span><span>06</span><span>12</span><span>18</span><span>23</span></div>
-              {data.peakHour != null && <p className="muted" style={{ marginTop: 6 }}>{t('stats.peakSentence', { hour: formatHour(data.peakHour, me?.timeFormat ?? '24') })}</p>}
+              <div className="todax" aria-hidden="true">{[0, 6, 12, 18, 23].map((h) => <span key={h}>{formatHour(h, tf)}</span>)}</div>
+              {data.peakHour != null && <p className="muted" style={{ marginTop: 10, fontSize: 14, fontWeight: 600 }}>{t('stats.peakSentencePre')} <b>{peak}</b>.</p>}
             </div>
 
             {data.genreSplit.length > 0 && (
               <div className="tile s3">
-                <h3>{t('stats.genreSplit')}</h3>
-                <div className="gbar" style={{ marginTop: 10 }}>
+                <h2>{t('stats.genreSplit')}</h2>
+                <div className="gbar" role="img" aria-label={t('stats.genreSplit')}>
                   {data.genreSplit.map((g, i) => (
-                    <i key={g.genre} style={{ width: `${g.pct}%`, background: `color-mix(in srgb, var(--acct) ${100 - i * 15}%, transparent)` }} />
+                    <i key={g.genre} style={{ flex: g.pct, background: `color-mix(in srgb, var(--acct) ${GENRE_SHADE[i] ?? 10}%, var(--paper))` }} />
                   ))}
                 </div>
                 <div className="glegend">
                   {data.genreSplit.map((g, i) => (
-                    <span key={g.genre}><i style={{ background: `color-mix(in srgb, var(--acct) ${100 - i * 15}%, transparent)` }} />{g.genre} · {g.pct}%</span>
+                    <span key={g.genre}><i style={{ background: `color-mix(in srgb, var(--acct) ${GENRE_SHADE[i] ?? 10}%, var(--paper))` }} />{g.genre} <b>{g.pct}%</b></span>
                   ))}
                 </div>
               </div>
             )}
 
             <div className="tile s2">
-              <h3>{t('stats.recentPlays')}</h3>
+              <h2>{t('stats.recentPlays')}</h2>
               <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 6px' }}>{t('stats.recentPlaysHint')}</p>
-              <div className="stack" style={{ marginTop: 10 }}>
-                {data.recentPlays.length ? data.recentPlays.map((p, i) => {
-                  const loved = lovedItems.some((li) => li.type === 'track' && li.title === p.title && li.artist === p.artist);
-                  const later = laterItems.some((li) => li.type === 'track' && li.title === p.title && li.artist === p.artist);
-                  return (
-                    <div className="row" key={i}>
-                      <button className="rowlink" onClick={() => playQueue([{ title: p.title, artist: p.artist, cover: p.cover, albumId: p.albumId }], 0)} aria-label={t('album.playPreviewOf', { title: p.title })}>
-                        <CoverArt url={p.cover ?? undefined} fallbackLetter={p.artist[0] || '?'} className="cov" style={{ width: 36, height: 36 }} />
-                        <div className="g"><b>{p.title}</b><div className="muted">{p.artist} · {new Date(p.playedAt).toLocaleString(toLocale(language), { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: me?.timeFormat === '12' })}</div></div>
-                      </button>
-                      <button className={`ib love${loved ? ' on' : ''}`} onClick={() => toggleLoved('track', p.title, p.artist, p.trackId, p.cover)} aria-label={t('stats.loveTrack')}>
-                        <HeartIcon />
-                      </button>
-                      <button className={`ib love${later ? ' on' : ''}`} aria-pressed={later} disabled={savingRow === i} onClick={() => toggleRecentLater(p, i)} aria-label={later ? t('track.removeLater') : t('track.saveLater')}>
-                        <BookmarkIcon />
-                      </button>
-                    </div>
-                  );
-                }) : <p className="muted">{t('stats.notEnough')}</p>}
-              </div>
+              {data.recentPlays.length ? data.recentPlays.map((p, i) => {
+                const loved = lovedItems.some((li) => li.type === 'track' && li.title === p.title && li.artist === p.artist);
+                const later = laterItems.some((li) => li.type === 'track' && li.title === p.title && li.artist === p.artist);
+                return (
+                  <div className="row" key={i}>
+                    <button className="rowlink" onClick={() => playQueue([{ title: p.title, artist: p.artist, cover: p.cover, albumId: p.albumId }], 0)} aria-label={t('album.playPreviewOf', { title: p.title })}>
+                      <CoverArt url={p.cover ?? undefined} fallbackLetter={p.artist[0] || '?'} className="cov" style={{ width: 44, height: 44 }} />
+                      <span className="g"><b>{p.title}</b><small className="muted" style={{ fontWeight: 600 }}>{p.artist} · {formatRelative(p.playedAt, language)}</small></span>
+                    </button>
+                    <button className={`ib love${loved ? ' on' : ''}`} aria-pressed={loved} onClick={() => toggleLoved('track', p.title, p.artist, p.trackId, p.cover)} aria-label={loved ? t('album.removeFromLoved') : t('album.addToLoved')}>
+                      <HeartIcon />
+                    </button>
+                    <button className={`ib love later${later ? ' on' : ''}`} aria-pressed={later} disabled={savingRow === i} onClick={() => toggleRecentLater(p, i)} aria-label={later ? t('track.removeLater') : t('track.saveLater')}>
+                      <BookmarkIcon />
+                    </button>
+                  </div>
+                );
+              }) : <p className="muted" style={{ fontWeight: 600 }}>{t('stats.notEnough')}</p>}
             </div>
           </div>
 
-          <button className="tile t-ac" style={{ textAlign: 'left', width: '100%', marginTop: 14 }} onClick={() => openRecap('me', 'week')}>
-            <span className="pill">{t('stats.recapLinkEyebrow')}</span>
-            <h2 style={{ margin: '14px 0 4px' }}>{me ? t('stats.recapWeekTitle', { n: isoWeekNumber(completedWeekRange(0, me.weekStart).start) }) : ''}</h2>
-            {weekRecapLine && <p style={{ fontWeight: 700 }}>“{weekRecapLine.lead}{weekRecapLine.em ? ` ${weekRecapLine.em}` : ''}”</p>}
-            <span style={{ fontWeight: 800 }}>{t('stats.recapLinkCta')} →</span>
-          </button>
+          <div className="sec">
+            <button className="tile t-ac" style={{ textAlign: 'left', width: '100%', display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }} onClick={() => openRecap('me', 'week')}>
+              <div>
+                <span className="pill">{t('stats.recapLinkEyebrow')}</span>
+                <h2 style={{ margin: '14px 0 4px' }}>{t('stats.recapWeekTitle', { n: isoWeekNumber(completedWeekRange(0, me.weekStart).start) })}</h2>
+                {weekRecapLine && <p style={{ fontWeight: 700 }}>“{weekRecapLine.lead}{weekRecapLine.em ? ` ${weekRecapLine.em}` : ''}”</p>}
+              </div>
+              <span style={{ fontWeight: 800 }}>{t('stats.recapLinkCta')} →</span>
+            </button>
+          </div>
         </>
       )}
     </>

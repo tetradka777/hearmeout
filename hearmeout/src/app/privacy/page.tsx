@@ -8,7 +8,15 @@ import { pickLanguage, translate, type TranslationKey } from '@/lib/i18n';
 
 export const metadata: Metadata = { title: 'What we store — HearMeOut' };
 
-const ITEM_KEYS: TranslationKey[] = ['privacy.item1', 'privacy.item2', 'privacy.item3', 'privacy.item4', 'privacy.item5'];
+// vData(): four titled tiles (account, ratings, play history, people), then
+// the longer notes on visibility, sources and deletion.
+const TILES: [TranslationKey, TranslationKey, string][] = [
+  ['privacy.accountTitle', 'privacy.accountBody', ''],
+  ['privacy.ratingsTitle', 'privacy.ratingsBody', 't-pop'],
+  ['privacy.historyTitle', 'privacy.historyBody', ''],
+  ['privacy.peopleTitle', 'privacy.peopleBody', 't-soft2'],
+];
+const NOTE_KEYS: TranslationKey[] = ['privacy.item2', 'privacy.item3', 'privacy.item4', 'privacy.item5'];
 
 // Plain server component, deliberately outside AppProvider/AppGate — same
 // reasoning as /u/[handle]: a page a user might link to or read without
@@ -20,15 +28,19 @@ export default async function PrivacyPage() {
   const t = (key: TranslationKey) => translate(lang, key);
   return (
     <div className="rd">
-      <div className="wrap" style={{ maxWidth: 640, paddingTop: 48 }}>
+      <div className="wrap" style={{ paddingTop: 48 }}>
         <a className="crumb" href="/">‹ {t('pub.back')}</a>
         <p className="eyebrow muted">{t('privacy.eyebrow')}</p>
-        <h1 className="big" style={{ fontSize: 'clamp(28px,5vw,48px)' }}>{t('privacy.title')}</h1>
+        <h1 className="big">{t('privacy.title')}</h1>
         <div className="bento">
-          {ITEM_KEYS.map((key, i) => (
-            <div className={`tile${i === 0 ? ' t-pop' : i === 3 ? ' t-soft2' : ''}`} key={key}><p style={{ fontWeight: 600 }}>{t(key)}</p></div>
+          {TILES.map(([title, body, cls]) => (
+            <div className={cls ? `tile ${cls}` : 'tile'} key={title}>
+              <h2>{t(title)}</h2>
+              <p className={cls === 't-pop' ? undefined : 'muted'} style={{ fontWeight: 600 }}>{t(body)}</p>
+            </div>
           ))}
         </div>
+        {NOTE_KEYS.map((key) => <p className="muted" style={{ marginTop: 18, fontWeight: 600 }} key={key}>{t(key)}</p>)}
       </div>
     </div>
   );

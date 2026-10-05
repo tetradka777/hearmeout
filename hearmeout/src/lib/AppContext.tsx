@@ -50,6 +50,7 @@ function albumDetailToAlbum(d: AlbumDetail, overrideId?: string): Album {
     genreBucket: catalog?.genreBucket || d.genreBucket || '',
     cover: d.cover ?? undefined,
     tracklist: d.tracklist.map((t) => t.title),
+    trackDurations: d.tracklist.map((t) => t.durationMs ?? null),
   };
 }
 
@@ -203,7 +204,7 @@ type AppContextValue = {
   publishRating: (albumId: string, stars: number, review: string, tags?: string[], isPrivate?: boolean) => Promise<void>;
   ensureRecap: (userId: string, period: RecapPeriod, seasonKey?: string | null, offset?: number) => void;
   registerWithPassword: (name: string, password: string) => Promise<void>;
-  dismissOnboarding: () => void;
+  dismissOnboarding: (silent?: boolean) => void;
   replayOnboarding: () => void;
   loginWithPassword: (handle: string, password: string) => Promise<void>;
   claimAccount: (email: string, password: string) => Promise<void>;
@@ -560,7 +561,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     patch({ justRegistered: true });
   }, [refreshMe, patch]);
 
-  const dismissOnboarding = useCallback(() => { patch({ justRegistered: false }); showToast(t('onboarding.allSetToast')); }, [patch, showToast, t]);
+  const dismissOnboarding = useCallback((silent?: boolean) => { patch({ justRegistered: false }); if (!silent) showToast(t('onboarding.allSetToast')); }, [patch, showToast, t]);
   // Settings -> Account's "Replay" row (prototype: data-go="onboarding"
   // data-ob0="1") — OnboardingScreen's own step state is a plain useState
   // that starts at 1, so remounting it via justRegistered is enough to

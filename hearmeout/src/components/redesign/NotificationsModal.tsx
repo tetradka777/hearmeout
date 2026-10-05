@@ -6,6 +6,7 @@ import { useApp } from '@/lib/AppContext';
 import { formatRelative, userAvatarStyle } from '@/lib/format';
 import type { AppNotification, RecapPeriod } from '@/lib/types';
 import type { TranslationKey } from '@/lib/i18n';
+import { CloseIcon } from '../ui/Icons';
 
 const PERIOD_KEY: Record<RecapPeriod, TranslationKey> = { day: 'recap.day', week: 'recap.week', month: 'recap.month', season: 'recap.season' };
 
@@ -40,7 +41,7 @@ export function NotificationsModal({ onClose }: { onClose: () => void }) {
       <div className="modal tile" role="dialog" aria-modal="true" aria-labelledby="ntitle">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 10 }}>
           <h2 id="ntitle" style={{ margin: 0 }}>{t('notify.title')}</h2>
-          <button className="ib" onClick={onClose} aria-label={t('recap.close')}>✕</button>
+          <button className="ib" onClick={onClose} aria-label={t('recap.close')}><CloseIcon /></button>
         </div>
         {notifications.items.length ? notifications.items.map((n) => (
           <button className="row" key={n.id} onClick={() => open(n)} style={{ width: '100%', textAlign: 'left', fontWeight: n.read ? 600 : 800 }}>

@@ -35,12 +35,12 @@ export async function GET() {
       : Promise.resolve({ data: [] as { user_id: string; album_id: string; stars: number; review: string | null; created_at: string; is_private: boolean | null }[] }),
     admin.from('ratings').select('album_id, stars').eq('user_id', userId),
     friendIds.length
-      ? admin.from('listening_events').select('user_id, track_id, track_title, artist, played_at').in('user_id', friendIds).gte('played_at', dayStart.toISOString()).order('played_at', { ascending: false }).limit(300)
-      : Promise.resolve({ data: [] as { user_id: string; track_id: string | null; track_title: string | null; artist: string | null; played_at: string }[] }),
+      ? admin.from('listening_events').select('user_id, track_id, track_title, artist, album_id, cover_url, played_at').in('user_id', friendIds).gte('played_at', dayStart.toISOString()).order('played_at', { ascending: false }).limit(300)
+      : Promise.resolve({ data: [] as { user_id: string; track_id: string | null; track_title: string | null; artist: string | null; album_id: string | null; cover_url: string | null; played_at: string }[] }),
     friendIds.length
       ? admin.from('listening_events').select('user_id, track_id, track_title').in('user_id', friendIds).gte('played_at', monthAgo).lt('played_at', dayStart.toISOString()).limit(6000)
       : Promise.resolve({ data: [] as { user_id: string; track_id: string | null; track_title: string | null }[] }),
-    admin.from('listening_events').select('duration_ms').eq('user_id', userId).gte('played_at', dayStart.toISOString()),
+    admin.from('listening_events').select('duration_ms, artist, album_id, cover_url, played_at').eq('user_id', userId).gte('played_at', dayStart.toISOString()),
   ]);
 
   // "Rate what you played": the viewer's own recently played albums, most
@@ -102,6 +102,8 @@ export async function GET() {
       user: userById.get(e.user_id) || { id: e.user_id, name: '?', handle: '', avatarUrl: null },
       trackTitle: e.track_title,
       artist: e.artist || '',
+      albumId: e.album_id ?? null,
+      cover: e.cover_url ?? null,
       at: e.played_at,
     });
   }
@@ -113,7 +115,19 @@ export async function GET() {
   const myPlays = mySessionRows || [];
   if (myPlays.length > 0) {
     const minutes = Math.round(myPlays.reduce((s, r) => s + (r.duration_ms || 0), 0) / 60000);
-    events.unshift({ type: 'session', plays: myPlays.length, minutes, at: new Date().toISOString() });
+    // The session tile (prototype ev3): cover of today's most played album,
+    // distinct artists, when it started.
+    const byAlbum = new Map<string, { n: number; cover: string | null }>();
+    for (const r of myPlays) {
+      if (!r.album_id) continue;
+      const cur = byAlbum.get(r.album_id as string) || { n: 0, cover: (r.cover_url as string | null) ?? null };
+      cur.n += 1;
+      byAlbum.set(r.album_id as string, cur);
+    }
+    const top = [...byAlbum.entries()].sort((a, b) => b[1].n - a[1].n)[0];
+    const artists = new Set(myPlays.map((r) => r.artist).filter(Boolean)).size;
+    const started = myPlays.map((r) => r.played_at as string).sort()[0] ?? new Date().toISOString();
+    events.unshift({ type: 'session', plays: myPlays.length, minutes, artists, albumId: top?.[0] ?? null, cover: top?.[1].cover ?? null, at: started });
   }
 
   // Hero: the single biggest gap between the viewer's score and a friend's

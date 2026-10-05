@@ -5,14 +5,33 @@ import { createPortal } from 'react-dom';
 import { useApp } from '@/lib/AppContext';
 import type { Device, GroupSummary } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
+import { toLocale, pluralForKey, type Language } from '@/lib/i18n';
 import { MascotIcon } from '../redesign/icons';
+
+// vGroups() "since march": the month, plus the year outside the current one.
+// Russian takes the genitive ("с марта"), which Intl only produces next to
+// a day, so the month part is cut out of a day+month format. German keeps
+// its capitalised nouns; the rest are lowercased like the prototype.
+export function sinceLabel(iso: string, language: Language): string {
+  const d = new Date(iso);
+  const loc = toLocale(language);
+  const thisYear = d.getFullYear() === new Date().getFullYear();
+  let label: string;
+  if (language === 'ru') {
+    const month = new Intl.DateTimeFormat(loc, { day: 'numeric', month: 'long' }).formatToParts(d).find((x) => x.type === 'month')?.value ?? '';
+    label = thisYear ? month : `${month} ${d.getFullYear()}`;
+  } else {
+    label = new Intl.DateTimeFormat(loc, thisYear ? { month: 'long' } : { month: 'long', year: 'numeric' }).format(d);
+  }
+  return language === 'de' ? label : label.toLowerCase();
+}
 
 // Groups list (spec 6.6 "Groups: list"). Tapping a group opens its own
 // full-screen page (GroupScreen) via viewGroup, a real navigable route —
 // the previous version kept the selected group in local component state,
 // so the browser's back button and a shared link to a group didn't work.
 export function GroupsScreen(_props: { device: Device }) {
-  const { t, me, viewGroup, showToast } = useApp();
+  const { t, language, me, viewGroup, showToast } = useApp();
   const [groups, setGroups] = useState<GroupSummary[] | null>(null);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
@@ -67,7 +86,7 @@ export function GroupsScreen(_props: { device: Device }) {
 
   return (
     <>
-      <div className="eyebrow">{t('groups.eyebrowCount', { count: groups?.length ?? 0 })}</div>
+      <p className="eyebrow muted">{t('groups.eyebrowCount', { count: groups?.length ?? 0, word: pluralForKey(language, groups?.length ?? 0, 'groups.groupOne', 'groups.groupFew', 'groups.groupMany') })}</p>
       <h1 className="big">{t('groups.title')}</h1>
 
       {groups === null ? (
@@ -75,28 +94,28 @@ export function GroupsScreen(_props: { device: Device }) {
       ) : (
         <div className="bento b3">
           {groups.map((g) => (
-            <button className="tile gl" key={g.id} onClick={() => viewGroup(g.id)} style={{ textAlign: 'left', cursor: 'pointer' }}>
+            <button className="tile gl" key={g.id} onClick={() => viewGroup(g.id)} style={{ textAlign: 'left' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
                 <h3>{g.name}</h3>
-                {g.newPlays > 0 && <span className="tag">{t('groups.newPlaysTag', { count: g.newPlays })}</span>}
+                {g.newPlays > 0 && <span className="tag" style={{ background: 'var(--acc)', color: 'var(--onacc)' }}>{t('groups.newPlaysTag', { count: g.newPlays })}</span>}
               </div>
-              <div className="hrow" style={{ margin: '14px 0 10px', gap: 6, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', margin: '14px 0 10px', gap: 6, flexWrap: 'wrap' }}>
                 {g.members.map((m) => (
-                  <span key={m.id} className="dot" style={{ ...userAvatarStyle(m), width: 32, height: 32, fontSize: 13 }}>{m.name[0]}</span>
+                  <span key={m.id} className="dot" style={userAvatarStyle(m)}>{!m.avatarUrl && m.name[0]}</span>
                 ))}
               </div>
-              <small className="muted">{t('groups.memberCount', { count: g.memberCount })} · {t('groups.since', { date: new Date(g.createdAt).toLocaleDateString() })}</small>
+              <small className="muted" style={{ fontWeight: 700 }}>{t('groups.memberCount', { count: g.memberCount, word: pluralForKey(language, g.memberCount, 'groups.memberOne', 'groups.memberFew', 'groups.memberMany') })} · {t('groups.since', { date: sinceLabel(g.createdAt, language) })}</small>
               {g.topListener && (
                 <p style={{ marginTop: 12, fontWeight: 700 }}>{t('groups.listenedMostWeek', { name: g.topListener.user.name, hours: g.topListener.hours })}</p>
               )}
-              <p className="muted" style={{ marginTop: 2 }}>{t('groups.voteOpenHint')}</p>
+              <p className="muted" style={{ fontWeight: 600, marginTop: 2 }}>{t('groups.voteOpenHint')}</p>
               <span style={{ display: 'inline-block', marginTop: 14, fontWeight: 800 }}>{t('groups.openGroup')} →</span>
             </button>
           ))}
-          <button className="tile t-soft2 empty" onClick={openModal} style={{ minHeight: 210, cursor: 'pointer' }}>
+          <button className="tile t-soft2 empty" onClick={openModal} style={{ minHeight: 210 }}>
             <MascotIcon />
             <h3>{t('groups.newGroup')}</h3>
-            <p className="muted">{t('groups.newGroupHint')}</p>
+            <p className="muted" style={{ fontWeight: 600 }}>{t('groups.newGroupHint')}</p>
           </button>
         </div>
       )}

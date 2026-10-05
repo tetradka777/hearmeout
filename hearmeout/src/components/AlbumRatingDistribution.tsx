@@ -10,7 +10,7 @@ const BUCKET_COUNT = 50;
 // Real per-tenth-star breakdown of the `ratings` table for this album — no
 // placeholder bars: renders nothing while loading, and the "no ratings"
 // message once loaded with zero rows.
-export function AlbumRatingDistribution({ albumId, refreshToken }: { albumId: string; refreshToken: number }) {
+export function AlbumRatingDistribution({ albumId, refreshToken, you }: { albumId: string; refreshToken: number; you?: number | null }) {
   const { t } = useApp();
   const [counts, setCounts] = useState<number[] | null>(null);
 
@@ -44,11 +44,12 @@ export function AlbumRatingDistribution({ albumId, refreshToken }: { albumId: st
       <div className="h50" role="img" aria-label={t('album.ratingDistribution')}>
         {counts.map((n, i) => {
           const value = (i + 1) / 10;
-          const pct = n ? Math.max(6, Math.round((n / max) * 100)) : 0;
-          return <i key={i} style={{ height: `${pct}%` }} title={n ? `${value.toFixed(1)} ★ · ${n}` : undefined} />;
+          const pct = Math.max(3, Math.round((n / max) * 100));
+          const mine = you != null && Math.round(you * 10) === i + 1;
+          return <i key={i} className={mine ? 'you' : undefined} style={{ height: `${pct}%` }} title={`${value.toFixed(1)}: ${n}`} />;
         })}
       </div>
-      <div className="h50ax"><span>0.1</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+      <div className="h50ax" aria-hidden="true"><span>0.1</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
     </>
   );
 }

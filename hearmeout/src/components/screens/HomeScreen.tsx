@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
-import type { Device, FeedEvent, FeedResponse, PublicProfile } from '@/lib/types';
+import type { Device, FeedEvent, FeedResponse } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
 import { userAvatarStyle, formatRelative } from '@/lib/format';
-import { computeMatch } from '@/lib/matchScore';
 import { FriendsRow } from '../FriendsRow';
-import { OnThisDayTeaser } from './OnThisDayTeaser';
-import { StarIcon } from '../ui/Icons';
+import { Stars } from '../redesign/Stars';
+import { MascotIcon } from '../redesign/icons';
+import { MATCH_FRIEND_EVENT } from '@/lib/uiEvents';
+import { useFriendScores } from '@/lib/useFriendScores';
 import { toLocale } from '@/lib/i18n';
 import { recapLine } from '@/lib/recapLine';
 import { completedWeekRange, isoWeekNumber } from '@/lib/weeks';
@@ -26,22 +27,23 @@ function useAlbum(albumId: string | null) {
 }
 
 function HeroTile() {
-  const { t, feed, openAlbum, viewFriend } = useApp();
+  const { t, feed, openAlbum, showScreen } = useApp();
+  const openMatchWith = (friendId: string) => { showScreen('match'); window.dispatchEvent(new CustomEvent(MATCH_FRIEND_EVENT, { detail: friendId })); };
   const hero = feed?.hero || null;
   const album = useAlbum(hero?.albumId || null);
 
   if (!hero || !album) {
     return (
-      <div className="tile t-ink hero s2">
+      <section className="tile t-ink hero glow s2">
         <span className="pill">{t('home.heroSticker')}</span>
         <h1>{t('home.heroEmptyTitle')}</h1>
         <p className="muted">{t('home.heroEmptySub')}</p>
-      </div>
+      </section>
     );
   }
 
   return (
-    <div className="tile t-ink hero s2">
+    <section className="tile t-ink hero glow s2">
       <span className="pill">{t('home.heroSticker')}</span>
       <h1>{t('home.heroHeadline', { friend: hero.friend.name, album: album.title, theirScore: hero.theirs.toFixed(1), mine: hero.mine.toFixed(1) })}</h1>
       <div className="duel">
@@ -49,10 +51,11 @@ function HeroTile() {
         <div className="bub b-pop r"><span className="num">{hero.theirs.toFixed(1)}</span><span className="w">{hero.friend.name}</span></div>
       </div>
       <div className="acts">
-        <button className="btn" onClick={() => openAlbum(album.id)}>{t('home.defendRating')}</button>
-        <button className="btn ghost" onClick={() => viewFriend(hero.friend.id)}>{t('home.compareWith', { friend: hero.friend.name })}</button>
+        {/* Prototype: "Defend your rating" opens Rate with the review box focused. */}
+        <button className="btn lg" onClick={() => { openAlbum(album.id); setTimeout(() => document.getElementById('rv')?.focus(), 80); }}>{t('home.defendRating')}</button>
+        <button className="btn ghost lg" onClick={() => openMatchWith(hero.friend.id)}>{t('home.compareWith', { friend: hero.friend.name })}</button>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -65,56 +68,77 @@ function RecapTile() {
   const r = recapCache[`${me.id}:week`];
   const line = r ? recapLine(r, language, t) : null;
   return (
-    <button className="tile t-ac" style={{ textAlign: 'left', width: '100%' }} onClick={() => openRecap('me', 'week')}>
-      <div className="eyebrow">{t('recapTeaser.weekEyebrow', { n: isoWeekNumber(completedWeekRange(0, me.weekStart).start) })}</div>
-      {line && <h3 style={{ margin: '8px 0' }}>“{line.lead}{line.em ? ` ${line.em}` : ''}”</h3>}
+    // Prototype recap tile: a column of three lines — label, the week's line
+    // in the display face, and the open link.
+    <button className="tile t-ac" onClick={() => openRecap('me', 'week')} style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: 250, gap: 20 }}>
+      <span style={{ fontWeight: 800 }}>{t('recapTeaser.weekEyebrow', { n: isoWeekNumber(completedWeekRange(0, me.weekStart).start) })}</span>
+      <span className="disp" style={{ fontSize: 'clamp(28px,3.4vw,38px)', lineHeight: 0.98, fontWeight: 800, letterSpacing: '-.045em' }}>
+        {line ? `“${line.lead}${line.em ? ` ${line.em}` : ''}”` : ''}
+      </span>
       <span style={{ fontWeight: 800 }}>{t('recapTeaser.open')} →</span>
     </button>
   );
 }
 
+function minutesLabel(min: number, t: (k: 'unit.h' | 'unit.m') => string): string {
+  return min >= 60 ? `${Math.floor(min / 60)}${t('unit.h')}${String(min % 60).padStart(2, '0')}` : `${min}${t('unit.m')}`;
+}
+
+// Feed tiles follow the prototype's ev1 / ev2 / ev3: cover + who line + tag
+// + time on top, a headline, a detail line and the actions. (The
+// prototype's "reply" / "+ react" need comments and reactions, which the
+// product doesn't have, so only the actions that do something are shown.)
 function FeedTile({ event }: { event: FeedEvent }) {
-  const { t, language, openAlbum } = useApp();
-  const albumId = event.type === 'rating_review' ? event.albumId : null;
+  const { t, language, openAlbum, spotifyCovers } = useApp();
+  const albumId = event.type === 'rating_review' ? event.albumId : event.albumId;
   const album = useAlbum(albumId);
+  const time = <span className="muted" style={{ fontSize: 13, fontWeight: 600 }}>{formatRelative(event.at, language)}</span>;
+  const cover = (album && (spotifyCovers[album.id] || album.cover)) || (event.type !== 'rating_review' ? event.cover : null) || undefined;
 
   if (event.type === 'session') {
     return (
-      <div className="tile">
-        <div className="ft top">
-          <div className="dot">{'\u{1F3A7}'}</div>
-          <div className="who"><b>{t('friend.you')}</b></div>
+      <article className="tile ft t-soft2">
+        <div className="top">
+          <CoverArt url={cover} fallbackLetter="♪" className="cov" style={{ width: 88, height: 88 }} />
+          <div>
+            <div className="who"><span className="dot">{t('friend.you')[0]}</span>{t('friend.you')}</div>
+            <span className="tag">{t('home.playsTag', { n: event.plays })}</span> {time}
+          </div>
         </div>
-        <p>{event.plays} plays · {event.minutes} min today</p>
-      </div>
+        <h3 style={{ marginTop: 16 }}>{t('home.sessionTitle', { time: minutesLabel(event.minutes, t) })}</h3>
+        <p className="muted" style={{ marginTop: 4 }}>{t('home.sessionSub', { artists: event.artists, tracks: event.plays })}</p>
+        {event.albumId && <div className="acts"><button className="btn ghost" onClick={() => openAlbum(event.albumId!)}>{t('home.openSession')}</button></div>}
+      </article>
     );
   }
 
   if (event.type === 'first_play') {
     return (
-      <div className="tile">
-        <div className="ft top">
-          <div className="dot" style={userAvatarStyle(event.user)}>{event.user.name[0]}</div>
-          <div className="who"><b>{event.user.name}</b><span className="tag">{t('home.firstPlayTag')}</span></div>
+      <article className="tile ft t-pop">
+        <div className="top">
+          <CoverArt url={cover} fallbackLetter={event.artist[0] || '?'} className="cov" style={{ width: 88, height: 88 }} />
+          <div>
+            <div className="who"><span className="dot" style={userAvatarStyle(event.user)}>{event.user.name[0]}</span>{event.user.name}</div>
+            <span className="tag">{t('home.firstPlayTag')}</span> {time}
+          </div>
         </div>
-        <h3>{event.trackTitle}</h3>
-        <p className="muted">{event.artist} · {formatRelative(event.at, language)}</p>
-      </div>
+        <h3 style={{ marginTop: 16 }}>{event.trackTitle}</h3>
+        <p className="muted" style={{ marginTop: 4 }}>{event.artist}{album ? ` · ${album.title}` : ''}</p>
+        {event.albumId && <div className="acts"><button className="btn" onClick={() => openAlbum(event.albumId!)}>{t('home.rateIt')}</button></div>}
+      </article>
     );
   }
 
   // rating_review
   if (!album) return null;
   return (
-    <div className="tile" onClick={() => openAlbum(album.id)} style={{ cursor: 'pointer' }}>
-      <div className="ft top">
-        <div className="dot" style={userAvatarStyle(event.user)}>{event.user.name[0]}</div>
-        <div className="who"><b>{event.user.name}</b><span className="tag">{t('home.filterRated')}</span></div>
-      </div>
-      <span className="bigscore">{event.stars.toFixed(1)}</span>
-      <div className="quote">&ldquo;{event.review}&rdquo;</div>
-      <p className="muted">{album.title} — {album.artist}</p>
-    </div>
+    <article className="tile ft">
+      <div className="who"><span className="dot" style={userAvatarStyle(event.user)}>{event.user.name[0]}</span>{event.user.name} <span className="tag">{t('home.filterRated')}</span> {time}</div>
+      <span className="num bigscore">{event.stars.toFixed(1)}</span>
+      <p className="quote">“{event.review}”</p>
+      <p className="muted" style={{ marginTop: 8, fontWeight: 600, fontSize: 14 }}>{t('home.albumBy', { album: album.title, artist: album.artist })}</p>
+      <div className="acts"><button className="btn" onClick={() => openAlbum(album.id)}>{t('home.readReview')}</button></div>
+    </article>
   );
 }
 
@@ -129,9 +153,9 @@ function FeedSection() {
 
   return (
     <div className="sec">
-      <div className="eyebrow">{t('home.feedLive', { date: today })}</div>
+      <p className="eyebrow muted">{t('home.feedLive', { date: today }).toLowerCase()}</p>
       <h2>{t('home.feedTitle')}</h2>
-      <div className="chips">
+      <div className="chips" role="group" aria-label={t('home.feedTitle')}>
         <button className={`chip ${filter === 'all' ? 'on' : ''}`} onClick={() => setFilter('all')}>{t('home.filterAll')}</button>
         <button className={`chip ${filter === 'first_play' ? 'on' : ''}`} onClick={() => setFilter('first_play')}>{t('home.filterFirstPlays')}</button>
         <button className={`chip ${filter === 'rating_review' ? 'on' : ''}`} onClick={() => setFilter('rating_review')}>{t('home.filterRated')}</button>
@@ -142,8 +166,9 @@ function FeedSection() {
           {filtered.map((e, i) => <FeedTile key={i} event={e} />)}
         </div>
       ) : (
-        <div className="tile empty">
-          <p>{t('home.feedEmpty')}</p>
+        <div className="tile s2 empty">
+          <MascotIcon />
+          <p className="muted">{t('home.feedEmpty')}</p>
         </div>
       )}
     </div>
@@ -154,47 +179,37 @@ function DaySoFarTile() {
   const { me, t, ensureRecap, recapCache } = useApp();
   useEffect(() => { if (me) ensureRecap('me', 'day'); }, [me, ensureRecap]);
   const r = me ? recapCache[`${me.id}:day`] : undefined;
+  const big = { fontSize: 44, color: 'var(--acct)' } as const;
   return (
     <div className="tile">
-      <h3>{t('home.daySoFar')}</h3>
-      <div className="stats3">
-        <div><span className="num">{r?.trackCount ?? 0}</span><small>{t('home.cornerTracks')}</small></div>
-        <div><span className="num">{r?.minutes ?? 0}</span><small>{t('home.cornerMin')}</small></div>
-        <div><span className="num">{r?.uniqueArtists ?? 0}</span><small>{t('home.cornerArtists')}</small></div>
+      <p style={{ fontWeight: 800, marginBottom: 12 }}>{t('home.daySoFar')}</p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
+        <div><span className="num" style={big}>{r?.trackCount ?? 0}</span><br /><small className="muted" style={{ fontWeight: 700 }}>{t('home.cornerTracks')}</small></div>
+        <div><span className="num" style={big}>{minutesLabel(r?.minutes ?? 0, t)}</span><br /><small className="muted" style={{ fontWeight: 700 }}>{t('home.listened')}</small></div>
+        <div><span className="num" style={big}>{r?.uniqueArtists ?? 0}</span><br /><small className="muted" style={{ fontWeight: 700 }}>{t('home.cornerArtists')}</small></div>
       </div>
     </div>
   );
 }
 
+// Prototype: pink tile, each row "N shared" (artists in common) and a big
+// percentage; a row opens the Match comparison with that friend.
 function TasteMatchTile() {
-  const { t, me, viewFriend } = useApp();
-  const [scores, setScores] = useState<Record<string, number | null>>({});
-
-  useEffect(() => {
-    if (!me || !me.friends.length) return;
-    let cancelled = false;
-    Promise.all(
-      me.friends.slice(0, 6).map(async (f) => {
-        const res = await fetch(`/api/users/${f.id}`);
-        if (!res.ok) return [f.id, null] as const;
-        const profile: PublicProfile = await res.json();
-        return [f.id, computeMatch(me.genres, profile.genres)] as const;
-      })
-    ).then((pairs) => { if (!cancelled) setScores(Object.fromEntries(pairs)); });
-    return () => { cancelled = true; };
-  }, [me]);
+  const { t, me, showScreen } = useApp();
+  const scores = useFriendScores(me);
 
   if (!me) return null;
-  const top = [...me.friends].sort((a, b) => (scores[b.id] ?? -1) - (scores[a.id] ?? -1)).slice(0, 3);
+  const top = [...me.friends].sort((a, b) => (scores[b.id]?.pct ?? -1) - (scores[a.id]?.pct ?? -1)).slice(0, 3);
+  const open = (id: string) => { showScreen('match'); window.dispatchEvent(new CustomEvent(MATCH_FRIEND_EVENT, { detail: id })); };
 
   return (
-    <div className="tile">
-      <h3>{t('home.tasteMatchTitle')}</h3>
+    <div className="tile t-pop">
+      <h3 style={{ marginBottom: 6 }}>{t('home.tasteMatchTitle')}</h3>
       {top.length ? top.map((f) => (
-        <button key={f.id} className="row" onClick={() => viewFriend(f.id)} style={{ cursor: 'pointer' }}>
-          <div className="dot" style={userAvatarStyle(f)}>{f.name[0]}</div>
-          <div className="g"><b>{f.name}</b></div>
-          <span className="num" style={{ fontSize: 20 }}>{scores[f.id] != null ? `${scores[f.id]}%` : '—'}</span>
+        <button key={f.id} className="row" onClick={() => open(f.id)}>
+          <span className="dot" style={userAvatarStyle(f)}>{f.name[0]}</span>
+          <span className="g"><b>{f.name}</b><small className="muted" style={{ fontWeight: 600 }}>{t('home.sharedArtists', { n: scores[f.id]?.shared ?? 0 })}</small></span>
+          <span className="num" style={{ fontSize: 34 }}>{scores[f.id]?.pct != null ? `${scores[f.id]!.pct}%` : '—'}</span>
         </button>
       )) : <p className="muted">{t('friends.empty')}</p>}
     </div>
@@ -202,14 +217,14 @@ function TasteMatchTile() {
 }
 
 function RateWhatPlayedRow({ albumId }: { albumId: string }) {
-  const { openAlbum } = useApp();
+  const { openAlbum, spotifyCovers } = useApp();
   const album = useAlbum(albumId);
   if (!album) return null;
   return (
-    <button className="row" onClick={() => openAlbum(album.id)} style={{ cursor: 'pointer' }}>
-      <CoverArt url={album.cover} fallbackLetter={album.artist[0] || '?'} className="cov" style={{ width: 44, height: 44 }} />
-      <div className="g"><b>{album.title}</b><div className="muted">{album.artist}</div></div>
-      <StarIcon />
+    <button className="row" onClick={() => openAlbum(album.id)}>
+      <CoverArt url={spotifyCovers[album.id] || album.cover} fallbackLetter={album.artist[0] || '?'} className="cov" style={{ width: 46, height: 46 }} />
+      <span className="g"><b>{album.title}</b><small className="muted" style={{ fontWeight: 600 }}>{album.artist}</small></span>
+      <Stars value={0} size={13} />
     </button>
   );
 }
@@ -221,7 +236,7 @@ function RateWhatPlayedTile() {
 
   return (
     <div className="tile">
-      <h3>{t('home.rateWhatPlayed')}</h3>
+      <h3 style={{ marginBottom: 6 }}>{t('home.rateWhatPlayed')}</h3>
       {unrated.length ? unrated.map((id) => <RateWhatPlayedRow key={id} albumId={id} />) : <p className="muted">{t('home.rateWhatPlayedEmpty')}</p>}
     </div>
   );
@@ -244,7 +259,6 @@ export function HomeScreen(_props: { device: Device }) {
       <div className="bento b3">
         <HeroTile />
         <RecapTile />
-        <OnThisDayTeaser />
       </div>
 
       <FeedSection />

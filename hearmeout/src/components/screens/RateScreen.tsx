@@ -42,18 +42,16 @@ function FriendsWhoRated({ albumId }: { albumId: string }) {
 
   return (
     <div className="tile t-soft2">
-      <h3>{t('album.friendsWhoRated')}</h3>
+      <h3 style={{ marginBottom: 6 }}>{t('album.friendsWhoRated')}</h3>
       {rows === null ? null : rows.length ? (
-        <div className="stack" style={{ marginTop: 10 }}>
-          {rows.map((r) => (
-            <div className="row" key={r.id}>
-              <div className="dot" style={userAvatarStyle({ avatarUrl: r.avatarUrl })}>{r.name[0]}</div>
-              <div className="g"><b>{r.name}</b></div>
-              <Stars value={r.stars} size={15} />
-              <span className="num" style={{ fontSize: 30 }}>{r.stars.toFixed(1)}</span>
-            </div>
-          ))}
-        </div>
+        rows.map((r) => (
+          <div className="row" key={r.id}>
+            <div className="dot" style={userAvatarStyle({ avatarUrl: r.avatarUrl })}>{!r.avatarUrl && r.name[0]}</div>
+            <b className="g">{r.name}</b>
+            <span className="stars"><Stars value={r.stars} size={15} /></span>
+            <span className="num" style={{ fontSize: 30 }}>{r.stars.toFixed(1)}</span>
+          </div>
+        ))
       ) : (
         <p className="muted">{t('album.friendsWhoRatedEmpty')}</p>
       )}
@@ -72,7 +70,7 @@ export function RateScreen({ device: _device }: { device: Device }) {
     reviewsVersion, openSpotifyArtist, ensureLiveAlbum, lovedItems, toggleLoved, laterItems, toggleLaterAlbum, toggleLaterTrack, me,
     setRatingValue, publishRating, showToast, viewHistory,
   } = useApp();
-  const { playQueue, currentTrack, playing } = usePlayer();
+  const { playQueue, currentTrack, playing, progress } = usePlayer();
 
   const staticMatch = albums.find((x) => x.id === state.currentAlbumId);
   const enriched = liveAlbums[state.currentAlbumId];
@@ -128,7 +126,7 @@ export function RateScreen({ device: _device }: { device: Device }) {
 
   const chips = (
     <div className="chips">
-      <button className="chip on">{t('album.rateAlbum')}</button>
+      <button className="chip on">{t('rate.rateAnAlbum')}</button>
       <button className="chip" onClick={() => viewHistory('rate')}>{t('rate.historyChip')}</button>
     </div>
   );
@@ -148,6 +146,11 @@ export function RateScreen({ device: _device }: { device: Device }) {
   const albumLoved = lovedItems.some((li) => li.type === 'album' && li.title === a.title && li.artist === a.artist);
   const savedForLater = laterItems.some((li) => li.type === 'album' && li.albumId === a.id);
   const vsAverage = val > 0 && ratingInfo ? val - ratingInfo.avg : null;
+  // prevHtml(): the preview line follows whichever track of this album is
+  // loaded in the player; otherwise it invites a listen before scoring.
+  const curIdx = currentTrack?.albumId === a.id ? a.tracklist.indexOf(currentTrack.title) : -1;
+  const fmtT = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
+  const fmtDur = (ms: number | null | undefined) => (ms ? fmtT(Math.round(ms / 1000)) : '');
 
   const tracklist = a.tracklist.length ? (
     <div className="stack">
@@ -156,14 +159,15 @@ export function RateScreen({ device: _device }: { device: Device }) {
         const isRowPlaying = isRowCurrent && playing;
         const trackSaved = laterItems.some((li) => li.type === 'track' && li.albumId === a.id && li.trackIndex === i);
         return (
-          <div className="row later-row" key={tr}>
-            <button className={`trk rowlink${isRowCurrent ? ' cur' : ''}`} onClick={() => playQueue(trackQueue, i)} aria-label={t('album.playPreviewOf', { title: tr })}>
-              <span className="muted" style={{ width: 24 }}>{String(i + 1).padStart(2, '0')}</span>
-              <b>{tr}</b>
+          <div className={`row trk${isRowCurrent ? ' cur' : ''}`} key={`${i}-${tr}`}>
+            <button className="rowlink" onClick={() => playQueue(trackQueue, i)} aria-label={t('album.playPreviewOf', { title: tr })}>
+              <span className="num" style={{ fontSize: 20, width: 24, opacity: 0.8 }}>{i + 1}</span>
+              <span className="g"><b>{tr}</b></span>
+              {fmtDur(a.trackDurations?.[i]) && <small className="muted" style={{ fontWeight: 700 }}>{fmtDur(a.trackDurations?.[i])}</small>}
               <span className="ticn">{isRowPlaying ? <span className="eq"><b /><b /><b /></span> : <PlayIcon size={14} />}</span>
             </button>
             <button
-              className={`ib love${trackSaved ? ' on' : ''}`}
+              className={`ib love later${trackSaved ? ' on' : ''}`}
               aria-pressed={trackSaved}
               aria-label={trackSaved ? t('track.removeLater') : t('track.saveLater')}
               onClick={() => toggleLaterTrack(a.id, i, tr, a.artist, cover || null)}
@@ -195,18 +199,23 @@ export function RateScreen({ device: _device }: { device: Device }) {
           </p>
           <h1 className="big">{a.title}</h1>
           <div className="acts" style={{ margin: '0 0 14px' }}>
-            <button className={`btn ghost love${savedForLater ? ' on' : ''}`} aria-pressed={savedForLater} onClick={() => toggleLaterAlbum(a.id, a.title, a.artist, cover || null)}>
+            <button className={`btn ghost love later${savedForLater ? ' on' : ''}`} aria-pressed={savedForLater} onClick={() => toggleLaterAlbum(a.id, a.title, a.artist, cover || null)}>
               <BookmarkIcon /> {savedForLater ? t('album.savedForLater') : t('album.listenLater')}
             </button>
-            <button className={`btn ghost love${albumLoved ? ' on' : ''}`} onClick={() => toggleLoved('album', a.title, a.artist, a.spotifyId ?? null, spotifyCovers[a.id] || a.cover || null)}>
+            <button className={`btn ghost love${albumLoved ? ' on' : ''}`} aria-pressed={albumLoved} aria-label={albumLoved ? t('album.removeFromLoved') : t('album.addToLoved')} onClick={() => toggleLoved('album', a.title, a.artist, a.spotifyId ?? null, spotifyCovers[a.id] || a.cover || null)}>
               <HeartIcon /> {albumLoved ? t('album.loved') : t('album.love')}
             </button>
             {openSpotifyUrl && <a className="btn ghost" href={openSpotifyUrl} target="_blank" rel="noreferrer">{t('album.openInSpotify')}</a>}
           </div>
           {a.tracklist.length > 0 && (
             <div className="pvw">
-              <PreviewButton tracks={trackQueue} />
-              <div><b>{t('album.preview30s')}</b></div>
+              <PreviewButton tracks={trackQueue} index={curIdx >= 0 ? curIdx : 0} />
+              <div>
+                <b style={{ display: 'block' }}>{curIdx >= 0 ? a.tracklist[curIdx] : t('album.preview30s')}</b>
+                <small className="muted" style={{ fontWeight: 700 }}>
+                  {fmtT(curIdx >= 0 ? progress * 30 : 0)} / 0:30 · {curIdx >= 0 ? a.artist : t('album.listenBeforeScore')}
+                </small>
+              </div>
             </div>
           )}
           <div className="stats3">
@@ -216,7 +225,7 @@ export function RateScreen({ device: _device }: { device: Device }) {
             </div>
             <div className="tile t-ac">
               {ratingInfo ? <span className="num">{ratingInfo.avg.toFixed(1)}</span> : <span className="num">—</span>}
-              <small>{ratingInfo ? `${ratingInfo.count} ${pluralForKey(language, ratingInfo.count, 'album.ratingOne', 'album.ratingFew', 'album.ratingMany')}` : t('album.noRatings')}</small>
+              <small>{t('album.everyoneCount', { n: ratingInfo?.count ?? 0 })}</small>
             </div>
             <div className="tile t-ink">
               <span className="num">{myPlays ?? '–'}</span>
@@ -227,7 +236,7 @@ export function RateScreen({ device: _device }: { device: Device }) {
           <div className="tile ratebox">
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
               <div className="duel">
-                <div className="bub b-ac"><span className="num">{val > 0 ? val.toFixed(1) : '–'}</span><span className="w">{t('rate.yourRating')}</span></div>
+                <div className="bub b-ac"><span className="num">{val > 0 ? val.toFixed(1) : '–'}</span><span className="w">{t('rate.yourTake')}</span></div>
               </div>
               <div>
                 <StarSlider value={val} onChange={setRatingValue} size={34} />
@@ -299,13 +308,13 @@ export function RateScreen({ device: _device }: { device: Device }) {
           ) : (
             <p className="muted" style={{ fontWeight: 600, marginTop: 8 }}>{t('rate.rateToCompare')}</p>
           )}
-          <div style={{ marginTop: 14 }}><AlbumRatingDistribution albumId={a.id} refreshToken={reviewsVersion} /></div>
+          <div style={{ marginTop: 14 }}><AlbumRatingDistribution albumId={a.id} refreshToken={reviewsVersion} you={val > 0 ? val : null} /></div>
           <p className="muted" style={{ fontWeight: 800, fontSize: 13, margin: '16px 0 8px' }}>{t('album.vibesFromReviews')}</p>
           <AlbumTagsSummary albumId={a.id} refreshToken={reviewsVersion} />
         </div>
         <div className="tile s3">
           <h2>{t('album.reviews')}</h2>
-          <div style={{ marginTop: 10 }}><AlbumReviews albumId={a.id} refreshToken={reviewsVersion} /></div>
+          <AlbumReviews albumId={a.id} refreshToken={reviewsVersion} />
         </div>
       </div>
     </>

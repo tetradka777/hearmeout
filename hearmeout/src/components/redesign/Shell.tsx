@@ -27,7 +27,7 @@ type NavItem = { screen: ScreenName; labelKey: TranslationKey };
 function useNavItems(): NavItem[] {
   return [
     { screen: 'catalog', labelKey: 'nav.home' },
-    { screen: 'history', labelKey: 'nav.rate' },
+    { screen: 'rate', labelKey: 'nav.rate' },
     { screen: 'match', labelKey: 'nav.match' },
     { screen: 'stats', labelKey: 'nav.stats' },
     { screen: 'groups', labelKey: 'nav.groups' },
@@ -35,14 +35,15 @@ function useNavItems(): NavItem[] {
   ];
 }
 
-// Which nav item lights up for a given screen — same grouping rule as the
-// current site's TAB_GROUP (rate/artist/friend/recap/settings open "from
-// content" and light up nothing, or the screen that leads to them).
+// Which nav item lights up for a given screen — the prototype's NAVKEY:
+// artist → Discover, friend → Match, group → Groups, recap → Stats;
+// profile / settings / later / states light up nothing. History is
+// special-cased below (Rate only when opened from Rate).
 const NAV_GROUP: Record<ScreenName, ScreenName | null> = {
   catalog: 'catalog', artist: 'discover',
-  history: 'history', rate: null,
+  history: null, rate: 'rate',
   match: 'match', friend: 'match',
-  stats: 'stats', recap: null,
+  stats: 'stats', recap: 'stats',
   groups: 'groups',
   group: 'groups',
   discover: 'discover',
@@ -61,13 +62,14 @@ const TAB_ICON: Partial<Record<ScreenName, ReactNode>> = {
 };
 
 export function RedesignShell({ children }: { children: ReactNode }) {
-  const { me, t, state, showScreen, viewHistory, setSearchQuery, openAlbum } = useApp();
-  const goToNavItem = (screen: ScreenName) => (screen === 'history' ? viewHistory() : showScreen(screen));
+  const { me, t, state, showScreen, setSearchQuery, openAlbum } = useApp();
+  // "Rate" opens the album/rate screen for the album last looked at
+  // (prototype: go('rate') with S.album), not the ratings history.
+  const goToNavItem = (screen: ScreenName) => (screen === 'rate' ? openAlbum(state.currentAlbumId) : showScreen(screen));
   const navItems = useNavItems();
-  // History is both a nav destination and a screen opened from Profile —
-  // the prototype doesn't light up "Rate" when it was opened that way
-  // (redesign fix B6).
-  const activeGroup = state.activeScreen === 'history' && state.historyOrigin === 'profile' ? null : NAV_GROUP[state.activeScreen];
+  // History lights up "Rate" only when it was opened from the Rate screen
+  // (prototype: histFrom === 'rate').
+  const activeGroup = state.activeScreen === 'history' ? (state.historyOrigin === 'rate' ? 'rate' : null) : NAV_GROUP[state.activeScreen];
   const { currentTrack } = usePlayer();
   const hasPlayer = !!currentTrack;
   const hasNowPlaying = !!me?.nowPlaying;
@@ -78,35 +80,37 @@ export function RedesignShell({ children }: { children: ReactNode }) {
       {/* Desktop top bar — identical structure in both designs (spec 2.4/15.1), skin only differs via CSS */}
       <div className="nav">
         <button className="logo" onClick={() => showScreen('catalog')}><span className="mk" />hearmeout</button>
-        <nav>
+        <nav aria-label={t('nav.main')}>
           {navItems.map((item) => (
             <button key={item.screen} className={activeGroup === item.screen ? 'on' : ''} onClick={() => goToNavItem(item.screen)}>
               {t(item.labelKey)}
             </button>
           ))}
         </nav>
+        {/* Prototype: the search sits between the menu and .topr, and Enter
+            (not every keystroke) opens Discover with the query. */}
+        <input
+          className="search"
+          placeholder={t('search.placeholder')}
+          aria-label={t('discover.searchAria')}
+          value={state.searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') showScreen('discover'); }}
+        />
         <div className="topr">
-          <div style={{ position: 'relative' }}>
-            <input
-              className="search"
-              placeholder={t('search.placeholder')}
-              value={state.searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); showScreen('discover'); }}
-            />
-          </div>
           <QuickModeToggle />
           <AvatarMenu />
         </div>
       </div>
 
       {/* Mobile header (both designs) */}
-      <div className="mobtop">
+      <header className="mobtop">
         <button className="logo" onClick={() => showScreen('catalog')}><span className="mk" />hearmeout</button>
         <div className="topr">
           <QuickModeToggle />
           <AvatarMenu />
         </div>
-      </div>
+      </header>
 
       <Ticker />
 
@@ -114,25 +118,23 @@ export function RedesignShell({ children }: { children: ReactNode }) {
       </div>
 
       {/* Mobile tab bar: 5 tabs + round quick-rate + (spec 3.9) */}
-      <div className="tabbar">
+      <nav className="tabbar" aria-label={t('nav.main')}>
         {TAB_SCREENS.map((screen) => (
           <button key={screen} className={activeGroup === screen ? 'on' : ''} onClick={() => showScreen(screen)}>
             {TAB_ICON[screen]}
             <span>{t(TAB_LABEL[screen]!)}</span>
           </button>
         ))}
+        {/* Quick rate: the playing album, else the album last looked at
+            (prototype: data-go="rate" data-a=S.playing). */}
         <button
           className="fab"
-          onClick={() => {
-            const playingId = me?.nowPlaying?.albumId || currentTrack?.albumId;
-            if (playingId) openAlbum(playingId);
-            else viewHistory();
-          }}
-          aria-label={t('nav.rate')}
+          onClick={() => openAlbum(me?.nowPlaying?.albumId || currentTrack?.albumId || state.currentAlbumId)}
+          aria-label={t('nav.quickRate')}
         >
           +
         </button>
-      </div>
+      </nav>
 
       {/* The preview mini-player takes priority over the now-playing bar
           while active (spec 13.17.2) — both live in the same fixed-bottom
