@@ -18,6 +18,13 @@ function sign(userId: string, key: string): string {
   return createHmac('sha256', key).update(userId).digest('base64url');
 }
 
+// Signup/login check this before touching the database, so a missing
+// SESSION_SECRET fails cleanly instead of creating an account nobody can
+// sign in to.
+export function hasSessionSecret(): boolean {
+  return secret() !== null;
+}
+
 export async function getCurrentUserId(): Promise<string | null> {
   const key = secret();
   if (!key) {

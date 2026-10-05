@@ -11,6 +11,7 @@ const ERROR_KEY: Record<string, TranslationKey> = {
   name_required: 'register.nameRequired',
   invalid_credentials: 'login.invalidCredentials',
   account_not_linked: 'login.accountNotLinked',
+  server_config: 'auth.serverConfig',
 };
 
 // Landing (signed out, spec "Landing", 13.1) — pixel-exact copy of the
@@ -89,7 +90,8 @@ export function RegisterModal() {
 
   function mapError(err: unknown, fallback: TranslationKey): string {
     const code = err instanceof Error ? err.message : '';
-    return t(ERROR_KEY[code] || fallback);
+    if (ERROR_KEY[code]) return t(ERROR_KEY[code]);
+    return code && code !== 'signup_failed' && code !== 'login_failed' ? `${t(fallback)} (${code})` : t(fallback);
   }
 
   // Same checks and messages as the prototype's doAuth(): name 2–24,

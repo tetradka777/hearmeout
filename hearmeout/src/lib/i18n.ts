@@ -1057,6 +1057,7 @@ const ru = {
   'stats.playFew': 'прослушивания',
   'stats.playMany': 'прослушиваний',
   'discover.globalRegion': 'всего мира',
+  'auth.serverConfig': 'Сервер не настроен: не задан SESSION_SECRET. Попробуйте позже.',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2110,6 +2111,7 @@ const en: Dict = {
   'stats.playFew': 'plays',
   'stats.playMany': 'plays',
   'discover.globalRegion': 'the whole world',
+  'auth.serverConfig': 'The server is not configured (SESSION_SECRET is missing). Please try later.',
 };
 
 const fr: Dict = {
@@ -3160,6 +3162,7 @@ const fr: Dict = {
   'stats.playFew': 'écoutes',
   'stats.playMany': 'écoutes',
   'discover.globalRegion': 'le monde entier',
+  'auth.serverConfig': 'Le serveur n’est pas configuré (SESSION_SECRET manquant). Réessaie plus tard.',
 };
 
 const es: Dict = {
@@ -4210,6 +4213,7 @@ const es: Dict = {
   'stats.playFew': 'escuchas',
   'stats.playMany': 'escuchas',
   'discover.globalRegion': 'todo el mundo',
+  'auth.serverConfig': 'El servidor no está configurado (falta SESSION_SECRET). Inténtalo más tarde.',
 };
 
 const de: Dict = {
@@ -5260,6 +5264,7 @@ const de: Dict = {
   'stats.playFew': 'Wiedergaben',
   'stats.playMany': 'Wiedergaben',
   'discover.globalRegion': 'die ganze Welt',
+  'auth.serverConfig': 'Der Server ist nicht konfiguriert (SESSION_SECRET fehlt). Versuch es später.',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };
