@@ -52,7 +52,7 @@ function LandingBackground({ onAuth }: { onAuth: (mode: 'register' | 'login') =>
       </div>
       <div className="acts">
         <a className="btn ghost" href={`/invite/${demo.id}`}>{t('landing.seeInviteExample')}</a>
-        <a className="btn ghost" href={`/u/${demo.name}`}>{t('landing.seePublicExample')}</a>
+        <a className="btn ghost" href={`/u/${demo.handle}`}>{t('landing.seePublicExample')}</a>
         <a className="btn ghost" href="/privacy">{t('landing.whatWeStore')}</a>
       </div>
     </div>

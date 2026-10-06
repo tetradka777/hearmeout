@@ -210,7 +210,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
           <span className="pill">{t('groups.voteOpen')}</span>
           <h2 style={{ margin: '14px 0 4px' }}>{t('groups.voteForMonth', { month: voteMonth.toLocaleDateString(toLocale(language), { month: 'long' }) })}</h2>
           <p className="muted" style={{ fontWeight: 600, marginBottom: 16 }}>
-            {t('groups.voteQuestion')} {t('groups.voteEnds', { date: voteEnd.toLocaleDateString(toLocale(language), { weekday: 'long' }) })}
+            {t('groups.voteQuestion')} {t('groups.voteEnds', { date: voteEnd.toLocaleDateString(toLocale(language), { day: 'numeric', month: 'long' }) })}
           </p>
           {detail.vote.candidates.length ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 12, maxWidth: 640 }}>
@@ -260,7 +260,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
           <h2>{t('groups.inviteByHandle')}</h2>
           <label htmlFor="ginv">{t('groups.handleLabel')}</label>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <input className="field" id="ginv" style={{ flex: 1, minWidth: 150 }} placeholder="@handle" value={inviteHandle} aria-invalid={!!inviteErr} aria-describedby="ginverr" onChange={(e) => setInviteHandle(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') invite(); }} />
+            <input className="field" id="ginv" style={{ flex: 1, minWidth: 150 }} placeholder={t('friends.handlePlaceholder')} value={inviteHandle} aria-invalid={!!inviteErr} aria-describedby="ginverr" onChange={(e) => setInviteHandle(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') invite(); }} />
             <button className="btn" onClick={invite}>{t('groups.invite')}</button>
           </div>
           <p className="ferr" id="ginverr" role="alert">{inviteErr}</p>

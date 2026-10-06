@@ -128,7 +128,7 @@ const ru = {
   'groups.createFailed': 'Не удалось создать группу',
   'groups.invite': 'Пригласить',
   'groups.muteNotifications': 'Отключить уведомления',
-  'groups.muted': 'Отключено',
+  'groups.muted': 'Уведомления отключены',
   'groups.muteFailed': 'Не удалось изменить уведомления',
   'groups.members': 'Участники',
   'groups.owner': 'Создатель',
@@ -172,7 +172,7 @@ const ru = {
   'groups.listenedMostTag': 'слушал(а) больше всех',
   'groups.voteOpen': 'Альбом месяца',
   'groups.voteForMonth': 'Голосование за {month}',
-  'groups.voteQuestion': 'Один голос на участника. Нажмите на свой голос ещё раз, чтобы забрать его.',
+  'groups.voteQuestion': 'Один голос на человека. Нажмите на свой голос ещё раз, чтобы забрать его.',
   'groups.voteFailed': 'Не удалось проголосовать',
   'groups.noCandidates': 'В этом месяце пока никто ничего не оценил — голосовать не за что.',
   'groups.records': 'Рекорды группы',
@@ -952,7 +952,7 @@ const ru = {
   'groups.noAwardsYet': 'Награды появятся в конце месяца.',
   'groups.daysN': '{n} дн.',
   'groups.ratingsN': 'оценок: {n}',
-  'groups.voteEnds': 'Заканчивается: {date}.',
+  'groups.voteEnds': 'Голосование до {date}.',
   'groups.ratingsThisMonth': 'оценок за месяц',
   'discover.rankN': '№{n} по прослушиваниям',
   'discover.searchAria': 'Поиск',
@@ -1072,6 +1072,7 @@ const ru = {
   'later.removeAllConfirmFew': 'Удалить {n} сохранённых элемента?',
   'profile.connectSpotify': 'Подключить Spotify',
   'settings.regionSearch': 'Найдите страну',
+  'friends.handlePlaceholder': '@ник друга',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -1195,7 +1196,7 @@ const en: Dict = {
   'groups.createFailed': "Couldn't create the group",
   'groups.invite': 'Invite',
   'groups.muteNotifications': 'Mute notifications',
-  'groups.muted': 'Muted',
+  'groups.muted': 'Notifications muted',
   'groups.muteFailed': "Couldn't update notifications",
   'groups.members': 'Members',
   'groups.owner': 'Owner',
@@ -2020,7 +2021,7 @@ const en: Dict = {
   'groups.noAwardsYet': 'Awards appear at the end of the month.',
   'groups.daysN': '{n} days',
   'groups.ratingsN': '{n} ratings',
-  'groups.voteEnds': 'Ends {date}.',
+  'groups.voteEnds': 'Voting closes {date}.',
   'groups.ratingsThisMonth': 'ratings this month',
   'discover.rankN': '#{n} most streamed',
   'discover.searchAria': 'Search',
@@ -2140,6 +2141,7 @@ const en: Dict = {
   'later.removeAllConfirmFew': 'Remove all {n} saved items?',
   'profile.connectSpotify': 'Connect Spotify',
   'settings.regionSearch': 'Search a country',
+  'friends.handlePlaceholder': '@handle',
 };
 
 const fr: Dict = {
@@ -2260,7 +2262,7 @@ const fr: Dict = {
   'groups.createFailed': 'Impossible de créer le groupe',
   'groups.invite': 'Inviter',
   'groups.muteNotifications': 'Couper les notifications',
-  'groups.muted': 'Muet',
+  'groups.muted': 'Notifications coupées',
   'groups.muteFailed': "Impossible de modifier les notifications",
   'groups.members': 'Membres',
   'groups.owner': 'Créateur',
@@ -3085,7 +3087,7 @@ const fr: Dict = {
   'groups.noAwardsYet': 'Les récompenses arrivent en fin de mois.',
   'groups.daysN': '{n} jours',
   'groups.ratingsN': '{n} notes',
-  'groups.voteEnds': 'Fin : {date}.',
+  'groups.voteEnds': 'Vote jusqu’au {date}.',
   'groups.ratingsThisMonth': 'notes ce mois-ci',
   'discover.rankN': 'n°{n} des écoutes',
   'discover.searchAria': 'Recherche',
@@ -3205,6 +3207,7 @@ const fr: Dict = {
   'later.removeAllConfirmFew': 'Supprimer les {n} éléments enregistrés ?',
   'profile.connectSpotify': 'Connecter Spotify',
   'settings.regionSearch': 'Chercher un pays',
+  'friends.handlePlaceholder': '@pseudo',
 };
 
 const es: Dict = {
@@ -3325,7 +3328,7 @@ const es: Dict = {
   'groups.createFailed': 'No se pudo crear el grupo',
   'groups.invite': 'Invitar',
   'groups.muteNotifications': 'Silenciar notificaciones',
-  'groups.muted': 'Silenciado',
+  'groups.muted': 'Notificaciones silenciadas',
   'groups.muteFailed': 'No se pudieron actualizar las notificaciones',
   'groups.members': 'Miembros',
   'groups.owner': 'Creador',
@@ -4150,7 +4153,7 @@ const es: Dict = {
   'groups.noAwardsYet': 'Los premios aparecen a final de mes.',
   'groups.daysN': '{n} días',
   'groups.ratingsN': '{n} valoraciones',
-  'groups.voteEnds': 'Termina el {date}.',
+  'groups.voteEnds': 'Votación hasta el {date}.',
   'groups.ratingsThisMonth': 'valoraciones este mes',
   'discover.rankN': 'n.º {n} en reproducciones',
   'discover.searchAria': 'Buscar',
@@ -4270,6 +4273,7 @@ const es: Dict = {
   'later.removeAllConfirmFew': '¿Quitar los {n} elementos guardados?',
   'profile.connectSpotify': 'Conectar Spotify',
   'settings.regionSearch': 'Busca un país',
+  'friends.handlePlaceholder': '@usuario',
 };
 
 const de: Dict = {
@@ -4390,7 +4394,7 @@ const de: Dict = {
   'groups.createFailed': 'Gruppe konnte nicht erstellt werden',
   'groups.invite': 'Einladen',
   'groups.muteNotifications': 'Benachrichtigungen stummschalten',
-  'groups.muted': 'Stumm',
+  'groups.muted': 'Benachrichtigungen aus',
   'groups.muteFailed': 'Benachrichtigungen konnten nicht geändert werden',
   'groups.members': 'Mitglieder',
   'groups.owner': 'Ersteller',
@@ -5215,7 +5219,7 @@ const de: Dict = {
   'groups.noAwardsYet': 'Auszeichnungen gibt es am Monatsende.',
   'groups.daysN': '{n} Tage',
   'groups.ratingsN': '{n} Bewertungen',
-  'groups.voteEnds': 'Endet am {date}.',
+  'groups.voteEnds': 'Abstimmung bis {date}.',
   'groups.ratingsThisMonth': 'Bewertungen diesen Monat',
   'discover.rankN': 'Platz {n} nach Streams',
   'discover.searchAria': 'Suche',
@@ -5335,6 +5339,7 @@ const de: Dict = {
   'later.removeAllConfirmFew': 'Alle {n} gespeicherten Elemente entfernen?',
   'profile.connectSpotify': 'Spotify verbinden',
   'settings.regionSearch': 'Land suchen',
+  'friends.handlePlaceholder': '@handle',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };

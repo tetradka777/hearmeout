@@ -16,6 +16,7 @@ import { useFriendScores } from '@/lib/useFriendScores';
 import type { TranslationKey } from '@/lib/i18n';
 import { LaterRow, useLaterPlay } from './LaterScreen';
 import { RegionInput } from '../RegionInput';
+import { Initial } from '../ui/Initial';
 
 type ProfileTab = 'ratings' | 'reviews' | 'loved' | 'later' | 'taste' | 'awards' | 'listening' | 'friends';
 const TAB_ORDER: ProfileTab[] = ['ratings', 'reviews', 'loved', 'later', 'taste', 'awards', 'listening', 'friends'];
@@ -372,7 +373,7 @@ function FriendsTab() {
         {incoming.map((r) => (
           <div className="row" key={r.id}>
             <button className="rowlink" onClick={() => viewFriend(r.user.id)}>
-              <span className="dot" style={userAvatarStyle(r.user)}>{!r.user.avatarUrl && r.user.name[0]}</span>
+              <span className="dot" style={userAvatarStyle(r.user)}>{!r.user.avatarUrl && <Initial name={r.user.name} />}</span>
               <span className="g"><b>{r.user.name}</b><small className="muted" style={{ fontWeight: 600 }}>{r.user.handle}</small></span>
             </button>
             <button className="btn" style={{ padding: '8px 16px' }} onClick={() => respondToFriendRequest(r.id, 'accept')}>{t('friends.accept')}</button>
@@ -383,7 +384,7 @@ function FriendsTab() {
         {outgoing.map((r) => (
           <div className="row" key={r.id}>
             <button className="rowlink" onClick={() => viewFriend(r.user.id)}>
-              <span className="dot" style={userAvatarStyle(r.user)}>{!r.user.avatarUrl && r.user.name[0]}</span>
+              <span className="dot" style={userAvatarStyle(r.user)}>{!r.user.avatarUrl && <Initial name={r.user.name} />}</span>
               <span className="g"><b>{r.user.name}</b></span>
             </button>
             <span className="tag">{t('friends.pendingBadge')}</span>
@@ -397,7 +398,7 @@ function FriendsTab() {
         <h2>{t('friends.addAFriend')}</h2>
         <label htmlFor="addh">{t('friends.handleLabel')}</label>
         <form style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }} onSubmit={(e) => { e.preventDefault(); if (!busy) add(); }}>
-          <input className="field" id="addh" placeholder="@handle" style={{ flex: 1, minWidth: 160 }} value={handle} onChange={(e) => { setHandle(e.target.value); setErr(''); }} />
+          <input className="field" id="addh" placeholder={t('friends.handlePlaceholder')} style={{ flex: 1, minWidth: 160 }} value={handle} onChange={(e) => { setHandle(e.target.value); setErr(''); }} />
           <button className="btn" type="submit" disabled={busy}>{t('friends.add')}</button>
         </form>
         <p className="ferr" role="alert">{err}</p>
@@ -407,7 +408,7 @@ function FriendsTab() {
         <h2>{t('profile.friends')}</h2>
         {me.friends.length ? me.friends.map((f) => (
           <button className="row" key={f.id} onClick={() => viewFriend(f.id)}>
-            <span className="dot" style={userAvatarStyle(f)}>{!f.avatarUrl && f.name[0]}</span>
+            <span className="dot" style={userAvatarStyle(f)}>{!f.avatarUrl && <Initial name={f.name} />}</span>
             <span className="g"><b>{f.name}</b><small className="muted" style={{ fontWeight: 600 }}>{t('friends.sharedArtistsN', { n: scores[f.id]?.shared ?? 0 })}</small></span>
             <span className="num" style={{ fontSize: 30 }}>{scores[f.id]?.pct != null ? `${scores[f.id]!.pct}%` : '—'}</span>
             <span className="tag">{t('friends.viewProfile')}</span>

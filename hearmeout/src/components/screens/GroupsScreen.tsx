@@ -148,7 +148,7 @@ export function GroupsScreen(_props: { device: Device }) {
             <input
               className="field"
               id="gfirst"
-              placeholder="@handle"
+              placeholder={t('friends.handlePlaceholder')}
               value={firstInvite}
               aria-invalid={!!inviteErr}
               aria-describedby="gferr"
