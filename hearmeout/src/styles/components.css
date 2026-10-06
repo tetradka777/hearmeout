@@ -435,7 +435,7 @@ html { background: var(--bg); }
 .rd .pinfo { flex: 1; min-width: 200px; }
 .rd .pname { font: 800 clamp(34px,7vw,56px)/1 var(--font-display); letter-spacing: -.04em; background: transparent; border: 0; border-bottom: 2px dashed color-mix(in srgb, currentColor 35%, transparent); color: inherit; width: 100%; padding: 0 0 2px; border-radius: 0; }
 .rd .phandle { display: flex; align-items: center; font-weight: 800; margin-top: 6px; }
-.rd .phandle input { background: transparent; border: 0; border-bottom: 2px dashed color-mix(in srgb, currentColor 35%, transparent); color: inherit; font-weight: 800; font-size: 16px; width: 14ch; border-radius: 0; }
+.rd .phandle input { background: transparent; border: 0; padding: 0; border-bottom: 2px dashed color-mix(in srgb, currentColor 35%, transparent); color: inherit; font-weight: 800; font-size: 16px; width: 14ch; border-radius: 0; }
 .rd .pcnt { display: flex; gap: 22px; flex-wrap: wrap; }
 .rd .qrw { margin-top: 12px; background: #fff; padding: 10px; border-radius: 16px; display: inline-block; color: #111; }
 .rd .qr { width: 160px; height: 160px; display: block; }

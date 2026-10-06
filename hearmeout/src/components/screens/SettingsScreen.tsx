@@ -1,12 +1,13 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
-import { getRegionCodes, regionDisplayName, toLocale, LANGUAGES, LANGUAGE_LABEL, type Language, type TranslationKey } from '@/lib/i18n';
+import { regionDisplayName, toLocale, LANGUAGES, LANGUAGE_LABEL, type Language, type TranslationKey } from '@/lib/i18n';
 import { PALETTES, type Design, type Mode } from '@/lib/palettes';
 import { exportRatingsCsv } from '@/lib/csvExport';
 import { ConnectionRows, ImportTile } from '../ConnectionBlocks';
+import { RegionInput } from '../RegionInput';
 
 type Section = 'appearance' | 'language' | 'account' | 'connections' | 'privacy';
 
@@ -120,8 +121,7 @@ function weekdayName(day: number, language: Language): string {
 }
 
 function LanguageTab() {
-  const { t, me, language, updateLanguage, updateRegion, updateRegionAuto, updateAppearance } = useApp();
-  const regionCodes = useMemo(() => getRegionCodes(), []);
+  const { t, me, language, updateLanguage, updateRegionAuto, updateAppearance } = useApp();
   if (!me) return null;
   const autoHint = !me.regionAuto ? t('settings.regionAutoHint')
     : me.detectedRegion ? t('settings.regionAutoDetected', { country: regionDisplayName(me.detectedRegion, language) })
@@ -159,10 +159,7 @@ function LanguageTab() {
         <div className="setrow">
           <div style={{ flex: 1 }}>
             <label htmlFor="region">{t('profile.region')}</label>
-            <select id="region" className="field" style={{ maxWidth: 340 }} disabled={me.regionAuto && !!me.detectedRegion} value={me.region ?? ''} onChange={(e) => updateRegion(e.target.value || null)}>
-              <option value="">{t('profile.regionNone')}</option>
-              {regionCodes.map((code) => <option key={code} value={code}>{regionDisplayName(code, language)}</option>)}
-            </select>
+            <RegionInput id="region" style={{ maxWidth: 340 }} />
           </div>
         </div>
       </div>

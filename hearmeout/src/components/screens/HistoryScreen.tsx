@@ -258,7 +258,7 @@ export function HistoryScreen(_props: { device: Device }) {
               <div className="h50ax" aria-hidden="true"><span>0.1</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
               <p className="muted" style={{ marginTop: 10, fontSize: 14, fontWeight: 600 }}>{t('history.scoreDistModeCaption', { mode: fmt1(scoreMode) })}</p>
             </>
-          ) : <p className="muted">{t('history.notEnoughForChart')}</p>}
+          ) : <p className="muted" style={{ marginTop: 10, fontSize: 14, fontWeight: 600 }}>{t('history.notEnoughForChart')}</p>}
         </div>
 
         <div className="tile t-soft2">
@@ -277,7 +277,7 @@ export function HistoryScreen(_props: { device: Device }) {
                 </div>
               ))}
             </div>
-          ) : <p className="muted">{t('history.notEnoughForChart')}</p>}
+          ) : <p className="muted" style={{ fontWeight: 600 }}>{t('history.notEnoughForChart')}</p>}
         </div>
 
         <div className="tile">
@@ -302,7 +302,7 @@ export function HistoryScreen(_props: { device: Device }) {
                 </button>
               )}
             </>
-          ) : <p className="muted">{t('history.notEnoughForChart')}</p>}
+          ) : <p className="muted" style={{ fontWeight: 600 }}>{t('history.notEnoughForChart')}</p>}
         </div>
 
         <div className="tile t-pop">

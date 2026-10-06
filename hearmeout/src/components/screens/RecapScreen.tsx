@@ -300,7 +300,7 @@ export function RecapScreen(_props: { device: Device }) {
                       const text = recapLocked[fk] ? t('recap.friendPrivate') : !fr ? t('recap.loading') : fr.trackCount ? quoted(language, `${fLine!.lead}${fLine!.em ? ' ' + fLine!.em : ''}`) : t('recap.friendQuiet');
                       return (
                         <button className="row" key={f.id} onClick={() => openRecap(f.id)}>
-                          <span className="avt" style={userAvatarStyle(f)}>{f.name[0]?.toUpperCase()}</span>
+                          <span className="dot" style={userAvatarStyle(f)}>{!f.avatarUrl && f.name[0]}</span>
                           <span className="g"><b>{f.name}</b><small className="muted" style={{ fontWeight: 600 }}>{text}</small></span>
                           <span className="tag">{t('recap.friendOpen')}</span>
                         </button>

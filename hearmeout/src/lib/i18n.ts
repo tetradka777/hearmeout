@@ -1071,6 +1071,7 @@ const ru = {
   'later.removeAllConfirmOne': 'Удалить {n} сохранённый элемент?',
   'later.removeAllConfirmFew': 'Удалить {n} сохранённых элемента?',
   'profile.connectSpotify': 'Подключить Spotify',
+  'settings.regionSearch': 'Найдите страну',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2138,6 +2139,7 @@ const en: Dict = {
   'later.removeAllConfirmOne': 'Remove {n} saved item?',
   'later.removeAllConfirmFew': 'Remove all {n} saved items?',
   'profile.connectSpotify': 'Connect Spotify',
+  'settings.regionSearch': 'Search a country',
 };
 
 const fr: Dict = {
@@ -3202,6 +3204,7 @@ const fr: Dict = {
   'later.removeAllConfirmOne': 'Supprimer {n} élément enregistré ?',
   'later.removeAllConfirmFew': 'Supprimer les {n} éléments enregistrés ?',
   'profile.connectSpotify': 'Connecter Spotify',
+  'settings.regionSearch': 'Chercher un pays',
 };
 
 const es: Dict = {
@@ -4266,6 +4269,7 @@ const es: Dict = {
   'later.removeAllConfirmOne': '¿Quitar {n} elemento guardado?',
   'later.removeAllConfirmFew': '¿Quitar los {n} elementos guardados?',
   'profile.connectSpotify': 'Conectar Spotify',
+  'settings.regionSearch': 'Busca un país',
 };
 
 const de: Dict = {
@@ -5330,6 +5334,7 @@ const de: Dict = {
   'later.removeAllConfirmOne': '{n} gespeichertes Element entfernen?',
   'later.removeAllConfirmFew': 'Alle {n} gespeicherten Elemente entfernen?',
   'profile.connectSpotify': 'Spotify verbinden',
+  'settings.regionSearch': 'Land suchen',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };

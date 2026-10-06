@@ -7,7 +7,7 @@ import { useApp } from '@/lib/AppContext';
 import { invitePath } from '@/lib/pendingInvite';
 import type { Device, RatingRecord } from '@/lib/types';
 import { userAvatarStyle, formatJoinDate, formatRelative } from '@/lib/format';
-import { regionDisplayName, getRegionCodes, toLocale, quoted } from '@/lib/i18n';
+import { toLocale, quoted } from '@/lib/i18n';
 import { LovedTracksColumn, LovedAlbumsColumn, LovedArtistsColumn } from '../ProfileBlocks';
 import { CoverArt } from '../ui/CoverArt';
 import { Stars } from '../redesign/Stars';
@@ -15,6 +15,7 @@ import { MascotIcon } from '../redesign/icons';
 import { useFriendScores } from '@/lib/useFriendScores';
 import type { TranslationKey } from '@/lib/i18n';
 import { LaterRow, useLaterPlay } from './LaterScreen';
+import { RegionInput } from '../RegionInput';
 
 type ProfileTab = 'ratings' | 'reviews' | 'loved' | 'later' | 'taste' | 'awards' | 'listening' | 'friends';
 const TAB_ORDER: ProfileTab[] = ['ratings', 'reviews', 'loved', 'later', 'taste', 'awards', 'listening', 'friends'];
@@ -435,7 +436,7 @@ function FriendsTab() {
 }
 
 export function ProfileScreen(_props: { device: Device }) {
-  const { t, language, me, myRatings, updateProfileName, updateProfileHandle, updateRegion, updateAvatar, showScreen, viewHistory, friendRequests, showToast } = useApp();
+  const { t, language, me, myRatings, updateProfileName, updateProfileHandle, updateAvatar, showScreen, viewHistory, friendRequests, showToast } = useApp();
   const [tab, setTab] = useState<ProfileTab>('ratings');
   const incomingRequests = friendRequests.incoming.length;
   // The avatar menu's "Friend requests" item lands here on the friends tab.
@@ -444,7 +445,6 @@ export function ProfileScreen(_props: { device: Device }) {
     window.addEventListener(PROFILE_TAB_EVENT, onTab);
     return () => window.removeEventListener(PROFILE_TAB_EVENT, onTab);
   }, []);
-  const regionCodes = useMemo(() => getRegionCodes(), []);
   const list = useMemo(() => [...myRatings].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()), [myRatings]);
 
   if (!me) return null;
@@ -529,10 +529,7 @@ export function ProfileScreen(_props: { device: Device }) {
         <div className="tile t-soft2">
           <h3>{t('profile.quickSettings')}</h3>
           <label htmlFor="qreg" style={{ marginTop: 10 }}>{t('profile.region')}</label>
-          <select id="qreg" className="field" disabled={me.regionAuto && !!me.detectedRegion} value={me.region ?? ''} onChange={(e) => updateRegion(e.target.value || null)}>
-            <option value="">{t('profile.regionNone')}</option>
-            {regionCodes.map((code) => <option key={code} value={code}>{regionDisplayName(code, language)}</option>)}
-          </select>
+          <RegionInput id="qreg" />
           <button className="link" style={{ marginTop: 10, display: 'inline-block' }} onClick={() => showScreen('settings')}>{t('settings.openAll')} →</button>
         </div>
       </div>
