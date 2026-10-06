@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
+import { invitePath } from '@/lib/pendingInvite';
 import type { DiscoverMatchPerson } from '@/lib/types';
 import { CoverArt } from './ui/CoverArt';
 import { StarSlider } from './redesign/Stars';
@@ -25,7 +27,7 @@ function PeopleStep() {
   if (!me) return null;
 
   const copyInvite = async () => {
-    const url = `${window.location.origin}/invite/${me.id}`;
+    const url = `${window.location.origin}${invitePath(me)}`;
     try { await navigator.clipboard.writeText(url); showToast(t('toast.inviteCopied')); } catch { showToast(url); }
   };
   const sm = { padding: '8px 16px' };
@@ -95,7 +97,7 @@ function CalibrateStep() {
               <small className="muted" style={{ fontWeight: 600 }}>{a.artist}</small>
               <div style={{ marginTop: 6 }}><StarSlider value={val} onChange={(v) => rate(a.id, v)} size={26} /></div>
             </div>
-            <span className="num" style={{ fontSize: 26, width: 44, textAlign: 'right' }}>{val > 0 ? val.toFixed(1) : '–'}</span>
+            <span className="num" style={{ fontSize: 26, width: 44, textAlign: 'right' }}>{val > 0 ? fmt1(val) : '–'}</span>
           </div>
         );
       })}

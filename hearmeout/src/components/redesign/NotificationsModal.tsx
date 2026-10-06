@@ -22,7 +22,10 @@ export function NotificationsModal({ onClose }: { onClose: () => void }) {
     markNotificationsRead();
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    // The page under the dialog doesn't scroll while it's open.
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = prevOverflow; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

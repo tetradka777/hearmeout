@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
@@ -49,7 +50,7 @@ function FriendsWhoRated({ albumId }: { albumId: string }) {
             <div className="dot" style={userAvatarStyle({ avatarUrl: r.avatarUrl })}>{!r.avatarUrl && r.name[0]}</div>
             <b className="g">{r.name}</b>
             <span className="stars"><Stars value={r.stars} size={15} /></span>
-            <span className="num" style={{ fontSize: 30 }}>{r.stars.toFixed(1)}</span>
+            <span className="num" style={{ fontSize: 30 }}>{fmt1(r.stars)}</span>
           </div>
         ))
       ) : (
@@ -220,11 +221,11 @@ export function RateScreen({ device: _device }: { device: Device }) {
           )}
           <div className="stats3">
             <div className="tile t-pop">
-              {circleAvg ? <span className="num">{circleAvg.avg.toFixed(1)}</span> : <span className="num">—</span>}
+              {circleAvg ? <span className="num">{fmt1(circleAvg.avg)}</span> : <span className="num">—</span>}
               <small>{t('album.yourCircle')}</small>
             </div>
             <div className="tile t-ac">
-              {ratingInfo ? <span className="num">{ratingInfo.avg.toFixed(1)}</span> : <span className="num">—</span>}
+              {ratingInfo ? <span className="num">{fmt1(ratingInfo.avg)}</span> : <span className="num">—</span>}
               <small>{t('album.everyoneCount', { n: ratingInfo?.count ?? 0 })}</small>
             </div>
             <div className="tile t-ink">
@@ -236,7 +237,7 @@ export function RateScreen({ device: _device }: { device: Device }) {
           <div className="tile ratebox">
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
               <div className="duel">
-                <div className="bub b-ac"><span className="num">{val > 0 ? val.toFixed(1) : '–'}</span><span className="w">{t('rate.yourTake')}</span></div>
+                <div className="bub b-ac"><span className="num">{val > 0 ? fmt1(val) : '–'}</span><span className="w">{t('rate.yourTake')}</span></div>
               </div>
               <div>
                 <StarSlider value={val} onChange={setRatingValue} size={34} />
@@ -297,19 +298,18 @@ export function RateScreen({ device: _device }: { device: Device }) {
         <div className="tile">
           <h2>{t('album.community')}</h2>
           <div style={{ display: 'flex', gap: 12, alignItems: 'baseline', flexWrap: 'wrap' }}>
-            <span className="num" style={{ fontSize: 64, color: 'var(--acct)' }}>{ratingInfo ? ratingInfo.avg.toFixed(1) : '–'}</span>
+            <span className="num" style={{ fontSize: 64, color: 'var(--acct)' }}>{ratingInfo ? fmt1(ratingInfo.avg) : '–'}</span>
             <span className="stars"><Stars value={ratingInfo?.avg ?? 0} size={18} /></span>
           </div>
           <p className="muted" style={{ fontWeight: 700 }}>{ratingInfo ? `${ratingInfo.count} ${pluralForKey(language, ratingInfo.count, 'album.ratingOne', 'album.ratingFew', 'album.ratingMany')}` : t('album.noRatings')}</p>
           {vsAverage != null ? (
             <p style={{ fontWeight: 800, marginTop: 8 }}>
-              {t(vsAverage >= 0 ? 'rate.aboveAverage' : 'rate.belowAverage', { score: val.toFixed(1), diff: Math.abs(vsAverage).toFixed(1) })}
+              {t(vsAverage >= 0 ? 'rate.aboveAverage' : 'rate.belowAverage', { score: fmt1(val), diff: fmt1(Math.abs(vsAverage)) })}
             </p>
           ) : (
             <p className="muted" style={{ fontWeight: 600, marginTop: 8 }}>{t('rate.rateToCompare')}</p>
           )}
           <div style={{ marginTop: 14 }}><AlbumRatingDistribution albumId={a.id} refreshToken={reviewsVersion} you={val > 0 ? val : null} /></div>
-          <p className="muted" style={{ fontWeight: 800, fontSize: 13, margin: '16px 0 8px' }}>{t('album.vibesFromReviews')}</p>
           <AlbumTagsSummary albumId={a.id} refreshToken={reviewsVersion} />
         </div>
         <div className="tile s3">

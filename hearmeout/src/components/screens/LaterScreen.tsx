@@ -176,7 +176,7 @@ export function LaterScreen(_props: { device: Device }) {
         <div className="acts">
           {confirmingClear ? (
             <span className="conf">
-              <b>{t('later.removeAllConfirm', { n: laterItems.length })}</b>
+              <b>{pluralForKey(language, laterItems.length, 'later.removeAllConfirmOne', 'later.removeAllConfirmFew', 'later.removeAllConfirm').replace('{n}', String(laterItems.length))}</b>
               <button className="btn danger" onClick={async () => { if (await removeAllLater()) showToast(t('toast.laterCleared')); setConfirmingClear(false); }}>{t('later.removeAll')}</button>
               <button className="btn ghost" onClick={() => setConfirmingClear(false)}>{t('later.keepThem')}</button>
             </span>

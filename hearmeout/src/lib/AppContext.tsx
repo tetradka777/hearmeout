@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { setNumberLanguage } from './numberFormat';
 import { ALBUMS } from './data';
 import { translate, type Language, type TranslationKey } from './i18n';
 import type {
@@ -463,6 +464,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // <html lang> follows the interface language (screen readers, hyphenation,
   // quotes); the server layout starts it from Accept-Language.
   useEffect(() => { document.documentElement.lang = state.language; }, [state.language]);
+  // Number formatting (fmt1) reads the language synchronously, so set it
+  // during render, before any screen formats a score.
+  setNumberLanguage(state.language);
 
   // Redesign appearance: applies as soon as `me` loads (the layout's inline
   // script already applied the cached values before hydration, so there's

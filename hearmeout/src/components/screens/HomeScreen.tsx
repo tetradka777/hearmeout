@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { Device, FeedEvent, FeedResponse } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
@@ -10,7 +11,7 @@ import { Stars } from '../redesign/Stars';
 import { MascotIcon } from '../redesign/icons';
 import { MATCH_FRIEND_EVENT } from '@/lib/uiEvents';
 import { useFriendScores } from '@/lib/useFriendScores';
-import { toLocale } from '@/lib/i18n';
+import { toLocale, quoted } from '@/lib/i18n';
 import { recapLine } from '@/lib/recapLine';
 import { completedWeekRange, isoWeekNumber } from '@/lib/weeks';
 
@@ -45,10 +46,10 @@ function HeroTile() {
   return (
     <section className="tile t-ink hero glow s2">
       <span className="pill">{t('home.heroSticker')}</span>
-      <h1>{t('home.heroHeadline', { friend: hero.friend.name, album: album.title, theirScore: hero.theirs.toFixed(1), mine: hero.mine.toFixed(1) })}</h1>
+      <h1>{t('home.heroHeadline', { friend: hero.friend.name, album: album.title, theirScore: fmt1(hero.theirs), mine: fmt1(hero.mine) })}</h1>
       <div className="duel">
-        <div className="bub b-ac"><span className="num">{hero.mine.toFixed(1)}</span><span className="w">{t('friend.you')}</span></div>
-        <div className="bub b-pop r"><span className="num">{hero.theirs.toFixed(1)}</span><span className="w">{hero.friend.name}</span></div>
+        <div className="bub b-ac"><span className="num">{fmt1(hero.mine)}</span><span className="w">{t('friend.you')}</span></div>
+        <div className="bub b-pop r"><span className="num">{fmt1(hero.theirs)}</span><span className="w">{hero.friend.name}</span></div>
       </div>
       <div className="acts">
         {/* Prototype: "Defend your rating" opens Rate with the review box focused. */}
@@ -72,12 +73,24 @@ function RecapTile() {
     // in the display face, and the open link.
     <button className="tile t-ac" onClick={() => openRecap('me', 'week')} style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: 250, gap: 20 }}>
       <span style={{ fontWeight: 800 }}>{t('recapTeaser.weekEyebrow', { n: isoWeekNumber(completedWeekRange(0, me.weekStart).start) })}</span>
-      <span className="disp" style={{ fontSize: 'clamp(28px,3.4vw,38px)', lineHeight: 0.98, fontWeight: 800, letterSpacing: '-.045em' }}>
-        {line ? `“${line.lead}${line.em ? ` ${line.em}` : ''}”` : ''}
-      </span>
+      {r && r.trackCount > 0 && line ? (
+        <span className="disp" style={{ fontSize: 'clamp(28px,3.4vw,38px)', lineHeight: 0.98, fontWeight: 800, letterSpacing: '-.045em' }}>
+          {quoted(language, `${line.lead}${line.em ? ` ${line.em}` : ''}`)}
+        </span>
+      ) : (
+        // No plays this week yet: a plain empty state, not a giant quote.
+        <span style={{ fontWeight: 700, fontSize: 17 }}>{t('recap.emptyTeaser')}</span>
+      )}
       <span style={{ fontWeight: 800 }}>{t('recapTeaser.open')} →</span>
     </button>
   );
+}
+
+// Your corner: the number big, the unit small and spaced ("0 мин", "3 ч 12").
+function minutesBig(min: number, t: (k: 'unit.h' | 'unit.m') => string) {
+  const unit = (u: string) => <small style={{ fontSize: '0.4em', marginLeft: '0.15em' }}>{u}</small>;
+  if (min < 60) return <>{min}{unit(t('unit.m'))}</>;
+  return <>{Math.floor(min / 60)}{unit(t('unit.h'))}{String(min % 60).padStart(2, '0')}</>;
 }
 
 function minutesLabel(min: number, t: (k: 'unit.h' | 'unit.m') => string): string {
@@ -134,8 +147,8 @@ function FeedTile({ event }: { event: FeedEvent }) {
   return (
     <article className="tile ft">
       <div className="who"><span className="dot" style={userAvatarStyle(event.user)}>{event.user.name[0]}</span>{event.user.name} <span className="tag">{t('home.filterRated')}</span> {time}</div>
-      <span className="num bigscore">{event.stars.toFixed(1)}</span>
-      <p className="quote">“{event.review}”</p>
+      <span className="num bigscore">{fmt1(event.stars)}</span>
+      <p className="quote">{quoted(language, event.review)}</p>
       <p className="muted" style={{ marginTop: 8, fontWeight: 600, fontSize: 14 }}>{t('home.albumBy', { album: album.title, artist: album.artist })}</p>
       <div className="acts"><button className="btn" onClick={() => openAlbum(album.id)}>{t('home.readReview')}</button></div>
     </article>
@@ -185,7 +198,7 @@ function DaySoFarTile() {
       <p style={{ fontWeight: 800, marginBottom: 12 }}>{t('home.daySoFar')}</p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
         <div><span className="num" style={big}>{r?.trackCount ?? 0}</span><br /><small className="muted" style={{ fontWeight: 700 }}>{t('home.cornerTracks')}</small></div>
-        <div><span className="num" style={big}>{minutesLabel(r?.minutes ?? 0, t)}</span><br /><small className="muted" style={{ fontWeight: 700 }}>{t('home.listened')}</small></div>
+        <div><span className="num" style={big}>{minutesBig(r?.minutes ?? 0, t)}</span><br /><small className="muted" style={{ fontWeight: 700 }}>{t('home.listened')}</small></div>
         <div><span className="num" style={big}>{r?.uniqueArtists ?? 0}</span><br /><small className="muted" style={{ fontWeight: 700 }}>{t('home.cornerArtists')}</small></div>
       </div>
     </div>

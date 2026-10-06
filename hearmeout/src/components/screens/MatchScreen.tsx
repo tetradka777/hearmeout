@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { ApiUser, Device, DiscoverMatchPerson, GroupSummary, PublicProfile, StatsData } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
@@ -211,7 +212,7 @@ export function MatchScreen(_props: { device: Device }) {
                 <div className="gap" key={g.albumId}>
                   <button className="hd" onClick={() => openAlbum(g.albumId)}>
                     {a && <CoverArt url={spotifyCovers[a.id] || a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: 54, height: 54 }} />}
-                    <div><b>{a?.title ?? g.albumId}</b><br /><small className="muted" style={{ fontWeight: 700 }}>{t('match.apart', { value: (hi - lo).toFixed(1) })}</small></div>
+                    <div><b>{a?.title ?? g.albumId}</b><br /><small className="muted" style={{ fontWeight: 700 }}>{t('match.apart', { value: fmt1((hi - lo)) })}</small></div>
                   </button>
                   <div className="tr">
                     <i className="fill" style={{ left: `${(lo / 5) * 100}%`, width: `${((hi - lo) / 5) * 100}%` }} />
@@ -220,8 +221,8 @@ export function MatchScreen(_props: { device: Device }) {
                   </div>
                   <div className="lab">
                     {g.mine <= g.theirs
-                      ? <><span>{t('friend.youLower')} {g.mine.toFixed(1)}</span><span>{active?.name} {g.theirs.toFixed(1)}</span></>
-                      : <><span>{active?.name} {g.theirs.toFixed(1)}</span><span>{t('friend.youLower')} {g.mine.toFixed(1)}</span></>}
+                      ? <><span>{t('friend.youLower')} {fmt1(g.mine)}</span><span>{active?.name} {fmt1(g.theirs)}</span></>
+                      : <><span>{active?.name} {fmt1(g.theirs)}</span><span>{t('friend.youLower')} {fmt1(g.mine)}</span></>}
                   </div>
                 </div>
               );

@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { Device, PublicProfile, RecapData, RecapPeriod } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
-import { toLocale, pluralForKey, type Language, type TranslationKey } from '@/lib/i18n';
+import { toLocale, pluralForKey, type Language, type TranslationKey, quoted } from '@/lib/i18n';
 import { recapLine } from '@/lib/recapLine';
 import { completedWeekRange, isoWeekNumber } from '@/lib/weeks';
 import { parseSeasonKey } from '@/lib/seasons';
@@ -97,7 +98,7 @@ export function RecapScreen(_props: { device: Device }) {
   const storyNumbers = r ? [
     { value: `${hours}${t('unit.h')}`, label: t('recap.listened') },
     { value: String(r.newArtists), label: t('recap.newArtists') },
-    { value: r.avgScore != null ? r.avgScore.toFixed(1) : '—', label: t('recap.avgScore') },
+    { value: r.avgScore != null ? fmt1(r.avgScore) : '—', label: t('recap.avgScore') },
     { value: String(r.awards.length), label: t('recap.awardsCount') },
   ] : [];
 
@@ -296,7 +297,7 @@ export function RecapScreen(_props: { device: Device }) {
                       const fk = recapKey(f.id, period, seasonKey, offset);
                       const fr = recapCache[fk];
                       const fLine = fr ? recapLine(fr, language, t) : null;
-                      const text = recapLocked[fk] ? t('recap.friendPrivate') : !fr ? t('recap.loading') : fr.trackCount ? `“${fLine!.lead}${fLine!.em ? ' ' + fLine!.em : ''}”` : t('recap.friendQuiet');
+                      const text = recapLocked[fk] ? t('recap.friendPrivate') : !fr ? t('recap.loading') : fr.trackCount ? quoted(language, `${fLine!.lead}${fLine!.em ? ' ' + fLine!.em : ''}`) : t('recap.friendQuiet');
                       return (
                         <button className="row" key={f.id} onClick={() => openRecap(f.id)}>
                           <span className="avt" style={userAvatarStyle(f)}>{f.name[0]?.toUpperCase()}</span>

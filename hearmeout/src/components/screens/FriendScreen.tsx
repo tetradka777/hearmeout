@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { ApiUser, Device, PublicProfile, StatsData } from '@/lib/types';
 import { formatRelative, userAvatarStyle } from '@/lib/format';
@@ -22,7 +23,7 @@ function useAlbumInfo(albumId: string) {
 function ScoreCell({ value, label, size, accent }: { value: number | null; label: string; size: number; accent?: boolean }) {
   return (
     <span style={{ textAlign: 'center', minWidth: 48 }}>
-      <span className="num" style={{ fontSize: size, color: accent ? 'var(--acct)' : undefined }}>{value != null ? value.toFixed(1) : '–'}</span>
+      <span className="num" style={{ fontSize: size, color: accent ? 'var(--acct)' : undefined }}>{value != null ? fmt1(value) : '–'}</span>
       <br /><small className="muted" style={{ fontWeight: 700 }}>{label}</small>
     </span>
   );
@@ -38,7 +39,7 @@ function BothRow({ albumId, mine, theirs, name, biggest }: { albumId: string; mi
       <CoverArt url={a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: size, height: size }} />
       <span className="g">
         <b>{biggest ? t('friend.biggestGap') : a.title}</b>
-        <small className="muted" style={{ fontWeight: 600 }}>{biggest ? `${a.title} · ${t('friend.starsApart', { diff: Math.abs(mine - theirs).toFixed(1) })}` : a.artist}</small>
+        <small className="muted" style={{ fontWeight: 600 }}>{biggest ? `${a.title} · ${t('friend.starsApart', { diff: fmt1(Math.abs(mine - theirs)) })}` : a.artist}</small>
       </span>
       <ScoreCell value={mine} label={t('friend.you')} size={biggest ? 28 : 24} />
       <ScoreCell value={theirs} label={name} size={biggest ? 28 : 24} accent />
@@ -73,7 +74,7 @@ function Top4Tile({ ids, scores }: { ids: string[]; scores: Map<string, number> 
         <button key={id} onClick={() => openAlbum(id)} style={{ textAlign: 'left', color: 'inherit' }}>
           <div className="cvw">
             <CoverArt url={spotifyCovers[a!.id] || a!.cover} fallbackLetter={a!.artist[0] || '?'} className="cov" style={{ width: '100%', aspectRatio: '1' }} />
-            {scores.has(id) && <span className="bdg">{scores.get(id)!.toFixed(1)}</span>}
+            {scores.has(id) && <span className="bdg">{fmt1(scores.get(id)!)}</span>}
           </div>
           <b style={{ display: 'block', marginTop: 8, fontSize: 14 }}>{a!.title}</b>
         </button>
@@ -325,7 +326,7 @@ export function FriendScreen({ device: _device }: { device: Device }) {
 
       <div className="stats3">
         <div className="tile t-pop"><span className="num">{shared.length}</span><small>{t('friend.sharedRatings')}</small></div>
-        <div className="tile t-ac"><span className="num">{avgGap != null ? avgGap.toFixed(1) : '–'}</span><small>{t('friend.avgGap')}</small></div>
+        <div className="tile t-ac"><span className="num">{avgGap != null ? fmt1(avgGap) : '–'}</span><small>{t('friend.avgGap')}</small></div>
         <div className="tile t-ink"><span className="num">{agreeCount}</span><small>{t('friend.youAgree')}</small></div>
       </div>
 

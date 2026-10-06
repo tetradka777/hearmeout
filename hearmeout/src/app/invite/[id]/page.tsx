@@ -9,8 +9,10 @@ import InviteClient, { type InviterInfo } from './InviteClient';
 // language for the <title>, the link preview and the first paint; the
 // client half (InviteClient) handles the session and the add button.
 const loadInviter = cache(async (id: string): Promise<InviterInfo | null> => {
-  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
-  const { data } = await supabaseAdmin().from('users').select('id, name, handle, avatar_url').eq('id', id).maybeSingle();
+  // Old links carry the account id; new ones the invite code (migration 024).
+  const byId = /^[0-9a-f-]{36}$/i.test(id);
+  if (!byId && !/^[0-9a-z]{6,32}$/i.test(id)) return null;
+  const { data } = await supabaseAdmin().from('users').select('id, name, handle, avatar_url').eq(byId ? 'id' : 'invite_code', id).maybeSingle();
   return data ? { id: data.id, name: data.name, handle: data.handle, avatarUrl: data.avatar_url } : null;
 });
 

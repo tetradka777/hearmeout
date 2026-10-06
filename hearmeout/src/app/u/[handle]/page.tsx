@@ -3,6 +3,7 @@
    must be full page loads so the app shell boots fresh (RegisterModal reads
    ?auth= at module load, before the first history entry rewrites "/"). */
 import type { Metadata } from 'next';
+import { fmt1 } from '@/lib/numberFormat';
 import { headers } from 'next/headers';
 import { loadPublicProfile } from '@/lib/publicProfile';
 import { getCurrentUserId } from '@/lib/identity';
@@ -32,7 +33,7 @@ export async function generateMetadata({ params }: { params: Promise<{ handle: s
   const lang = await requestLanguage();
   const description = profile.locked
     ? translate(lang, 'pub.ogPrivateSub')
-    : translate(lang, 'pub.ogTitle', { name: profile.name, count: profile.stats.ratings, avg: profile.stats.avg ? profile.stats.avg.toFixed(1) : '—' });
+    : translate(lang, 'pub.ogTitle', { name: profile.name, count: profile.stats.ratings, avg: profile.stats.avg ? fmt1(profile.stats.avg, lang) : '—' });
   const title = `${profile.name} — HearMeOut`;
   // openGraph must be set here too, or the root layout's generic og:title /
   // og:description win; the og:image comes from opengraph-image.tsx.
@@ -78,7 +79,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   const first = profile.name.split(' ')[0];
   const bareHandle = profile.handle.replace(/^@/, '');
   const isSelf = viewerId === profile.id;
-  const avg = profile.stats.avg ? profile.stats.avg.toFixed(1) : '—';
+  const avg = profile.stats.avg ? fmt1(profile.stats.avg, lang) : '—';
   // "Add" goes through the invite page, which already handles every state
   // (signed out → sign up with the request queued, pending, friends…).
   const addButton = isSelf ? null : (
@@ -128,7 +129,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                     {fingerprint.map((f) => (
                       <div className="fpc" key={f.genre}>
                         <b>{f.genre}</b>
-                        <span className="num">{f.avg.toFixed(1)}</span>
+                        <span className="num">{fmt1(f.avg, lang)}</span>
                         <div className="meter"><i style={{ width: `${Math.round((f.avg / 5) * 100)}%` }} /></div>
                         <small className="muted" style={{ fontWeight: 700 }}>{t('pub.albumsCount', { count: f.count })}</small>
                       </div>

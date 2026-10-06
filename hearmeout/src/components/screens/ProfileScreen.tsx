@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { fmt1 } from '@/lib/numberFormat';
 import { PROFILE_TAB_EVENT } from '../redesign/AvatarMenu';
 import { useApp } from '@/lib/AppContext';
+import { invitePath } from '@/lib/pendingInvite';
 import type { Device, RatingRecord } from '@/lib/types';
 import { userAvatarStyle, formatJoinDate, formatRelative } from '@/lib/format';
-import { regionDisplayName, getRegionCodes, toLocale } from '@/lib/i18n';
+import { regionDisplayName, getRegionCodes, toLocale, quoted } from '@/lib/i18n';
 import { LovedTracksColumn, LovedAlbumsColumn, LovedArtistsColumn } from '../ProfileBlocks';
 import { CoverArt } from '../ui/CoverArt';
 import { Stars } from '../redesign/Stars';
@@ -41,7 +43,7 @@ function RatingRow({ r }: { r: RatingRecord }) {
         <small className="muted" style={{ fontWeight: 600 }}>{a.artist}{a.artist ? ' · ' : ''}{new Date(r.createdAt).toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short' })}</small>
       </span>
       <span className="stars"><Stars value={r.stars} size={14} /></span>
-      <span className="num" style={{ fontSize: 26, width: 44, textAlign: 'right' }}>{r.stars.toFixed(1)}</span>
+      <span className="num" style={{ fontSize: 26, width: 44, textAlign: 'right' }}>{fmt1(r.stars)}</span>
     </button>
   );
 }
@@ -66,7 +68,7 @@ function RatingsTab({ list, avg, reviews }: { list: RatingRecord[]; avg: number;
           <small style={{ fontWeight: 800 }}>{t('profile.yourRatings')}</small>
           <div className="vsline">
             <div><span className="num" style={{ fontSize: 44 }}>{list.length}</span><br /><small style={{ fontWeight: 700 }}>{t('profile.albumsL')}</small></div>
-            <div><span className="num" style={{ fontSize: 44 }}>{avg.toFixed(1)}</span><br /><small style={{ fontWeight: 700 }}>{t('profile.averageL')}</small></div>
+            <div><span className="num" style={{ fontSize: 44 }}>{fmt1(avg)}</span><br /><small style={{ fontWeight: 700 }}>{t('profile.averageL')}</small></div>
             <div><span className="num" style={{ fontSize: 44 }}>{reviews}</span><br /><small style={{ fontWeight: 700 }}>{t('profile.reviewsL')}</small></div>
           </div>
         </div>
@@ -81,7 +83,7 @@ function RatingsTab({ list, avg, reviews }: { list: RatingRecord[]; avg: number;
 }
 
 function ReviewsTab({ list }: { list: RatingRecord[] }) {
-  const { t, openAlbum } = useApp();
+  const { t, language, openAlbum } = useApp();
   const albumOf = useAlbumOf();
   const rv = list.filter((r) => !!r.review);
   if (!rv.length) return <div className="stack"><EmptyTile title={t('profile.noReviewsTitle')} body={t('profile.noReviewsBody')} /></div>;
@@ -95,7 +97,7 @@ function ReviewsTab({ list }: { list: RatingRecord[] }) {
               <CoverArt url={a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: 48, height: 48 }} />
               <div><b>{a.title}</b><br /><span className="stars"><Stars value={r.stars} size={14} /></span></div>
             </button>
-            <p className="quote" style={{ fontSize: 19 }}>&ldquo;{r.review}&rdquo;</p>
+            <p className="quote" style={{ fontSize: 19 }}>{quoted(language, r.review ?? '')}</p>
           </div>
         );
       })}
@@ -179,7 +181,7 @@ function TasteTab({ list }: { list: RatingRecord[] }) {
             {fp.map((x) => (
               <div className="fpc" key={x.g}>
                 <b>{x.g}</b>
-                <span className="num">{x.avg.toFixed(1)}</span>
+                <span className="num">{fmt1(x.avg)}</span>
                 <div className="meter"><i style={{ width: `${Math.round((x.avg / 5) * 100)}%` }} /></div>
                 <small className="muted" style={{ fontWeight: 700 }}>{t(x.n === 1 ? 'profile.albumCountOne' : 'profile.albumCountMany', { n: x.n })}</small>
               </div>
@@ -207,7 +209,7 @@ function TasteTab({ list }: { list: RatingRecord[] }) {
                 <button key={r.albumId} onClick={() => openAlbum(r.albumId)} style={{ textAlign: 'left', color: 'inherit' }}>
                   <div className="cvw">
                     <CoverArt url={a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: '100%', aspectRatio: '1' }} />
-                    <span className="bdg">{r.stars.toFixed(1)}</span>
+                    <span className="bdg">{fmt1(r.stars)}</span>
                   </div>
                   <b style={{ display: 'block', marginTop: 8, fontSize: 14 }}>{a.title}</b>
                 </button>
@@ -308,7 +310,13 @@ function ListeningTab() {
           <span className="g"><b>{p.title}</b><small className="muted" style={{ fontWeight: 600 }}>{p.artist}</small></span>
           <small className="muted" style={{ fontWeight: 700 }}>{formatRelative(p.playedAt, language)}</small>
         </button>
-      )) : <p className="muted" style={{ fontWeight: 600 }}>{t('profile.notEnoughData')}</p>}
+      )) : (
+        <>
+          <p className="muted" style={{ fontWeight: 600 }}>{t('profile.notEnoughData')}</p>
+          {/* No plays and no Spotify: offer the connection right here. */}
+          {me && !me.connections.spotify && <div className="acts"><a className="btn" href="/api/auth/spotify">{t('profile.connectSpotify')}</a></div>}
+        </>
+      )}
     </div>
   );
 }
@@ -323,7 +331,7 @@ function FriendsTab() {
   const [showQr, setShowQr] = useState(false);
   if (!me) return null;
   const { incoming, outgoing } = friendRequests;
-  const inviteUrl = typeof window !== 'undefined' ? `${window.location.origin}/invite/${me.id}` : `/invite/${me.id}`;
+  const inviteUrl = typeof window !== 'undefined' ? `${window.location.origin}${invitePath(me)}` : invitePath(me);
   const inviteLabel = inviteUrl.replace(/^https?:\/\//, '');
 
   const add = async () => {
@@ -420,7 +428,7 @@ function FriendsTab() {
             <small style={{ fontWeight: 700, display: 'block', marginTop: 6 }}>{t('friends.qrHint')}</small>
           </div>
         )}
-        <a className="link" href={`/invite/${me.id}`} target="_blank" rel="noreferrer" style={{ marginTop: 12, display: 'inline-block' }}>{t('friends.previewInvite')}</a>
+        <a className="link" href={invitePath(me)} target="_blank" rel="noreferrer" style={{ marginTop: 12, display: 'inline-block' }}>{t('friends.previewInvite')}</a>
       </div>
     </div>
   );
@@ -502,7 +510,7 @@ export function ProfileScreen(_props: { device: Device }) {
           </div>
         </div>
         <div className="pcnt">
-          {[[String(list.length), t('profile.ratingsL')], [avg.toFixed(1), t('profile.avgScoreL')], [String(reviews), t('profile.reviewsL')], [String(me.friends.length), t('profile.friendsL')]].map(([v, l]) => (
+          {[[String(list.length), t('profile.ratingsL')], [fmt1(avg), t('profile.avgScoreL')], [String(reviews), t('profile.reviewsL')], [String(me.friends.length), t('profile.friendsL')]].map(([v, l]) => (
             <div key={l}><span className="num" style={{ fontSize: 34, color: 'var(--acct)' }}>{v}</span><br /><small style={{ fontWeight: 700 }}>{l}</small></div>
           ))}
         </div>

@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
+import { invitePath } from '@/lib/pendingInvite';
 import type { Device, GroupDetail, GroupLeaderboardPeriod } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
 import { toLocale, pluralForKey } from '@/lib/i18n';
@@ -72,7 +74,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
   // clipboard.writeText can throw synchronously in some sandboxes, so the
   // fallback shows the link itself in the toast.
   const copyInviteLink = async () => {
-    const url = `${window.location.origin}/invite/${me.id}`;
+    const url = `${window.location.origin}${invitePath(me)}`;
     try { await navigator.clipboard.writeText(url); showToast(t('groups.inviteLinkCopied')); }
     catch { showToast(url); }
   };
@@ -122,7 +124,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
       <div className="stats3" style={{ margin: '14px 0' }}>
         <div className="tile t-pop"><span className="num">{Math.round(totalHours)}{t('unit.h')}</span><small>{t(period === 'week' ? 'groups.listenedWeek' : 'groups.listenedMonth')}</small></div>
         <div className="tile t-ac"><span className="num">{totalRatingsThisMonth}</span><small>{t('groups.ratingsThisMonth')}</small></div>
-        <div className="tile t-ink"><span className="num">{groupAvgScore ? groupAvgScore.toFixed(1) : '–'}</span><small>{t('groups.figAvg')}</small></div>
+        <div className="tile t-ink"><span className="num">{groupAvgScore ? fmt1(groupAvgScore) : '–'}</span><small>{t('groups.figAvg')}</small></div>
       </div>
 
       <div className="bento b3">
@@ -186,7 +188,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
                   <div className="kv"><span className="muted">{t('groups.figHours')}</span><span>{s ? `${s.hoursMonth}${t('unit.h')}` : '–'}</span></div>
                   <div className="kv"><span className="muted">{t('groups.figRatings')}</span><span>{s ? s.ratingsMonth : '–'}</span></div>
                   <div className="kv"><span className="muted">{t('groups.figStreak')}</span><span>{s ? t('groups.daysN', { n: s.streakDays }) : '–'}</span></div>
-                  <div className="kv"><span className="muted">{t('groups.figAvg')}</span><span>{s && s.avgScore ? s.avgScore.toFixed(1) : '–'}</span></div>
+                  <div className="kv"><span className="muted">{t('groups.figAvg')}</span><span>{s && s.avgScore ? fmt1(s.avgScore) : '–'}</span></div>
                 </button>
               );
             })}
@@ -240,7 +242,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
               <button className="row" key={row.albumId} onClick={() => openAlbum(row.albumId)}>
                 <CoverArt url={a?.cover} fallbackLetter={a?.artist[0] || '?'} className="cov" style={{ width: 48, height: 48 }} />
                 <span className="g"><b>{a ? a.title : '…'}</b><small className="muted" style={{ fontWeight: 600 }}>{a?.artist}{a?.artist ? ' · ' : ''}{t('groups.ratingsN', { n: row.count })}</small></span>
-                <span className="num" style={{ fontSize: 28, color: 'var(--acct)' }}>{row.avgScore.toFixed(1)}</span>
+                <span className="num" style={{ fontSize: 28, color: 'var(--acct)' }}>{fmt1(row.avgScore)}</span>
               </button>
             );
           }) : <p className="muted" style={{ fontWeight: 600 }}>{t('stats.notEnough')}</p>}
@@ -269,7 +271,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
           {detail.activity.length ? detail.activity.map((ev, i) => (
             <button className="row" key={i} onClick={() => openAlbum(ev.albumId)}>
               <span className="dot">•</span>
-              <span className="g">{ev.user.name} {ev.type === 'review' ? t('groups.wroteAbout') : t('groups.rated')} {albumMeta(ev.albumId)?.title ?? ev.albumTitle} · {ev.stars.toFixed(1)}</span>
+              <span className="g">{ev.user.name} {ev.type === 'review' ? t('groups.wroteAbout') : t('groups.rated')} {albumMeta(ev.albumId)?.title ?? ev.albumTitle} · {fmt1(ev.stars)}</span>
             </button>
           )) : <p className="muted" style={{ fontWeight: 600 }}>{t('groups.noActivity')}</p>}
         </div>

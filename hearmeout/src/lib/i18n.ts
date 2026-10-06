@@ -284,8 +284,8 @@ const ru = {
 
   'rate.tagsCount': '{n} из {max}',
   'album.yourPlays': 'ваших прослушиваний',
-  'home.cornerTracks': 'треков',
-  'home.cornerArtists': 'артистов',
+  'home.cornerTracks': 'треки',
+  'home.cornerArtists': 'артисты',
   'home.rateIt': 'оценить',
   'home.readReview': 'читать рецензию',
   'home.openSession': 'открыть сессию',
@@ -347,7 +347,7 @@ const ru = {
   'later.noMatchesTitle': 'Ничего не найдено',
   'later.noMatchesBody': 'Попробуйте другой фильтр или очистите поиск.',
   'later.showAll': 'Показать всё',
-  'later.removeAllConfirm': 'Удалить все {n} сохранённых элемента?',
+  'later.removeAllConfirm': 'Удалить все {n} сохранённых элементов?',
   'later.removeAll': 'Удалить всё',
   'later.keepThem': 'Оставить',
   'later.footnote': 'Этот список видите только вы. Оценка альбома убирает его отсюда.',
@@ -1067,6 +1067,10 @@ const ru = {
   'ticker.calm': 'Пока тихо — здесь появятся прослушивания и оценки ваших друзей',
   'catalog.topRatedEmpty': 'Здесь появятся альбомы, у которых от {n} оценок в сообществе.',
   'catalog.showMore': 'Показать ещё {n}',
+  'recap.emptyTeaser': 'Рекап появится, когда вы послушаете музыку',
+  'later.removeAllConfirmOne': 'Удалить {n} сохранённый элемент?',
+  'later.removeAllConfirmFew': 'Удалить {n} сохранённых элемента?',
+  'profile.connectSpotify': 'Подключить Spotify',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2130,6 +2134,10 @@ const en: Dict = {
   'ticker.calm': 'All quiet for now — your friends’ plays and ratings will show up here',
   'catalog.topRatedEmpty': 'Albums with {n}+ community ratings will show up here.',
   'catalog.showMore': 'Show {n} more',
+  'recap.emptyTeaser': 'Your recap appears once you listen to some music',
+  'later.removeAllConfirmOne': 'Remove {n} saved item?',
+  'later.removeAllConfirmFew': 'Remove all {n} saved items?',
+  'profile.connectSpotify': 'Connect Spotify',
 };
 
 const fr: Dict = {
@@ -3190,6 +3198,10 @@ const fr: Dict = {
   'ticker.calm': 'Calme pour l’instant — les écoutes et notes de tes amis apparaîtront ici',
   'catalog.topRatedEmpty': 'Les albums avec au moins {n} notes de la communauté apparaîtront ici.',
   'catalog.showMore': 'Afficher {n} de plus',
+  'recap.emptyTeaser': 'Ton récap apparaîtra quand tu auras écouté de la musique',
+  'later.removeAllConfirmOne': 'Supprimer {n} élément enregistré ?',
+  'later.removeAllConfirmFew': 'Supprimer les {n} éléments enregistrés ?',
+  'profile.connectSpotify': 'Connecter Spotify',
 };
 
 const es: Dict = {
@@ -3530,7 +3542,7 @@ const es: Dict = {
   'later.noMatchesTitle': 'Sin resultados',
   'later.noMatchesBody': 'Prueba otro filtro o borra la búsqueda.',
   'later.showAll': 'Mostrar todo',
-  'later.removeAllConfirm': '¿Eliminar los {n} elementos guardados?',
+  'later.removeAllConfirm': '¿Quitar los {n} elementos guardados?',
   'later.removeAll': 'Eliminar todo',
   'later.keepThem': 'Conservarlos',
   'later.footnote': 'Solo tú ves esta lista. Valorar un álbum lo elimina de aquí.',
@@ -4250,6 +4262,10 @@ const es: Dict = {
   'ticker.calm': 'Todo tranquilo por ahora: aquí aparecerán las escuchas y valoraciones de tus amigos',
   'catalog.topRatedEmpty': 'Aquí aparecerán los álbumes con {n} o más valoraciones de la comunidad.',
   'catalog.showMore': 'Mostrar {n} más',
+  'recap.emptyTeaser': 'Tu resumen aparecerá cuando escuches algo de música',
+  'later.removeAllConfirmOne': '¿Quitar {n} elemento guardado?',
+  'later.removeAllConfirmFew': '¿Quitar los {n} elementos guardados?',
+  'profile.connectSpotify': 'Conectar Spotify',
 };
 
 const de: Dict = {
@@ -5310,6 +5326,10 @@ const de: Dict = {
   'ticker.calm': 'Noch ruhig — hier erscheinen, was deine Freunde hören und bewerten',
   'catalog.topRatedEmpty': 'Hier erscheinen Alben mit mindestens {n} Community-Bewertungen.',
   'catalog.showMore': '{n} weitere anzeigen',
+  'recap.emptyTeaser': 'Dein Rückblick erscheint, sobald du Musik hörst',
+  'later.removeAllConfirmOne': '{n} gespeichertes Element entfernen?',
+  'later.removeAllConfirmFew': 'Alle {n} gespeicherten Elemente entfernen?',
+  'profile.connectSpotify': 'Spotify verbinden',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };
@@ -5376,5 +5396,21 @@ export function regionDisplayName(code: string, language: Language): string {
     return new Intl.DisplayNames([language], { type: 'region' }).of(code) ?? code;
   } catch {
     return code;
+  }
+}
+
+// Quotation marks of the interface language around a quote (reviews, the
+// recap line): «…» ru/es, « … » fr, „…“ de, “…” en.
+export function quoted(language: Language, text: string): string {
+  switch (language) {
+    case 'ru':
+    case 'es':
+      return `«${text}»`;
+    case 'fr':
+      return `« ${text} »`;
+    case 'de':
+      return `„${text}“`;
+    default:
+      return `“${text}”`;
   }
 }

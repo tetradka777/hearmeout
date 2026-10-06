@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { Device, DiscoverMatchPerson } from '@/lib/types';
 import { userAvatarStyle, formatRelative } from '@/lib/format';
 import { CoverArt } from '../ui/CoverArt';
 import { Stars } from '../redesign/Stars';
-import { regionDisplayName } from '@/lib/i18n';
+import { regionDisplayName, quoted } from '@/lib/i18n';
 import { AlbumCard } from '../ui/AlbumCard';
 import { LiveLibrarySearch } from '../LiveLibrarySearch';
 import { PopularNowSection } from '../PopularNowSection';
@@ -82,7 +83,7 @@ function ArtistChip({ name, avg }: { name: string; avg: number | null }) {
       }}
     >
       <span className="dot">{name[0]}</span>{name}
-      {avg != null && <small className="muted" style={{ fontWeight: 700 }}> {avg.toFixed(1)}</small>}
+      {avg != null && <small className="muted" style={{ fontWeight: 700 }}> {fmt1(avg)}</small>}
     </button>
   );
 }
@@ -117,9 +118,9 @@ function SiteReviewsBlock() {
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10 }}>
             <CoverArt url={spotifyCovers[a.id] || a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: 46, height: 46 }} />
             <div><b>{a.title}</b><br /><small className="muted" style={{ fontWeight: 700 }}>{r.user.name} · {formatRelative(r.createdAt, language)}</small></div>
-            <span className="num" style={{ marginLeft: 'auto', fontSize: 30, color: 'var(--acct)' }}>{r.stars.toFixed(1)}</span>
+            <span className="num" style={{ marginLeft: 'auto', fontSize: 30, color: 'var(--acct)' }}>{fmt1(r.stars)}</span>
           </div>
-          <p className="quote" style={{ fontSize: 17 }}>&ldquo;{r.review}&rdquo;</p>
+          <p className="quote" style={{ fontSize: 17 }}>{quoted(language, r.review)}</p>
         </button>
       ))}
     </div>
@@ -325,7 +326,7 @@ export function DiscoverScreen(_props: { device: Device }) {
                     <div style={{ minWidth: 0 }}>
                       <b>{a.title}</b><br />
                       <small className="muted" style={{ fontWeight: 700 }}>{a.artist}</small><br />
-                      <span className="stars"><Stars value={albumRatings[a.id].avg} size={13} /></span> <small style={{ fontWeight: 800 }}>{albumRatings[a.id].avg.toFixed(1)} · {albumRatings[a.id].count}</small>
+                      <span className="stars"><Stars value={albumRatings[a.id].avg} size={13} /></span> <small style={{ fontWeight: 800 }}>{fmt1(albumRatings[a.id].avg)} · {albumRatings[a.id].count}</small>
                     </div>
                   </button>
                 ))}

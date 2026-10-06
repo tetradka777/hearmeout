@@ -23,6 +23,8 @@ type Relation = 'self' | 'demo' | 'friend' | 'out' | 'in' | 'none';
 // up front, so the card and the <title> are there in the first HTML.
 export default function InviteClient({ id, initialInviter, initialLanguage }: { id: string; initialInviter: InviterInfo | null; initialLanguage: Language }) {
   const [inviter, setInviter] = useState<InviterInfo | null>(initialInviter);
+  // `id` from the URL may be an invite code; API calls need the account id.
+  const userId = initialInviter?.id ?? id;
   const [notFound, setNotFound] = useState(false);
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [relation, setRelation] = useState<Relation>('none');
@@ -34,7 +36,7 @@ export default function InviteClient({ id, initialInviter, initialLanguage }: { 
   useEffect(() => {
     let cancelled = false;
     Promise.all([
-      fetch(`/api/users/${id}`).then((r) => (r.ok ? r.json() : null)),
+      fetch(`/api/users/${userId}`).then((r) => (r.ok ? r.json() : null)),
       fetch('/api/me').then((r) => (r.ok ? r.json() : null)),
       fetch('/api/friends/requests').then((r) => (r.ok ? r.json() : null)),
     ]).then(([profile, me, requests]) => {
@@ -46,11 +48,11 @@ export default function InviteClient({ id, initialInviter, initialLanguage }: { 
       setAuthed(!!me);
       if (!me) return;
       if (me.language) setLanguage(me.language);
-      const hasId = (list: { user: { id: string } }[] | undefined) => (list || []).some((r) => r.user.id === id);
+      const hasId = (list: { user: { id: string } }[] | undefined) => (list || []).some((r) => r.user.id === userId);
       setRelation(
-        me.id === id ? 'self'
-          : isDemoAccountId(id) ? 'demo'
-          : (me.friends || []).some((f: { id: string }) => f.id === id) ? 'friend'
+        me.id === userId ? 'self'
+          : isDemoAccountId(userId) ? 'demo'
+          : (me.friends || []).some((f: { id: string }) => f.id === userId) ? 'friend'
           : hasId(requests?.outgoing) ? 'out'
           : hasId(requests?.incoming) ? 'in'
           : 'none',
@@ -61,7 +63,7 @@ export default function InviteClient({ id, initialInviter, initialLanguage }: { 
 
   const add = async () => {
     setStatus('sending');
-    const res = await fetch('/api/friends', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: id }) });
+    const res = await fetch('/api/friends', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId }) });
     const data = await res.json().catch(() => null);
     if (!res.ok) {
       if (data?.error === 'already_friends') { setRelation('friend'); setStatus('idle'); return; }
@@ -75,7 +77,7 @@ export default function InviteClient({ id, initialInviter, initialLanguage }: { 
   const goAuth = (mode: 'register' | 'login') => {
     if (!inviter) return;
     try {
-      localStorage.setItem(PENDING_INVITE_KEY, id);
+      localStorage.setItem(PENDING_INVITE_KEY, userId);
       localStorage.setItem(PENDING_INVITE_NAME_KEY, inviter.name.split(' ')[0]);
     } catch { /* storage unavailable: the visitor can still add them later */ }
     window.location.href = `/?auth=${mode}`;

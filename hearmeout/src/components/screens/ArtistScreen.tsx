@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import { usePlayer, type QueueTrack } from '@/lib/PlayerContext';
 import type { ApiUser, Device, SpotifyArtistAlbum } from '@/lib/types';
 import type { ArtistTopTrack } from '@/lib/spotifyCatalog';
 import type { Concert } from '@/lib/concerts';
 import { coverArtUrl } from '@/lib/musicbrainz';
-import { regionDisplayName, toLocale } from '@/lib/i18n';
+import { regionDisplayName, toLocale, quoted } from '@/lib/i18n';
 import { CoverArt } from '../ui/CoverArt';
 import { BookmarkIcon, HeartIcon, PlayIcon } from '../ui/Icons';
 import { Stars } from '../redesign/Stars';
@@ -28,7 +29,7 @@ function SpotifyAlbumCard({ album, fallbackLetter, onOpen, unreleasedLabel, scor
   return (
     <button className="cvw" onClick={() => onOpen(album.id)} style={{ textAlign: 'left', width: '100%' }}>
       <CoverArt url={album.cover ?? undefined} fallbackLetter={fallbackLetter} className={`cov${unreleasedLabel ? ' ann' : ''}`} style={{ width: '100%', aspectRatio: '1' }}>
-        {score != null && <span className="bdg">{score.toFixed(1)}</span>}
+        {score != null && <span className="bdg">{fmt1(score)}</span>}
       </CoverArt>
       <b style={{ display: 'block', marginTop: 10 }}>{album.title}</b>
       <small className="muted" style={{ fontWeight: unreleasedLabel ? 700 : 600 }}>
@@ -212,7 +213,7 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
                     <small className="muted" style={{ fontWeight: 600 }}>{formatDuration(tr.durationMs)} · {tr.albumTitle}</small>
                   </button>
                   {score != null
-                    ? <span className="tag" style={{ background: 'var(--acc)', color: 'var(--onacc)' }}>{t('artist.youScore', { score: score.toFixed(1) })}</span>
+                    ? <span className="tag" style={{ background: 'var(--acc)', color: 'var(--onacc)' }}>{t('artist.youScore', { score: fmt1(score) })}</span>
                     : <span className="tag">{t('artist.notRated')}</span>}
                   <button
                     className={`ib love${lovedTrack(tr.title) ? ' on' : ''}`}
@@ -277,7 +278,7 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
         <div className="stack">
           {communityScore && (
             <div className="tile t-pop">
-              <span className="num" style={{ fontSize: 64 }}>{communityScore.avg.toFixed(1)}</span>
+              <span className="num" style={{ fontSize: 64 }}>{fmt1(communityScore.avg)}</span>
               <p style={{ fontWeight: 800, marginTop: 6 }}>{t('artist.communityTile', { count: communityScore.count })}</p>
             </div>
           )}
@@ -291,7 +292,7 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
                     <span className="dot" style={{ ...userAvatarStyle(rv.user), width: 28, height: 28, fontSize: 12 }}>{rv.user.name[0]}</span>
                     {rv.user.name} <Stars value={rv.stars} size={14} />
                   </button>
-                  <p className="quote" style={{ fontSize: 19 }}>“{rv.review}”</p>
+                  <p className="quote" style={{ fontSize: 19 }}>{quoted(language, rv.review)}</p>
                   {album && <button className="link" onClick={() => openAlbum(album.id)} style={{ marginTop: 8 }}>{album.title}</button>}
                 </div>
               );
@@ -365,7 +366,7 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
               {(art.genres || []).map((g) => <span className="chip on" key={g} style={{ fontSize: 13, padding: '5px 12px' }}>{g}</span>)}
               {communityScore && (
                 <span className="chip" style={{ fontSize: 13, padding: '5px 12px' }}>
-                  <Stars value={communityScore.avg} size={12} onDark /> {t('artist.communityChip', { avg: communityScore.avg.toFixed(1) })}
+                  <Stars value={communityScore.avg} size={12} onDark /> {t('artist.communityChip', { avg: fmt1(communityScore.avg) })}
                 </span>
               )}
               {topFan && (
@@ -393,13 +394,13 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
               <>
                 <div className="vsline">
                   <div><span className="num" style={{ fontSize: 40 }}>{yourStats.count}</span><br /><small style={{ fontWeight: 700 }}>{t('artist.yourRatedCount')}</small></div>
-                  <div><span className="num" style={{ fontSize: 40 }}>{yourStats.avg.toFixed(1)}</span><br /><small style={{ fontWeight: 700 }}>{t('artist.yourAverage')}</small></div>
+                  <div><span className="num" style={{ fontSize: 40 }}>{fmt1(yourStats.avg)}</span><br /><small style={{ fontWeight: 700 }}>{t('artist.yourAverage')}</small></div>
                 </div>
                 {yourStats.best && (
                   <button className="row" onClick={() => openAlbum(yourStats.best!.id)} style={{ marginTop: 8 }}>
                     <CoverArt url={yourStats.best.cover ?? undefined} fallbackLetter={art.name[0] || '?'} className="cov" style={{ width: 44, height: 44 }} />
                     <span className="g"><b>{t('artist.yourBest')}</b><small className="muted" style={{ fontWeight: 600 }}>{yourStats.best.title}</small></span>
-                    <span className="num" style={{ fontSize: 26, color: 'var(--acct)' }}>{yourStats.bestScore.toFixed(1)}</span>
+                    <span className="num" style={{ fontSize: 26, color: 'var(--acct)' }}>{fmt1(yourStats.bestScore)}</span>
                   </button>
                 )}
               </>
@@ -408,7 +409,7 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
           {communityScore && (
             <div className="tile t-pop">
               <h3 style={{ marginBottom: 6 }}>{t('artist.community')}</h3>
-              <span className="num" style={{ fontSize: 48 }}>{communityScore.avg.toFixed(1)}</span>
+              <span className="num" style={{ fontSize: 48 }}>{fmt1(communityScore.avg)}</span>
               <p style={{ fontWeight: 700 }}>{t('artist.communityAcrossAlbums', { count: communityScore.count, albums: communityScore.albumsWithRatings })}</p>
             </div>
           )}

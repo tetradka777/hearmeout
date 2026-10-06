@@ -22,6 +22,7 @@ export async function GET() {
     fetchIsOpenProfile(admin, userId),
     fetchRegionAuto(admin, userId),
   ]);
+  const { data: codeRow } = await admin.from('users').select('invite_code').eq('id', userId).maybeSingle();
 
   if (!profile) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
@@ -49,6 +50,7 @@ export async function GET() {
     regionAuto: regionAuto.regionAuto,
     detectedRegion: regionAuto.detectedRegion,
     hasPassword: !!prefs?.auth_user_id,
+    inviteCode: (codeRow as { invite_code?: string | null } | null)?.invite_code ?? null,
     email,
     bannerUrl: (prefs?.banner_url as string | null) ?? null,
     isOpenProfile,

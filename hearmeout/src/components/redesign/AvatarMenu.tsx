@@ -76,7 +76,7 @@ export function AvatarMenu({ className = 'avt' }: { className?: string }) {
             {t('notify.title')}{unread > 0 && <span className="tag" style={{ float: 'right', background: '#C8321F', color: '#fff' }}>{unread}</span>}
           </button>
           <button role="menuitem" onClick={() => { showScreen('later'); setOpen(false); }}>
-            {t('nav.later')}{laterItems.length > 0 && <span className="tag" style={{ float: 'right' }}>{laterItems.length}</span>}
+            {t('nav.later')}<span className="tag" style={{ float: 'right' }}>{laterItems.length}</span>
           </button>
           <button role="menuitem" onClick={() => { showScreen('settings'); setOpen(false); }}>{t('settings.menuSettings')}</button>
           <hr />
