@@ -55,7 +55,7 @@ const NAV_GROUP: Record<ScreenName, ScreenName | null> = {
 
 const TAB_SCREENS: ScreenName[] = ['catalog', 'match', 'discover', 'stats', 'groups'];
 const TAB_LABEL: Partial<Record<ScreenName, TranslationKey>> = {
-  catalog: 'nav.home', match: 'nav.match', discover: 'nav.find', stats: 'nav.stats', groups: 'nav.groups',
+  catalog: 'nav.home', match: 'tab.match', discover: 'nav.find', stats: 'nav.stats', groups: 'nav.groups',
 };
 const TAB_ICON: Partial<Record<ScreenName, ReactNode>> = {
   catalog: <HomeIcon />, match: <PeopleIcon />, discover: <CompassSearchIcon />, stats: <BarsIcon />, groups: <GroupsIcon />,

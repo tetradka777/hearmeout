@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { upstreamErrorResponse } from '@/lib/upstreamError';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
 import { importStreamingHistory } from '@/lib/streamingHistoryImport';
@@ -36,6 +37,6 @@ export async function POST(request: NextRequest) {
     enrichListeningHistoryCovers(admin, userId).catch(() => {});
     return NextResponse.json(result);
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return upstreamErrorResponse(err, '/api/spotify/import');
   }
 }

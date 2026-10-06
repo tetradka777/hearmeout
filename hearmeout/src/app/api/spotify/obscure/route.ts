@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { upstreamErrorResponse } from '@/lib/upstreamError';
 import { fetchObscureAlbums } from '@/lib/spotifyCatalog';
 import { withSpotifyCache } from '@/lib/spotifyCache';
 
@@ -17,6 +18,6 @@ export async function GET(request: NextRequest) {
     // correctly per genre+market.
     return NextResponse.json(albums);
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return upstreamErrorResponse(err, '/api/spotify/obscure');
   }
 }

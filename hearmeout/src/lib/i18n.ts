@@ -128,7 +128,7 @@ const ru = {
   'groups.createFailed': 'Не удалось создать группу',
   'groups.invite': 'Пригласить',
   'groups.muteNotifications': 'Отключить уведомления',
-  'groups.muted': 'Отключено',
+  'groups.muted': 'Уведомления отключены',
   'groups.muteFailed': 'Не удалось изменить уведомления',
   'groups.members': 'Участники',
   'groups.owner': 'Создатель',
@@ -172,7 +172,7 @@ const ru = {
   'groups.listenedMostTag': 'слушал(а) больше всех',
   'groups.voteOpen': 'Альбом месяца',
   'groups.voteForMonth': 'Голосование за {month}',
-  'groups.voteQuestion': 'Один голос на участника. Нажмите на свой голос ещё раз, чтобы забрать его.',
+  'groups.voteQuestion': 'Один голос на человека. Нажмите на свой голос ещё раз, чтобы забрать его.',
   'groups.voteFailed': 'Не удалось проголосовать',
   'groups.noCandidates': 'В этом месяце пока никто ничего не оценил — голосовать не за что.',
   'groups.records': 'Рекорды группы',
@@ -284,8 +284,8 @@ const ru = {
 
   'rate.tagsCount': '{n} из {max}',
   'album.yourPlays': 'ваших прослушиваний',
-  'home.cornerTracks': 'треков',
-  'home.cornerArtists': 'артистов',
+  'home.cornerTracks': 'треки',
+  'home.cornerArtists': 'артисты',
   'home.rateIt': 'оценить',
   'home.readReview': 'читать рецензию',
   'home.openSession': 'открыть сессию',
@@ -347,7 +347,7 @@ const ru = {
   'later.noMatchesTitle': 'Ничего не найдено',
   'later.noMatchesBody': 'Попробуйте другой фильтр или очистите поиск.',
   'later.showAll': 'Показать всё',
-  'later.removeAllConfirm': 'Удалить все {n} сохранённых элемента?',
+  'later.removeAllConfirm': 'Удалить все {n} сохранённых элементов?',
   'later.removeAll': 'Удалить всё',
   'later.keepThem': 'Оставить',
   'later.footnote': 'Этот список видите только вы. Оценка альбома убирает его отсюда.',
@@ -952,7 +952,7 @@ const ru = {
   'groups.noAwardsYet': 'Награды появятся в конце месяца.',
   'groups.daysN': '{n} дн.',
   'groups.ratingsN': 'оценок: {n}',
-  'groups.voteEnds': 'Заканчивается: {date}.',
+  'groups.voteEnds': 'Голосование до {date}.',
   'groups.ratingsThisMonth': 'оценок за месяц',
   'discover.rankN': '№{n} по прослушиваниям',
   'discover.searchAria': 'Поиск',
@@ -1062,6 +1062,17 @@ const ru = {
   'concerts.subRegion': 'Концерты по всему миру — сначала в регионе {region}.',
   'concerts.subWorld': 'Концерты по всему миру. Укажите регион в настройках, чтобы ближайшие шли первыми.',
   'auth.serverConfig': 'Сервер не настроен: не задан SESSION_SECRET. Попробуйте позже.',
+  'artist.rateLimited': 'Spotify сейчас перегружен. Попробуйте через минуту.',
+  'tab.match': 'Сходство',
+  'ticker.calm': 'Пока тихо — здесь появятся прослушивания и оценки ваших друзей',
+  'catalog.topRatedEmpty': 'Здесь появятся альбомы, у которых от {n} оценок в сообществе.',
+  'catalog.showMore': 'Показать ещё {n}',
+  'recap.emptyTeaser': 'Рекап появится, когда вы послушаете музыку',
+  'later.removeAllConfirmOne': 'Удалить {n} сохранённый элемент?',
+  'later.removeAllConfirmFew': 'Удалить {n} сохранённых элемента?',
+  'profile.connectSpotify': 'Подключить Spotify',
+  'settings.regionSearch': 'Найдите страну',
+  'friends.handlePlaceholder': '@ник друга',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -1185,7 +1196,7 @@ const en: Dict = {
   'groups.createFailed': "Couldn't create the group",
   'groups.invite': 'Invite',
   'groups.muteNotifications': 'Mute notifications',
-  'groups.muted': 'Muted',
+  'groups.muted': 'Notifications muted',
   'groups.muteFailed': "Couldn't update notifications",
   'groups.members': 'Members',
   'groups.owner': 'Owner',
@@ -2010,7 +2021,7 @@ const en: Dict = {
   'groups.noAwardsYet': 'Awards appear at the end of the month.',
   'groups.daysN': '{n} days',
   'groups.ratingsN': '{n} ratings',
-  'groups.voteEnds': 'Ends {date}.',
+  'groups.voteEnds': 'Voting closes {date}.',
   'groups.ratingsThisMonth': 'ratings this month',
   'discover.rankN': '#{n} most streamed',
   'discover.searchAria': 'Search',
@@ -2120,6 +2131,17 @@ const en: Dict = {
   'concerts.subRegion': 'Shows worldwide — {region} first.',
   'concerts.subWorld': 'Shows worldwide. Set your region in Settings to see the nearest first.',
   'auth.serverConfig': 'The server is not configured (SESSION_SECRET is missing). Please try later.',
+  'artist.rateLimited': 'Spotify is busy right now. Try again in a minute.',
+  'tab.match': 'Match',
+  'ticker.calm': 'All quiet for now — your friends’ plays and ratings will show up here',
+  'catalog.topRatedEmpty': 'Albums with {n}+ community ratings will show up here.',
+  'catalog.showMore': 'Show {n} more',
+  'recap.emptyTeaser': 'Your recap appears once you listen to some music',
+  'later.removeAllConfirmOne': 'Remove {n} saved item?',
+  'later.removeAllConfirmFew': 'Remove all {n} saved items?',
+  'profile.connectSpotify': 'Connect Spotify',
+  'settings.regionSearch': 'Search a country',
+  'friends.handlePlaceholder': '@handle',
 };
 
 const fr: Dict = {
@@ -2240,7 +2262,7 @@ const fr: Dict = {
   'groups.createFailed': 'Impossible de créer le groupe',
   'groups.invite': 'Inviter',
   'groups.muteNotifications': 'Couper les notifications',
-  'groups.muted': 'Muet',
+  'groups.muted': 'Notifications coupées',
   'groups.muteFailed': "Impossible de modifier les notifications",
   'groups.members': 'Membres',
   'groups.owner': 'Créateur',
@@ -3065,7 +3087,7 @@ const fr: Dict = {
   'groups.noAwardsYet': 'Les récompenses arrivent en fin de mois.',
   'groups.daysN': '{n} jours',
   'groups.ratingsN': '{n} notes',
-  'groups.voteEnds': 'Fin : {date}.',
+  'groups.voteEnds': 'Vote jusqu’au {date}.',
   'groups.ratingsThisMonth': 'notes ce mois-ci',
   'discover.rankN': 'n°{n} des écoutes',
   'discover.searchAria': 'Recherche',
@@ -3175,6 +3197,17 @@ const fr: Dict = {
   'concerts.subRegion': 'Concerts dans le monde entier — {region} d’abord.',
   'concerts.subWorld': 'Concerts dans le monde entier. Indique ta région dans les réglages pour voir les plus proches en premier.',
   'auth.serverConfig': 'Le serveur n’est pas configuré (SESSION_SECRET manquant). Réessaie plus tard.',
+  'artist.rateLimited': 'Spotify est surchargé. Réessaie dans une minute.',
+  'tab.match': 'Match',
+  'ticker.calm': 'Calme pour l’instant — les écoutes et notes de tes amis apparaîtront ici',
+  'catalog.topRatedEmpty': 'Les albums avec au moins {n} notes de la communauté apparaîtront ici.',
+  'catalog.showMore': 'Afficher {n} de plus',
+  'recap.emptyTeaser': 'Ton récap apparaîtra quand tu auras écouté de la musique',
+  'later.removeAllConfirmOne': 'Supprimer {n} élément enregistré ?',
+  'later.removeAllConfirmFew': 'Supprimer les {n} éléments enregistrés ?',
+  'profile.connectSpotify': 'Connecter Spotify',
+  'settings.regionSearch': 'Chercher un pays',
+  'friends.handlePlaceholder': '@pseudo',
 };
 
 const es: Dict = {
@@ -3295,7 +3328,7 @@ const es: Dict = {
   'groups.createFailed': 'No se pudo crear el grupo',
   'groups.invite': 'Invitar',
   'groups.muteNotifications': 'Silenciar notificaciones',
-  'groups.muted': 'Silenciado',
+  'groups.muted': 'Notificaciones silenciadas',
   'groups.muteFailed': 'No se pudieron actualizar las notificaciones',
   'groups.members': 'Miembros',
   'groups.owner': 'Creador',
@@ -3515,7 +3548,7 @@ const es: Dict = {
   'later.noMatchesTitle': 'Sin resultados',
   'later.noMatchesBody': 'Prueba otro filtro o borra la búsqueda.',
   'later.showAll': 'Mostrar todo',
-  'later.removeAllConfirm': '¿Eliminar los {n} elementos guardados?',
+  'later.removeAllConfirm': '¿Quitar los {n} elementos guardados?',
   'later.removeAll': 'Eliminar todo',
   'later.keepThem': 'Conservarlos',
   'later.footnote': 'Solo tú ves esta lista. Valorar un álbum lo elimina de aquí.',
@@ -4120,7 +4153,7 @@ const es: Dict = {
   'groups.noAwardsYet': 'Los premios aparecen a final de mes.',
   'groups.daysN': '{n} días',
   'groups.ratingsN': '{n} valoraciones',
-  'groups.voteEnds': 'Termina el {date}.',
+  'groups.voteEnds': 'Votación hasta el {date}.',
   'groups.ratingsThisMonth': 'valoraciones este mes',
   'discover.rankN': 'n.º {n} en reproducciones',
   'discover.searchAria': 'Buscar',
@@ -4230,6 +4263,17 @@ const es: Dict = {
   'concerts.subRegion': 'Conciertos en todo el mundo, primero en {region}.',
   'concerts.subWorld': 'Conciertos en todo el mundo. Indica tu región en Ajustes para ver primero los más cercanos.',
   'auth.serverConfig': 'El servidor no está configurado (falta SESSION_SECRET). Inténtalo más tarde.',
+  'artist.rateLimited': 'Spotify está saturado. Inténtalo en un minuto.',
+  'tab.match': 'Match',
+  'ticker.calm': 'Todo tranquilo por ahora: aquí aparecerán las escuchas y valoraciones de tus amigos',
+  'catalog.topRatedEmpty': 'Aquí aparecerán los álbumes con {n} o más valoraciones de la comunidad.',
+  'catalog.showMore': 'Mostrar {n} más',
+  'recap.emptyTeaser': 'Tu resumen aparecerá cuando escuches algo de música',
+  'later.removeAllConfirmOne': '¿Quitar {n} elemento guardado?',
+  'later.removeAllConfirmFew': '¿Quitar los {n} elementos guardados?',
+  'profile.connectSpotify': 'Conectar Spotify',
+  'settings.regionSearch': 'Busca un país',
+  'friends.handlePlaceholder': '@usuario',
 };
 
 const de: Dict = {
@@ -4350,7 +4394,7 @@ const de: Dict = {
   'groups.createFailed': 'Gruppe konnte nicht erstellt werden',
   'groups.invite': 'Einladen',
   'groups.muteNotifications': 'Benachrichtigungen stummschalten',
-  'groups.muted': 'Stumm',
+  'groups.muted': 'Benachrichtigungen aus',
   'groups.muteFailed': 'Benachrichtigungen konnten nicht geändert werden',
   'groups.members': 'Mitglieder',
   'groups.owner': 'Ersteller',
@@ -5175,7 +5219,7 @@ const de: Dict = {
   'groups.noAwardsYet': 'Auszeichnungen gibt es am Monatsende.',
   'groups.daysN': '{n} Tage',
   'groups.ratingsN': '{n} Bewertungen',
-  'groups.voteEnds': 'Endet am {date}.',
+  'groups.voteEnds': 'Abstimmung bis {date}.',
   'groups.ratingsThisMonth': 'Bewertungen diesen Monat',
   'discover.rankN': 'Platz {n} nach Streams',
   'discover.searchAria': 'Suche',
@@ -5285,6 +5329,17 @@ const de: Dict = {
   'concerts.subRegion': 'Konzerte weltweit — {region} zuerst.',
   'concerts.subWorld': 'Konzerte weltweit. Leg deine Region in den Einstellungen fest, um die nächsten zuerst zu sehen.',
   'auth.serverConfig': 'Der Server ist nicht konfiguriert (SESSION_SECRET fehlt). Versuch es später.',
+  'artist.rateLimited': 'Spotify ist gerade ausgelastet. Versuch es in einer Minute.',
+  'tab.match': 'Match',
+  'ticker.calm': 'Noch ruhig — hier erscheinen, was deine Freunde hören und bewerten',
+  'catalog.topRatedEmpty': 'Hier erscheinen Alben mit mindestens {n} Community-Bewertungen.',
+  'catalog.showMore': '{n} weitere anzeigen',
+  'recap.emptyTeaser': 'Dein Rückblick erscheint, sobald du Musik hörst',
+  'later.removeAllConfirmOne': '{n} gespeichertes Element entfernen?',
+  'later.removeAllConfirmFew': 'Alle {n} gespeicherten Elemente entfernen?',
+  'profile.connectSpotify': 'Spotify verbinden',
+  'settings.regionSearch': 'Land suchen',
+  'friends.handlePlaceholder': '@handle',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };
@@ -5351,5 +5406,21 @@ export function regionDisplayName(code: string, language: Language): string {
     return new Intl.DisplayNames([language], { type: 'region' }).of(code) ?? code;
   } catch {
     return code;
+  }
+}
+
+// Quotation marks of the interface language around a quote (reviews, the
+// recap line): «…» ru/es, « … » fr, „…“ de, “…” en.
+export function quoted(language: Language, text: string): string {
+  switch (language) {
+    case 'ru':
+    case 'es':
+      return `«${text}»`;
+    case 'fr':
+      return `« ${text} »`;
+    case 'de':
+      return `„${text}“`;
+    default:
+      return `“${text}”`;
   }
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { upstreamErrorResponse } from '@/lib/upstreamError';
 import { fetchArtistTopTracks } from '@/lib/spotifyCatalog';
 import { withSpotifyCache } from '@/lib/spotifyCache';
 
@@ -9,6 +10,6 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     const tracks = await withSpotifyCache(`artist-top:${id}:${market || 'US'}`, 86400, () => fetchArtistTopTracks(id, market));
     return NextResponse.json({ tracks });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return upstreamErrorResponse(err, '/api/artist/[id]/top-tracks');
   }
 }

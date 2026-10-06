@@ -39,7 +39,7 @@ function FiveStars({ value, size }: { value: number; size: number }) {
 }
 
 export function Stars({ value, size = 22, onDark = false }: { value: number; size?: number; onDark?: boolean }) {
-  return <span className={`stars${onDark ? ' on-dark' : ''}`} style={{ fontSize: size }}><FiveStars value={value} size={size} /></span>;
+  return <span className={`stars${onDark ? ' on-dark' : ''}`}><FiveStars value={value} size={size} /></span>;
 }
 
 export function StarSlider({ value, onChange, size = 28, onDark = false }: { value: number; onChange: (v: number) => void; size?: number; onDark?: boolean }) {
@@ -74,7 +74,6 @@ export function StarSlider({ value, onChange, size = 28, onDark = false }: { val
       aria-valuemin={0.1}
       aria-valuemax={5}
       aria-valuenow={value || 0.1}
-      style={{ fontSize: size }}
       onPointerDown={(e: PointerEvent) => { dragging.current = true; (e.target as Element).setPointerCapture(e.pointerId); onChange(valueFromClientX(e.clientX)); }}
       onPointerMove={(e: PointerEvent) => { if (dragging.current) onChange(valueFromClientX(e.clientX)); }}
       onPointerUp={() => { dragging.current = false; }}

@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
+import { quoted } from '@/lib/i18n';
 import { userAvatarStyle, formatRelative } from '@/lib/format';
 import type { AlbumReview } from '@/lib/types';
 
@@ -34,9 +36,9 @@ export function AlbumReviews({ albumId, refreshToken }: { albumId: string; refre
           <div className="dot" style={userAvatarStyle(r.user)}>{!r.user.avatarUrl && r.user.name[0]}</div>
           <span className="g">
             <b>{r.user.name} <small className="muted" style={{ fontWeight: 700 }}>· {formatRelative(r.createdAt, language)}</small></b>
-            <span className="quote" style={{ fontSize: 17, display: 'block', marginTop: 4 }}>&ldquo;{r.review}&rdquo;</span>
+            <span className="quote" style={{ fontSize: 17, display: 'block', marginTop: 4 }}>{quoted(language, r.review)}</span>
           </span>
-          <span className="num" style={{ fontSize: 30, color: 'var(--acct)' }}>{r.stars.toFixed(1)}</span>
+          <span className="num" style={{ fontSize: 30, color: 'var(--acct)' }}>{fmt1(r.stars)}</span>
         </div>
       ))}
     </>

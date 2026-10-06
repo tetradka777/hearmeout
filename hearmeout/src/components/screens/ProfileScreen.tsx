@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { fmt1 } from '@/lib/numberFormat';
 import { PROFILE_TAB_EVENT } from '../redesign/AvatarMenu';
 import { useApp } from '@/lib/AppContext';
+import { invitePath } from '@/lib/pendingInvite';
 import type { Device, RatingRecord } from '@/lib/types';
 import { userAvatarStyle, formatJoinDate, formatRelative } from '@/lib/format';
-import { regionDisplayName, getRegionCodes, toLocale } from '@/lib/i18n';
+import { toLocale, quoted } from '@/lib/i18n';
 import { LovedTracksColumn, LovedAlbumsColumn, LovedArtistsColumn } from '../ProfileBlocks';
 import { CoverArt } from '../ui/CoverArt';
 import { Stars } from '../redesign/Stars';
@@ -13,6 +15,8 @@ import { MascotIcon } from '../redesign/icons';
 import { useFriendScores } from '@/lib/useFriendScores';
 import type { TranslationKey } from '@/lib/i18n';
 import { LaterRow, useLaterPlay } from './LaterScreen';
+import { RegionInput } from '../RegionInput';
+import { Initial } from '../ui/Initial';
 
 type ProfileTab = 'ratings' | 'reviews' | 'loved' | 'later' | 'taste' | 'awards' | 'listening' | 'friends';
 const TAB_ORDER: ProfileTab[] = ['ratings', 'reviews', 'loved', 'later', 'taste', 'awards', 'listening', 'friends'];
@@ -41,7 +45,7 @@ function RatingRow({ r }: { r: RatingRecord }) {
         <small className="muted" style={{ fontWeight: 600 }}>{a.artist}{a.artist ? ' · ' : ''}{new Date(r.createdAt).toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short' })}</small>
       </span>
       <span className="stars"><Stars value={r.stars} size={14} /></span>
-      <span className="num" style={{ fontSize: 26, width: 44, textAlign: 'right' }}>{r.stars.toFixed(1)}</span>
+      <span className="num" style={{ fontSize: 26, width: 44, textAlign: 'right' }}>{fmt1(r.stars)}</span>
     </button>
   );
 }
@@ -66,7 +70,7 @@ function RatingsTab({ list, avg, reviews }: { list: RatingRecord[]; avg: number;
           <small style={{ fontWeight: 800 }}>{t('profile.yourRatings')}</small>
           <div className="vsline">
             <div><span className="num" style={{ fontSize: 44 }}>{list.length}</span><br /><small style={{ fontWeight: 700 }}>{t('profile.albumsL')}</small></div>
-            <div><span className="num" style={{ fontSize: 44 }}>{avg.toFixed(1)}</span><br /><small style={{ fontWeight: 700 }}>{t('profile.averageL')}</small></div>
+            <div><span className="num" style={{ fontSize: 44 }}>{fmt1(avg)}</span><br /><small style={{ fontWeight: 700 }}>{t('profile.averageL')}</small></div>
             <div><span className="num" style={{ fontSize: 44 }}>{reviews}</span><br /><small style={{ fontWeight: 700 }}>{t('profile.reviewsL')}</small></div>
           </div>
         </div>
@@ -81,7 +85,7 @@ function RatingsTab({ list, avg, reviews }: { list: RatingRecord[]; avg: number;
 }
 
 function ReviewsTab({ list }: { list: RatingRecord[] }) {
-  const { t, openAlbum } = useApp();
+  const { t, language, openAlbum } = useApp();
   const albumOf = useAlbumOf();
   const rv = list.filter((r) => !!r.review);
   if (!rv.length) return <div className="stack"><EmptyTile title={t('profile.noReviewsTitle')} body={t('profile.noReviewsBody')} /></div>;
@@ -95,7 +99,7 @@ function ReviewsTab({ list }: { list: RatingRecord[] }) {
               <CoverArt url={a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: 48, height: 48 }} />
               <div><b>{a.title}</b><br /><span className="stars"><Stars value={r.stars} size={14} /></span></div>
             </button>
-            <p className="quote" style={{ fontSize: 19 }}>&ldquo;{r.review}&rdquo;</p>
+            <p className="quote" style={{ fontSize: 19 }}>{quoted(language, r.review ?? '')}</p>
           </div>
         );
       })}
@@ -179,7 +183,7 @@ function TasteTab({ list }: { list: RatingRecord[] }) {
             {fp.map((x) => (
               <div className="fpc" key={x.g}>
                 <b>{x.g}</b>
-                <span className="num">{x.avg.toFixed(1)}</span>
+                <span className="num">{fmt1(x.avg)}</span>
                 <div className="meter"><i style={{ width: `${Math.round((x.avg / 5) * 100)}%` }} /></div>
                 <small className="muted" style={{ fontWeight: 700 }}>{t(x.n === 1 ? 'profile.albumCountOne' : 'profile.albumCountMany', { n: x.n })}</small>
               </div>
@@ -207,7 +211,7 @@ function TasteTab({ list }: { list: RatingRecord[] }) {
                 <button key={r.albumId} onClick={() => openAlbum(r.albumId)} style={{ textAlign: 'left', color: 'inherit' }}>
                   <div className="cvw">
                     <CoverArt url={a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: '100%', aspectRatio: '1' }} />
-                    <span className="bdg">{r.stars.toFixed(1)}</span>
+                    <span className="bdg">{fmt1(r.stars)}</span>
                   </div>
                   <b style={{ display: 'block', marginTop: 8, fontSize: 14 }}>{a.title}</b>
                 </button>
@@ -308,7 +312,13 @@ function ListeningTab() {
           <span className="g"><b>{p.title}</b><small className="muted" style={{ fontWeight: 600 }}>{p.artist}</small></span>
           <small className="muted" style={{ fontWeight: 700 }}>{formatRelative(p.playedAt, language)}</small>
         </button>
-      )) : <p className="muted" style={{ fontWeight: 600 }}>{t('profile.notEnoughData')}</p>}
+      )) : (
+        <>
+          <p className="muted" style={{ fontWeight: 600 }}>{t('profile.notEnoughData')}</p>
+          {/* No plays and no Spotify: offer the connection right here. */}
+          {me && !me.connections.spotify && <div className="acts"><a className="btn" href="/api/auth/spotify">{t('profile.connectSpotify')}</a></div>}
+        </>
+      )}
     </div>
   );
 }
@@ -323,7 +333,7 @@ function FriendsTab() {
   const [showQr, setShowQr] = useState(false);
   if (!me) return null;
   const { incoming, outgoing } = friendRequests;
-  const inviteUrl = typeof window !== 'undefined' ? `${window.location.origin}/invite/${me.id}` : `/invite/${me.id}`;
+  const inviteUrl = typeof window !== 'undefined' ? `${window.location.origin}${invitePath(me)}` : invitePath(me);
   const inviteLabel = inviteUrl.replace(/^https?:\/\//, '');
 
   const add = async () => {
@@ -363,7 +373,7 @@ function FriendsTab() {
         {incoming.map((r) => (
           <div className="row" key={r.id}>
             <button className="rowlink" onClick={() => viewFriend(r.user.id)}>
-              <span className="dot" style={userAvatarStyle(r.user)}>{!r.user.avatarUrl && r.user.name[0]}</span>
+              <span className="dot" style={userAvatarStyle(r.user)}>{!r.user.avatarUrl && <Initial name={r.user.name} />}</span>
               <span className="g"><b>{r.user.name}</b><small className="muted" style={{ fontWeight: 600 }}>{r.user.handle}</small></span>
             </button>
             <button className="btn" style={{ padding: '8px 16px' }} onClick={() => respondToFriendRequest(r.id, 'accept')}>{t('friends.accept')}</button>
@@ -374,7 +384,7 @@ function FriendsTab() {
         {outgoing.map((r) => (
           <div className="row" key={r.id}>
             <button className="rowlink" onClick={() => viewFriend(r.user.id)}>
-              <span className="dot" style={userAvatarStyle(r.user)}>{!r.user.avatarUrl && r.user.name[0]}</span>
+              <span className="dot" style={userAvatarStyle(r.user)}>{!r.user.avatarUrl && <Initial name={r.user.name} />}</span>
               <span className="g"><b>{r.user.name}</b></span>
             </button>
             <span className="tag">{t('friends.pendingBadge')}</span>
@@ -388,7 +398,7 @@ function FriendsTab() {
         <h2>{t('friends.addAFriend')}</h2>
         <label htmlFor="addh">{t('friends.handleLabel')}</label>
         <form style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }} onSubmit={(e) => { e.preventDefault(); if (!busy) add(); }}>
-          <input className="field" id="addh" placeholder="@handle" style={{ flex: 1, minWidth: 160 }} value={handle} onChange={(e) => { setHandle(e.target.value); setErr(''); }} />
+          <input className="field" id="addh" placeholder={t('friends.handlePlaceholder')} style={{ flex: 1, minWidth: 160 }} value={handle} onChange={(e) => { setHandle(e.target.value); setErr(''); }} />
           <button className="btn" type="submit" disabled={busy}>{t('friends.add')}</button>
         </form>
         <p className="ferr" role="alert">{err}</p>
@@ -398,7 +408,7 @@ function FriendsTab() {
         <h2>{t('profile.friends')}</h2>
         {me.friends.length ? me.friends.map((f) => (
           <button className="row" key={f.id} onClick={() => viewFriend(f.id)}>
-            <span className="dot" style={userAvatarStyle(f)}>{!f.avatarUrl && f.name[0]}</span>
+            <span className="dot" style={userAvatarStyle(f)}>{!f.avatarUrl && <Initial name={f.name} />}</span>
             <span className="g"><b>{f.name}</b><small className="muted" style={{ fontWeight: 600 }}>{t('friends.sharedArtistsN', { n: scores[f.id]?.shared ?? 0 })}</small></span>
             <span className="num" style={{ fontSize: 30 }}>{scores[f.id]?.pct != null ? `${scores[f.id]!.pct}%` : '—'}</span>
             <span className="tag">{t('friends.viewProfile')}</span>
@@ -420,14 +430,14 @@ function FriendsTab() {
             <small style={{ fontWeight: 700, display: 'block', marginTop: 6 }}>{t('friends.qrHint')}</small>
           </div>
         )}
-        <a className="link" href={`/invite/${me.id}`} target="_blank" rel="noreferrer" style={{ marginTop: 12, display: 'inline-block' }}>{t('friends.previewInvite')}</a>
+        <a className="link" href={invitePath(me)} target="_blank" rel="noreferrer" style={{ marginTop: 12, display: 'inline-block' }}>{t('friends.previewInvite')}</a>
       </div>
     </div>
   );
 }
 
 export function ProfileScreen(_props: { device: Device }) {
-  const { t, language, me, myRatings, updateProfileName, updateProfileHandle, updateRegion, updateAvatar, showScreen, viewHistory, friendRequests, showToast } = useApp();
+  const { t, language, me, myRatings, updateProfileName, updateProfileHandle, updateAvatar, showScreen, viewHistory, friendRequests, showToast } = useApp();
   const [tab, setTab] = useState<ProfileTab>('ratings');
   const incomingRequests = friendRequests.incoming.length;
   // The avatar menu's "Friend requests" item lands here on the friends tab.
@@ -436,7 +446,6 @@ export function ProfileScreen(_props: { device: Device }) {
     window.addEventListener(PROFILE_TAB_EVENT, onTab);
     return () => window.removeEventListener(PROFILE_TAB_EVENT, onTab);
   }, []);
-  const regionCodes = useMemo(() => getRegionCodes(), []);
   const list = useMemo(() => [...myRatings].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()), [myRatings]);
 
   if (!me) return null;
@@ -502,7 +511,7 @@ export function ProfileScreen(_props: { device: Device }) {
           </div>
         </div>
         <div className="pcnt">
-          {[[String(list.length), t('profile.ratingsL')], [avg.toFixed(1), t('profile.avgScoreL')], [String(reviews), t('profile.reviewsL')], [String(me.friends.length), t('profile.friendsL')]].map(([v, l]) => (
+          {[[String(list.length), t('profile.ratingsL')], [fmt1(avg), t('profile.avgScoreL')], [String(reviews), t('profile.reviewsL')], [String(me.friends.length), t('profile.friendsL')]].map(([v, l]) => (
             <div key={l}><span className="num" style={{ fontSize: 34, color: 'var(--acct)' }}>{v}</span><br /><small style={{ fontWeight: 700 }}>{l}</small></div>
           ))}
         </div>
@@ -521,10 +530,7 @@ export function ProfileScreen(_props: { device: Device }) {
         <div className="tile t-soft2">
           <h3>{t('profile.quickSettings')}</h3>
           <label htmlFor="qreg" style={{ marginTop: 10 }}>{t('profile.region')}</label>
-          <select id="qreg" className="field" disabled={me.regionAuto && !!me.detectedRegion} value={me.region ?? ''} onChange={(e) => updateRegion(e.target.value || null)}>
-            <option value="">{t('profile.regionNone')}</option>
-            {regionCodes.map((code) => <option key={code} value={code}>{regionDisplayName(code, language)}</option>)}
-          </select>
+          <RegionInput id="qreg" />
           <button className="link" style={{ marginTop: 10, display: 'inline-block' }} onClick={() => showScreen('settings')}>{t('settings.openAll')} →</button>
         </div>
       </div>

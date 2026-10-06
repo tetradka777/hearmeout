@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { Device, RatingRecord } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
@@ -39,9 +40,9 @@ function HistoryRow({ rating }: { rating: RatingRecord }) {
         <small className="muted" style={{ fontWeight: 600 }}>{artist}{artist ? ' · ' : ''}{date}{rating.isPrivate ? ` · ${t('history.privateBadge')}` : ''}</small>
       </span>
       {rating.review && <span className="tag">{t('history.reviewBadge')}</span>}
-      {rating.previousStars != null && <span className="rev">{rating.previousStars.toFixed(1)} → {rating.stars.toFixed(1)}</span>}
+      {rating.previousStars != null && <span className="rev">{fmt1(rating.previousStars)} → {fmt1(rating.stars)}</span>}
       <span className="stars"><Stars value={rating.stars} size={14} /></span>
-      <span className="num" style={{ fontSize: 26, width: 44, textAlign: 'right' }}>{rating.stars.toFixed(1)}</span>
+      <span className="num" style={{ fontSize: 26, width: 44, textAlign: 'right' }}>{fmt1(rating.stars)}</span>
     </button>
   );
 }
@@ -83,7 +84,7 @@ function AverageByMonthChart({ months }: { months: { key: string; label: string;
       </svg>
       <div className="axis sp6" aria-hidden="true">{months.map((m) => <span key={m.key}>{m.label}</span>)}</div>
       <div className="calread" aria-live="polite" style={{ minHeight: 0, padding: '8px 12px', marginTop: 8 }}>
-        {hover ? t('history.monthlyHoverValue', { label: hover.label, avg: hover.avg.toFixed(1), count: hover.count, ratingWord: pluralForKey(language, hover.count, 'album.ratingOne', 'album.ratingFew', 'album.ratingMany') }) : t('history.monthlyHoverHint')}
+        {hover ? t('history.monthlyHoverValue', { label: hover.label, avg: fmt1(hover.avg), count: hover.count, ratingWord: pluralForKey(language, hover.count, 'album.ratingOne', 'album.ratingFew', 'album.ratingMany') }) : t('history.monthlyHoverHint')}
       </div>
     </>
   );
@@ -232,13 +233,13 @@ export function HistoryScreen(_props: { device: Device }) {
 
       <div className="bento b3">
         <div className="tile t-ac s2">
-          <span className="num" style={{ fontSize: 'clamp(90px,18vw,160px)', display: 'block' }}>{avgScore.toFixed(1)}</span>
+          <span className="num" style={{ fontSize: 'clamp(90px,18vw,160px)', display: 'block' }}>{fmt1(avgScore)}</span>
           <p style={{ fontWeight: 800, marginTop: 12 }}>{t('history.heroCaption', { count: myRatings.length })}</p>
         </div>
 
         <div className="stack">
           <div className="tile t-pop">
-            <span className="num" style={{ fontSize: 44 }}>{vsEveryone >= 0 ? '+' : '−'}{Math.abs(vsEveryone).toFixed(1)}</span>
+            <span className="num" style={{ fontSize: 44 }}>{vsEveryone >= 0 ? '+' : '−'}{fmt1(Math.abs(vsEveryone))}</span>
             <br /><small style={{ fontWeight: 700 }}>{t('history.vsEveryoneCaption')}</small>
           </div>
           <div className="tile t-ink">
@@ -252,12 +253,12 @@ export function HistoryScreen(_props: { device: Device }) {
           {myRatings.length ? (
             <>
               <div className="h50" role="img" aria-label={t('album.ratingDistribution')}>
-                {scoreBuckets.map((n, i) => <i key={i} style={{ height: `${Math.max(3, Math.round((n / maxBucket) * 100))}%` }} title={`${((i + 1) / 10).toFixed(1)}: ${n}`} />)}
+                {scoreBuckets.map((n, i) => <i key={i} style={{ height: `${Math.max(3, Math.round((n / maxBucket) * 100))}%` }} title={`${fmt1(((i + 1) / 10))}: ${n}`} />)}
               </div>
               <div className="h50ax" aria-hidden="true"><span>0.1</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
-              <p className="muted" style={{ marginTop: 10, fontSize: 14, fontWeight: 600 }}>{t('history.scoreDistModeCaption', { mode: scoreMode.toFixed(1) })}</p>
+              <p className="muted" style={{ marginTop: 10, fontSize: 14, fontWeight: 600 }}>{t('history.scoreDistModeCaption', { mode: fmt1(scoreMode) })}</p>
             </>
-          ) : <p className="muted">{t('history.notEnoughForChart')}</p>}
+          ) : <p className="muted" style={{ marginTop: 10, fontSize: 14, fontWeight: 600 }}>{t('history.notEnoughForChart')}</p>}
         </div>
 
         <div className="tile t-soft2">
@@ -272,11 +273,11 @@ export function HistoryScreen(_props: { device: Device }) {
               {countByMonth.map((m) => (
                 <div key={m.key}>
                   <i style={{ height: `${Math.round((m.count / maxMonthCount) * 84)}%` }} />
-                  <small>{m.label}<br />{m.count} · {m.avg.toFixed(1)}</small>
+                  <small>{m.label}<br />{m.count} · {fmt1(m.avg)}</small>
                 </div>
               ))}
             </div>
-          ) : <p className="muted">{t('history.notEnoughForChart')}</p>}
+          ) : <p className="muted" style={{ fontWeight: 600 }}>{t('history.notEnoughForChart')}</p>}
         </div>
 
         <div className="tile">
@@ -286,22 +287,22 @@ export function HistoryScreen(_props: { device: Device }) {
               <button className="row" onClick={() => openAlbum(highlights.highest.albumId)}>
                 <CoverArt url={spotifyCovers[highlights.highest.albumId] || albumFor(highlights.highest.albumId)?.cover} fallbackLetter={albumFor(highlights.highest.albumId)?.artist[0] || '?'} className="cov" style={{ width: 48, height: 48 }} />
                 <div className="g"><b>{t('history.highestRated')}</b><small className="muted" style={{ fontWeight: 600 }}>{albumTitle(highlights.highest.albumId)}</small></div>
-                <span className="num" style={{ fontSize: 26, color: 'var(--acct)' }}>{highlights.highest.stars.toFixed(1)}</span>
+                <span className="num" style={{ fontSize: 26, color: 'var(--acct)' }}>{fmt1(highlights.highest.stars)}</span>
               </button>
               <button className="row" onClick={() => openAlbum(highlights.lowest.albumId)}>
                 <CoverArt url={spotifyCovers[highlights.lowest.albumId] || albumFor(highlights.lowest.albumId)?.cover} fallbackLetter={albumFor(highlights.lowest.albumId)?.artist[0] || '?'} className="cov" style={{ width: 48, height: 48 }} />
                 <div className="g"><b>{t('history.lowestRated')}</b><small className="muted" style={{ fontWeight: 600 }}>{albumTitle(highlights.lowest.albumId)}</small></div>
-                <span className="num" style={{ fontSize: 26 }}>{highlights.lowest.stars.toFixed(1)}</span>
+                <span className="num" style={{ fontSize: 26 }}>{fmt1(highlights.lowest.stars)}</span>
               </button>
               {highlights.changedMind && (
                 <button className="row" onClick={() => openAlbum(highlights.changedMind!.albumId)}>
                   <CoverArt url={spotifyCovers[highlights.changedMind.albumId] || albumFor(highlights.changedMind.albumId)?.cover} fallbackLetter={albumFor(highlights.changedMind.albumId)?.artist[0] || '?'} className="cov" style={{ width: 48, height: 48 }} />
                   <div className="g"><b>{t('history.changedMind')}</b><small className="muted" style={{ fontWeight: 600 }}>{albumTitle(highlights.changedMind.albumId)}</small></div>
-                  <span className="rev">{highlights.changedMind.previousStars!.toFixed(1)} → {highlights.changedMind.stars.toFixed(1)}</span>
+                  <span className="rev">{fmt1(highlights.changedMind.previousStars!)} → {fmt1(highlights.changedMind.stars)}</span>
                 </button>
               )}
             </>
-          ) : <p className="muted">{t('history.notEnoughForChart')}</p>}
+          ) : <p className="muted" style={{ fontWeight: 600 }}>{t('history.notEnoughForChart')}</p>}
         </div>
 
         <div className="tile t-pop">
@@ -342,7 +343,7 @@ export function HistoryScreen(_props: { device: Device }) {
               <div className="tile" key={key} style={{ marginBottom: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
                   <h2 style={{ margin: 0, textTransform: 'capitalize' }}>{label}</h2>
-                  <span className="muted" style={{ fontWeight: 700 }}>{t('history.monthSummary', { count: rows.length, avg: avg.toFixed(1) })}</span>
+                  <span className="muted" style={{ fontWeight: 700 }}>{t('history.monthSummary', { count: rows.length, avg: fmt1(avg) })}</span>
                 </div>
                 {rows.map((r) => <HistoryRow key={r.albumId} rating={r} />)}
               </div>

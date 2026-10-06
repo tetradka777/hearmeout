@@ -71,6 +71,12 @@ html { background: var(--bg); }
 .rd .tabbar { position: fixed; left: 10px; right: 10px; bottom: 10px; z-index: 40; max-width: 520px; margin: 0 auto; border-radius: 30px; padding: 6px; display: flex; align-items: center; gap: 2px; background: var(--chr-bg); color: var(--chr-fg); outline: var(--bw) solid var(--tb); outline-offset: calc(var(--bw) * -1); }
 .rd .tabbar button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 2px 7px; border-radius: 22px; font-weight: 700; font-size: 11px; line-height: 1.1; min-width: 0; color: color-mix(in srgb, var(--chr-fg) 88%, transparent); }
 .rd .tabbar button.on { background: var(--chr-act-bg); color: var(--chr-act-fg); }
+/* Labels never run into each other on narrow phones: one line, clipped
+   with an ellipsis inside their own slot. */
+/* Slots size to their label (flex-basis auto), so a long Russian label
+   like «Статистика» takes room from short ones instead of being cut. */
+.rd .tabbar button:not(.fab) { flex: 1 1 auto; }
+.rd .tabbar button span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rd .tabbar svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .rd .tabbar .fab { flex: none; width: 50px; height: 50px; padding: 0; margin-left: 2px; border-radius: 50%; justify-content: center; background: var(--acc); color: var(--onacc); font: 800 26px/1 var(--font-display); }
 [data-design="toxic"] .rd .tabbar { bottom: 8px; }
@@ -78,6 +84,7 @@ html { background: var(--bg); }
 /* live activity ticker (spec 3.8) */
 .rd .ticker { min-width: 0; max-width: 100%; display: flex; align-items: stretch; overflow: hidden; border-radius: 999px; margin: 0 0 22px; font-weight: 700; font-size: 14px; background: var(--tk-bg); color: var(--tk-fg); outline: var(--bw) solid var(--tb); outline-offset: calc(var(--bw) * -1); }
 .rd .ticker .mq { overflow: hidden; flex: 1; white-space: nowrap; padding: 9px 0; -webkit-mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
+.rd .ticker.calm .mq { -webkit-mask-image: none; mask-image: none; padding: 9px 18px; text-overflow: ellipsis; }
 .rd .ticker .track { display: inline-flex; will-change: transform; }
 .rd .ticker .grp { display: inline-flex; gap: 28px; padding-right: 28px; }
 .rd .ticker b { color: var(--tk-b); }
@@ -105,7 +112,7 @@ html { background: var(--bg); }
 .rd .acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
 .rd .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
 .rd .chip { border-radius: 999px; padding: 8px 16px; font-weight: 700; font-size: 14px; background: var(--paper); color: var(--fg); outline: var(--bw) solid var(--tb); outline-offset: calc(var(--bw) * -1); display: inline-flex; gap: 8px; align-items: center; }
-.rd .chip.on { background: var(--fg); color: var(--bg); outline-color: var(--fg); }
+.rd .chip.on { background: var(--fg); color: var(--bg); }
 .rd .chip[disabled] { opacity: .5; cursor: not-allowed; }
 [data-design="toxic"] .rd .chip { background: var(--paper2); }
 [data-design="toxic"] .rd .chip.on { background: var(--hi); color: #0E0E0C; }
@@ -250,16 +257,17 @@ html { background: var(--bg); }
 
 /* states: loading / empty / error (spec 3.13) */
 .rd .empty { text-align: center; padding: 26px 16px; display: grid; gap: 8px; justify-items: center; }
+.rd .empty > * { margin: 0; }
 .rd .empty svg { width: 96px; height: auto; }
 .rd .sk { background: linear-gradient(90deg, color-mix(in srgb, currentColor 8%, transparent), color-mix(in srgb, currentColor 17%, transparent), color-mix(in srgb, currentColor 8%, transparent)); background-size: 200% 100%; animation: rd-shim 1.4s linear infinite; border-radius: 12px; }
 @keyframes rd-shim { to { background-position: -200% 0; } }
 
 /* ===== settings ===== */
-.rd .setgrid { display: grid; gap: 22px; }
+.rd .setgrid { display: grid; gap: 22px; grid-template-columns: minmax(0,1fr); }
 .rd .stabs { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; }
 .rd .stabs::-webkit-scrollbar { display: none; }
 .rd .stabs button { padding: 10px 18px; border-radius: 999px; font-weight: 700; background: var(--paper); outline: var(--bw) solid var(--tb); outline-offset: calc(var(--bw) * -1); white-space: nowrap; color: var(--fg); }
-.rd .stabs button.on { background: var(--fg); color: var(--bg); outline-color: var(--fg); }
+.rd .stabs button.on { background: var(--fg); color: var(--bg); }
 [data-design="toxic"] .rd .stabs button { background: var(--paper2); }
 [data-design="toxic"] .rd .stabs button.on { background: var(--hi); color: #0E0E0C; }
 .rd .setrow { display: flex; justify-content: space-between; align-items: center; gap: 18px; padding: 16px 0; border-top: 1.5px solid color-mix(in srgb, currentColor 12%, transparent); }
@@ -377,7 +385,6 @@ html { background: var(--bg); }
 .rd .rev { font-weight: 800; font-size: 12px; padding: 2px 9px; border-radius: 99px; background: color-mix(in srgb, currentColor 14%, transparent); }
 .rd .vsline { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 6px; }
 /* Recap: the four number tiles as a 2×2 grid (spec 6.12). */
-.rd .g2 { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
 
 /* ===== carried-over site functions (spec section 13) ===== */
 .rd .stars.rs { cursor: pointer; touch-action: pan-y; padding: 4px 0; user-select: none; -webkit-user-select: none; }
@@ -427,7 +434,7 @@ html { background: var(--bg); }
 .rd .pinfo { flex: 1; min-width: 200px; }
 .rd .pname { font: 800 clamp(34px,7vw,56px)/1 var(--font-display); letter-spacing: -.04em; background: transparent; border: 0; border-bottom: 2px dashed color-mix(in srgb, currentColor 35%, transparent); color: inherit; width: 100%; padding: 0 0 2px; border-radius: 0; }
 .rd .phandle { display: flex; align-items: center; font-weight: 800; margin-top: 6px; }
-.rd .phandle input { background: transparent; border: 0; border-bottom: 2px dashed color-mix(in srgb, currentColor 35%, transparent); color: inherit; font-weight: 800; font-size: 16px; width: 14ch; border-radius: 0; }
+.rd .phandle input { background: transparent; border: 0; padding: 0; border-bottom: 2px dashed color-mix(in srgb, currentColor 35%, transparent); color: inherit; font-weight: 800; font-size: 16px; width: 14ch; border-radius: 0; }
 .rd .pcnt { display: flex; gap: 22px; flex-wrap: wrap; }
 .rd .qrw { margin-top: 12px; background: #fff; padding: 10px; border-radius: 16px; display: inline-block; color: #111; }
 .rd .qr { width: 160px; height: 160px; display: block; }
@@ -532,3 +539,28 @@ html { background: var(--bg); }
    accent-filled avatar in every palette. */
 .rd .badge { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: #C8321F; color: #fff; font: 800 11px/18px var(--font-body); text-align: center; outline: 2px solid var(--paper); pointer-events: none; }
 .rd .chip .badge { position: static; display: inline-block; margin-left: 6px; outline: 0; }
+
+/* Audit 2, L16 — prototype rules that had no counterpart here. */
+.rd .love.later svg { fill: none; }
+.rd .love.later.on svg { fill: currentColor; }
+@media (min-width: 900px) {
+  .rd.hasmp .wrap { padding-bottom: 110px; }
+  [data-design="toxic"] .rd .toast { bottom: 100px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rd *, .rd *::before, .rd *::after { animation: none !important; transition: none !important; }
+}
+
+/* Audit 2 — L9: the tracklist play control looks like its bookmark (.ib). */
+.rd .trk .ib.ticn { width: 40px; height: 40px; font-size: 14px; background: color-mix(in srgb, currentColor 10%, transparent); }
+/* L10: tags stay inline-block everywhere and take the outline colour in
+   Cream Pop Light (#294074, not the text colour); inline colours win. */
+.rd .tag { display: inline-block; }
+[data-design="cream-pop"][data-mode="light"] .rd .tag { color: var(--tb); }
+/* Menu counters sit at the right edge as inline-blocks: the label is one
+   atomic inline box, and justify spreads the two apart (no float/flex,
+   which would turn the tag into a block). */
+.rd .amenu button:has(.ml) { text-align-last: justify; }
+.rd .amenu .ml { display: inline-block; text-align-last: auto; }
+/* L26: Toxic has no outlines in its chrome; the search field matches. */
+[data-design="toxic"] .rd .search { outline-color: transparent; background: color-mix(in srgb, var(--fg) 7%, transparent); }

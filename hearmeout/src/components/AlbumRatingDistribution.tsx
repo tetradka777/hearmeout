@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 
 // Ratings are stored in 0.1 steps (see StarPicker), so the real possible
@@ -35,7 +36,8 @@ export function AlbumRatingDistribution({ albumId, refreshToken, you }: { albumI
   if (counts === null) return null;
 
   const total = counts.reduce((a, b) => a + b, 0);
-  if (!total) return <div className="muted">{t('album.noRatings')}</div>;
+  // The Community tile already says there are no ratings; no second line.
+  if (!total) return null;
 
   const max = Math.max(...counts);
 
@@ -46,7 +48,7 @@ export function AlbumRatingDistribution({ albumId, refreshToken, you }: { albumI
           const value = (i + 1) / 10;
           const pct = Math.max(3, Math.round((n / max) * 100));
           const mine = you != null && Math.round(you * 10) === i + 1;
-          return <i key={i} className={mine ? 'you' : undefined} style={{ height: `${pct}%` }} title={`${value.toFixed(1)}: ${n}`} />;
+          return <i key={i} className={mine ? 'you' : undefined} style={{ height: `${pct}%` }} title={`${fmt1(value)}: ${n}`} />;
         })}
       </div>
       <div className="h50ax" aria-hidden="true"><span>0.1</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>

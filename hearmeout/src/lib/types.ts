@@ -105,6 +105,9 @@ export type Me = PublicProfile & {
   regionAuto: boolean;
   detectedRegion: string | null;
   hasPassword: boolean;
+  // Random code for the personal invite link (migration 024); null until
+  // the migration runs, and links then fall back to the account id.
+  inviteCode: string | null;
   bannerUrl: string | null;
   isOpenProfile: boolean;
   email: string | null;

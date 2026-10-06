@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { Device, StatsCalendarDay, StatsData, StatsPeriodType, StatsSeasonKey } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
 import { BookmarkIcon, HeartIcon } from '../ui/Icons';
 import { usePlayer } from '@/lib/PlayerContext';
 import type { AlbumDetail } from '@/lib/spotifyCatalog';
-import { toLocale, type Language } from '@/lib/i18n';
+import { toLocale, quoted, type Language } from '@/lib/i18n';
 import type { WeekStart } from '@/lib/palettes';
 import { formatHour, formatRelative } from '@/lib/format';
 import { recapLine } from '@/lib/recapLine';
@@ -320,7 +321,7 @@ export function StatsScreen(_props: { device: Device }) {
             </div>
 
             <div className="s3 stats3" style={{ margin: 0 }}>
-              <div className="tile t-soft2"><span className="num">{data.avgRating ? Number(data.avgRating).toFixed(1) : '–'}</span><small>{t('stats.avgRatingIn', { word })}</small></div>
+              <div className="tile t-soft2"><span className="num">{data.avgRating ? fmt1(Number(data.avgRating)) : '–'}</span><small>{t('stats.avgRatingIn', { word })}</small></div>
               <div className="tile"><span className="num" style={{ color: 'var(--acct)' }}>{peak}</span><small>{t('stats.peakHour')}</small></div>
               <div className="tile t-pop"><span className="num">{data.topArtists.length}</span><small>{t('stats.artistsTracked')}</small></div>
             </div>
@@ -345,7 +346,7 @@ export function StatsScreen(_props: { device: Device }) {
                   <b style={{ width: 36, textAlign: 'right' }}>{a.plays}</b>
                 </div>
               )) : <p className="muted" style={{ fontWeight: 600 }}>{t('stats.notEnough')}</p>}
-              <p className="muted" style={{ fontSize: 13, fontWeight: 600, marginTop: 8 }}>{t('stats.playsInThis', { word })}</p>
+              {data.topArtists.length > 0 && <p className="muted" style={{ fontSize: 13, fontWeight: 600, marginTop: 8 }}>{t('stats.playsInThis', { word })}</p>}
             </div>
 
             <div className="tile">
@@ -401,8 +402,15 @@ export function StatsScreen(_props: { device: Device }) {
             <button className="tile t-ac" style={{ textAlign: 'left', width: '100%', display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }} onClick={() => openRecap('me', 'week')}>
               <div>
                 <span className="pill">{t('stats.recapLinkEyebrow')}</span>
-                <h2 style={{ margin: '14px 0 4px' }}>{t('stats.recapWeekTitle', { n: isoWeekNumber(completedWeekRange(0, me.weekStart).start) })}</h2>
-                {weekRecapLine && <p style={{ fontWeight: 700 }}>“{weekRecapLine.lead}{weekRecapLine.em ? ` ${weekRecapLine.em}` : ''}”</p>}
+                {weekRecap && weekRecap.trackCount > 0 ? (
+                  <>
+                    <h2 style={{ margin: '14px 0 4px' }}>{t('stats.recapWeekTitle', { n: isoWeekNumber(completedWeekRange(0, me.weekStart).start) })}</h2>
+                    {weekRecapLine && <p style={{ fontWeight: 700 }}>{quoted(language, `${weekRecapLine.lead}${weekRecapLine.em ? ` ${weekRecapLine.em}` : ''}`)}</p>}
+                  </>
+                ) : (
+                  // No plays last week: say when it will appear, not "ready".
+                  <h2 style={{ margin: '14px 0 4px' }}>{t('recap.emptyTeaser')}</h2>
+                )}
               </div>
               <span style={{ fontWeight: 800 }}>{t('stats.recapLinkCta')} →</span>
             </button>

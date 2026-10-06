@@ -6,7 +6,10 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { pickLanguage, translate, type TranslationKey } from '@/lib/i18n';
 
-export const metadata: Metadata = { title: 'What we store — HearMeOut' };
+export async function generateMetadata(): Promise<Metadata> {
+  const lang = pickLanguage((await headers()).get('accept-language'));
+  return { title: `${translate(lang, 'privacy.title')} — HearMeOut` };
+}
 
 // vData(): four titled tiles (account, ratings, play history, people), then
 // the longer notes on visibility, sources and deletion.

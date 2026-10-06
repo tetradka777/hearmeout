@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
+import { pickLanguage } from "@/lib/i18n";
 import "@/styles/fonts.css";
 import "@/styles/tokens.css";
 import "@/styles/components.css";
@@ -61,10 +63,13 @@ if (location.hostname === 'localhost') {
 }
 `;
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+// <html lang> follows the visitor's language (Accept-Language) on the
+// server; inside the app AppContext switches it to the account language.
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const lang = pickLanguage((await headers()).get("accept-language"));
   return (
     <html
-      lang="en"
+      lang={lang}
       data-design="cream-pop"
       data-mode="light"
       data-palette="lemons"

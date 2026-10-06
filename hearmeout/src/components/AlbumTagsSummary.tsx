@@ -41,12 +41,16 @@ export function AlbumTagsSummary({ albumId, refreshToken }: { albumId: string; r
 
   if (!counts || !counts.length) return null;
 
-  // The "Vibes from reviews" caption is rendered by RateScreen (vRate).
+  // Caption and chips together, so an album without tagged reviews shows
+  // neither (no empty heading).
   return (
+    <>
+    <p className="muted" style={{ fontWeight: 800, fontSize: 13, margin: '16px 0 8px' }}>{t('album.vibesFromReviews')}</p>
     <div className="chips" style={{ margin: 0 }}>
       {counts.map(({ id, count }) => (
         <span key={id} className="chip" style={{ cursor: 'default' }}>{t(REVIEW_TAG_LABEL_KEY[id])} · {count}</span>
       ))}
     </div>
+    </>
   );
 }

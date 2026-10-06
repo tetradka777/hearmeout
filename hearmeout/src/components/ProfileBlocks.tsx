@@ -53,7 +53,7 @@ export function LovedArtistsColumn() {
     <>
       {items.map((li) => (
         <div className="row" key={li.id}>
-          <button className="rowlink" onClick={() => li.itemId && openSpotifyArtist(li.itemId)} style={{ cursor: li.itemId ? 'pointer' : 'default' }}>
+          <button className="rowlink" onClick={() => li.itemId && openSpotifyArtist(li.itemId, li.title)} style={{ cursor: li.itemId ? 'pointer' : 'default' }}>
             <span className="dot" style={li.cover ? { backgroundImage: `url('${li.cover}')`, backgroundSize: 'cover', color: 'transparent' } : undefined}>{li.title[0]}</span>
             <span className="g"><b>{li.title}</b></span>
           </button>

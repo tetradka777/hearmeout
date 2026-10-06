@@ -69,14 +69,14 @@ export function AvatarMenu({ className = 'avt' }: { className?: string }) {
           {incoming > 0 && (
             // Opens Profile on its friends tab (ProfileScreen listens for this event).
             <button role="menuitem" onClick={() => { showScreen('profile'); window.dispatchEvent(new CustomEvent(PROFILE_TAB_EVENT, { detail: 'friends' })); setOpen(false); }}>
-              {t('settings.menuRequests')}<span className="tag" style={{ float: 'right', background: '#C8321F', color: '#fff' }}>{incoming}</span>
+              <span className="ml">{t('settings.menuRequests')}</span> <span className="tag" style={{ background: '#C8321F', color: '#fff' }}>{incoming}</span>
             </button>
           )}
           <button role="menuitem" onClick={() => { setShowNotifications(true); setOpen(false); }}>
-            {t('notify.title')}{unread > 0 && <span className="tag" style={{ float: 'right', background: '#C8321F', color: '#fff' }}>{unread}</span>}
+            <span className="ml">{t('notify.title')}</span>{unread > 0 && <> <span className="tag" style={{ background: '#C8321F', color: '#fff' }}>{unread}</span></>}
           </button>
           <button role="menuitem" onClick={() => { showScreen('later'); setOpen(false); }}>
-            {t('nav.later')}{laterItems.length > 0 && <span className="tag" style={{ float: 'right' }}>{laterItems.length}</span>}
+            <span className="ml">{t('nav.later')}</span> <span className="tag">{laterItems.length}</span>
           </button>
           <button role="menuitem" onClick={() => { showScreen('settings'); setOpen(false); }}>{t('settings.menuSettings')}</button>
           <hr />
