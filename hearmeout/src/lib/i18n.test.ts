@@ -15,16 +15,32 @@ const keys = (() => {
 
 test('dictionary keys were found', () => assert.ok(keys.length > 500, `only ${keys.length} keys`));
 
-test('every key is translated in every language, with the same placeholders', () => {
-  const vars = (s: string) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join(',');
+// A translation may use fewer variables than English (a language can drop
+// a count it doesn't need), never one the code doesn't pass. Inline plural
+// forms {n|one|few|many} count as the variable n: three forms in Russian,
+// two (one|other) elsewhere.
+test('every key is translated in every language, with known placeholders', () => {
+  const vars = (s: string) => new Set([...s.matchAll(/\{(\w+)(?:\|[^}]*)?\}/g)].map((m) => m[1]));
   for (const key of keys) {
-    const ref = vars(translate('ru', key));
+    const ref = vars(translate('en', key));
     for (const lang of LANGUAGES as readonly Language[]) {
       const text = translate(lang, key);
       assert.ok(text && text !== key, `${lang}: ${key} missing`);
-      assert.equal(vars(text), ref, `${lang}: ${key} placeholders differ`);
+      for (const v of vars(text)) assert.ok(ref.has(v), `${lang}: ${key} uses {${v}}, which English doesn't`);
+      for (const m of text.matchAll(/\{\w+\|([^}]*)\}/g)) {
+        assert.equal(m[1].split('|').length, lang === 'ru' ? 3 : 2, `${lang}: ${key} plural forms`);
+      }
+      assert.equal(text.replace(/\{\w+(?:\|[^}]*)?\}/g, '').match(/[{}]/), null, `${lang}: ${key} stray brace`);
     }
   }
+});
+
+test('inline plurals', () => {
+  assert.equal(translate('ru', 'time.yearsAgo', { n: 1 }), '1 год назад');
+  assert.equal(translate('ru', 'time.yearsAgo', { n: 3 }), '3 года назад');
+  assert.equal(translate('ru', 'time.yearsAgo', { n: 11 }), '11 лет назад');
+  assert.equal(translate('fr', 'time.yearsAgo', { n: 1 }), 'il y a 1 an');
+  assert.equal(translate('fr', 'time.yearsAgo', { n: 2 }), 'il y a 2 ans');
 });
 
 test('pickLanguage', () => {
