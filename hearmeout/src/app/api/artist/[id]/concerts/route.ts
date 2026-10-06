@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { upstreamErrorResponse } from '@/lib/upstreamError';
 import { concertsConfigured, cachedArtistConcerts, regionFirst } from '@/lib/concerts';
 
 // Concerts tab on the artist page: every upcoming show worldwide, the
@@ -14,6 +15,6 @@ export async function GET(request: NextRequest) {
     const concerts = regionFirst(await cachedArtistConcerts(name), country || null);
     return NextResponse.json({ configured: true, concerts });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return upstreamErrorResponse(err, '/api/artist/[id]/concerts');
   }
 }

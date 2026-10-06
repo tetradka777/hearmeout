@@ -19,7 +19,7 @@ export function ObscureAlbums({ genre }: { genre: string }) {
   return (
     <div className="hrow">
       {artists.map((a) => (
-        <button className="tile" key={a.id} onClick={() => (a.artistId ? openSpotifyArtist(a.artistId) : openAlbum(a.id))} style={{ textAlign: 'left', minWidth: 190 }}>
+        <button className="tile" key={a.id} onClick={() => (a.artistId ? openSpotifyArtist(a.artistId, a.artist) : openAlbum(a.id))} style={{ textAlign: 'left', minWidth: 190 }}>
           <span className="ph" style={{ width: 64, height: 64, fontSize: 26, ...(a.cover ? { backgroundImage: `url('${a.cover}')`, backgroundSize: 'cover', color: 'transparent' } : {}) }}>{a.artist[0]}</span>
           <b style={{ display: 'block', marginTop: 10 }}>{a.artist}</b>
           <small className="muted" style={{ fontWeight: 700 }}>{a.title}</small>

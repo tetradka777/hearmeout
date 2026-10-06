@@ -11,6 +11,7 @@ import { regionDisplayName, toLocale } from '@/lib/i18n';
 import { CoverArt } from '../ui/CoverArt';
 import { BookmarkIcon, HeartIcon, PlayIcon } from '../ui/Icons';
 import { Stars } from '../redesign/Stars';
+import { MascotIcon } from '../redesign/icons';
 import { userAvatarStyle } from '@/lib/format';
 
 type ArtistTab = 'popular' | 'albums' | 'reviews' | 'concerts';
@@ -46,7 +47,7 @@ function formatDuration(ms: number): string {
 // love and Follow, genre / community / top-fan chips, "You and …" and
 // Community tiles, then the Popular / Albums / Reviews / Concerts tabs.
 export function ArtistScreen({ device: _device }: { device: Device }) {
-  const { t, language, state, me, albumRatings, myRatings, goBack, openAlbum, showToast, lovedItems, toggleLoved, viewFriend, laterItems, toggleLaterTrack } = useApp();
+  const { t, language, state, me, albumRatings, myRatings, goBack, openAlbum, openSpotifyArtist, showToast, lovedItems, toggleLoved, viewFriend, laterItems, toggleLaterTrack } = useApp();
   const { playQueue, currentTrack, playing } = usePlayer();
   const art = state.currentArtist;
   const [resolvingGroup, setResolvingGroup] = useState<string | null>(null);
@@ -186,7 +187,13 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
     if (art.loading) {
       body = <p className="muted">{t('artist.loadingAlbums')}</p>;
     } else if (art.error) {
-      body = <div className="tile empty"><p>{art.error}</p></div>;
+      body = (
+        <div className="tile t-soft2 empty">
+          <MascotIcon />
+          <h3>{art.error}</h3>
+          <button className="btn" onClick={() => openSpotifyArtist(art.id, art.name, true)}>{t('states.errorCta')}</button>
+        </div>
+      );
     } else if (tab === 'popular') {
       body = (
         <div className="tile">

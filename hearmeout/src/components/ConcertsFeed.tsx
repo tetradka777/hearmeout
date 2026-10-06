@@ -30,7 +30,7 @@ export function ConcertsFeed() {
     try {
       const res = await fetch(`/api/spotify/resolve-artist?name=${encodeURIComponent(name)}`);
       if (!res.ok) { showToast(t('toast.artistOpenFailed')); return; }
-      openSpotifyArtist((await res.json()).id);
+      openSpotifyArtist((await res.json()).id, name);
     } catch {
       showToast(t('toast.artistOpenFailed'));
     }

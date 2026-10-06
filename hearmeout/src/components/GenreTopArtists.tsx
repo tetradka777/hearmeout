@@ -18,7 +18,7 @@ function GenreRow({ genre, region }: { genre: string; region: string }) {
           : !artists ? <span className="muted">{t('genreTop.loading')}</span>
           : !artists.length ? <span className="muted">{t('genreTop.empty')}</span>
           : artists.map((ar) => (
-            <button className="chip" key={ar.id} onClick={() => openSpotifyArtist(ar.id)}>
+            <button className="chip" key={ar.id} onClick={() => openSpotifyArtist(ar.id, ar.name)}>
               <span className="dot" style={ar.photo ? { backgroundImage: `url('${ar.photo}')`, backgroundSize: 'cover', color: 'transparent' } : undefined}>{ar.name[0]}</span>
               {ar.name}
             </button>

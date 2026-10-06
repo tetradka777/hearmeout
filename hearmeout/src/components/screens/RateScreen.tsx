@@ -192,7 +192,7 @@ export function RateScreen({ device: _device }: { device: Device }) {
         </div>
         <div className="stack">
           <p className="eyebrow muted">
-            {a.artistId ? <span className="link" style={{ cursor: 'pointer' }} onClick={() => openSpotifyArtist(a.artistId!)}>{a.artist}</span> : a.artist}
+            {a.artistId ? <span className="link" style={{ cursor: 'pointer' }} onClick={() => openSpotifyArtist(a.artistId!, a.artist)}>{a.artist}</span> : a.artist}
             {a.genre && <> · <span className="tag">{a.genre}</span></>}
             {a.year ? ` · ${a.year}` : ''}
             {a.tracklist.length ? ` · ${a.tracklist.length} ${t('album.tracksCount')}` : ''}

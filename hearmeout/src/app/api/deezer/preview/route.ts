@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { upstreamErrorResponse } from '@/lib/upstreamError';
 
 // Server-side so it never depends on the public corsproxy.io service the
 // client used to call directly — that proxy is flaky enough (rate limits,
@@ -100,6 +101,6 @@ export async function GET(request: NextRequest) {
     // full query string) would serve one album's preview for every request.
     return NextResponse.json(result);
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return upstreamErrorResponse(err, '/api/deezer/preview');
   }
 }

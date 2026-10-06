@@ -247,7 +247,7 @@ export function RecapScreen(_props: { device: Device }) {
             <div className="tile">
               <h2>{t('recap.topArtists')}</h2>
               {r.topArtists.length ? r.topArtists.map((a, i) => (
-                <button className="row" key={`${a.id ?? a.name}-${i}`} onClick={() => a.id && openSpotifyArtist(a.id)} style={{ cursor: a.id ? 'pointer' : 'default' }}>
+                <button className="row" key={`${a.id ?? a.name}-${i}`} onClick={() => a.id && openSpotifyArtist(a.id, a.name)} style={{ cursor: a.id ? 'pointer' : 'default' }}>
                   <span className="num" style={{ fontSize: 24, width: 20 }}>{i + 1}</span>
                   <b className="g">{a.name}</b>
                   <span className="muted" style={{ fontWeight: 800 }}>{t('stats.playsCount', { count: a.plays, word: pluralForKey(language, a.plays, 'stats.playOne', 'stats.playFew', 'stats.playMany') })}</span>

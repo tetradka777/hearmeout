@@ -16,20 +16,31 @@ import { PROFILE_TAB_EVENT } from './redesign/AvatarMenu';
 export function FriendsRow() {
   const { t, me, showScreen, viewFriend } = useApp();
   const [scores, setScores] = useState<Record<string, number | null>>({});
+  // Demo profiles that don't exist in this database (404) are left out
+  // rather than opening "person not found".
+  const [missing, setMissing] = useState<Set<string>>(new Set());
   const demo = !!me && me.friends.length === 0;
-  const shown = demo ? DEMO_PROFILES : (me?.friends ?? []);
+  const candidates = demo ? DEMO_PROFILES : (me?.friends ?? []);
+  // Demo tiles wait for that check, so a missing one never flashes in.
+  const checked = Object.keys(scores).length > 0;
+  const shown = demo && !checked ? [] : candidates.filter((f) => !missing.has(f.id));
 
   useEffect(() => {
-    if (!me || !shown.length) return;
+    if (!me || !candidates.length) return;
     let cancelled = false;
     Promise.all(
-      shown.map(async (f) => {
+      candidates.map(async (f) => {
         const res = await fetch(`/api/users/${f.id}`);
+        if (res.status === 404) return [f.id, 'missing'] as const;
         if (!res.ok) return [f.id, null] as const;
         const profile: PublicProfile = await res.json();
         return [f.id, computeMatch(me.genres, profile.genres)] as const;
       })
-    ).then((pairs) => { if (!cancelled) setScores(Object.fromEntries(pairs)); });
+    ).then((pairs) => {
+      if (cancelled) return;
+      setMissing(new Set(pairs.filter(([, v]) => v === 'missing').map(([id]) => id)));
+      setScores(Object.fromEntries(pairs.map(([id, v]) => [id, v === 'missing' ? null : v])));
+    });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [me, demo]);
@@ -47,7 +58,7 @@ export function FriendsRow() {
         <div className="tile t-ac" style={{ marginBottom: 14, display: 'flex', gap: 14, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
           <div>
             <h3>{t('friends.inviteBannerTitle')}</h3>
-            <p style={{ fontWeight: 700, marginTop: 4 }}>{t('friends.inviteBannerSub')}</p>
+            <p style={{ fontWeight: 700, marginTop: 4 }}>{shown.length ? t('friends.inviteBannerSub') : t('match.addFriendHint')}</p>
           </div>
           <button className="btn" onClick={openFriendsTab}>{t('friends.inviteBannerBtn')}</button>
         </div>

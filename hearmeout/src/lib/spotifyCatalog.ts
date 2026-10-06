@@ -1,11 +1,28 @@
 import { getSpotifyAppToken } from './spotifyAppAuth';
 import { bucketForGenres } from './genreBuckets';
+import { RateLimitError, retryAfterSeconds } from './upstreamError';
+
+// Every Spotify Web API call goes through here: a 429 with a short
+// Retry-After (2 s or less) is waited out and retried once; a longer one
+// throws RateLimitError so routes can answer 503 + Retry-After and the
+// shared cache can fall back to stale data.
+async function spotifyFetch(input: string | URL, init?: RequestInit): Promise<Response> {
+  let res = await fetch(input, init);
+  if (res.status === 429) {
+    const wait = retryAfterSeconds(res, 30);
+    if (wait > 2) throw new RateLimitError(wait);
+    await new Promise((r) => setTimeout(r, wait * 1000));
+    res = await fetch(input, init);
+    if (res.status === 429) throw new RateLimitError(retryAfterSeconds(res, 30));
+  }
+  return res;
+}
 
 async function spotifyGet(path: string, params: Record<string, string>) {
   const token = await getSpotifyAppToken();
   const url = new URL(`https://api.spotify.com/v1${path}`);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const res = await spotifyFetch(url, { headers: { Authorization: `Bearer ${token}` } });
   if (!res.ok) throw new Error(`Spotify request failed (${path}): ${res.status}`);
   return res.json();
 }
@@ -55,7 +72,7 @@ export async function fetchAlbumCovers(spotifyIds: { ourId: string; spotifyId: s
   const results = await Promise.all(
     spotifyIds.map(async ({ ourId, spotifyId }) => {
       try {
-        const res = await fetch(`https://api.spotify.com/v1/albums/${spotifyId}`, {
+        const res = await spotifyFetch(`https://api.spotify.com/v1/albums/${spotifyId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) return null;
@@ -141,7 +158,7 @@ export type AlbumDetail = {
 // tracks embedded directly in the album response, no second request needed.
 export async function fetchSpotifyAlbumDetail(id: string): Promise<AlbumDetail | null> {
   const token = await getSpotifyAppToken();
-  const res = await fetch(`https://api.spotify.com/v1/albums/${id}`, {
+  const res = await spotifyFetch(`https://api.spotify.com/v1/albums/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   // A 404 means the album genuinely doesn't exist on Spotify — safe to cache
@@ -186,7 +203,7 @@ export type ArtistDetail = {
 // are the only real popularity signals it exposes for an artist.
 export async function fetchSpotifyArtistDetail(id: string): Promise<ArtistDetail | null> {
   const token = await getSpotifyAppToken();
-  const res = await fetch(`https://api.spotify.com/v1/artists/${id}`, {
+  const res = await spotifyFetch(`https://api.spotify.com/v1/artists/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (res.status === 404) return null;
@@ -213,7 +230,7 @@ export async function fetchArtistAlbumsSplit(id: string): Promise<{ released: Sp
   // (up to Spotify's documented max of 50) gets a bare 400 "Invalid limit"
   // with no other indication why, confirmed by hand against this app's
   // actual credentials.
-  const res = await fetch(`https://api.spotify.com/v1/artists/${id}/albums?include_groups=album,single&limit=10`, {
+  const res = await spotifyFetch(`https://api.spotify.com/v1/artists/${id}/albums?include_groups=album,single&limit=10`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (res.status === 404) return { released: [], upcoming: [] };
@@ -248,7 +265,7 @@ export type ArtistTopTrack = { id: string; title: string; durationMs: number; al
 // top tracks; the account's region when it's a valid code, else US.
 export async function fetchArtistTopTracks(id: string, market?: string | null): Promise<ArtistTopTrack[]> {
   const token = await getSpotifyAppToken();
-  const res = await fetch(`https://api.spotify.com/v1/artists/${id}/top-tracks?market=${isValidMarket(market) ? market : 'US'}`, {
+  const res = await spotifyFetch(`https://api.spotify.com/v1/artists/${id}/top-tracks?market=${isValidMarket(market) ? market : 'US'}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (res.status === 404) return [];

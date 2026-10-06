@@ -72,7 +72,7 @@ function ArtistChip({ name, avg }: { name: string; avg: number | null }) {
           const res = await fetch(`/api/spotify/resolve-artist?name=${encodeURIComponent(name)}`);
           if (!res.ok) { showToast(t('toast.artistOpenFailed')); return; }
           const { id } = await res.json();
-          openSpotifyArtist(id);
+          openSpotifyArtist(id, name);
         } catch {
           showToast(t('toast.artistOpenFailed'));
         } finally {

@@ -363,7 +363,7 @@ export function FriendScreen({ device: _device }: { device: Device }) {
           <h2>{t('friend.topArtistsCompare')}</h2>
           <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 10px' }}>{t('friend.topArtistsSubtitle', { name: firstName })}</p>
           {artistRows.length ? artistRows.map((r) => (
-            <button className="cmp" key={r.name} onClick={() => r.id && openSpotifyArtist(r.id)} style={{ textAlign: 'left', width: '100%' }}>
+            <button className="cmp" key={r.name} onClick={() => r.id && openSpotifyArtist(r.id, r.name)} style={{ textAlign: 'left', width: '100%' }}>
               <small style={{ fontWeight: 800 }}>{r.name}</small>
               <div className="cmpb"><i className="a" style={{ width: `${Math.round((r.me / maxHours) * 100)}%` }} /><b>{r.me}{t('unit.h')}</b></div>
               <div className="cmpb"><i className="b" style={{ width: `${Math.round((r.them / maxHours) * 100)}%` }} /><b>{r.them}{t('unit.h')}</b></div>

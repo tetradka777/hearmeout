@@ -1062,6 +1062,8 @@ const ru = {
   'concerts.subRegion': 'Концерты по всему миру — сначала в регионе {region}.',
   'concerts.subWorld': 'Концерты по всему миру. Укажите регион в настройках, чтобы ближайшие шли первыми.',
   'auth.serverConfig': 'Сервер не настроен: не задан SESSION_SECRET. Попробуйте позже.',
+  'artist.rateLimited': 'Spotify сейчас перегружен. Попробуйте через минуту.',
+  'tab.match': 'Сходство',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2120,6 +2122,8 @@ const en: Dict = {
   'concerts.subRegion': 'Shows worldwide — {region} first.',
   'concerts.subWorld': 'Shows worldwide. Set your region in Settings to see the nearest first.',
   'auth.serverConfig': 'The server is not configured (SESSION_SECRET is missing). Please try later.',
+  'artist.rateLimited': 'Spotify is busy right now. Try again in a minute.',
+  'tab.match': 'Match',
 };
 
 const fr: Dict = {
@@ -3175,6 +3179,8 @@ const fr: Dict = {
   'concerts.subRegion': 'Concerts dans le monde entier — {region} d’abord.',
   'concerts.subWorld': 'Concerts dans le monde entier. Indique ta région dans les réglages pour voir les plus proches en premier.',
   'auth.serverConfig': 'Le serveur n’est pas configuré (SESSION_SECRET manquant). Réessaie plus tard.',
+  'artist.rateLimited': 'Spotify est surchargé. Réessaie dans une minute.',
+  'tab.match': 'Match',
 };
 
 const es: Dict = {
@@ -4230,6 +4236,8 @@ const es: Dict = {
   'concerts.subRegion': 'Conciertos en todo el mundo, primero en {region}.',
   'concerts.subWorld': 'Conciertos en todo el mundo. Indica tu región en Ajustes para ver primero los más cercanos.',
   'auth.serverConfig': 'El servidor no está configurado (falta SESSION_SECRET). Inténtalo más tarde.',
+  'artist.rateLimited': 'Spotify está saturado. Inténtalo en un minuto.',
+  'tab.match': 'Match',
 };
 
 const de: Dict = {
@@ -5285,6 +5293,8 @@ const de: Dict = {
   'concerts.subRegion': 'Konzerte weltweit — {region} zuerst.',
   'concerts.subWorld': 'Konzerte weltweit. Leg deine Region in den Einstellungen fest, um die nächsten zuerst zu sehen.',
   'auth.serverConfig': 'Der Server ist nicht konfiguriert (SESSION_SECRET fehlt). Versuch es später.',
+  'artist.rateLimited': 'Spotify ist gerade ausgelastet. Versuch es in einer Minute.',
+  'tab.match': 'Match',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };

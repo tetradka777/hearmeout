@@ -238,7 +238,7 @@ type AppContextValue = {
   onSpotifyConnected: () => Promise<void>;
   importStreamingHistory: (files: File[]) => Promise<{ imported: number; skipped: number; errors: string[] } | null>;
   openArtist: (mbid: string, name: string, fromHistory?: boolean) => Promise<void>;
-  openSpotifyArtist: (id: string, fromHistory?: boolean) => Promise<void>;
+  openSpotifyArtist: (id: string, name?: string, fromHistory?: boolean) => Promise<void>;
   ensureLiveAlbum: (id: string, spotifyId?: string) => void;
   showToast: (msg: string) => void;
 };
@@ -960,17 +960,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // a browser back/forward into an artist page — the fetch still needs to
   // happen (artist detail isn't cached in history.state), but it mustn't
   // push *another* entry on top of the one the user just navigated to.
-  const openSpotifyArtist = useCallback(async (id: string, fromHistory = false) => {
+  // The caller passes the artist's name when it has one, so the page header
+  // (and the URL, for reloads) shows it even if Spotify then fails.
+  const openSpotifyArtist = useCallback(async (id: string, knownName?: string, fromHistory = false) => {
     setState((s) => ({
       ...s,
-      currentArtist: { id, name: s.currentArtist?.id === id ? s.currentArtist.name : '', source: 'spotify', albums: null, loading: true, error: null },
+      currentArtist: { id, name: knownName || (s.currentArtist?.id === id ? s.currentArtist.name : ''), source: 'spotify', albums: null, loading: true, error: null },
       activeScreen: 'artist',
       navAction: 'push',
     }));
-    if (!fromHistory) pushScreenHistory({ activeScreen: 'artist', artistId: id, artistName: '', artistSource: 'spotify' });
+    if (!fromHistory) pushScreenHistory({ activeScreen: 'artist', artistId: id, artistName: knownName || '', artistSource: 'spotify' });
     try {
       const res = await fetch(`/api/spotify/artist/${id}`);
-      if (!res.ok) throw new Error(String(res.status));
+      if (!res.ok) throw new Error(res.status === 503 ? 'rate_limited' : String(res.status));
       const data = await res.json();
       setState((s) => ({
         ...s,
@@ -989,8 +991,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           : s.currentArtist,
       }));
       replaceScreenHistory({ activeScreen: 'artist', artistId: id, artistName: data.name, artistSource: 'spotify' });
-    } catch {
-      const message = t('artist.loadError');
+    } catch (err) {
+      const message = err instanceof Error && err.message === 'rate_limited' ? t('artist.rateLimited') : t('artist.loadError');
       setState((s) => ({
         ...s,
         currentArtist: s.currentArtist && s.currentArtist.id === id
@@ -1045,7 +1047,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (!snap?.activeScreen) { setState((s) => ({ ...s, activeScreen: 'catalog', navAction: 'pop' })); return; }
       if (snap.activeScreen === 'artist' && snap.artistId) {
         if (snap.artistSource === 'musicbrainz') openArtist(snap.artistId, snap.artistName || '', true);
-        else openSpotifyArtist(snap.artistId, true);
+        else openSpotifyArtist(snap.artistId, snap.artistName, true);
         return;
       }
       setState((s) => ({
