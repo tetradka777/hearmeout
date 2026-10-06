@@ -165,7 +165,7 @@ export function RateScreen({ device: _device }: { device: Device }) {
               <span className="num" style={{ fontSize: 20, width: 24, opacity: 0.8 }}>{i + 1}</span>
               <span className="g"><b>{tr}</b></span>
               {fmtDur(a.trackDurations?.[i]) && <small className="muted" style={{ fontWeight: 700 }}>{fmtDur(a.trackDurations?.[i])}</small>}
-              <span className="ticn">{isRowPlaying ? <span className="eq"><b /><b /><b /></span> : <PlayIcon size={14} />}</span>
+              <span className="ib ticn">{isRowPlaying ? <span className="eq"><b /><b /><b /></span> : <PlayIcon size={14} />}</span>
             </button>
             <button
               className={`ib love later${trackSaved ? ' on' : ''}`}

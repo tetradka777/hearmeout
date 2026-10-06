@@ -550,3 +550,17 @@ html { background: var(--bg); }
 @media (prefers-reduced-motion: reduce) {
   .rd *, .rd *::before, .rd *::after { animation: none !important; transition: none !important; }
 }
+
+/* Audit 2 — L9: the tracklist play control looks like its bookmark (.ib). */
+.rd .trk .ib.ticn { width: 40px; height: 40px; font-size: 14px; background: color-mix(in srgb, currentColor 10%, transparent); }
+/* L10: tags stay inline-block everywhere and take the outline colour in
+   Cream Pop Light (#294074, not the text colour); inline colours win. */
+.rd .tag { display: inline-block; }
+[data-design="cream-pop"][data-mode="light"] .rd .tag { color: var(--tb); }
+/* Menu counters sit at the right edge as inline-blocks: the label is one
+   atomic inline box, and justify spreads the two apart (no float/flex,
+   which would turn the tag into a block). */
+.rd .amenu button:has(.ml) { text-align-last: justify; }
+.rd .amenu .ml { display: inline-block; text-align-last: auto; }
+/* L26: Toxic has no outlines in its chrome; the search field matches. */
+[data-design="toxic"] .rd .search { outline-color: transparent; background: color-mix(in srgb, var(--fg) 7%, transparent); }
