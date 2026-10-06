@@ -84,6 +84,7 @@ html { background: var(--bg); }
 /* live activity ticker (spec 3.8) */
 .rd .ticker { min-width: 0; max-width: 100%; display: flex; align-items: stretch; overflow: hidden; border-radius: 999px; margin: 0 0 22px; font-weight: 700; font-size: 14px; background: var(--tk-bg); color: var(--tk-fg); outline: var(--bw) solid var(--tb); outline-offset: calc(var(--bw) * -1); }
 .rd .ticker .mq { overflow: hidden; flex: 1; white-space: nowrap; padding: 9px 0; -webkit-mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
+.rd .ticker.calm .mq { -webkit-mask-image: none; mask-image: none; padding: 9px 18px; text-overflow: ellipsis; }
 .rd .ticker .track { display: inline-flex; will-change: transform; }
 .rd .ticker .grp { display: inline-flex; gap: 28px; padding-right: 28px; }
 .rd .ticker b { color: var(--tk-b); }
@@ -256,6 +257,7 @@ html { background: var(--bg); }
 
 /* states: loading / empty / error (spec 3.13) */
 .rd .empty { text-align: center; padding: 26px 16px; display: grid; gap: 8px; justify-items: center; }
+.rd .empty > * { margin: 0; }
 .rd .empty svg { width: 96px; height: auto; }
 .rd .sk { background: linear-gradient(90deg, color-mix(in srgb, currentColor 8%, transparent), color-mix(in srgb, currentColor 17%, transparent), color-mix(in srgb, currentColor 8%, transparent)); background-size: 200% 100%; animation: rd-shim 1.4s linear infinite; border-radius: 12px; }
 @keyframes rd-shim { to { background-position: -200% 0; } }
@@ -538,3 +540,14 @@ html { background: var(--bg); }
    accent-filled avatar in every palette. */
 .rd .badge { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: #C8321F; color: #fff; font: 800 11px/18px var(--font-body); text-align: center; outline: 2px solid var(--paper); pointer-events: none; }
 .rd .chip .badge { position: static; display: inline-block; margin-left: 6px; outline: 0; }
+
+/* Audit 2, L16 — prototype rules that had no counterpart here. */
+.rd .love.later svg { fill: none; }
+.rd .love.later.on svg { fill: currentColor; }
+@media (min-width: 900px) {
+  .rd.hasmp .wrap { padding-bottom: 110px; }
+  [data-design="toxic"] .rd .toast { bottom: 100px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rd *, .rd *::before, .rd *::after { animation: none !important; transition: none !important; }
+}

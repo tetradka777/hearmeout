@@ -1064,6 +1064,9 @@ const ru = {
   'auth.serverConfig': 'Сервер не настроен: не задан SESSION_SECRET. Попробуйте позже.',
   'artist.rateLimited': 'Spotify сейчас перегружен. Попробуйте через минуту.',
   'tab.match': 'Сходство',
+  'ticker.calm': 'Пока тихо — здесь появятся прослушивания и оценки ваших друзей',
+  'catalog.topRatedEmpty': 'Здесь появятся альбомы, у которых от {n} оценок в сообществе.',
+  'catalog.showMore': 'Показать ещё {n}',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2124,6 +2127,9 @@ const en: Dict = {
   'auth.serverConfig': 'The server is not configured (SESSION_SECRET is missing). Please try later.',
   'artist.rateLimited': 'Spotify is busy right now. Try again in a minute.',
   'tab.match': 'Match',
+  'ticker.calm': 'All quiet for now — your friends’ plays and ratings will show up here',
+  'catalog.topRatedEmpty': 'Albums with {n}+ community ratings will show up here.',
+  'catalog.showMore': 'Show {n} more',
 };
 
 const fr: Dict = {
@@ -3181,6 +3187,9 @@ const fr: Dict = {
   'auth.serverConfig': 'Le serveur n’est pas configuré (SESSION_SECRET manquant). Réessaie plus tard.',
   'artist.rateLimited': 'Spotify est surchargé. Réessaie dans une minute.',
   'tab.match': 'Match',
+  'ticker.calm': 'Calme pour l’instant — les écoutes et notes de tes amis apparaîtront ici',
+  'catalog.topRatedEmpty': 'Les albums avec au moins {n} notes de la communauté apparaîtront ici.',
+  'catalog.showMore': 'Afficher {n} de plus',
 };
 
 const es: Dict = {
@@ -4238,6 +4247,9 @@ const es: Dict = {
   'auth.serverConfig': 'El servidor no está configurado (falta SESSION_SECRET). Inténtalo más tarde.',
   'artist.rateLimited': 'Spotify está saturado. Inténtalo en un minuto.',
   'tab.match': 'Match',
+  'ticker.calm': 'Todo tranquilo por ahora: aquí aparecerán las escuchas y valoraciones de tus amigos',
+  'catalog.topRatedEmpty': 'Aquí aparecerán los álbumes con {n} o más valoraciones de la comunidad.',
+  'catalog.showMore': 'Mostrar {n} más',
 };
 
 const de: Dict = {
@@ -5295,6 +5307,9 @@ const de: Dict = {
   'auth.serverConfig': 'Der Server ist nicht konfiguriert (SESSION_SECRET fehlt). Versuch es später.',
   'artist.rateLimited': 'Spotify ist gerade ausgelastet. Versuch es in einer Minute.',
   'tab.match': 'Match',
+  'ticker.calm': 'Noch ruhig — hier erscheinen, was deine Freunde hören und bewerten',
+  'catalog.topRatedEmpty': 'Hier erscheinen Alben mit mindestens {n} Community-Bewertungen.',
+  'catalog.showMore': '{n} weitere anzeigen',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };

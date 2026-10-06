@@ -59,7 +59,7 @@ export function ConcertsFeed() {
                 <div className="row" key={`${c.artist}-${c.id}`}>
                   <span className="num" style={{ fontSize: 22, width: 72 }}>{d.toLocaleDateString(loc, { day: 'numeric', month: 'short', timeZone: 'UTC' })}</span>
                   <span className="g">
-                    <button className="link" style={{ fontWeight: 800 }} onClick={() => openByName(c.artist)}>{c.artist}</button>
+                    <button className="link" style={{ fontWeight: 800, display: 'block', textAlign: 'left' }} onClick={() => openByName(c.artist)}>{c.artist}</button>
                     <small className="muted" style={{ fontWeight: 600 }}>{place}{c.time ? ` · ${c.time.slice(0, 5)}` : ''}</small>
                   </span>
                   {c.url && <a className="btn ghost" href={c.url} target="_blank" rel="noreferrer">{t('artist.tickets')}</a>}

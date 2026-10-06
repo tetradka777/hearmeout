@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useTickerEvents } from './useTickerEvents';
+import { useApp } from '@/lib/AppContext';
 
 // Activity ticker (spec 3.8, 14 #1, Appendix F "Ticker"). The critical
 // requirement: it must never restart, stop or jump when the app navigates
@@ -24,6 +25,7 @@ function motionOn(): boolean {
 }
 
 export function Ticker() {
+  const { t, me, feed } = useApp();
   const events = useTickerEvents();
   const tickerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -53,7 +55,16 @@ export function Ticker() {
     return () => { if (rafRef.current != null) cancelAnimationFrame(rafRef.current); TK.last = 0; };
   }, []);
 
-  if (!events.length) return null;
+  // Settings → Extras → Activity strip turns it off (prototype ticker()).
+  if (!me?.tickerEnabled || !feed) return null;
+  // Nothing real to show yet: one calm, still line instead of no strip.
+  if (!events.length) {
+    return (
+      <div className="ticker calm" aria-hidden="true">
+        <div className="mq"><span>{t('ticker.calm')}</span></div>
+      </div>
+    );
+  }
 
   const group = (key: string) => (
     <span className="grp" key={key}>

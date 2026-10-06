@@ -23,6 +23,7 @@ import { MascotIcon } from '../redesign/icons';
 
 const GENRES = ['Всё', 'Rock', 'Hip-Hop', 'Electronic', 'R&B', 'Pop', 'Latin'];
 type Filter = 'all' | 'albums' | 'artists' | 'people';
+const CATALOG_PAGE = 24;
 
 type PersonResult = { id: string; name: string; handle: string; avatarUrl: string | null; score?: number; sharedAlbums?: number };
 
@@ -128,6 +129,8 @@ function SiteReviewsBlock() {
 export function DiscoverScreen(_props: { device: Device }) {
   const { t, language, me, state, albums, albumRatings, spotifyCovers, openAlbum, setSearchQuery, setActiveGenre, setSortBy, showScreen } = useApp();
   const [filter, setFilter] = useState<Filter>('all');
+  // Full catalog in pages (it used to render every album at once, ~10,000px).
+  const [catalogLimit, setCatalogLimit] = useState(CATALOG_PAGE);
   const [people, setPeople] = useState<PersonResult[] | null>(null);
   const [mbFound, setMbFound] = useState<boolean | null>(null);
   const [discoverPeople, setDiscoverPeople] = useState<DiscoverMatchPerson[] | null>(null);
@@ -308,10 +311,13 @@ export function DiscoverScreen(_props: { device: Device }) {
 
           {filter !== 'albums' && <ConcertsFeed />}
 
-          {filter !== 'artists' && topRatedFiltered.length > 0 && (
+          {filter !== 'artists' && (
             <>
               <h2 style={{ marginTop: 34 }}>{t('catalog.topRated')}</h2>
-              <div className="bento b3">
+              {!topRatedFiltered.length && (
+                <div className="tile t-soft2 empty"><MascotIcon /><p className="muted" style={{ fontWeight: 600 }}>{t('catalog.topRatedEmpty', { n: MIN_RATINGS_FOR_TOP })}</p></div>
+              )}
+              {topRatedFiltered.length > 0 && <div className="bento b3">
                 {topRatedFiltered.map((a, i) => (
                   <button className={`tile${i === 0 ? ' t-ac' : ''}`} key={a.id} onClick={() => openAlbum(a.id)} style={{ textAlign: 'left', display: 'flex', gap: 14, alignItems: 'center' }}>
                     <span className="num" style={{ fontSize: 54 }}>{i + 1}</span>
@@ -323,7 +329,7 @@ export function DiscoverScreen(_props: { device: Device }) {
                     </div>
                   </button>
                 ))}
-              </div>
+              </div>}
             </>
           )}
 
@@ -352,7 +358,12 @@ export function DiscoverScreen(_props: { device: Device }) {
                   ))}
                 </div>
               </div>
-              <div className="cgrid" style={{ marginTop: 14 }}>{sorted.map((a) => <AlbumCard key={a.id} album={a} />)}</div>
+              <div className="cgrid" style={{ marginTop: 14 }}>{sorted.slice(0, catalogLimit).map((a) => <AlbumCard key={a.id} album={a} />)}</div>
+              {sorted.length > catalogLimit && (
+                <div className="acts" style={{ justifyContent: 'center' }}>
+                  <button className="btn ghost" onClick={() => setCatalogLimit((n) => n + CATALOG_PAGE)}>{t('catalog.showMore', { n: Math.min(CATALOG_PAGE, sorted.length - catalogLimit) })}</button>
+                </div>
+              )}
 
               <h2 style={{ marginTop: 34 }}>{t('discover.reviewsWorthReading')}</h2>
               <SiteReviewsBlock />

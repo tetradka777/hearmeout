@@ -460,6 +460,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => { if (state.authStatus === 'ready') refreshLovedItems(); }, [state.authStatus, refreshLovedItems]);
   useEffect(() => { if (state.authStatus === 'ready') refreshLater(); }, [state.authStatus, refreshLater]);
 
+  // <html lang> follows the interface language (screen readers, hyphenation,
+  // quotes); the server layout starts it from Accept-Language.
+  useEffect(() => { document.documentElement.lang = state.language; }, [state.language]);
+
   // Redesign appearance: applies as soon as `me` loads (the layout's inline
   // script already applied the cached values before hydration, so there's
   // no flash — this effect just keeps the root in sync with the account's

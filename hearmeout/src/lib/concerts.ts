@@ -40,11 +40,13 @@ export async function fetchArtistConcerts(artistName: string): Promise<Concert[]
   const match = list.find((a) => a.name.toLowerCase() === artistName.toLowerCase());
   if (!match) return [];
 
-  const params: Record<string, string> = { attractionId: match.id, sort: 'date,asc', size: '50' };
+  // Music events only (an attraction can also have sports or add-on events),
+  // and no parking / upgrade / shuttle listings sold as separate events.
+  const params: Record<string, string> = { attractionId: match.id, classificationName: 'music', sort: 'date,asc', size: '50' };
   const events = await tm('/events.json', params);
   const items = ((events._embedded as { events?: TmEvent[] } | undefined)?.events) || [];
   return items
-    .filter((e) => e.dates?.start?.localDate)
+    .filter((e) => e.dates?.start?.localDate && !/parking|shuttle|upgrade|voucher|add-on|hotel package/i.test(e.name))
     .map((e) => {
       const v = e._embedded?.venues?.[0];
       return {
@@ -72,5 +74,5 @@ export function regionFirst(list: Concert[], countryCode: string | null): Concer
 // artist tab and the Discover concerts list cost Ticketmaster one lookup
 // per artist per six hours, whoever asks.
 export function cachedArtistConcerts(artistName: string): Promise<Concert[]> {
-  return withSpotifyCache(`concerts:v2:${artistName.toLowerCase()}`, 6 * 3600, () => fetchArtistConcerts(artistName));
+  return withSpotifyCache(`concerts:v3:${artistName.toLowerCase()}`, 6 * 3600, () => fetchArtistConcerts(artistName));
 }
