@@ -2,6 +2,7 @@
 
 import { useEffect, type ComponentType } from 'react';
 import { useApp } from '@/lib/AppContext';
+import { useWheelRows } from '@/lib/hooks';
 import type { Device, ScreenName } from '@/lib/types';
 import { RedesignShell } from './redesign/Shell';
 import { HomeScreen } from './screens/HomeScreen';
@@ -44,6 +45,7 @@ const SCREENS: { name: ScreenName; Component: ComponentType<{ device: Device }> 
 
 export function AppShell() {
   const { state } = useApp();
+  useWheelRows();
 
   // Screen change scrolls to top; an in-screen filter/setting change (which
   // never changes activeScreen) keeps the scroll position (spec 5.3).
