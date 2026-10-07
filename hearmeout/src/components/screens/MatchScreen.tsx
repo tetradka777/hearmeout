@@ -6,6 +6,7 @@ import { useApp } from '@/lib/AppContext';
 import type { ApiUser, Device, DiscoverMatchPerson, GroupSummary, PublicProfile, StatsData } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
 import { computeMatch } from '@/lib/matchScore';
+import { cachedJson } from '@/lib/cachedJson';
 import { toLocale, pluralForKey } from '@/lib/i18n';
 import { CoverArt } from '../ui/CoverArt';
 import { MascotIcon } from '../redesign/icons';
@@ -13,7 +14,9 @@ import { BlendButton } from '../BlendButton';
 import { MATCH_FRIEND_EVENT } from '@/lib/uiEvents';
 import { PROFILE_TAB_EVENT } from '../redesign/AvatarMenu';
 
-type FriendInfo = { profile: PublicProfile | null; score: number | null; stats6m: StatsData | null; weekHours: number | null };
+type RawInfo = { profile: PublicProfile | null; stats6m: StatsData | null; weekHours: number | null };
+type FriendInfo = RawInfo & { score: number | null };
+const EMPTY_INFO: RawInfo = { profile: null, stats6m: null, weekHours: null };
 
 function sharedArtistNames(a: StatsData | null, b: StatsData | null): string[] {
   if (!a || !b) return [];
@@ -54,7 +57,7 @@ function useCountUp(target: number | null, replayKey: unknown): number | null {
 // the prototype's own hardcoded demo data.
 export function MatchScreen(_props: { device: Device }) {
   const { t, language, me, state, myRatings, albums, liveAlbums, spotifyCovers, openAlbum, viewFriend, viewGroup, showScreen, addFriend, friendRequests } = useApp();
-  const [info, setInfo] = useState<Record<string, FriendInfo>>({});
+  const [rawInfo, setRawInfo] = useState<Record<string, RawInfo>>({});
   const [groups, setGroups] = useState<GroupSummary[] | null>(null);
   const [discover, setDiscover] = useState<DiscoverMatchPerson[] | null>(null);
   const [myStats6m, setMyStats6m] = useState<StatsData | null>(null);
@@ -71,30 +74,38 @@ export function MatchScreen(_props: { device: Device }) {
   useEffect(() => {
     if (!me) return;
     let cancelled = false;
-    fetch('/api/stats?range=6m').then((r) => (r.ok ? r.json() : null)).then((d) => { if (!cancelled) setMyStats6m(d); });
+    cachedJson<StatsData>('/api/stats?range=6m').then((d) => { if (!cancelled) setMyStats6m(d); });
     fetch('/api/stats?period=week').then((r) => (r.ok ? r.json() : null)).then((d) => { if (!cancelled) setMyWeekHours(d ? d.hours : null); });
     return () => { cancelled = true; };
-  }, [me]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [me?.id]);
 
+  // Each friend loads on its own and shows as soon as it arrives: waiting
+  // for every friend's three requests at once (one failure dropped them
+  // all) left the whole screen at "–" on a slow server. Reloads only when
+  // the friend list changes, not on every refresh of `me` (the friend
+  // request check refreshes it every minute and used to restart the load).
+  const friendIdsKey = me ? me.friends.map((f) => f.id).join(',') : '';
   useEffect(() => {
-    if (!me || !me.friends.length) { setInfo({}); return; }
+    const ids = friendIdsKey ? friendIdsKey.split(',') : [];
+    setRawInfo({});
+    if (!ids.length) return;
     let cancelled = false;
-    Promise.all(
-      me.friends.map(async (f) => {
-        const [profileRes, stats6mRes, weekRes] = await Promise.all([
-          fetch(`/api/users/${f.id}`),
-          fetch(`/api/stats?range=6m&userId=${f.id}`),
-          fetch(`/api/stats?period=week&userId=${f.id}`),
-        ]);
-        const profile: PublicProfile | null = profileRes.ok ? await profileRes.json() : null;
-        const stats6m: StatsData | null = stats6mRes.ok ? await stats6mRes.json() : null;
-        const week: StatsData | null = weekRes.ok ? await weekRes.json() : null;
-        const score = profile ? computeMatch(me.genres, profile.genres) : null;
-        return [f.id, { profile, score, stats6m, weekHours: week ? week.hours : null }] as const;
-      })
-    ).then((pairs) => { if (!cancelled) setInfo(Object.fromEntries(pairs)); });
+    const patch = (id: string, part: Partial<RawInfo>) => { if (!cancelled) setRawInfo((prev) => ({ ...prev, [id]: { ...EMPTY_INFO, ...prev[id], ...part } })); };
+    for (const id of ids) {
+      cachedJson<PublicProfile>(`/api/users/${id}`).then((profile) => patch(id, { profile }));
+      cachedJson<StatsData>(`/api/stats?range=6m&userId=${id}`).then((stats6m) => patch(id, { stats6m }));
+      cachedJson<StatsData>(`/api/stats?period=week&userId=${id}`).then((week) => patch(id, { weekHours: week ? week.hours : null }));
+    }
     return () => { cancelled = true; };
-  }, [me]);
+  }, [friendIdsKey]);
+  // The % follows your current genres without refetching anyone.
+  const myGenres = me?.genres;
+  const info = useMemo(() => {
+    const out: Record<string, FriendInfo> = {};
+    for (const [id, raw] of Object.entries(rawInfo)) out[id] = { ...raw, score: raw.profile && myGenres ? computeMatch(myGenres, raw.profile.genres) : null };
+    return out;
+  }, [rawInfo, myGenres]);
 
   useEffect(() => {
     let cancelled = false;
@@ -107,7 +118,8 @@ export function MatchScreen(_props: { device: Device }) {
     let cancelled = false;
     fetch('/api/match/discover').then((r) => (r.ok ? r.json() : { people: [] })).then((d) => { if (!cancelled) setDiscover(d.people); });
     return () => { cancelled = true; };
-  }, [me]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [me?.id]);
 
   const isActiveScreen = state.activeScreen === 'match';
 

@@ -6,6 +6,7 @@ import { useApp } from '@/lib/AppContext';
 import type { ApiUser, Device, PublicProfile, StatsData } from '@/lib/types';
 import { formatRelative, userAvatarStyle } from '@/lib/format';
 import { computeMatch } from '@/lib/matchScore';
+import { cachedJson } from '@/lib/cachedJson';
 import { CoverArt } from '../ui/CoverArt';
 import { toLocale, pluralForKey, type TranslationKey } from '@/lib/i18n';
 import { isDemoAccountId } from '@/lib/demoAccounts';
@@ -222,8 +223,8 @@ export function FriendScreen({ device: _device }: { device: Device }) {
     if (!f || f.locked) { setMyStats(null); setFriendStats(null); return; }
     let cancelled = false;
     Promise.all([
-      fetch('/api/stats?range=6m').then((r) => (r.ok ? r.json() : null)),
-      fetch(`/api/stats?range=6m&userId=${f.id}`).then((r) => (r.ok ? r.json() : null)),
+      cachedJson<StatsData>('/api/stats?range=6m'),
+      cachedJson<StatsData>(`/api/stats?range=6m&userId=${f.id}`),
     ]).then(([mine, theirs]) => { if (!cancelled) { setMyStats(mine); setFriendStats(theirs); } });
     return () => { cancelled = true; };
   }, [f?.id]); // eslint-disable-line react-hooks/exhaustive-deps
