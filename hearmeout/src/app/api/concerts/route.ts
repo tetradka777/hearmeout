@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserId } from '@/lib/identity';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { fetchAllRows } from '@/lib/supabasePaginate';
 import { concertsConfigured, cachedArtistConcerts, regionFirst, type Concert } from '@/lib/concerts';
 import { ALBUMS } from '@/lib/data';
 
@@ -22,12 +23,13 @@ export async function GET(request: NextRequest) {
   const country = (new URL(request.url).searchParams.get('country') || '').toUpperCase() || null;
 
   const since = new Date(Date.now() - 182 * 86400000).toISOString();
-  const { data: plays } = await supabaseAdmin()
+  const { rows: plays } = await fetchAllRows((f, t) => supabaseAdmin()
     .from('listening_events')
     .select('artist, duration_ms')
     .eq('user_id', userId)
     .gte('played_at', since)
-    .limit(20000);
+    .order('id')
+    .range(f, t));
   const msByArtist = new Map<string, { name: string; ms: number }>();
   for (const p of plays || []) {
     const name = (p.artist as string | null)?.split(',')[0]?.trim();

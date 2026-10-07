@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { fetchAllRows } from '@/lib/supabasePaginate';
 import { getCurrentUserId } from '@/lib/identity';
 
 function monthStartISO(): string {
@@ -13,7 +14,7 @@ function monthStartISO(): string {
 async function candidateAlbumIds(admin: ReturnType<typeof supabaseAdmin>, groupId: string): Promise<string[]> {
   const { data: memberRows } = await admin.from('group_members').select('user_id').eq('group_id', groupId);
   const memberIds = (memberRows || []).map((m) => m.user_id as string);
-  const { data: monthRatings } = await admin.from('ratings').select('album_id, stars').in('user_id', memberIds).gte('created_at', monthStartISO()).limit(6000);
+  const { rows: monthRatings } = await fetchAllRows((f, t) => admin.from('ratings').select('album_id, stars').in('user_id', memberIds).gte('created_at', monthStartISO()).order('id').range(f, t));
   const stats = new Map<string, { sum: number; count: number }>();
   for (const r of monthRatings || []) {
     const k = r.album_id as string;

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { fetchAllRows } from '@/lib/supabasePaginate';
 import { getCurrentUserId } from '@/lib/identity';
 import { DEFAULT_PRIVACY, fetchPrivacy } from '@/lib/privacy';
 import type { ApiUser, FeedDisagreement, FeedEvent, FeedResponse } from '@/lib/types';
@@ -38,7 +39,7 @@ export async function GET() {
       ? admin.from('listening_events').select('user_id, track_id, track_title, artist, album_id, cover_url, played_at').in('user_id', friendIds).gte('played_at', dayStart.toISOString()).order('played_at', { ascending: false }).limit(300)
       : Promise.resolve({ data: [] as { user_id: string; track_id: string | null; track_title: string | null; artist: string | null; album_id: string | null; cover_url: string | null; played_at: string }[] }),
     friendIds.length
-      ? admin.from('listening_events').select('user_id, track_id, track_title').in('user_id', friendIds).gte('played_at', monthAgo).lt('played_at', dayStart.toISOString()).limit(6000)
+      ? fetchAllRows((f, t) => admin.from('listening_events').select('user_id, track_id, track_title').in('user_id', friendIds).gte('played_at', monthAgo).lt('played_at', dayStart.toISOString()).order('id').range(f, t)).then((r) => ({ data: r.rows }))
       : Promise.resolve({ data: [] as { user_id: string; track_id: string | null; track_title: string | null }[] }),
     admin.from('listening_events').select('duration_ms, artist, album_id, cover_url, played_at').eq('user_id', userId).gte('played_at', dayStart.toISOString()),
   ]);

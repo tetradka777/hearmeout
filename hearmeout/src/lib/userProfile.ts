@@ -3,6 +3,7 @@ import type { ApiUser, NowPlaying, PublicProfile } from './types';
 import { isDemoAccountId } from './demoAccounts';
 import { computeMonthAwards } from './monthAwards';
 import { DEFAULT_PRIVACY, fetchPrivacy } from './privacy';
+import { fetchAllRows } from './supabasePaginate';
 
 // The sync job polls Spotify's recently-played list periodically rather
 // than instantly, so "still playing" is an approximation, capped at 6
@@ -51,8 +52,8 @@ async function fetchCircleAwards(admin: SupabaseClient, userId: string, friends:
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
   const [{ data: events }, { data: monthRatings }] = await Promise.all([
-    admin.from('listening_events').select('user_id, played_at, duration_ms, genre').in('user_id', ids).gte('played_at', monthStart.toISOString()).limit(6000),
-    admin.from('ratings').select('user_id, stars').in('user_id', ids).gte('created_at', monthStart.toISOString()).limit(6000),
+    fetchAllRows((f, t) => admin.from('listening_events').select('user_id, played_at, duration_ms, genre').in('user_id', ids).gte('played_at', monthStart.toISOString()).order('id').range(f, t)).then((r) => ({ data: r.rows })),
+    fetchAllRows((f, t) => admin.from('ratings').select('user_id, stars').in('user_id', ids).gte('created_at', monthStart.toISOString()).order('id').range(f, t)).then((r) => ({ data: r.rows })),
   ]);
   const userById = new Map(circle.map((u) => [u.id, u] as const));
   return computeMonthAwards(
@@ -87,7 +88,9 @@ export async function getUserProfile(
   const [{ data: user, error: userErr }, { data: ratings }, { data: genreRows }, { data: todayRows }, lastPlay, isOpenProfile] = await Promise.all([
     admin.from('users').select('id, name, handle, avatar_url, created_at').eq('id', userId).maybeSingle(),
     admin.from('ratings').select('album_id, stars, review, tags, created_at, is_private').eq('user_id', userId).order('created_at', { ascending: false }),
-    admin.from('listening_events').select('genre').eq('user_id', userId).not('genre', 'is', null).limit(5000),
+    // Genre shares (taste fingerprint, match %) from the 5000 most recent
+    // plays, paged: one request returns at most 1000 rows.
+    fetchAllRows((f, t) => admin.from('listening_events').select('genre').eq('user_id', userId).not('genre', 'is', null).order('played_at', { ascending: false }).range(f, t), 5000).then((r) => ({ data: r.rows })),
     admin.from('listening_events').select('duration_ms').eq('user_id', userId).gte('played_at', startOfDay.toISOString()),
     fetchLastPlay(admin, userId),
     fetchIsOpenProfile(admin, userId),
