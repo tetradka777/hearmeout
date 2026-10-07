@@ -1,32 +1,16 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { pickLanguage } from "@/lib/i18n";
+import { previewLang, siteMetadata } from "@/lib/siteMeta";
 import "@/styles/fonts.css";
 import "@/styles/tokens.css";
 import "@/styles/components.css";
 
-// The live URL — used to build absolute Open Graph/Twitter image URLs.
-const SITE_URL = "https://hearmeoutt.art";
-const SITE_DESCRIPTION = "Rate albums, compare music taste with friends, and find what to listen to next.";
-
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: "HearMeOut",
-  description: SITE_DESCRIPTION,
-  openGraph: {
-    title: "HearMeOut",
-    description: SITE_DESCRIPTION,
-    url: SITE_URL,
-    siteName: "HearMeOut",
-    locale: "en_US",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "HearMeOut",
-    description: SITE_DESCRIPTION,
-  },
-};
+// Title, description and link preview (lib/siteMeta.ts): Russian unless the
+// request asks for another language first.
+export async function generateMetadata(): Promise<Metadata> {
+  return siteMetadata(previewLang((await headers()).get("accept-language")));
+}
 
 // Pinch-zoom must stay available for low-vision users — every text input's
 // font-size is now >=16px (the actual fix for iOS's auto-zoom-on-focus,

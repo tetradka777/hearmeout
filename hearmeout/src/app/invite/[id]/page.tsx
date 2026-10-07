@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { cache } from 'react';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { pickLanguage, translate, type Language } from '@/lib/i18n';
+import { previewImages } from '@/lib/siteMeta';
 import InviteClient, { type InviterInfo } from './InviteClient';
 
 // Server half of /invite/[id]: resolves the inviter and the visitor's
@@ -16,8 +17,11 @@ const loadInviter = cache(async (id: string): Promise<InviterInfo | null> => {
   return data ? { id: data.id, name: data.name, handle: data.handle, avatarUrl: data.avatar_url } : null;
 });
 
+// No Accept-Language at all is a link-preview bot (Telegram, VK): Russian,
+// like the site's own preview (lib/siteMeta.ts).
 async function requestLanguage(): Promise<Language> {
-  return pickLanguage((await headers()).get('accept-language'));
+  const header = (await headers()).get('accept-language');
+  return header ? pickLanguage(header) : 'ru';
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -26,7 +30,10 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   if (!inviter) return { title: 'HearMeOut' };
   const title = translate(lang, 'invite.title', { name: inviter.name });
   const description = translate(lang, 'invite.body', { name: inviter.name.split(' ')[0] });
-  return { title, description, openGraph: { title, description }, twitter: { title, description } };
+  // openGraph/twitter replace the layout's whole objects, so the preview
+  // image has to be repeated here.
+  const images = previewImages(lang === 'ru' ? 'ru' : 'en');
+  return { title, description, openGraph: { title, description, images: images.og }, twitter: { card: 'summary_large_image', title, description, images: images.twitter } };
 }
 
 export default async function InvitePage({ params }: { params: Promise<{ id: string }> }) {
