@@ -41,6 +41,10 @@ test('inline plurals', () => {
   assert.equal(translate('ru', 'time.yearsAgo', { n: 11 }), '11 лет назад');
   assert.equal(translate('fr', 'time.yearsAgo', { n: 1 }), 'il y a 1 an');
   assert.equal(translate('fr', 'time.yearsAgo', { n: 2 }), 'il y a 2 ans');
+  // An already formatted count picks its form by value.
+  assert.equal(translate('fr', 'artist.fansCount', { count: '1' }), '1 fan sur Deezer');
+  assert.equal(translate('fr', 'artist.fansCount', { count: '4 101 238' }), '4 101 238 fans sur Deezer');
+  assert.equal(translate('es', 'artist.fansCount', { count: '1.234' }), '1.234 fans en Deezer');
 });
 
 test('pickLanguage', () => {

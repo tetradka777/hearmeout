@@ -8,7 +8,7 @@ type CachedArtist = { artist: ArtistDetail | null; released: SpotifyArtistAlbumR
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   try {
-    const result = await withSpotifyCache<CachedArtist>(`artist:${id}`, 21600, async () => {
+    const result = await withSpotifyCache<CachedArtist>(`artist:v2:${id}`, 21600, async () => {
       const [artist, albums] = await Promise.all([fetchSpotifyArtistDetail(id), fetchArtistAlbumsSplit(id)]);
       return { artist, released: albums.released, upcoming: albums.upcoming };
     });

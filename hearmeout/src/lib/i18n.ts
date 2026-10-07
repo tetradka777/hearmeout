@@ -790,8 +790,6 @@ const ru = {
   'artist.loadError': 'Не получилось загрузить альбомы. Попробуй ещё раз.',
   'artist.subtitleSpotify': 'артист',
   'artist.unreleased': 'Ещё не вышел',
-  'artist.followersCount': 'подписчиков: {count}',
-  'artist.popularityScore': 'популярность {score}/100',
   'artist.community': 'Сообщество',
   'artist.communityAcrossAlbums': 'оценок: {count} · альбомов: {albums}',
   'artist.yourAndArtist': 'Ты и {name}',
@@ -1083,6 +1081,7 @@ const ru = {
   'ticker.milestoneFriend': 'оценил(а) уже {count} {count|альбом|альбома|альбомов}',
   'ticker.albumOfWeekLabel': 'Альбом недели',
   'ticker.albumOfWeek': '«{album}» — {count} {count|оценка|оценки|оценок} в HearMeOut',
+  'artist.fansCount': 'поклонников на Deezer: {count}',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -1869,8 +1868,6 @@ const en: Dict = {
   'artist.loadError': "Couldn't load albums. Please try again.",
   'artist.subtitleSpotify': 'artist',
   'artist.unreleased': 'Unreleased',
-  'artist.followersCount': '{count} followers',
-  'artist.popularityScore': 'popularity {score}/100',
   'artist.community': 'Community',
   'artist.communityAcrossAlbums': '{count} ratings across {albums} albums',
   'artist.yourAndArtist': 'You and {name}',
@@ -2162,6 +2159,7 @@ const en: Dict = {
   'ticker.milestoneFriend': 'has rated {count} albums',
   'ticker.albumOfWeekLabel': 'Album of the week',
   'ticker.albumOfWeek': '{album}: {count} ratings on HearMeOut',
+  'artist.fansCount': '{count} fans on Deezer',
 };
 
 const fr: Dict = {
@@ -2945,8 +2943,6 @@ const fr: Dict = {
   'artist.loadError': 'Impossible de charger les albums. Réessaie.',
   'artist.subtitleSpotify': 'artiste',
   'artist.unreleased': 'Pas encore sorti',
-  'artist.followersCount': '{count} {count|abonné|abonnés}',
-  'artist.popularityScore': 'popularité {score}/100',
   'artist.community': 'Communauté',
   'artist.communityAcrossAlbums': '{count} {count|note|notes} sur {albums} {albums|album|albums}',
   'artist.yourAndArtist': 'Toi et {name}',
@@ -3238,6 +3234,7 @@ const fr: Dict = {
   'ticker.milestoneFriend': 'a noté {count} albums',
   'ticker.albumOfWeekLabel': 'Album de la semaine',
   'ticker.albumOfWeek': '« {album} » : {count} notes sur HearMeOut',
+  'artist.fansCount': '{count} {count|fan|fans} sur Deezer',
 };
 
 const es: Dict = {
@@ -4021,8 +4018,6 @@ const es: Dict = {
   'artist.loadError': 'No se pudieron cargar los álbumes. Inténtalo de nuevo.',
   'artist.subtitleSpotify': 'artista',
   'artist.unreleased': 'Aún no disponible',
-  'artist.followersCount': '{count} {count|seguidor|seguidores}',
-  'artist.popularityScore': 'popularidad {score}/100',
   'artist.community': 'Comunidad',
   'artist.communityAcrossAlbums': '{count} {count|valoración|valoraciones} en {albums} {albums|álbum|álbumes}',
   'artist.yourAndArtist': 'Tú y {name}',
@@ -4314,6 +4309,7 @@ const es: Dict = {
   'ticker.milestoneFriend': 'ha valorado {count} álbumes',
   'ticker.albumOfWeekLabel': 'Álbum de la semana',
   'ticker.albumOfWeek': '«{album}»: {count} valoraciones en HearMeOut',
+  'artist.fansCount': '{count} {count|fan|fans} en Deezer',
 };
 
 const de: Dict = {
@@ -5097,8 +5093,6 @@ const de: Dict = {
   'artist.loadError': 'Die Alben konnten nicht geladen werden. Bitte versuche es erneut.',
   'artist.subtitleSpotify': 'Künstler',
   'artist.unreleased': 'Noch nicht erschienen',
-  'artist.followersCount': '{count} Follower',
-  'artist.popularityScore': 'Popularität {score}/100',
   'artist.community': 'Community',
   'artist.communityAcrossAlbums': '{count} {count|Bewertung|Bewertungen} zu {albums} {albums|Album|Alben}',
   'artist.yourAndArtist': 'Du und {name}',
@@ -5390,6 +5384,7 @@ const de: Dict = {
   'ticker.milestoneFriend': 'hat schon {count} Alben bewertet',
   'ticker.albumOfWeekLabel': 'Album der Woche',
   'ticker.albumOfWeek': '„{album}“: {count} Bewertungen bei HearMeOut',
+  'artist.fansCount': '{count} Fans auf Deezer',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };
@@ -5413,7 +5408,9 @@ export function translate(language: Language, key: TranslationKey, vars?: Record
       const raw = vars[name];
       if (raw === undefined) return match;
       const forms = body.split('|');
-      const n = Number(raw);
+      // A count passed already formatted ("4 101 238", "1,234") still picks
+      // its form by value: drop group separators before reading it.
+      const n = typeof raw === 'number' ? raw : Number(String(raw).replace(/[\s  '’]|[.,](?=\d{3}(?:\D|$))/g, '').replace(',', '.'));
       const cat = pluralCategory(language, Number.isFinite(n) ? n : 0);
       const idx = forms.length >= 3 ? (cat === 'one' ? 0 : cat === 'few' ? 1 : 2) : cat === 'one' ? 0 : 1;
       return forms[idx] ?? forms[forms.length - 1];

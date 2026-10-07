@@ -1,11 +1,26 @@
 import { NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 // Keep-alive target (cron-job.org / UptimeRobot / the GitHub Actions ping):
-// any incoming request keeps Render's free instance awake, and this one
-// touches neither the database nor Spotify, so pinging it often costs
-// nothing.
+// any incoming request keeps Render's free instance awake. Once an hour it
+// also does one small database job, which keeps the Supabase free project
+// from being paused after a week without activity: it deletes cache rows
+// that expired more than three days ago (past the cache's stale window, so
+// nothing reads them any more). Neither touches Spotify, and a database
+// problem never fails the ping.
 export const dynamic = 'force-dynamic';
 
-export function GET() {
+const EVERY_MS = 3600000;
+let lastRun = 0;
+
+export async function GET() {
+  if (Date.now() - lastRun > EVERY_MS) {
+    lastRun = Date.now();
+    try {
+      await supabaseAdmin().from('spotify_cache').delete().lt('expires_at', new Date(Date.now() - 3 * 86400000).toISOString());
+    } catch {
+      // The ping's job is keeping the server up; the cleanup can wait.
+    }
+  }
   return NextResponse.json({ ok: true, at: new Date().toISOString() }, { headers: { 'Cache-Control': 'no-store' } });
 }

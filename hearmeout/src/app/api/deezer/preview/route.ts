@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { upstreamErrorResponse } from '@/lib/upstreamError';
+import { deezerGet } from '@/lib/deezerServer';
+import { withSpotifyCache } from '@/lib/spotifyCache';
 
 // Server-side so it never depends on the public corsproxy.io service the
 // client used to call directly — that proxy is flaky enough (rate limits,
@@ -37,9 +39,7 @@ function artistMatchScore(candidateArtist: string | undefined, wantedArtist: str
 }
 
 async function searchDeezer<T>(path: string, q: string, limit: number): Promise<T[]> {
-  const res = await fetch(`https://api.deezer.com${path}?q=${encodeURIComponent(q)}&limit=${limit}`);
-  if (!res.ok) return [];
-  const data = await res.json();
+  const data = await deezerGet<{ data?: T[] }>(`${path}?q=${encodeURIComponent(q)}&limit=${limit}`);
   return data.data || [];
 }
 
@@ -59,42 +59,11 @@ export async function GET(request: NextRequest) {
   if (!artist && !title) return NextResponse.json({ error: 'missing_query' }, { status: 400 });
 
   try {
-    const [albums, tracks] = await Promise.all([
-      searchDeezer<DeezerAlbum>('/search/album', `${artist} ${title}`, 3),
-      searchDeezer<DeezerTrack>('/search', `${artist} ${title}`, 5),
-    ]);
-    const bestAlbum = bestByArtist(albums, artist);
-    const bestTrack = bestByArtist(tracks, artist);
-
-    let result: { title: string; preview: string } | null = null;
-
-    // `title` here is always a specific track title (every caller passes
-    // one, not an album title) — a direct track match is the accurate one,
-    // so it's tried first. Picking the album match whenever it scored at
-    // least as well as the track match (as this used to) meant every track
-    // in an album resolved to whatever track happened to come first in that
-    // album's listing, regardless of which one was actually requested.
-    if (bestTrack && bestTrack.score > 0 && bestTrack.item.preview) {
-      result = { title: bestTrack.item.title, preview: bestTrack.item.preview };
-    }
-
-    // Fallback for a single that's missing from Deezer's track index but
-    // whose parent album isn't: look for a track inside that album whose
-    // title actually matches what was asked for, only falling back to
-    // "whatever's first" if nothing in the album matches by title either.
-    if (!result && bestAlbum && bestAlbum.score > 0) {
-      const albumRes = await fetch(`https://api.deezer.com/album/${bestAlbum.item.id}`);
-      if (albumRes.ok) {
-        const albumData = await albumRes.json();
-        const albumTracks = (albumData.tracks?.data || []) as DeezerTrack[];
-        const wanted = normalize(title);
-        const titleMatch = albumTracks.find((t) => t.preview && normalize(t.title) === wanted)
-          || albumTracks.find((t) => t.preview && wanted && (normalize(t.title).includes(wanted) || wanted.includes(normalize(t.title))));
-        const fallback = titleMatch || albumTracks.find((t) => t.preview);
-        if (fallback) result = { title: fallback.title, preview: fallback.preview };
-      }
-    }
-
+    // Preview URLs are signed for 15 minutes, so a found preview is cached
+    // for 10 and never served stale. The album search only runs when the
+    // track search found nothing usable.
+    const key = `dz-preview:v1:${artist.toLowerCase()}|${title.toLowerCase()}`;
+    const result = await withSpotifyCache(key, 600, () => findPreview(artist, title), 0);
     if (!result) return NextResponse.json({ error: 'not_found' }, { status: 404 });
     // Deliberately no Cache-Control: this route is keyed by artist/title
     // query params, and an edge cache that only looks at the path (not the
@@ -103,4 +72,38 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     return upstreamErrorResponse(err, '/api/deezer/preview');
   }
+}
+
+async function findPreview(artist: string, title: string): Promise<{ title: string; preview: string } | null> {
+  const tracks = await searchDeezer<DeezerTrack>('/search', `${artist} ${title}`, 5);
+  const bestTrack = bestByArtist(tracks, artist);
+
+  let result: { title: string; preview: string } | null = null;
+
+  // `title` here is always a specific track title (every caller passes
+  // one, not an album title) — a direct track match is the accurate one,
+  // so it's tried first. Picking the album match whenever it scored at
+  // least as well as the track match (as this used to) meant every track
+  // in an album resolved to whatever track happened to come first in that
+  // album's listing, regardless of which one was actually requested.
+  if (bestTrack && bestTrack.score > 0 && bestTrack.item.preview) {
+    result = { title: bestTrack.item.title, preview: bestTrack.item.preview };
+  }
+
+  // Fallback for a single that's missing from Deezer's track index but
+  // whose parent album isn't: look for a track inside that album whose
+  // title actually matches what was asked for, only falling back to
+  // "whatever's first" if nothing in the album matches by title either.
+  const bestAlbum = result ? null : bestByArtist(await searchDeezer<DeezerAlbum>('/search/album', `${artist} ${title}`, 3), artist);
+  if (!result && bestAlbum && bestAlbum.score > 0) {
+    const albumData = await deezerGet<{ tracks?: { data?: DeezerTrack[] } }>(`/album/${bestAlbum.item.id}`);
+    const albumTracks = albumData.tracks?.data || [];
+    const wanted = normalize(title);
+    const titleMatch = albumTracks.find((t) => t.preview && normalize(t.title) === wanted)
+      || albumTracks.find((t) => t.preview && wanted && (normalize(t.title).includes(wanted) || wanted.includes(normalize(t.title))));
+    const fallback = titleMatch || albumTracks.find((t) => t.preview);
+    if (fallback) result = { title: fallback.title, preview: fallback.preview };
+  }
+
+  return result;
 }

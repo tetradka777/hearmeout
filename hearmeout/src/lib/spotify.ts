@@ -89,23 +89,3 @@ export async function fetchRecentlyPlayed(accessToken: string, afterMs?: number)
   const data = await res.json();
   return data.items || [];
 }
-
-// Recently-played tracks don't carry genre — Spotify only exposes it on the
-// artist object — so we batch-fetch it separately (max 50 ids/request) and
-// take each artist's first genre as a rough-but-real label.
-export async function fetchArtistGenres(accessToken: string, artistIds: string[]): Promise<Map<string, string>> {
-  const map = new Map<string, string>();
-  const ids = [...new Set(artistIds.filter(Boolean))];
-  for (let i = 0; i < ids.length; i += 50) {
-    const batch = ids.slice(i, i + 50);
-    const res = await fetch(`https://api.spotify.com/v1/artists?ids=${batch.join(',')}`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    if (!res.ok) continue;
-    const data = await res.json();
-    for (const artist of data.artists || []) {
-      if (artist?.id && artist.genres?.[0]) map.set(artist.id, artist.genres[0]);
-    }
-  }
-  return map;
-}
