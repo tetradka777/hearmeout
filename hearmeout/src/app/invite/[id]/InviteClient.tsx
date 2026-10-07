@@ -21,7 +21,9 @@ type Relation = 'self' | 'demo' | 'friend' | 'out' | 'in' | 'none';
 // (spec 13.x), not an instant friendship.
 // The server page (page.tsx) resolves the inviter and the visitor's language
 // up front, so the card and the <title> are there in the first HTML.
-export default function InviteClient({ id, initialInviter, initialLanguage }: { id: string; initialInviter: InviterInfo | null; initialLanguage: Language }) {
+// `host` comes from the server request, so the first HTML and the browser
+// render the same text (window.location here broke hydration).
+export default function InviteClient({ id, initialInviter, initialLanguage, host }: { id: string; initialInviter: InviterInfo | null; initialLanguage: Language; host: string }) {
   const [inviter, setInviter] = useState<InviterInfo | null>(initialInviter);
   // `id` from the URL may be an invite code; API calls need the account id.
   const userId = initialInviter?.id ?? id;
@@ -83,7 +85,6 @@ export default function InviteClient({ id, initialInviter, initialLanguage }: { 
     window.location.href = `/?auth=${mode}`;
   };
 
-  const host = typeof window !== 'undefined' ? window.location.host : 'hearmeout.art';
 
   let body;
   if (notFound) {

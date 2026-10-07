@@ -23,7 +23,7 @@ export default async function Image({ params }: { params: Promise<{ handle: stri
     : translate('en', 'pub.ogTitle', { name, count: data!.profile.stats.ratings, avg });
   const sub = locked
     ? translate('en', 'pub.ogPrivateSub')
-    : translate('en', 'pub.ogSub', { genre: data!.topGenre ?? '—', url: `hearmeout.art/u/${data!.profile.handle.replace(/^@/, '')}` });
+    : translate('en', 'pub.ogSub', { genre: data!.topGenre ?? '—', url: `hearmeoutt.art/u/${data!.profile.handle.replace(/^@/, '')}` });
 
   return new ImageResponse(
     (

@@ -39,5 +39,6 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 export default async function InvitePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [inviter, lang] = await Promise.all([loadInviter(id), requestLanguage()]);
-  return <InviteClient id={id} initialInviter={inviter} initialLanguage={lang} />;
+  const host = (await headers()).get('host') ?? 'hearmeoutt.art';
+  return <InviteClient id={id} initialInviter={inviter} initialLanguage={lang} host={host} />;
 }

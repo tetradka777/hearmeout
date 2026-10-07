@@ -15,7 +15,10 @@ export async function POST(request: NextRequest) {
   const tags = Array.isArray(body?.tags)
     ? [...new Set(body.tags.filter((t: unknown): t is string => typeof t === 'string' && isReviewTagId(t)))].slice(0, MAX_REVIEW_TAGS)
     : [];
-  if (!albumId || !stars || stars <= 0) {
+  // Same limits as the UI (0.1–5 stars, a 2000-character review); album ids
+  // are catalog slugs or Spotify ids. Without these, a direct request could
+  // store any amount of text or hit the database's own check with a 500.
+  if (!albumId || albumId.length > 64 || !/^[A-Za-z0-9_-]+$/.test(albumId) || !stars || stars <= 0 || stars > 5 || (review && review.length > 2000)) {
     return NextResponse.json({ error: 'invalid_payload' }, { status: 400 });
   }
 
