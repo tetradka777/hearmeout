@@ -4,6 +4,7 @@ import { getCurrentUserId } from '@/lib/identity';
 import { computeMatch } from '@/lib/matchScore';
 import { computeMonthAwards } from '@/lib/monthAwards';
 import { DEFAULT_PRIVACY, fetchPrivacy } from '@/lib/privacy';
+import { fetchAllRows } from '@/lib/supabasePaginate';
 import type { ApiUser, GroupAward, GroupDetail, GroupLeaderboardPeriod, GroupMemberStats, GroupPastAwards, GroupRecord, GroupTastePair, GroupTopAlbum, GroupVoteCandidate } from '@/lib/types';
 
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -40,23 +41,28 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   const PAST_MONTHS_LOOKBACK = 3;
   const pastWindowStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - PAST_MONTHS_LOOKBACK, 1)).toISOString();
 
+  // Everything but the 60-row activity feed is paged (lib/supabasePaginate):
+  // PostgREST returns at most 1000 rows per request, so an active group's
+  // month of plays used to be cut off and some members showed 0 hours.
+  const all = <T,>(build: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>) =>
+    fetchAllRows(build).then((r) => ({ data: r.rows }));
   const [{ data: ratingsRows }, { data: eventsRows }, { data: allRatingsRows }, { data: monthRatingsRows }, { data: pastEventsRows }, { data: pastRatingsRows }] = await Promise.all([
     admin.from('ratings').select('user_id, album_id, stars, review, created_at, is_private').in('user_id', memberIds).order('created_at', { ascending: false }).limit(60),
-    admin.from('listening_events').select('user_id, played_at, duration_ms, genre').in('user_id', memberIds).gte('played_at', monthAgo).limit(6000),
+    all((f, t) => admin.from('listening_events').select('user_id, played_at, duration_ms, genre').in('user_id', memberIds).gte('played_at', monthAgo).order('id').range(f, t)),
     // Full rating history per member (not just the last 60 across the whole
     // group) — needed for a real longest-streak count, which the capped
     // activity-feed query above isn't enough data for.
-    admin.from('ratings').select('user_id, created_at').in('user_id', memberIds).order('created_at', { ascending: true }).limit(6000),
-    // Uncapped, scoped to the current calendar month — member records, the
-    // Members cards' figures, "Top albums in this group" and the vote
-    // candidates all need a real per-member/per-album picture of this
-    // month specifically, which the 60-row activity feed can't guarantee
-    // for an active group.
-    admin.from('ratings').select('user_id, album_id, stars, created_at, is_private').in('user_id', memberIds).gte('created_at', monthStart).limit(6000),
+    all((f, t) => admin.from('ratings').select('user_id, created_at').in('user_id', memberIds).order('created_at', { ascending: true }).order('id').range(f, t)),
+    // Scoped to the current calendar month — member records, the Members
+    // cards' figures, "Top albums in this group" and the vote candidates
+    // all need a real per-member/per-album picture of this month
+    // specifically, which the 60-row activity feed can't guarantee for an
+    // active group.
+    all((f, t) => admin.from('ratings').select('user_id, album_id, stars, created_at, is_private').in('user_id', memberIds).gte('created_at', monthStart).order('id').range(f, t)),
     // Past-months awards: listening_events/ratings for the lookback window,
     // bucketed by calendar month in JS below.
-    admin.from('listening_events').select('user_id, played_at, duration_ms, genre').in('user_id', memberIds).gte('played_at', pastWindowStart).lt('played_at', monthStart).limit(9000),
-    admin.from('ratings').select('user_id, stars, created_at, is_private').in('user_id', memberIds).gte('created_at', pastWindowStart).lt('created_at', monthStart).limit(9000),
+    all((f, t) => admin.from('listening_events').select('user_id, played_at, duration_ms, genre').in('user_id', memberIds).gte('played_at', pastWindowStart).lt('played_at', monthStart).order('id').range(f, t)),
+    all((f, t) => admin.from('ratings').select('user_id, stars, created_at, is_private').in('user_id', memberIds).gte('created_at', pastWindowStart).lt('created_at', monthStart).order('id').range(f, t)),
   ]);
 
   // Per-person score figures (activity, member average, harshest critic,

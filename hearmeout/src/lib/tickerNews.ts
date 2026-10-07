@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { ALBUMS } from './data';
 import { withSpotifyCache } from './spotifyCache';
+import { fetchAllRows } from './supabasePaginate';
 import { fetchArtistAlbumsSplit, resolveSpotifyArtistId } from './spotifyCatalog';
 import { RateLimitError } from './upstreamError';
 import { cachedArtistConcerts, concertsConfigured, regionFirst } from './concerts';
@@ -42,12 +43,13 @@ export function popularArtists(n: number, skip: Set<string> = new Set()): string
 
 // The viewer's most listened artists by time played over the last 90 days.
 export async function topArtistsOf(admin: SupabaseClient, userId: string, n: number): Promise<string[]> {
-  const { data } = await admin
+  const { rows: data } = await fetchAllRows((f, t) => admin
     .from('listening_events')
     .select('artist, duration_ms')
     .eq('user_id', userId)
     .gte('played_at', new Date(Date.now() - 90 * dayMs).toISOString())
-    .limit(20000);
+    .order('id')
+    .range(f, t));
   const ms = new Map<string, { name: string; ms: number }>();
   for (const p of data || []) {
     const name = (p.artist as string | null)?.split(',')[0]?.trim();
@@ -110,12 +112,13 @@ export async function recordsFor(admin: SupabaseClient, userId: string, friendId
   const now = Date.now();
   const weekAgo = new Date(now - 7 * dayMs).toISOString();
 
-  const { data: plays } = await admin
+  const { rows: plays } = await fetchAllRows((f, t) => admin
     .from('listening_events')
     .select('duration_ms, played_at')
     .eq('user_id', userId)
     .gte('played_at', new Date(now - 90 * dayMs).toISOString())
-    .limit(20000);
+    .order('id')
+    .range(f, t));
   const byDay = new Map<string, number>();
   for (const p of plays || []) {
     const d = (p.played_at as string).slice(0, 10);
@@ -136,7 +139,7 @@ export async function recordsFor(admin: SupabaseClient, userId: string, friendId
   // only counts when their ratings are visible to friends.
   const privacy = await fetchPrivacy(admin, friendIds);
   const people = [userId, ...friendIds.filter((id) => (privacy.get(id) ?? DEFAULT_PRIVACY).ratingsVisible)];
-  const { data: weekRatings } = await admin.from('ratings').select('user_id').in('user_id', people).gte('created_at', weekAgo).limit(5000);
+  const { rows: weekRatings } = await fetchAllRows((f, t) => admin.from('ratings').select('user_id').in('user_id', people).gte('created_at', weekAgo).order('id').range(f, t));
   const newThisWeek = new Map<string, number>();
   for (const r of weekRatings || []) newThisWeek.set(r.user_id as string, (newThisWeek.get(r.user_id as string) || 0) + 1);
   for (const [id, added] of newThisWeek) {
@@ -147,7 +150,7 @@ export async function recordsFor(admin: SupabaseClient, userId: string, friendId
   }
 
   // Album of the week: public ratings only, at least three of them.
-  const { data: all } = await admin.from('ratings').select('album_id').not('is_private', 'is', true).gte('created_at', weekAgo).limit(5000);
+  const { rows: all } = await fetchAllRows((f, t) => admin.from('ratings').select('album_id').not('is_private', 'is', true).gte('created_at', weekAgo).order('id').range(f, t));
   const perAlbum = new Map<string, number>();
   for (const r of all || []) perAlbum.set(r.album_id as string, (perAlbum.get(r.album_id as string) || 0) + 1);
   const top = [...perAlbum.entries()].sort((a, b) => b[1] - a[1])[0];

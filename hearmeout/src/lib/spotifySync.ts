@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { fetchRecentlyPlayed, refreshAccessToken } from './spotify';
 import { deezerArtistGenres } from './deezerServer';
+import { bucketForGenres } from './genreBuckets';
 import { RateLimitError } from './upstreamError';
 import { detectRegionFromSpotify } from './regionDetect';
 
@@ -39,11 +40,14 @@ export async function syncSpotifyForUser(admin: SupabaseClient, userId: string):
   // Recently played tracks don't carry a genre, and Spotify no longer gives
   // development-mode apps artist genres, so each main artist's genre comes
   // from Deezer by name (cached for 30 days, so a sync usually costs nothing).
+  // Stored as the catalog bucket (Rock, Hip-Hop, …) when one fits: taste
+  // match compares genre names, and everyone else's are buckets.
   const genreByArtist = new Map<string, string>();
   for (const name of [...new Set(items.map((i) => i.track.artists[0]?.name).filter(Boolean))]) {
     try {
       const genres = await deezerArtistGenres(name);
-      if (genres[0]) genreByArtist.set(name, genres[0]);
+      const genre = bucketForGenres(genres) ?? genres[0];
+      if (genre) genreByArtist.set(name, genre);
     } catch (err) {
       if (err instanceof RateLimitError) break;
     }

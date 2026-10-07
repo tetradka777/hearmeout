@@ -151,10 +151,19 @@ async function circleAwards(admin: ReturnType<typeof supabaseAdmin>, userId: str
     if (f) circle.push({ id: f.id, name: f.name, handle: f.handle, avatarUrl: f.avatar_url });
   }
   const ids = circle.map((u) => u.id);
-  let ev = admin.from('listening_events').select('user_id, played_at, duration_ms, genre').in('user_id', ids).gte('played_at', since);
-  let rt = admin.from('ratings').select('user_id, stars').in('user_id', ids).gte('created_at', since);
-  if (until) { ev = ev.lt('played_at', until); rt = rt.lt('created_at', until); }
-  const [{ data: events }, { data: ratings }] = await Promise.all([ev.limit(6000), rt.limit(6000)]);
+  // Paged (one request returns at most 1000 rows), each page a fresh query.
+  const ev = () => {
+    const q = admin.from('listening_events').select('user_id, played_at, duration_ms, genre').in('user_id', ids).gte('played_at', since);
+    return until ? q.lt('played_at', until) : q;
+  };
+  const rt = () => {
+    const q = admin.from('ratings').select('user_id, stars').in('user_id', ids).gte('created_at', since);
+    return until ? q.lt('created_at', until) : q;
+  };
+  const [{ rows: events }, { rows: ratings }] = await Promise.all([
+    fetchAllRows((f, t) => ev().order('id').range(f, t)),
+    fetchAllRows((f, t) => rt().order('id').range(f, t)),
+  ]);
   return computeMonthAwards(
     (events || []) as { user_id: string; played_at: string; duration_ms: number | null; genre: string | null }[],
     (ratings || []) as { user_id: string; stars: number }[],
