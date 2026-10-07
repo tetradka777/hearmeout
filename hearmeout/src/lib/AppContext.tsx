@@ -1081,14 +1081,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const screen = params.get('screen') as ScreenName | null;
       if (screen && ALL_SCREENS.has(screen)) {
         const id = params.get('id') ?? undefined;
+        // The id belongs to the linked screen only: every screen stays
+        // mounted, so handing it to all of them had the group screen ask for
+        // a group with a user's id, the recap ask for a "user" with a
+        // group's id, and so on (404/403s on every deep link).
+        const only = (s: ScreenName) => (screen === s ? id : undefined);
         restore({
           activeScreen: screen,
           hmoDepth: 0,
-          currentAlbumId: id,
-          viewingUserId: id,
-          viewingGroupId: id,
-          recapViewUserId: id,
-          artistId: id,
+          currentAlbumId: only('rate'),
+          viewingUserId: only('friend'),
+          viewingGroupId: only('group'),
+          recapViewUserId: only('recap'),
+          artistId: only('artist'),
           artistName: params.get('name') ?? undefined,
           artistSource: (params.get('source') as 'spotify' | 'musicbrainz' | null) ?? undefined,
         });

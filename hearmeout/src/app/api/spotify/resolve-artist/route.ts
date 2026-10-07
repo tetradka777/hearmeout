@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getCurrentUserId } from '@/lib/identity';
 import { upstreamErrorResponse } from '@/lib/upstreamError';
 import { resolveSpotifyArtistId } from '@/lib/spotifyCatalog';
 import { withSpotifyCache } from '@/lib/spotifyCache';
 
 export async function GET(request: NextRequest) {
+  // Signed-in only: this calls Spotify/Deezer/Ticketmaster on the server, and
+  // an open endpoint let anyone spend the app's shared API quota.
+  if (!(await getCurrentUserId())) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
   const { searchParams } = new URL(request.url);
   const name = searchParams.get('name');
   if (!name) return NextResponse.json({ error: 'missing_params' }, { status: 400 });

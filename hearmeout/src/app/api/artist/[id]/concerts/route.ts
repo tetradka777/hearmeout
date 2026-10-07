@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getCurrentUserId } from '@/lib/identity';
 import { upstreamErrorResponse } from '@/lib/upstreamError';
 import { concertsConfigured, cachedArtistConcerts, regionFirst } from '@/lib/concerts';
 
@@ -6,6 +7,9 @@ import { concertsConfigured, cachedArtistConcerts, regionFirst } from '@/lib/con
 // viewer's country first. `configured: false` (no TICKETMASTER_API_KEY)
 // tells the client to show its ticket-search fallback instead of "no dates".
 export async function GET(request: NextRequest) {
+  // Signed-in only: this calls Spotify/Deezer/Ticketmaster on the server, and
+  // an open endpoint let anyone spend the app's shared API quota.
+  if (!(await getCurrentUserId())) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
   if (!concertsConfigured()) return NextResponse.json({ configured: false, concerts: [] });
   const url = new URL(request.url);
   const name = (url.searchParams.get('name') || '').trim().slice(0, 200);

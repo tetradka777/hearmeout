@@ -46,7 +46,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
     loadPublicProfile(handle),
     requestLanguage(),
     getCurrentUserId(),
-    headers().then((h) => h.get('host') ?? 'hearmeout.art'),
+    headers().then((h) => h.get('host') ?? 'hearmeoutt.art'),
   ]);
   const t = (key: TranslationKey, vars?: Record<string, string | number>) => translate(lang, key, vars);
 
