@@ -12,7 +12,10 @@
 /* The page itself (overscroll on phones, outside .rd) takes the view colour,
    not the browser default white. Tokens live on <html> via data-design /
    data-mode / data-palette, so --bg resolves here. */
-html { background: var(--bg); }
+/* iOS Safari enlarges text it thinks is too small for a wide block (text
+   autosizing); the ticker's track is many screens wide, so some of its
+   events came out bigger than others and off-centre. Sizes are set in CSS. */
+html { background: var(--bg); -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 .rd { min-height: 100vh; background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 16px; line-height: 1.5; }
 .rd *, .rd *::before, .rd *::after { box-sizing: border-box; }
 .rd button, .rd input, .rd textarea, .rd select { font: inherit; color: inherit; }
@@ -85,8 +88,9 @@ html { background: var(--bg); }
 .rd .ticker { min-width: 0; max-width: 100%; display: flex; align-items: stretch; overflow: hidden; border-radius: 999px; margin: 0 0 22px; font-weight: 700; font-size: 14px; background: var(--tk-bg); color: var(--tk-fg); outline: var(--bw) solid var(--tb); outline-offset: calc(var(--bw) * -1); }
 .rd .ticker .mq { overflow: hidden; flex: 1; white-space: nowrap; padding: 9px 0; -webkit-mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
 .rd .ticker.calm .mq { -webkit-mask-image: none; mask-image: none; padding: 9px 18px; text-overflow: ellipsis; }
-.rd .ticker .track { display: inline-flex; will-change: transform; }
-.rd .ticker .grp { display: inline-flex; gap: 28px; padding-right: 28px; }
+.rd .ticker .track { display: inline-flex; align-items: center; will-change: transform; }
+.rd .ticker .grp { display: inline-flex; align-items: center; gap: 28px; padding-right: 28px; }
+.rd .ticker .grp > span { font-size: 14px; line-height: 21px; }
 .rd .ticker b { color: var(--tk-b); }
 
 /* type */
