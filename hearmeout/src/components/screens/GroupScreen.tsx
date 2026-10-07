@@ -140,11 +140,12 @@ export function GroupScreen({ device: _device }: { device: Device }) {
             <button className="row" key={row.user.id} onClick={() => openMember(row.user.id)}>
               <span className="num" style={{ fontSize: 26, width: 22 }}>{i + 1}</span>
               <Av u={row.user} />
-              <span className="g">
+              {/* On a phone the bar gives way, not the name. */}
+              <span className="g" style={{ minWidth: 84 }}>
                 <b>{row.user.name}{youTag(row.user.id)}</b>
                 {i === 0 && row.hours > 0 && <span className="tag" style={{ background: 'var(--acc)', color: 'var(--onacc)' }}>{t('groups.listenedMostTag')}</span>}
               </span>
-              <div className="meter" style={{ flex: 'none', width: '30%' }}><i style={{ width: `${Math.round((row.hours / maxLeader) * 100)}%` }} /></div>
+              <div className="meter" style={{ flex: '0 1 30%', minWidth: 32 }}><i style={{ width: `${Math.round((row.hours / maxLeader) * 100)}%` }} /></div>
               <b style={{ width: 52, textAlign: 'right' }}>{row.hours}{t('unit.h')}</b>
             </button>
           ))}

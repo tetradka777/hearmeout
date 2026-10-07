@@ -13,7 +13,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   try {
     const name = await withSpotifyCache(`artist-name:v1:${id}`, 30 * 86400, () => fetchSpotifyArtistName(id));
     if (!name) return NextResponse.json({ tracks: [] });
-    const tracks = await withSpotifyCache(`artist-top:v2:${id}`, 86400, () => fetchArtistTopTracks(id, name));
+    const tracks = await withSpotifyCache(`artist-top:v3:${id}`, 86400, () => fetchArtistTopTracks(id, name));
     return NextResponse.json({ tracks });
   } catch (err) {
     return upstreamErrorResponse(err, '/api/artist/[id]/top-tracks');

@@ -587,3 +587,15 @@ html::-webkit-scrollbar, .rd ::-webkit-scrollbar { display: none; }
 /* The still "quiet" line wraps on a phone instead of ending in "…". */
 .rd .ticker.calm { border-radius: 22px; }
 .rd .ticker.calm .mq { white-space: normal; text-overflow: clip; line-height: 1.35; }
+/* Artist → Popular on a phone: the title gets the whole first line, the
+   score and the three buttons go on a second line under it. */
+@media (max-width: 600px) {
+  .rd .poprow { flex-wrap: wrap; row-gap: 6px; }
+  .rd .poprow > .rowlink { flex: 1 1 calc(100% - 32px); }
+  .rd .poprow > .tag { margin-left: 32px; margin-right: auto; }
+}
+/* Palette buttons on a narrow phone: the name goes under the swatches
+   instead of being squeezed beside them. */
+@media (max-width: 420px) {
+  .rd .palbtn { flex-direction: column; align-items: flex-start; gap: 6px; }
+}
