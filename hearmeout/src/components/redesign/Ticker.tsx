@@ -15,7 +15,10 @@ import { useApp } from '@/lib/AppContext';
 //      rest of the app (screen changes, state updates) can't touch it.
 // Mount this once in the app shell, outside the route outlet (spec 17.1).
 const TK = { pos: 0, last: 0 };
-const DUR_MS = 36000; // one full group, i.e. 50% of the (two-group) track
+// One full group (50% of the two-group track) takes 6 s per event, at
+// least 36 s, so a longer strip scrolls at the same reading speed.
+const MS_PER_EVENT = 6000;
+const MIN_DUR_MS = 36000;
 
 function motionOn(): boolean {
   if (typeof document === 'undefined') return true;
@@ -30,6 +33,8 @@ export function Ticker() {
   const tickerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const hoveringRef = useRef(false);
+  const durRef = useRef(MIN_DUR_MS);
+  useEffect(() => { durRef.current = Math.max(MIN_DUR_MS, events.length * MS_PER_EVENT); }, [events.length]);
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -45,7 +50,7 @@ export function Ticker() {
       const dt = TK.last ? Math.min(100, ts - TK.last) : 0; // cap: a backgrounded tab can't cause a jump
       TK.last = ts;
       if (dt && !(canHover && hoveringRef.current) && motionOn()) {
-        TK.pos += (dt / DUR_MS) * 50;
+        TK.pos += (dt / durRef.current) * 50;
         if (TK.pos >= 50) TK.pos -= 50;
       }
       apply();

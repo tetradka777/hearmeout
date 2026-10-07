@@ -564,3 +564,26 @@ html { background: var(--bg); }
 .rd .amenu .ml { display: inline-block; text-align-last: auto; }
 /* L26: Toxic has no outlines in its chrome; the search field matches. */
 [data-design="toxic"] .rd .search { outline-color: transparent; background: color-mix(in srgb, var(--fg) 7%, transparent); }
+/* Covers and photos set as an inline background always show the whole
+   picture, centred, at the box size (covers are square, so nothing is cut). */
+.rd [style*="background-image"] { background-size: cover; background-position: center; background-repeat: no-repeat; }
+/* No visible scrollbars anywhere; rows still scroll by touch, trackpad,
+   shift+wheel and the plain wheel (see useWheelRows). */
+html, .rd, .rd * { scrollbar-width: none; }
+html::-webkit-scrollbar, .rd ::-webkit-scrollbar { display: none; }
+/* Cards start at the top: a <button> centres its content vertically, so in
+   a row or grid a card with a one-line title sat lower than its neighbours. */
+.rd .hrow { align-items: flex-start; }
+.rd .hrow > button, .rd button:has(> .cov, > .cvw) { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; }
+/* A word longer than its box breaks instead of running out of it (narrow
+   tiles, long German compounds, long album titles). */
+.rd { overflow-wrap: anywhere; }
+.rd .stats3 > * { min-width: 0; }
+@media (max-width: 480px) { .rd .stats3 .tile { padding: 14px 12px; } }
+/* A settings row puts its control under the label when both don't fit. */
+.rd .setrow { flex-wrap: wrap; }
+.rd .setrow > div:first-child { flex: 1 1 180px; min-width: 0; }
+.rd .seg { max-width: 100%; flex-wrap: wrap; }
+/* The still "quiet" line wraps on a phone instead of ending in "…". */
+.rd .ticker.calm { border-radius: 22px; }
+.rd .ticker.calm .mq { white-space: normal; text-overflow: clip; line-height: 1.35; }

@@ -29,7 +29,7 @@ export function CoverArt({ url, fallbackLetter, className = '', style, fallbackS
   return (
     <div
       className={`${className} ${showFallback ? 'cover-fallback' : ''}`.trim()}
-      style={showFallback ? style : { ...style, backgroundImage: `url('${url}')` }}
+      style={showFallback ? style : { backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', ...style, backgroundImage: `url('${url}')` }}
       onClick={onClick}
     >
       {showFallback && <span className="fallback-letter" style={fallbackStyle}>{fallbackLetter}</span>}
