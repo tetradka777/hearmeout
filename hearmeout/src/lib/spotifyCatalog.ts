@@ -140,6 +140,16 @@ export async function resolveSpotifyAlbumId(title: string, artist: string): Prom
   return data.albums?.items?.[0]?.id ?? null;
 }
 
+// An album of this artist by title: search results (at most 10 in
+// development mode) narrowed to albums that credit the artist, so a cover
+// or tribute album with the same name never wins; an exact title first.
+export async function resolveArtistAlbumId(title: string, artistName: string, artistId: string, normalize: (s: string) => string): Promise<string | null> {
+  const data = await spotifyGet('/search', { q: `album:${title} artist:${artistName}`, type: 'album', limit: '10' });
+  const items = ((data.albums?.items || []) as SpotifyAlbumSearchItem[]).filter((a) => a.artists?.some((x) => x.id === artistId));
+  const want = normalize(title);
+  return (items.find((a) => normalize(a.name) === want) || items[0])?.id ?? null;
+}
+
 // Resolves a catalog artist name (our curated albums only know the artist's
 // name, not their Spotify id) to a real Spotify artist id, so Discover's
 // artist search results can open a real artist page instead of a dead click.

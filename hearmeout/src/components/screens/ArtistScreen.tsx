@@ -205,11 +205,13 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
               const saved = laterItems.some((li) => li.type === 'track' && li.albumId === tr.albumId && li.trackIndex === trackIndex);
               const isCur = currentTrack?.albumId === tr.albumId && currentTrack?.title === tr.title;
               return (
-                <div className="row" key={tr.id}>
+                <div className="row poprow" key={tr.id}>
                   <span className="num" style={{ fontSize: 22, width: 20, opacity: 0.8 }}>{i + 1}</span>
-                  <button className="g rowlink" onClick={() => openAlbum(tr.albumId)} style={{ textAlign: 'left' }}>
-                    <b>{tr.title}</b>
-                    <small className="muted" style={{ fontWeight: 600 }}>{formatDuration(tr.durationMs)} · {tr.albumTitle}</small>
+                  <button className="rowlink" onClick={() => openAlbum(tr.albumId)}>
+                    <span className="g">
+                      <b>{tr.title}</b>
+                      <small className="muted" style={{ fontWeight: 600 }}>{formatDuration(tr.durationMs)} · {tr.albumTitle}</small>
+                    </span>
                   </button>
                   {score != null
                     ? <span className="tag" style={{ background: 'var(--acc)', color: 'var(--onacc)' }}>{t('artist.youScore', { score: fmt1(score) })}</span>
