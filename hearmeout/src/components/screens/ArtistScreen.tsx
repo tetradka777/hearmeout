@@ -86,13 +86,12 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
     if (!art || !isSpotify) { setTopTracks(null); return; }
     let cancelled = false;
     setTopTracks(null);
-    const market = me?.region ? `?market=${encodeURIComponent(me.region)}` : '';
-    fetch(`/api/artist/${art.id}/top-tracks${market}`)
+    fetch(`/api/artist/${art.id}/top-tracks`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { if (!cancelled) setTopTracks(d ? d.tracks : 'error'); })
       .catch(() => { if (!cancelled) setTopTracks('error'); });
     return () => { cancelled = true; };
-  }, [art?.id, isSpotify, me?.region]);
+  }, [art?.id, isSpotify]);
 
   // Concerts load lazily, the first time the tab is opened for this artist.
   useEffect(() => { setConcerts(null); }, [art?.id, me?.region]);
@@ -355,11 +354,9 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
           <div style={{ flex: 1, minWidth: 200 }}>
             <p className="eyebrow muted" style={{ margin: 0 }}>{t('artist.subtitleSpotify')}</p>
             <h1 className="big" style={{ margin: 0, fontSize: 'clamp(34px,7vw,60px)' }}>{art.name}</h1>
-            {(art.followers != null || art.popularity != null) && (
+            {art.fans != null && art.fans > 0 && (
               <p className="muted" style={{ fontWeight: 600, marginTop: 4 }}>
-                {art.followers != null && t('artist.followersCount', { count: art.followers.toLocaleString(language) })}
-                {art.followers != null && art.popularity != null && ' · '}
-                {art.popularity != null && t('artist.popularityScore', { score: art.popularity })}
+                {t('artist.fansCount', { count: art.fans.toLocaleString(language) })}
               </p>
             )}
             <div className="chips" style={{ margin: '10px 0 0' }}>

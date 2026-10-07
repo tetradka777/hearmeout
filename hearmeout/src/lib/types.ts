@@ -287,8 +287,6 @@ export type ArtistRelease = {
   'first-release-date'?: string;
 };
 
-// Spotify doesn't expose real "monthly listeners" via the public API — only
-// follower count and a 0-100 popularity score. Shown as-is, not relabeled.
 export type SpotifyArtistAlbum = { id: string; title: string; cover: string | null; releaseDate: string | null; year: number | null };
 
 export type ArtistState = {
@@ -302,8 +300,8 @@ export type ArtistState = {
   // spotify-sourced
   photo?: string | null;
   genres?: string[];
-  followers?: number | null;
-  popularity?: number | null;
+  // Deezer fans (Spotify no longer returns followers to this app).
+  fans?: number | null;
   releasedAlbums?: SpotifyArtistAlbum[];
   upcomingAlbums?: SpotifyArtistAlbum[];
 };

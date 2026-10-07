@@ -1,5 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { fetchArtistGenres, fetchRecentlyPlayed, refreshAccessToken } from './spotify';
+import { fetchRecentlyPlayed, refreshAccessToken } from './spotify';
+import { deezerArtistGenres } from './deezerServer';
+import { RateLimitError } from './upstreamError';
 import { detectRegionFromSpotify } from './regionDetect';
 
 export async function syncSpotifyForUser(admin: SupabaseClient, userId: string): Promise<{ imported: number }> {
@@ -34,8 +36,18 @@ export async function syncSpotifyForUser(admin: SupabaseClient, userId: string):
   const items = await fetchRecentlyPlayed(accessToken);
   if (!items.length) return { imported: 0 };
 
-  const artistIds = items.flatMap((i) => i.track.artists.map((a) => a.id));
-  const genreByArtist = await fetchArtistGenres(accessToken, artistIds);
+  // Recently played tracks don't carry a genre, and Spotify no longer gives
+  // development-mode apps artist genres, so each main artist's genre comes
+  // from Deezer by name (cached for 30 days, so a sync usually costs nothing).
+  const genreByArtist = new Map<string, string>();
+  for (const name of [...new Set(items.map((i) => i.track.artists[0]?.name).filter(Boolean))]) {
+    try {
+      const genres = await deezerArtistGenres(name);
+      if (genres[0]) genreByArtist.set(name, genres[0]);
+    } catch (err) {
+      if (err instanceof RateLimitError) break;
+    }
+  }
 
   const rows = items.map((i) => ({
     user_id: userId,
@@ -46,7 +58,7 @@ export async function syncSpotifyForUser(admin: SupabaseClient, userId: string):
     album: i.track.album.name,
     album_id: i.track.album.id,
     cover_url: i.track.album.images?.[0]?.url || null,
-    genre: genreByArtist.get(i.track.artists[0]?.id) || null,
+    genre: genreByArtist.get(i.track.artists[0]?.name) || null,
     release_year: i.track.album.release_date ? parseInt(i.track.album.release_date.slice(0, 4), 10) : null,
     played_at: i.played_at,
     duration_ms: i.track.duration_ms,
