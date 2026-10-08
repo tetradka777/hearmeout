@@ -69,7 +69,7 @@ export function ConnectionRows({ onboarding = false }: { onboarding?: boolean })
             <span className="lg" style={{ background: c.color, color: '#fff', opacity: c.soon ? 0.55 : 1 }}>{c.letter}</span>
             <div className="g"><b>{c.name}</b><br /><small className="muted" style={{ fontWeight: 600 }}>{c.soon ? t('settings.comingSoon') : on ? t('settings.connected') : t('settings.notConnected')}</small></div>
             {c.soon ? <button className="btn ghost" disabled>{t('settings.soon')}</button>
-              : on ? (onboarding ? null : <><button className="btn ghost" onClick={() => syncSpotify()}>{t('profile.syncNow')}</button><button className="btn ghost" onClick={disconnect}>{t('settings.disconnect')}</button></>)
+              : on ? (onboarding ? null : <div className="acts"><button className="btn ghost" onClick={() => syncSpotify()}>{t('profile.syncNow')}</button><button className="btn ghost" onClick={disconnect}>{t('settings.disconnect')}</button></div>)
               : <a className="btn" href="/api/auth/spotify">{t('settings.connect')}</a>}
           </div>
         );

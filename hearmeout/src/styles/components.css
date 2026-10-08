@@ -603,3 +603,14 @@ html::-webkit-scrollbar, .rd ::-webkit-scrollbar { display: none; }
 @media (max-width: 420px) {
   .rd .palbtn { flex-direction: column; align-items: flex-start; gap: 6px; }
 }
+/* A word inside a button never breaks mid-word ("Disconnec/t"); the button
+   may still wrap between words. */
+.rd .btn { overflow-wrap: normal; }
+/* Connected account: Sync now and Disconnect side by side, and on a phone
+   on their own line under the name, so the name isn't squeezed. */
+.rd .conn .acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 600px) {
+  .rd .conn:has(.acts) { flex-wrap: wrap; row-gap: 10px; }
+  .rd .conn:has(.acts) > .g { flex: 1 1 calc(100% - 58px); }
+  .rd .conn .acts { flex: 1 1 100%; justify-content: flex-start; }
+}
