@@ -64,7 +64,9 @@ export async function syncSpotifyForUser(admin: SupabaseClient, userId: string):
     cover_url: i.track.album.images?.[0]?.url || null,
     genre: genreByArtist.get(i.track.artists[0]?.name) || null,
     release_year: i.track.album.release_date ? parseInt(i.track.album.release_date.slice(0, 4), 10) : null,
-    played_at: i.played_at,
+    // Whole seconds, like the Extended Streaming History import, so the
+    // unique (user, track, played_at) key catches a play that's in both.
+    played_at: new Date(Math.floor(new Date(i.played_at).getTime() / 1000) * 1000).toISOString(),
     duration_ms: i.track.duration_ms,
     source: 'spotify' as const,
   }));
