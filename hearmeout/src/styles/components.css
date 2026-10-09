@@ -578,7 +578,8 @@ html::-webkit-scrollbar, .rd ::-webkit-scrollbar { display: none; }
 /* Cards start at the top: a <button> centres its content vertically, so in
    a row or grid a card with a one-line title sat lower than its neighbours. */
 .rd .hrow { align-items: flex-start; }
-.rd .hrow > button, .rd button:has(> .cov, > .cvw) { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; }
+/* Cards only: list rows (.row, .rowlink) keep their cover beside the text. */
+.rd .hrow > button, .rd button:not(.row):not(.rowlink):has(> .cov, > .cvw) { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; }
 /* A word longer than its box breaks instead of running out of it (narrow
    tiles, long German compounds, long album titles). */
 .rd { overflow-wrap: anywhere; }
@@ -614,3 +615,7 @@ html::-webkit-scrollbar, .rd ::-webkit-scrollbar { display: none; }
   .rd .conn:has(.acts) > .g { flex: 1 1 calc(100% - 58px); }
   .rd .conn .acts { flex: 1 1 100%; justify-content: flex-start; }
 }
+/* A cover without a picture (none yet, or it failed to load) shows the
+   artist's first letter, sized to the box, instead of an empty tile. */
+.rd .cover-fallback { display: grid; place-items: center; container-type: inline-size; color: var(--ink); }
+.rd .cover-fallback .fallback-letter { font-family: var(--font-display); font-weight: 800; font-size: 46cqi; line-height: 1; text-transform: uppercase; }
