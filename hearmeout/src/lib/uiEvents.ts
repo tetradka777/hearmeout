@@ -6,6 +6,8 @@
 export const MATCH_FRIEND_EVENT = 'hmo:match-friend';
 // detail: ProfileTab — Profile opens that tab (avatar menu → Friend requests).
 export const PROFILE_TAB_EVENT = 'hmo:profile-tab';
+// detail: settings section — Settings opens it (Home → import history).
+export const SETTINGS_SECTION_EVENT = 'hmo:settings-section';
 
 // Screens mount the first time they're opened (AppShell), and the jump
 // fires its event right as it switches screens — before a screen opened for
@@ -14,7 +16,7 @@ export const PROFILE_TAB_EVENT = 'hmo:profile-tab';
 const PICKUP_MS = 2000;
 const last = new Map<string, { detail: unknown; at: number }>();
 if (typeof window !== 'undefined') {
-  for (const type of [MATCH_FRIEND_EVENT, PROFILE_TAB_EVENT]) {
+  for (const type of [MATCH_FRIEND_EVENT, PROFILE_TAB_EVENT, SETTINGS_SECTION_EVENT]) {
     window.addEventListener(type, (e) => last.set(type, { detail: (e as CustomEvent).detail, at: Date.now() }));
   }
 }

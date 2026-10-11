@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
+import { SETTINGS_SECTION_EVENT } from '@/lib/uiEvents';
 
 // importHtml(): three steps, a file button, and a report after the upload.
 export function ImportTile() {
@@ -22,8 +23,12 @@ export function ImportTile() {
     <div className="tile t-soft2 imp">
       <h3>{t('profile.importTitle')}</h3>
       <p className="muted" style={{ fontWeight: 600, marginTop: 4 }}>{t('settings.importLead')}</p>
+      <p className="muted" style={{ fontWeight: 600, marginTop: 8 }}>{t('import.why')}</p>
       <ol>
-        <li>{t('settings.importStep1')}</li>
+        <li>
+          {t('settings.importStep1')}{' '}
+          <a href="https://www.spotify.com/account/privacy/" target="_blank" rel="noopener noreferrer" style={{ fontWeight: 800, textDecoration: 'underline' }}>{t('import.openSpotify')} ↗</a>
+        </li>
         <li>{t('settings.importStep2')}</li>
         <li>{t('settings.importStep3Pre')} <b>Streaming_History_Audio_*.json</b> {t('settings.importStep3Post')}</li>
       </ol>
@@ -39,6 +44,34 @@ export function ImportTile() {
           {report.errors.length > 0 && <><br /><span className="ferr" style={{ display: 'inline' }}>{t('settings.importErrors', { list: report.errors.join(', ') })}</span></>}
         </div>
       )}
+    </div>
+  );
+}
+
+// Home: while the account has only a few plays, suggest importing the
+// Spotify history (that is where stats, recaps and match get their data).
+// Goes once there are enough plays, or for good once dismissed.
+const NUDGE_OFF_KEY = 'hmo-import-nudge-off';
+const NUDGE_BELOW_PLAYS = 1000;
+
+export function ImportNudge() {
+  const { t, me, showScreen } = useApp();
+  const [off, setOff] = useState(() => {
+    try { return typeof window !== 'undefined' && localStorage.getItem(NUDGE_OFF_KEY) === '1'; } catch { return false; }
+  });
+  if (!me || off || (me.playsCount ?? 0) >= NUDGE_BELOW_PLAYS) return null;
+  const dismiss = () => {
+    setOff(true);
+    try { localStorage.setItem(NUDGE_OFF_KEY, '1'); } catch { /* fine: hidden for this visit */ }
+  };
+  return (
+    <div className="tile t-pop" style={{ marginTop: 14 }}>
+      <h3>{t('import.nudgeTitle')}</h3>
+      <p style={{ fontWeight: 600, marginTop: 6 }}>{t('import.nudgeBody')}</p>
+      <div className="acts" style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button className="btn" onClick={() => { showScreen('settings'); window.dispatchEvent(new CustomEvent(SETTINGS_SECTION_EVENT, { detail: 'connections' })); }}>{t('import.nudgeCta')}</button>
+        <button className="btn ghost" onClick={dismiss}>{t('import.nudgeLater')}</button>
+      </div>
     </div>
   );
 }

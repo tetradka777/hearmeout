@@ -14,6 +14,7 @@ import { useFriendScores } from '@/lib/useFriendScores';
 import { toLocale, quoted } from '@/lib/i18n';
 import { recapLine } from '@/lib/recapLine';
 import { completedWeekRange, isoWeekNumber } from '@/lib/weeks';
+import { ImportNudge } from '../ConnectionBlocks';
 
 // Home feed (redesign spec 6.1). Replaces the old Home = catalog-browser
 // screen; browsing the catalog moved to Discover (spec 13.3). Real data
@@ -273,6 +274,8 @@ export function HomeScreen(_props: { device: Device }) {
         <HeroTile />
         <RecapTile />
       </div>
+
+      <ImportNudge />
 
       <FeedSection />
 

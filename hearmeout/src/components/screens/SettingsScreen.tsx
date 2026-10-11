@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
 import { regionDisplayName, toLocale, LANGUAGES, LANGUAGE_LABEL, type Language, type TranslationKey } from '@/lib/i18n';
@@ -8,6 +8,7 @@ import { PALETTES, type Design, type Mode } from '@/lib/palettes';
 import { exportRatingsCsv } from '@/lib/csvExport';
 import { ConnectionRows, ImportTile } from '../ConnectionBlocks';
 import { RegionInput } from '../RegionInput';
+import { SETTINGS_SECTION_EVENT, takeRecentEvent } from '@/lib/uiEvents';
 
 type Section = 'appearance' | 'language' | 'account' | 'connections' | 'privacy';
 
@@ -314,6 +315,14 @@ function PrivacyTab() {
 export function SettingsScreen(_props: { device: Device }) {
   const { t, me } = useApp();
   const [section, setSection] = useState<Section>('appearance');
+  // Home's "import your history" lands on Connections.
+  useEffect(() => {
+    const onSection = (e: Event) => setSection((e as CustomEvent<Section>).detail);
+    const pending = takeRecentEvent<Section>(SETTINGS_SECTION_EVENT);
+    if (pending) setSection(pending);
+    window.addEventListener(SETTINGS_SECTION_EVENT, onSection);
+    return () => window.removeEventListener(SETTINGS_SECTION_EVENT, onSection);
+  }, []);
   if (!me) return null;
 
   const NAV: { key: Section; label: string }[] = [

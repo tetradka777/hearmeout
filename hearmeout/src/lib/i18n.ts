@@ -1093,6 +1093,12 @@ const ru = {
   'settings.signOutAllHint': 'Завершит вход на всех телефонах, компьютерах и в браузерах, включая этот. Пригодится, если потерял(а) телефон.',
   'settings.signOutAllConfirm': 'Да, выйти везде',
   'settings.signOutAllFailed': 'Не получилось выйти везде. Попробуй позже.',
+  'import.why': 'Синхронизация видит только последние 50 треков, а выгрузка — все твои годы: статистика, рекапы и совпадение вкусов станут точнее. Запрос занимает минуту, письмо от Spotify обычно приходит за несколько дней — можно продолжить сейчас и загрузить файлы потом.',
+  'import.openSpotify': 'Открыть страницу Spotify',
+  'import.nudgeTitle': 'Загрузи всю историю Spotify',
+  'import.nudgeBody': 'Сейчас у HearMeOut мало твоих прослушиваний. Выгрузка из Spotify добавит все годы — статистика, рекапы и совпадение с друзьями станут настоящими.',
+  'import.nudgeCta': 'Как загрузить',
+  'import.nudgeLater': 'Не сейчас',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2182,6 +2188,12 @@ const en: Dict = {
   'settings.signOutAllHint': 'Ends the session on every phone, computer and browser, this one included. Useful if you lose a phone.',
   'settings.signOutAllConfirm': 'Yes, sign out everywhere',
   'settings.signOutAllFailed': 'Couldn’t sign out everywhere. Try again later.',
+  'import.why': 'Sync only sees your last 50 tracks; the export holds all your years, so stats, recaps and taste match get far more accurate. Requesting it takes a minute and Spotify’s email usually arrives within a few days — carry on now and upload the files later.',
+  'import.openSpotify': 'Open Spotify’s page',
+  'import.nudgeTitle': 'Bring in your whole Spotify history',
+  'import.nudgeBody': 'HearMeOut has only a few of your plays so far. Spotify’s export adds every year — real stats, recaps and taste match with friends.',
+  'import.nudgeCta': 'How to upload',
+  'import.nudgeLater': 'Not now',
 };
 
 const fr: Dict = {
@@ -3268,6 +3280,12 @@ const fr: Dict = {
   'settings.signOutAllHint': 'Termine la session sur tous les téléphones, ordinateurs et navigateurs, y compris celui-ci. Utile si tu perds ton téléphone.',
   'settings.signOutAllConfirm': 'Oui, partout',
   'settings.signOutAllFailed': 'Impossible de se déconnecter partout. Réessaie plus tard.',
+  'import.why': 'La synchro ne voit que tes 50 derniers titres ; l’export contient toutes tes années : stats, bilans et affinités deviennent bien plus justes. La demande prend une minute et l’e-mail de Spotify arrive en général en quelques jours — continue maintenant, tu importeras les fichiers plus tard.',
+  'import.openSpotify': 'Ouvrir la page Spotify',
+  'import.nudgeTitle': 'Importe tout ton historique Spotify',
+  'import.nudgeBody': 'HearMeOut n’a encore que peu de tes écoutes. L’export Spotify ajoute toutes tes années : de vraies stats, de vrais bilans et de vraies affinités.',
+  'import.nudgeCta': 'Comment importer',
+  'import.nudgeLater': 'Pas maintenant',
 };
 
 const es: Dict = {
@@ -4354,6 +4372,12 @@ const es: Dict = {
   'settings.signOutAllHint': 'Cierra la sesión en todos los móviles, ordenadores y navegadores, incluido este. Útil si pierdes el móvil.',
   'settings.signOutAllConfirm': 'Sí, en todos',
   'settings.signOutAllFailed': 'No se pudo cerrar sesión en todos. Inténtalo más tarde.',
+  'import.why': 'La sincronización solo ve tus últimas 50 canciones; la exportación tiene todos tus años: estadísticas, resúmenes y afinidad serán mucho más precisos. Pedirla lleva un minuto y el correo de Spotify suele llegar en unos días: sigue ahora y sube los archivos después.',
+  'import.openSpotify': 'Abrir la página de Spotify',
+  'import.nudgeTitle': 'Trae todo tu historial de Spotify',
+  'import.nudgeBody': 'HearMeOut aún tiene pocas de tus escuchas. La exportación de Spotify añade todos tus años: estadísticas, resúmenes y afinidad de verdad.',
+  'import.nudgeCta': 'Cómo subirlo',
+  'import.nudgeLater': 'Ahora no',
 };
 
 const de: Dict = {
@@ -5440,6 +5464,12 @@ const de: Dict = {
   'settings.signOutAllHint': 'Beendet die Anmeldung auf allen Handys, Computern und Browsern, auch auf diesem. Praktisch, wenn du dein Handy verlierst.',
   'settings.signOutAllConfirm': 'Ja, überall abmelden',
   'settings.signOutAllFailed': 'Abmelden überall hat nicht geklappt. Versuch es später nochmal.',
+  'import.why': 'Der Sync sieht nur deine letzten 50 Songs, der Export alle deine Jahre: Statistiken, Rückblicke und Match werden viel genauer. Die Anfrage dauert eine Minute, Spotifys Mail kommt meist in ein paar Tagen – mach jetzt weiter und lade die Dateien später hoch.',
+  'import.openSpotify': 'Spotify-Seite öffnen',
+  'import.nudgeTitle': 'Hol deinen ganzen Spotify-Verlauf',
+  'import.nudgeBody': 'HearMeOut kennt erst wenige deiner Plays. Spotifys Export bringt alle Jahre – echte Statistiken, Rückblicke und Matches mit Freunden.',
+  'import.nudgeCta': 'So geht’s',
+  'import.nudgeLater': 'Nicht jetzt',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };
