@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { setNumberLanguage } from './numberFormat';
 import { ALBUMS } from './data';
 import { translate, type Language, type TranslationKey } from './i18n';
+import { clearStatsCache } from './statsClientCache';
 import type {
   Album, AlbumRatingInfo, AppNotification, ArtistState, Device, FeedResponse, FriendRequest, LaterItem, LovedItem, LovedItemType, Me, RatingRecord, RecapData, RecapPeriod, ScreenName, SeasonOption,
 } from './types';
@@ -714,19 +715,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .catch(() => requestedRecapKeys.current.delete(key));
   }, [me]);
 
-  const [recapSeasons, setRecapSeasons] = useState<SeasonOption[] | null>(null);
+  // Season chips per person, kept for the session: opening the season recap
+  // again (or a refresh of `me`) no longer blanks and reloads them.
+  const [seasonsByUser, setSeasonsByUser] = useState<Record<string, SeasonOption[]>>({});
+  const recapSeasonsTarget = state.recapViewUserId === 'me' ? me?.id : state.recapViewUserId;
+  const recapSeasons = recapSeasonsTarget ? seasonsByUser[recapSeasonsTarget] ?? null : null;
   useEffect(() => {
     if (state.activeScreen !== 'recap' || state.recapPeriod !== 'season') return;
-    const targetId = state.recapViewUserId === 'me' ? me?.id : state.recapViewUserId;
-    if (!targetId) return;
+    const targetId = recapSeasonsTarget;
+    if (!targetId || seasonsByUser[targetId]) return;
     let cancelled = false;
-    setRecapSeasons(null);
     fetch(`/api/recap/seasons?userId=${targetId}`)
       .then((res) => (res.ok ? res.json() : { seasons: [] }))
-      .then((data: { seasons: SeasonOption[] }) => { if (!cancelled) setRecapSeasons(data.seasons); })
-      .catch(() => { if (!cancelled) setRecapSeasons([]); });
+      .then((data: { seasons: SeasonOption[] }) => { if (!cancelled) setSeasonsByUser((s) => ({ ...s, [targetId]: data.seasons })); })
+      .catch(() => { if (!cancelled) setSeasonsByUser((s) => ({ ...s, [targetId]: [] })); });
     return () => { cancelled = true; };
-  }, [state.activeScreen, state.recapPeriod, state.recapViewUserId, me]);
+  }, [state.activeScreen, state.recapPeriod, recapSeasonsTarget, seasonsByUser]);
 
   // Posting/saving-privately never navigates away (the prototype's own
   // post/priv click handlers just re-render the same vRate() page in
@@ -913,6 +917,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     showToast(imported > 0 ? t('toast.syncedTracks', { count: imported }) : t('toast.syncNoNew'));
     requestedRecapKeys.current.clear();
     setRecapCache({});
+    clearStatsCache();
   }, [showToast, t]);
 
   const onSpotifyConnected = useCallback(async () => {

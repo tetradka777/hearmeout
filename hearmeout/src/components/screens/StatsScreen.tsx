@@ -13,6 +13,7 @@ import type { WeekStart } from '@/lib/palettes';
 import { formatHour, formatRelative } from '@/lib/format';
 import { recapLine } from '@/lib/recapLine';
 import { completedWeekRange, isoWeekNumber } from '@/lib/weeks';
+import { cachedStats, storeStats } from '@/lib/statsClientCache';
 
 type T = ReturnType<typeof useApp>['t'];
 
@@ -208,23 +209,40 @@ export function StatsScreen(_props: { device: Device }) {
   const weekRecap = me ? recapCache[`${me.id}:week`] : undefined;
   const weekRecapLine = weekRecap ? recapLine(weekRecap, language, t) : null;
 
+  // A period seen before shows at once from the session cache and refreshes
+  // in the background; the load restarts only when the period (or the week
+  // start setting) changes, not on every refresh of `me`.
+  const weekStartPref = me?.weekStart;
   useEffect(() => {
-    if (!me) return;
+    if (!me || !weekStartPref) return;
     let cancelled = false;
-    setData(null);
-    const params = new URLSearchParams({ period: periodType, weekStart: me.weekStart });
-    if (periodType === 'season') { if (seasonKey) params.set('season', seasonKey); }
-    else params.set('offset', String(offset));
-    fetch(`/api/stats?${params}`).then((r) => (r.ok ? r.json() : null)).then((d: StatsData | null) => {
-      if (cancelled) return;
+    const paramsFor = (season: StatsSeasonKey | null) => {
+      const p = new URLSearchParams({ period: periodType, weekStart: weekStartPref });
+      if (periodType === 'season') { if (season) p.set('season', season); }
+      else p.set('offset', String(offset));
+      return p.toString();
+    };
+    // With no season chosen yet the server answers for the current season:
+    // keep that answer under the season's own key too, and select it.
+    const pickSeason = (d: StatsData) => {
+      if (periodType !== 'season' || seasonKey) return;
+      const cur = d.seasonChips.find((c) => c.current) || d.seasonChips[d.seasonChips.length - 1];
+      if (cur) { storeStats(paramsFor(cur.key), d); setSeasonKey(cur.key); }
+    };
+    const key = paramsFor(seasonKey);
+    const hit = cachedStats(key);
+    setData(hit ? hit.data : null);
+    if (hit) pickSeason(hit.data);
+    if (hit?.fresh) return;
+    fetch(`/api/stats?${key}`).then((r) => (r.ok ? r.json() : null)).then((d: StatsData | null) => {
+      if (cancelled || !d) return;
+      storeStats(key, d);
       setData(d);
-      if (d && periodType === 'season' && !seasonKey) {
-        const cur = d.seasonChips.find((c) => c.current) || d.seasonChips[d.seasonChips.length - 1];
-        if (cur) setSeasonKey(cur.key);
-      }
+      pickSeason(d);
     });
     return () => { cancelled = true; };
-  }, [periodType, offset, seasonKey, me]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [periodType, offset, seasonKey, me?.id, weekStartPref]);
 
   if (!me) return null;
 

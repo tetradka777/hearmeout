@@ -57,6 +57,37 @@ function seasonChipsForToday(today: Date): StatsSeasonChip[] {
 
 type Range = { start: Date; end: Date; label: string; sub: string };
 
+// Finished answers, per viewer + user + period, for a few minutes (the
+// server is one long-lived process on Render).
+const MEMO_TTL_MS = 3 * 60 * 1000;
+const STATS_MEMO = new Map<string, { at: number; body: StatsData }>();
+function remember(key: string, body: StatsData): void {
+  const now = Date.now();
+  if (STATS_MEMO.size > 500) for (const [k, v] of STATS_MEMO) if (now - v.at > MEMO_TTL_MS) STATS_MEMO.delete(k);
+  STATS_MEMO.set(key, { at: now, body });
+}
+
+// Each artist's first play ever (by artist id, else name), per user, kept
+// for half an hour: only the "new artists" figure needs the whole history,
+// and only three narrow columns of it.
+const FIRST_SEEN_TTL_MS = 30 * 60 * 1000;
+const FIRST_SEEN = new Map<string, { at: number; map: Map<string, number> }>();
+async function firstSeenFor(admin: ReturnType<typeof supabaseAdmin>, userId: string): Promise<Map<string, number>> {
+  const hit = FIRST_SEEN.get(userId);
+  if (hit && Date.now() - hit.at < FIRST_SEEN_TTL_MS) return hit.map;
+  const { rows } = await fetchAllRows<{ artist: string | null; artist_id: string | null; played_at: string }>((from, to) =>
+    admin.from('listening_events').select('artist, artist_id, played_at').eq('user_id', userId).order('played_at', { ascending: true }).order('id', { ascending: true }).range(from, to),
+    50000, 6
+  );
+  const map = new Map<string, number>();
+  for (const r of rows) {
+    const k = r.artist_id || r.artist || '';
+    if (k && !map.has(k)) map.set(k, new Date(r.played_at).getTime());
+  }
+  FIRST_SEEN.set(userId, { at: Date.now(), map });
+  return map;
+}
+
 function weekRange(today: Date, offset: number, weekStart: WeekStart): Range {
   const thisWeekStart = addDaysUTC(today, -weekStartOffset(today, weekStart));
   const start = addDaysUTC(thisWeekStart, offset * 7);
@@ -133,20 +164,32 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // PostgREST caps every request at its project max-rows setting regardless
-  // of .limit() — paginate with .range() to get the real full history
-  // (needed for "new artist" and the previous-period comparison, both of
-  // which look outside the selected window).
-  const [{ rows: all, error }, { data: ratings }] = await Promise.all([
+  // The same answer for a few minutes: switching periods back and forth, and
+  // every screen that asks for the same stats, don't redo the work.
+  const memoKey = `${viewerId}|${targetUserId}|${[...url.searchParams.entries()].filter(([k]) => k !== 'userId').sort().join('&')}`;
+  const memo = STATS_MEMO.get(memoKey);
+  if (memo && Date.now() - memo.at < MEMO_TTL_MS) return NextResponse.json(memo.body);
+
+  // Only the plays of the selected period and the one before it (for the
+  // comparison), not the whole history — a 20k-play history took seconds
+  // per period. "New artist" needs each artist's first play ever, which
+  // comes from a per-user map kept for a while (firstSeenFor).
+  const windowStart = prevRange && prevRange.start < range.start ? prevRange.start : range.start;
+  const [{ rows: all, error }, { data: ratings }, firstSeen] = await Promise.all([
     fetchAllRows<Row>((from, to) =>
       admin
         .from('listening_events')
         .select('track_id, track_title, artist, artist_id, album_id, album, cover_url, genre, duration_ms, played_at')
         .eq('user_id', targetUserId)
+        .gte('played_at', windowStart.toISOString())
+        .lt('played_at', range.end.toISOString())
         .order('played_at', { ascending: true })
-        .range(from, to)
+        .order('id', { ascending: true })
+        .range(from, to),
+      50000, 6
     ),
     admin.from('ratings').select('stars').eq('user_id', targetUserId),
+    firstSeenFor(admin, targetUserId),
   ]);
   if (error) return NextResponse.json({ error }, { status: 500 });
 
@@ -160,14 +203,9 @@ export async function GET(request: NextRequest) {
   const trackCount = inRange.length;
   const artistCount = new Set(inRange.map(artistKey).filter(Boolean)).size;
 
-  const firstSeen = new Map<string, number>();
-  for (const r of all) {
-    const k = artistKey(r);
-    if (!k) continue;
-    const t = new Date(r.played_at).getTime();
-    if (!firstSeen.has(k) || t < firstSeen.get(k)!) firstSeen.set(k, t);
-  }
-  const newArtistCount = [...new Set(inRange.map(artistKey).filter(Boolean))].filter((k) => (firstSeen.get(k) ?? 0) >= range.start.getTime()).length;
+  // An artist missing from the kept map first appeared after it was built,
+  // i.e. in this period.
+  const newArtistCount = [...new Set(inRange.map(artistKey).filter(Boolean))].filter((k) => (firstSeen.get(k) ?? Infinity) >= range.start.getTime()).length;
 
   const ratingsList = ratings || [];
   const avgRating = ratingsList.length ? Math.round((ratingsList.reduce((s, r) => s + Number(r.stars), 0) / ratingsList.length) * 10) / 10 : 0;
@@ -277,5 +315,6 @@ export async function GET(request: NextRequest) {
     calendar: { days, activeDays, totalDays, longestStreak, bestDay },
     seasonChips,
   };
+  remember(memoKey, stats);
   return NextResponse.json(stats);
 }
