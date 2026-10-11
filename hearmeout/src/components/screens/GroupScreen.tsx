@@ -66,6 +66,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
     setInviteErr(
       body?.error === 'not_found' ? t('groups.handleNotFound', { handle })
         : body?.error === 'already_member' ? t('groups.handleAlreadyMember', { handle })
+        : body?.error === 'not_friends' ? t('groups.handleNotFriend', { handle })
         : t('groups.inviteFailed'),
     );
   };

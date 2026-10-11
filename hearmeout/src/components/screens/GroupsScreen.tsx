@@ -81,6 +81,7 @@ export function GroupsScreen(_props: { device: Device }) {
     const body = await res.json().catch(() => null);
     if (body?.error === 'name_length') setNameErr(t('groups.nameLengthError'));
     else if (body?.error === 'invite_not_found') setInviteErr(t('groups.handleNotFound', { handle }));
+    else if (body?.error === 'invite_not_friends') setInviteErr(t('groups.handleNotFriend', { handle }));
     else showToast(t('groups.createFailed'));
   };
 

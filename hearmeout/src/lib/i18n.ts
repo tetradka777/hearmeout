@@ -1082,6 +1082,9 @@ const ru = {
   'ticker.albumOfWeekLabel': 'Альбом недели',
   'ticker.albumOfWeek': '«{album}» — {count} {count|оценка|оценки|оценок} в HearMeOut',
   'artist.fansCount': 'поклонников на Deezer: {count}',
+  'auth.tooManyAttempts': 'Слишком много попыток. Подожди 15 минут и попробуй снова.',
+  'groups.handleNotFriend': '{handle} пока не у тебя в друзьях. Сначала добавь в друзья, потом в группу.',
+  'nav.skipToContent': 'Перейти к содержимому',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2160,6 +2163,9 @@ const en: Dict = {
   'ticker.albumOfWeekLabel': 'Album of the week',
   'ticker.albumOfWeek': '{album}: {count} ratings on HearMeOut',
   'artist.fansCount': '{count} fans on Deezer',
+  'auth.tooManyAttempts': 'Too many attempts. Wait 15 minutes and try again.',
+  'groups.handleNotFriend': '{handle} isn’t your friend yet. Add them as a friend first, then to the group.',
+  'nav.skipToContent': 'Skip to content',
 };
 
 const fr: Dict = {
@@ -3235,6 +3241,9 @@ const fr: Dict = {
   'ticker.albumOfWeekLabel': 'Album de la semaine',
   'ticker.albumOfWeek': '« {album} » : {count} notes sur HearMeOut',
   'artist.fansCount': '{count} {count|fan|fans} sur Deezer',
+  'auth.tooManyAttempts': 'Trop de tentatives. Attends 15 minutes et réessaie.',
+  'groups.handleNotFriend': '{handle} n’est pas encore ton ami. Ajoute-le d’abord en ami, puis au groupe.',
+  'nav.skipToContent': 'Aller au contenu',
 };
 
 const es: Dict = {
@@ -4310,6 +4319,9 @@ const es: Dict = {
   'ticker.albumOfWeekLabel': 'Álbum de la semana',
   'ticker.albumOfWeek': '«{album}»: {count} valoraciones en HearMeOut',
   'artist.fansCount': '{count} {count|fan|fans} en Deezer',
+  'auth.tooManyAttempts': 'Demasiados intentos. Espera 15 minutos y vuelve a intentarlo.',
+  'groups.handleNotFriend': '{handle} aún no es tu amigo. Agrégalo primero como amigo y luego al grupo.',
+  'nav.skipToContent': 'Ir al contenido',
 };
 
 const de: Dict = {
@@ -5385,6 +5397,9 @@ const de: Dict = {
   'ticker.albumOfWeekLabel': 'Album der Woche',
   'ticker.albumOfWeek': '„{album}“: {count} Bewertungen bei HearMeOut',
   'artist.fansCount': '{count} Fans auf Deezer',
+  'auth.tooManyAttempts': 'Zu viele Versuche. Warte 15 Minuten und versuch es noch einmal.',
+  'groups.handleNotFriend': '{handle} ist noch nicht dein Freund. Füg ihn zuerst als Freund hinzu, dann zur Gruppe.',
+  'nav.skipToContent': 'Zum Inhalt springen',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };

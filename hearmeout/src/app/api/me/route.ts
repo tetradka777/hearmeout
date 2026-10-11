@@ -76,14 +76,32 @@ export async function PATCH(request: NextRequest) {
   const admin = supabaseAdmin();
   const body = await request.json().catch(() => null);
   const patch: Record<string, string | boolean | null> = {};
-  if (typeof body?.name === 'string' && body.name.trim()) patch.name = body.name.trim();
-  if (typeof body?.handle === 'string' && body.handle.trim()) {
-    patch.handle = `@${slugifyHandle(body.handle.replace(/^@/, ''))}`;
+  // The same limits as the UI, checked here too (a direct request skipped
+  // them): name 2–24, handle 3–20, region a country code.
+  if (typeof body?.name === 'string' && body.name.trim()) {
+    const name = body.name.trim();
+    if (name.length < 2 || name.length > 24) return NextResponse.json({ error: 'name_length' }, { status: 400 });
+    patch.name = name;
   }
-  if (typeof body?.avatarUrl === 'string') patch.avatar_url = body.avatarUrl;
-  if (typeof body?.bannerUrl === 'string') patch.banner_url = body.bannerUrl;
+  if (typeof body?.handle === 'string' && body.handle.trim()) {
+    const slug = slugifyHandle(body.handle.replace(/^@/, ''));
+    if (slug.length < 3 || slug.length > 20) return NextResponse.json({ error: 'handle_length' }, { status: 400 });
+    patch.handle = `@${slug}`;
+  }
+  // Pictures are stored inline and sent with every profile and friend
+  // list, so only a small image made on the device (the client shrinks it)
+  // or "" to remove it — never an outside URL, which would also let its
+  // owner see the IP of everyone who views the profile.
+  for (const [field, column, maxKb] of [['avatarUrl', 'avatar_url', 200], ['bannerUrl', 'banner_url', 700]] as const) {
+    const v = body?.[field];
+    if (typeof v !== 'string') continue;
+    if (v && (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v) || v.length > maxKb * 1024)) {
+      return NextResponse.json({ error: 'invalid_image' }, { status: 400 });
+    }
+    patch[column] = v || null;
+  }
   if (typeof body?.language === 'string' && ['ru', 'en', 'fr', 'es', 'de'].includes(body.language)) patch.language = body.language;
-  if ('region' in (body ?? {})) patch.region = typeof body.region === 'string' && body.region ? body.region : null;
+  if ('region' in (body ?? {})) patch.region = typeof body.region === 'string' && /^[A-Z]{2}$/.test(body.region) ? body.region : null;
   if (typeof body?.isOpenProfile === 'boolean') patch.is_open_profile = body.isOpenProfile;
   if (typeof body?.design === 'string' && isDesign(body.design)) patch.design = body.design;
   if (typeof body?.mode === 'string' && isMode(body.mode)) patch.mode = body.mode;

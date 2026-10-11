@@ -76,6 +76,10 @@ export function RedesignShell({ children }: { children: ReactNode }) {
 
   return (
     <div className={`rd${hasPlayer ? ' hasmp' : ''}${hasNowPlaying ? ' hasnp' : ''}`}>
+      {/* Keyboard users skip the menus straight to the screen (shown on focus).
+          A button, not an #main link: a hash change would add a history
+          entry, and back/forward drive the screen here. */}
+      <button className="skip" onClick={() => document.getElementById('main')?.focus()}>{t('nav.skipToContent')}</button>
       <div className="wrap">
       {/* Desktop top bar — identical structure in both designs (spec 2.4/15.1), skin only differs via CSS */}
       <div className="nav">
@@ -114,7 +118,7 @@ export function RedesignShell({ children }: { children: ReactNode }) {
 
       <Ticker />
 
-      <main className="fade">{children}</main>
+      <main className="fade" id="main" tabIndex={-1}>{children}</main>
       </div>
 
       {/* Mobile tab bar: 5 tabs + round quick-rate + (spec 3.9) */}
