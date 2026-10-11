@@ -4,6 +4,8 @@ import { getCurrentUserId } from '@/lib/identity';
 import { handleIlikePattern } from '@/lib/slug';
 import { acceptFriendRequest } from '@/lib/friendRequests';
 import { isDemoAccountId } from '@/lib/demoAccounts';
+import { sendPush } from '@/lib/push';
+import { hit, underLimit } from '@/lib/rateLimit';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -57,6 +59,15 @@ export async function POST(request: NextRequest) {
     .from('friend_requests')
     .upsert({ from_user_id: userId, to_user_id: target.id, status: 'pending' }, { onConflict: 'from_user_id,to_user_id' });
   if (upsertErr) return NextResponse.json({ error: upsertErr.message }, { status: 500 });
+
+  // A push to the other person's devices — once an hour per pair, so
+  // cancelling and re-sending doesn't buzz their phone each time.
+  const pairKey = `push-fr:${userId}:${target.id}`;
+  if (underLimit(pairKey, 1, 60 * 60 * 1000)) {
+    hit(pairKey);
+    const { data: meRow } = await admin.from('users').select('name').eq('id', userId).maybeSingle();
+    void sendPush([target.id], { titleKey: 'push.friendRequestTitle', bodyKey: 'push.friendRequestBody', vars: { name: (meRow?.name as string) || '' }, url: '/?screen=profile', tag: 'friend-request' }).catch(() => {});
+  }
 
   return NextResponse.json({ ok: true, status: 'pending', user: { id: target.id, name: target.name, handle: target.handle, avatarUrl: target.avatar_url } });
 }

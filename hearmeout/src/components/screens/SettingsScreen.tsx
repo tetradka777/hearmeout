@@ -9,6 +9,7 @@ import { exportRatingsCsv } from '@/lib/csvExport';
 import { ConnectionRows, ImportTile } from '../ConnectionBlocks';
 import { RegionInput } from '../RegionInput';
 import { SETTINGS_SECTION_EVENT, takeRecentEvent } from '@/lib/uiEvents';
+import { PushToggle } from '../PushToggle';
 
 type Section = 'appearance' | 'language' | 'account' | 'connections' | 'privacy';
 
@@ -243,6 +244,7 @@ function AccountTab() {
           <div><b>{t('settings.replayOnboarding')}</b><small className="muted">{t('settings.replayOnboardingHint')}</small></div>
           <button className="btn ghost" onClick={replayOnboarding}>{t('settings.replayOnboardingBtn')}</button>
         </div>
+        <PushToggle />
         <div className="setrow">
           <div><b>{t('settings.signOutAll')}</b><small className="muted">{t('settings.signOutAllHint')}</small></div>
           {confirmSignOutAll

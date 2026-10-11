@@ -1099,6 +1099,17 @@ const ru = {
   'import.nudgeBody': 'Сейчас у HearMeOut мало твоих прослушиваний. Выгрузка из Spotify добавит все годы — статистика, рекапы и совпадение с друзьями станут настоящими.',
   'import.nudgeCta': 'Как загрузить',
   'import.nudgeLater': 'Не сейчас',
+  'push.friendRequestTitle': 'Новая заявка в друзья',
+  'push.friendRequestBody': '{name} хочет добавить тебя в друзья',
+  'push.weeklyRecapTitle': 'Рекап недели готов',
+  'push.weeklyRecapBody': 'Что ты слушал(а) на прошлой неделе — заходи посмотреть',
+  'settings.notifications': 'Уведомления',
+  'settings.notificationsHint': 'Новые заявки в друзья и готовый рекап недели — на этом устройстве.',
+  'settings.notificationsIos': 'На iPhone уведомления работают, когда сайт добавлен на экран «Домой»: Поделиться → «На экран Домой», потом открой его оттуда.',
+  'settings.notificationsUnsupported': 'Этот браузер не поддерживает уведомления.',
+  'settings.notificationsBlocked': 'Уведомления запрещены в настройках браузера — разреши их для сайта.',
+  'settings.notificationsUnavailable': 'Уведомления пока не настроены на сервере.',
+  'settings.notificationsOn': 'Уведомления включены',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2194,6 +2205,17 @@ const en: Dict = {
   'import.nudgeBody': 'HearMeOut has only a few of your plays so far. Spotify’s export adds every year — real stats, recaps and taste match with friends.',
   'import.nudgeCta': 'How to upload',
   'import.nudgeLater': 'Not now',
+  'push.friendRequestTitle': 'New friend request',
+  'push.friendRequestBody': '{name} wants to be your friend',
+  'push.weeklyRecapTitle': 'Your weekly recap is ready',
+  'push.weeklyRecapBody': 'See what you listened to last week',
+  'settings.notifications': 'Notifications',
+  'settings.notificationsHint': 'New friend requests and your weekly recap — on this device.',
+  'settings.notificationsIos': 'On iPhone, notifications work once the site is on the Home Screen: Share → Add to Home Screen, then open it from there.',
+  'settings.notificationsUnsupported': 'This browser doesn’t support notifications.',
+  'settings.notificationsBlocked': 'Notifications are blocked in the browser settings — allow them for this site.',
+  'settings.notificationsUnavailable': 'Notifications aren’t set up on the server yet.',
+  'settings.notificationsOn': 'Notifications on',
 };
 
 const fr: Dict = {
@@ -3286,6 +3308,17 @@ const fr: Dict = {
   'import.nudgeBody': 'HearMeOut n’a encore que peu de tes écoutes. L’export Spotify ajoute toutes tes années : de vraies stats, de vrais bilans et de vraies affinités.',
   'import.nudgeCta': 'Comment importer',
   'import.nudgeLater': 'Pas maintenant',
+  'push.friendRequestTitle': 'Nouvelle demande d’ami',
+  'push.friendRequestBody': '{name} veut devenir ton ami',
+  'push.weeklyRecapTitle': 'Ton bilan de la semaine est prêt',
+  'push.weeklyRecapBody': 'Découvre ce que tu as écouté la semaine dernière',
+  'settings.notifications': 'Notifications',
+  'settings.notificationsHint': 'Nouvelles demandes d’ami et ton bilan de la semaine — sur cet appareil.',
+  'settings.notificationsIos': 'Sur iPhone, les notifications marchent une fois le site sur l’écran d’accueil : Partager → Sur l’écran d’accueil, puis ouvre-le depuis là.',
+  'settings.notificationsUnsupported': 'Ce navigateur ne gère pas les notifications.',
+  'settings.notificationsBlocked': 'Les notifications sont bloquées dans les réglages du navigateur — autorise-les pour ce site.',
+  'settings.notificationsUnavailable': 'Les notifications ne sont pas encore configurées sur le serveur.',
+  'settings.notificationsOn': 'Notifications activées',
 };
 
 const es: Dict = {
@@ -4378,6 +4411,17 @@ const es: Dict = {
   'import.nudgeBody': 'HearMeOut aún tiene pocas de tus escuchas. La exportación de Spotify añade todos tus años: estadísticas, resúmenes y afinidad de verdad.',
   'import.nudgeCta': 'Cómo subirlo',
   'import.nudgeLater': 'Ahora no',
+  'push.friendRequestTitle': 'Nueva solicitud de amistad',
+  'push.friendRequestBody': '{name} quiere ser tu amigo',
+  'push.weeklyRecapTitle': 'Tu resumen semanal está listo',
+  'push.weeklyRecapBody': 'Mira lo que escuchaste la semana pasada',
+  'settings.notifications': 'Notificaciones',
+  'settings.notificationsHint': 'Nuevas solicitudes de amistad y tu resumen semanal, en este dispositivo.',
+  'settings.notificationsIos': 'En iPhone, las notificaciones funcionan cuando el sitio está en la pantalla de inicio: Compartir → Añadir a pantalla de inicio, y ábrelo desde ahí.',
+  'settings.notificationsUnsupported': 'Este navegador no admite notificaciones.',
+  'settings.notificationsBlocked': 'Las notificaciones están bloqueadas en el navegador: permítelas para este sitio.',
+  'settings.notificationsUnavailable': 'Las notificaciones aún no están configuradas en el servidor.',
+  'settings.notificationsOn': 'Notificaciones activadas',
 };
 
 const de: Dict = {
@@ -5470,6 +5514,17 @@ const de: Dict = {
   'import.nudgeBody': 'HearMeOut kennt erst wenige deiner Plays. Spotifys Export bringt alle Jahre – echte Statistiken, Rückblicke und Matches mit Freunden.',
   'import.nudgeCta': 'So geht’s',
   'import.nudgeLater': 'Nicht jetzt',
+  'push.friendRequestTitle': 'Neue Freundschaftsanfrage',
+  'push.friendRequestBody': '{name} möchte mit dir befreundet sein',
+  'push.weeklyRecapTitle': 'Dein Wochenrückblick ist da',
+  'push.weeklyRecapBody': 'Sieh dir an, was du letzte Woche gehört hast',
+  'settings.notifications': 'Benachrichtigungen',
+  'settings.notificationsHint': 'Neue Freundschaftsanfragen und dein Wochenrückblick – auf diesem Gerät.',
+  'settings.notificationsIos': 'Auf dem iPhone gehen Benachrichtigungen, wenn die Seite auf dem Home-Bildschirm ist: Teilen → Zum Home-Bildschirm, dann von dort öffnen.',
+  'settings.notificationsUnsupported': 'Dieser Browser unterstützt keine Benachrichtigungen.',
+  'settings.notificationsBlocked': 'Benachrichtigungen sind im Browser blockiert – erlaube sie für diese Seite.',
+  'settings.notificationsUnavailable': 'Benachrichtigungen sind auf dem Server noch nicht eingerichtet.',
+  'settings.notificationsOn': 'Benachrichtigungen an',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };

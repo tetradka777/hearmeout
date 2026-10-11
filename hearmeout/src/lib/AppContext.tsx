@@ -1112,6 +1112,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
           artistName: params.get('name') ?? undefined,
           artistSource: (params.get('source') as 'spotify' | 'musicbrainz' | null) ?? undefined,
         });
+        // A recap link may name its period (the weekly recap push does).
+        const period = params.get('period');
+        if (screen === 'recap' && (period === 'day' || period === 'week' || period === 'month' || period === 'season')) {
+          setState((s) => ({ ...s, recapPeriod: period, recapSeasonKey: null, recapOffset: 0 }));
+        }
       } else {
         // No deep link — seed this very first entry with a real snapshot
         // too, so going back to it later restores 'catalog' the normal way
