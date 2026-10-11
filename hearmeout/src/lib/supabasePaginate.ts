@@ -7,21 +7,32 @@
 // recaps looked identical (both got the same truncated slice). This pages
 // through with .range() until a page comes back short, so callers get the
 // real row count instead of one page of it.
+//
+// `concurrency` > 1 asks for that many pages at once (in waves), for big
+// reads where one page after another took seconds; the query must have a
+// stable order (e.g. .order('played_at').order('id')) for pages not to
+// overlap.
 const PAGE_SIZE = 1000;
 
 export async function fetchAllRows<T>(
   buildQuery: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
-  maxRows = 50000
+  maxRows = 50000,
+  concurrency = 1
 ): Promise<{ rows: T[]; error: string | null }> {
   const rows: T[] = [];
   let offset = 0;
   while (offset < maxRows) {
-    const { data, error } = await buildQuery(offset, offset + PAGE_SIZE - 1);
-    if (error) return { rows, error: error.message };
-    const page = data || [];
-    rows.push(...page);
-    if (page.length < PAGE_SIZE) break;
-    offset += PAGE_SIZE;
+    const wave = Math.max(1, Math.min(concurrency, Math.ceil((maxRows - offset) / PAGE_SIZE)));
+    const pages = await Promise.all(
+      Array.from({ length: wave }, (_, i) => buildQuery(offset + i * PAGE_SIZE, offset + (i + 1) * PAGE_SIZE - 1))
+    );
+    for (const { data, error } of pages) {
+      if (error) return { rows, error: error.message };
+      const page = data || [];
+      rows.push(...page);
+      if (page.length < PAGE_SIZE) return { rows, error: null };
+    }
+    offset += wave * PAGE_SIZE;
   }
   return { rows, error: null };
 }

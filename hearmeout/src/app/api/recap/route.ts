@@ -9,6 +9,10 @@ import { completedWeekRange } from '@/lib/weeks';
 import { computeMonthAwards } from '@/lib/monthAwards';
 import type { ApiUser } from '@/lib/types';
 
+// Finished recaps per viewer + query for a few minutes, like /api/stats.
+const MEMO_TTL_MS = 3 * 60 * 1000;
+const RECAP_MEMO = new Map<string, { at: number; body: RecapData }>();
+
 type Row = { track_id: string | null; track_title: string | null; artist: string | null; artist_id: string | null; album_id: string | null; cover_url: string | null; genre: string | null; duration_ms: number | null };
 
 export async function GET(request: NextRequest) {
@@ -30,6 +34,9 @@ export async function GET(request: NextRequest) {
   if (!(await canViewProfileData(admin, targetUserId, viewerId))) {
     return NextResponse.json({ error: 'not_friends' }, { status: 403 });
   }
+  const memoKey = `${viewerId}|${[...url.searchParams.entries()].sort().join('&')}`;
+  const memo = RECAP_MEMO.get(memoKey);
+  if (memo && Date.now() - memo.at < MEMO_TTL_MS) return NextResponse.json(memo.body);
 
   // An explicit ?season=2025-summer picks a real historical window instead
   // of "the last 90 days from now" — parsed to real calendar-month bounds.
@@ -71,8 +78,8 @@ export async function GET(request: NextRequest) {
       .eq('user_id', targetUserId)
       .gte('played_at', since);
     if (until) q = q.lt('played_at', until);
-    return q.order('played_at', { ascending: false }).range(from, to);
-  }, 8000);
+    return q.order('played_at', { ascending: false }).order('id', { ascending: false }).range(from, to);
+  }, 50000, 6);
   if (error) return NextResponse.json({ error }, { status: 500 });
   const minutes = Math.round(rows.reduce((s, r) => s + (r.duration_ms || 0), 0) / 60000);
   const uniqueArtists = new Set(rows.map((r) => r.artist_id || r.artist).filter(Boolean)).size;
@@ -117,7 +124,7 @@ export async function GET(request: NextRequest) {
   const artistIds = [...new Set(rows.map((r) => r.artist_id).filter((x): x is string => !!x))];
   const [{ rows: priorRows }, { data: periodRatings }, awards] = await Promise.all([
     artistIds.length
-      ? fetchAllRows<{ artist_id: string | null }>((from, to) => admin.from('listening_events').select('artist_id').eq('user_id', targetUserId).in('artist_id', artistIds.slice(0, 300)).lt('played_at', since).range(from, to), 8000)
+      ? fetchAllRows<{ artist_id: string | null }>((from, to) => admin.from('listening_events').select('artist_id').eq('user_id', targetUserId).in('artist_id', artistIds.slice(0, 300)).lt('played_at', since).order('id').range(from, to), 50000, 6)
       : Promise.resolve({ rows: [] as { artist_id: string | null }[], error: null }),
     (() => {
       let q = admin.from('ratings').select('stars, is_private').eq('user_id', targetUserId).gte('created_at', since);
@@ -135,6 +142,8 @@ export async function GET(request: NextRequest) {
     topArtists, topSongs, topGenres, minutes, uniqueArtists, trackCount: rows.length,
     newArtists, avgScore, awards, range: { start: since, end: until },
   };
+  if (RECAP_MEMO.size > 500) for (const [k, v] of RECAP_MEMO) if (Date.now() - v.at > MEMO_TTL_MS) RECAP_MEMO.delete(k);
+  RECAP_MEMO.set(memoKey, { at: Date.now(), body: recap });
   return NextResponse.json(recap);
 }
 
@@ -161,8 +170,8 @@ async function circleAwards(admin: ReturnType<typeof supabaseAdmin>, userId: str
     return until ? q.lt('created_at', until) : q;
   };
   const [{ rows: events }, { rows: ratings }] = await Promise.all([
-    fetchAllRows((f, t) => ev().order('id').range(f, t)),
-    fetchAllRows((f, t) => rt().order('id').range(f, t)),
+    fetchAllRows((f, t) => ev().order('id').range(f, t), 50000, 6),
+    fetchAllRows((f, t) => rt().order('id').range(f, t), 50000, 6),
   ]);
   return computeMonthAwards(
     (events || []) as { user_id: string; played_at: string; duration_ms: number | null; genre: string | null }[],
