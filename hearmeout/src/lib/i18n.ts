@@ -1089,6 +1089,10 @@ const ru = {
   'crash.body': 'Мы уже получили отчёт об ошибке. Твои оценки и история в безопасности.',
   'crash.retry': 'Попробовать снова',
   'crash.home': 'На главную',
+  'settings.signOutAll': 'Выйти на всех устройствах',
+  'settings.signOutAllHint': 'Завершит вход на всех телефонах, компьютерах и в браузерах, включая этот. Пригодится, если потерял(а) телефон.',
+  'settings.signOutAllConfirm': 'Да, выйти везде',
+  'settings.signOutAllFailed': 'Не получилось выйти везде. Попробуй позже.',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2174,6 +2178,10 @@ const en: Dict = {
   'crash.body': 'We’ve already received an error report. Your ratings and history are safe.',
   'crash.retry': 'Try again',
   'crash.home': 'Go home',
+  'settings.signOutAll': 'Sign out on all devices',
+  'settings.signOutAllHint': 'Ends the session on every phone, computer and browser, this one included. Useful if you lose a phone.',
+  'settings.signOutAllConfirm': 'Yes, sign out everywhere',
+  'settings.signOutAllFailed': 'Couldn’t sign out everywhere. Try again later.',
 };
 
 const fr: Dict = {
@@ -3256,6 +3264,10 @@ const fr: Dict = {
   'crash.body': 'Nous avons déjà reçu un rapport d’erreur. Tes notes et ton historique sont en sécurité.',
   'crash.retry': 'Réessayer',
   'crash.home': 'Accueil',
+  'settings.signOutAll': 'Se déconnecter partout',
+  'settings.signOutAllHint': 'Termine la session sur tous les téléphones, ordinateurs et navigateurs, y compris celui-ci. Utile si tu perds ton téléphone.',
+  'settings.signOutAllConfirm': 'Oui, partout',
+  'settings.signOutAllFailed': 'Impossible de se déconnecter partout. Réessaie plus tard.',
 };
 
 const es: Dict = {
@@ -4338,6 +4350,10 @@ const es: Dict = {
   'crash.body': 'Ya hemos recibido un informe del error. Tus valoraciones y tu historial están a salvo.',
   'crash.retry': 'Reintentar',
   'crash.home': 'Ir al inicio',
+  'settings.signOutAll': 'Cerrar sesión en todos los dispositivos',
+  'settings.signOutAllHint': 'Cierra la sesión en todos los móviles, ordenadores y navegadores, incluido este. Útil si pierdes el móvil.',
+  'settings.signOutAllConfirm': 'Sí, en todos',
+  'settings.signOutAllFailed': 'No se pudo cerrar sesión en todos. Inténtalo más tarde.',
 };
 
 const de: Dict = {
@@ -5420,6 +5436,10 @@ const de: Dict = {
   'crash.body': 'Wir haben schon einen Fehlerbericht bekommen. Deine Bewertungen und dein Verlauf sind sicher.',
   'crash.retry': 'Nochmal versuchen',
   'crash.home': 'Zur Startseite',
+  'settings.signOutAll': 'Auf allen Geräten abmelden',
+  'settings.signOutAllHint': 'Beendet die Anmeldung auf allen Handys, Computern und Browsern, auch auf diesem. Praktisch, wenn du dein Handy verlierst.',
+  'settings.signOutAllConfirm': 'Ja, überall abmelden',
+  'settings.signOutAllFailed': 'Abmelden überall hat nicht geklappt. Versuch es später nochmal.',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };

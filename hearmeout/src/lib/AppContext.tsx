@@ -211,6 +211,7 @@ type AppContextValue = {
   loginWithPassword: (handle: string, password: string) => Promise<void>;
   claimAccount: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  logoutEverywhere: () => Promise<boolean>;
   deleteAccount: () => Promise<boolean>;
   updateProfileName: (name: string) => Promise<boolean>;
   updateProfileHandle: (handle: string) => Promise<boolean>;
@@ -607,6 +608,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await fetch('/api/auth/logout', { method: 'POST' });
     setMe(null);
     patch({ authStatus: 'anonymous' });
+  }, [patch]);
+
+  // Signs out every device, this one included (/api/auth/logout-all).
+  const logoutEverywhere = useCallback(async (): Promise<boolean> => {
+    const res = await fetch('/api/auth/logout-all', { method: 'POST' }).catch(() => null);
+    if (!res?.ok) return false;
+    setMe(null);
+    patch({ authStatus: 'anonymous' });
+    return true;
   }, [patch]);
 
   const deleteAccount = useCallback(async (): Promise<boolean> => {
@@ -1128,7 +1138,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     showScreen, viewHistory, goBack, openAlbum, viewFriend, viewGroup, openRecap, closeRecap,
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, setRecapOffset, recapSeasons,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
-    registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
+    registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, logoutEverywhere, deleteAccount,
     updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateLanguage, updateRegion, updateRegionAuto, updateOpenProfile, updateAppearance, updatePrivacy,
     addFriend, respondToFriendRequest, removeFriend, notifications, markNotificationsRead, sendHi, shareRecapWithFriends, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyObscure,
@@ -1136,7 +1146,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setRecapSeasonKey, setRecapOffset, recapSeasons,
     viewFriend, viewGroup, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,
-    registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
+    registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, logoutEverywhere, deleteAccount,
     updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateLanguage, updateRegion, updateRegionAuto, updateOpenProfile, updateAppearance, updatePrivacy,
     addFriend, respondToFriendRequest, removeFriend, notifications, markNotificationsRead, sendHi, shareRecapWithFriends, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast]);
 

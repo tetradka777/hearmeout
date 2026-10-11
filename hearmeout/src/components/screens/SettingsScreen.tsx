@@ -168,7 +168,8 @@ function LanguageTab() {
 }
 
 function AccountTab() {
-  const { t, me, updateProfileName, claimAccount, logout, replayOnboarding, deleteAccount, showToast } = useApp();
+  const { t, me, updateProfileName, claimAccount, logout, logoutEverywhere, replayOnboarding, deleteAccount, showToast } = useApp();
+  const [confirmSignOutAll, setConfirmSignOutAll] = useState(false);
   const [name, setName] = useState(me?.name ?? '');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -240,6 +241,12 @@ function AccountTab() {
         <div className="setrow">
           <div><b>{t('settings.replayOnboarding')}</b><small className="muted">{t('settings.replayOnboardingHint')}</small></div>
           <button className="btn ghost" onClick={replayOnboarding}>{t('settings.replayOnboardingBtn')}</button>
+        </div>
+        <div className="setrow">
+          <div><b>{t('settings.signOutAll')}</b><small className="muted">{t('settings.signOutAllHint')}</small></div>
+          {confirmSignOutAll
+            ? <button className="btn" onClick={async () => { if (!(await logoutEverywhere())) { setConfirmSignOutAll(false); showToast(t('settings.signOutAllFailed')); } }}>{t('settings.signOutAllConfirm')}</button>
+            : <button className="btn ghost" onClick={() => setConfirmSignOutAll(true)}>{t('settings.signOutAll')}</button>}
         </div>
         <div className="acts">
           <button className="btn" onClick={saveChanges}>{t('settings.saveChanges')}</button>
