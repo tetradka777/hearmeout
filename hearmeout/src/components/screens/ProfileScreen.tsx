@@ -468,6 +468,9 @@ export function ProfileScreen(_props: { device: Device }) {
 
   return (
     <>
+      {/* The visible name is an editable field, so the page heading for
+          screen readers is this hidden one. */}
+      <h1 className="sr">{me.name}</h1>
       <div className="tile t-ink glow prof">
         <label className="avwrap" aria-label={t('profile.uploadPhoto')}>
           <span className="avt lgA" style={userAvatarStyle(me)}>{!me.avatarUrl && me.name[0].toUpperCase()}</span>
