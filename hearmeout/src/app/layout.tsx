@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { pickLanguage } from "@/lib/i18n";
 import { previewLang, siteMetadata } from "@/lib/siteMeta";
+import { ErrorReporter } from "@/components/ErrorReporter";
 import "@/styles/fonts.css";
 import "@/styles/tokens.css";
 import "@/styles/components.css";
@@ -63,7 +64,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         {process.env.NODE_ENV === "development" && <script dangerouslySetInnerHTML={{ __html: DEV_HOST_SCRIPT }} />}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <body>{children}</body>
+      <body>
+        <ErrorReporter />
+        {children}
+      </body>
     </html>
   );
 }

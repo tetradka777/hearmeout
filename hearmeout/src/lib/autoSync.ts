@@ -1,6 +1,7 @@
 import { supabaseAdmin } from './supabaseAdmin';
 import { syncSpotifyForUser } from './spotifySync';
 import { enrichListeningHistoryCovers } from './enrichListeningHistory';
+import { logServerError } from './errorLog';
 
 // Background Spotify sync for everyone who connected it. Spotify's
 // recently-played list only holds the last 50 tracks, so without this the
@@ -20,7 +21,7 @@ export function maybeRunAutoSync(): void {
   if (running || Date.now() - lastStart < INTERVAL_MS) return;
   running = true;
   lastStart = Date.now();
-  runAutoSync().catch((err) => console.error('auto sync:', err)).finally(() => { running = false; });
+  runAutoSync().catch((err) => logServerError('auto sync', err)).finally(() => { running = false; });
 }
 
 async function runAutoSync(): Promise<void> {

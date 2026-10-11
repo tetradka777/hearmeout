@@ -1085,6 +1085,10 @@ const ru = {
   'auth.tooManyAttempts': 'Слишком много попыток. Подожди 15 минут и попробуй снова.',
   'groups.handleNotFriend': '{handle} пока не у тебя в друзьях. Сначала добавь в друзья, потом в группу.',
   'nav.skipToContent': 'Перейти к содержимому',
+  'crash.title': 'Что-то сломалось',
+  'crash.body': 'Мы уже получили отчёт об ошибке. Твои оценки и история в безопасности.',
+  'crash.retry': 'Попробовать снова',
+  'crash.home': 'На главную',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2166,6 +2170,10 @@ const en: Dict = {
   'auth.tooManyAttempts': 'Too many attempts. Wait 15 minutes and try again.',
   'groups.handleNotFriend': '{handle} isn’t your friend yet. Add them as a friend first, then to the group.',
   'nav.skipToContent': 'Skip to content',
+  'crash.title': 'Something broke',
+  'crash.body': 'We’ve already received an error report. Your ratings and history are safe.',
+  'crash.retry': 'Try again',
+  'crash.home': 'Go home',
 };
 
 const fr: Dict = {
@@ -3244,6 +3252,10 @@ const fr: Dict = {
   'auth.tooManyAttempts': 'Trop de tentatives. Attends 15 minutes et réessaie.',
   'groups.handleNotFriend': '{handle} n’est pas encore ton ami. Ajoute-le d’abord en ami, puis au groupe.',
   'nav.skipToContent': 'Aller au contenu',
+  'crash.title': 'Quelque chose a planté',
+  'crash.body': 'Nous avons déjà reçu un rapport d’erreur. Tes notes et ton historique sont en sécurité.',
+  'crash.retry': 'Réessayer',
+  'crash.home': 'Accueil',
 };
 
 const es: Dict = {
@@ -4322,6 +4334,10 @@ const es: Dict = {
   'auth.tooManyAttempts': 'Demasiados intentos. Espera 15 minutos y vuelve a intentarlo.',
   'groups.handleNotFriend': '{handle} aún no es tu amigo. Agrégalo primero como amigo y luego al grupo.',
   'nav.skipToContent': 'Ir al contenido',
+  'crash.title': 'Algo se ha roto',
+  'crash.body': 'Ya hemos recibido un informe del error. Tus valoraciones y tu historial están a salvo.',
+  'crash.retry': 'Reintentar',
+  'crash.home': 'Ir al inicio',
 };
 
 const de: Dict = {
@@ -5400,6 +5416,10 @@ const de: Dict = {
   'auth.tooManyAttempts': 'Zu viele Versuche. Warte 15 Minuten und versuch es noch einmal.',
   'groups.handleNotFriend': '{handle} ist noch nicht dein Freund. Füg ihn zuerst als Freund hinzu, dann zur Gruppe.',
   'nav.skipToContent': 'Zum Inhalt springen',
+  'crash.title': 'Da ist etwas kaputtgegangen',
+  'crash.body': 'Wir haben schon einen Fehlerbericht bekommen. Deine Bewertungen und dein Verlauf sind sicher.',
+  'crash.retry': 'Nochmal versuchen',
+  'crash.home': 'Zur Startseite',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };
