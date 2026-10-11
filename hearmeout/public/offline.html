@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HearMeOut — нет сети</title>
+<style>
+  :root { --bg: #F6EFE0; --fg: #1d2b4f; --acc: #D72E33; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #15120F; --fg: #F6EFE0; } }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { min-height: 100%; display: grid; place-items: center; text-align: center; padding: 24px; box-sizing: border-box; }
+  .mk { width: 56px; height: 56px; border-radius: 50%; background: #294074; display: grid; place-items: center; margin: 0 auto 20px; }
+  .mk::after { content: ""; width: 26px; height: 26px; border-radius: 50%; background: var(--acc); }
+  h1 { font-size: 28px; margin: 0 0 8px; }
+  p { margin: 0 0 20px; font-weight: 600; opacity: .85; }
+  button { font: inherit; font-weight: 800; padding: 12px 22px; border-radius: 999px; border: 2px solid currentColor; background: transparent; color: inherit; cursor: pointer; }
+</style>
+</head>
+<body>
+<main>
+  <div>
+    <div class="mk" aria-hidden="true"></div>
+    <h1>Нет подключения · You're offline</h1>
+    <p>HearMeOut откроется, как только появится интернет.<br>HearMeOut will open as soon as you're back online.</p>
+    <button onclick="location.reload()">Обновить · Retry</button>
+  </div>
+</main>
+</body>
+</html>

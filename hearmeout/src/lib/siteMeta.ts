@@ -49,6 +49,8 @@ export function siteMetadata(lang: PreviewLang): Metadata {
     metadataBase: new URL(SITE_URL),
     title: c.title,
     description: c.description,
+    // Installed to an iPhone home screen: opens full-screen like an app.
+    appleWebApp: { capable: true, title: 'HearMeOut', statusBarStyle: 'default' },
     openGraph: {
       type: 'website',
       url: SITE_URL,

@@ -22,7 +22,11 @@ const nextConfig: NextConfig = {
   // driven from that origin — the dev server needs to trust it too.
   allowedDevOrigins: ["127.0.0.1"],
   async headers() {
-    return [{ source: "/:path*", headers: SECURITY_HEADERS }];
+    return [
+      { source: "/:path*", headers: SECURITY_HEADERS },
+      // The service worker must never be served stale from a cache.
+      { source: "/sw.js", headers: [{ key: "Cache-Control", value: "no-cache, no-store, must-revalidate" }] },
+    ];
   },
 };
 
