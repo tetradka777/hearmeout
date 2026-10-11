@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { maybeRunAutoSync } from '@/lib/autoSync';
+import { maybeSendWeeklyRecaps } from '@/lib/weeklyRecapPush';
 
 // Keep-alive target (cron-job.org / UptimeRobot / the GitHub Actions ping):
 // any incoming request keeps Render's free instance awake. Once an hour it
@@ -19,10 +20,14 @@ export async function GET() {
   // Background Spotify sync rides on the same ping (lib/autoSync, at most
   // every 20 minutes, not awaited).
   maybeRunAutoSync();
+  // Monday's "weekly recap is ready" push (lib/weeklyRecapPush).
+  maybeSendWeeklyRecaps();
   if (Date.now() - lastRun > EVERY_MS) {
     lastRun = Date.now();
     try {
       await supabaseAdmin().from('spotify_cache').delete().lt('expires_at', new Date(Date.now() - 3 * 86400000).toISOString());
+      // Error log: 30 days is plenty (migration 027).
+      await supabaseAdmin().from('app_errors').delete().lt('created_at', new Date(Date.now() - 30 * 86400000).toISOString());
     } catch {
       // The ping's job is keeping the server up; the cleanup can wait.
     }

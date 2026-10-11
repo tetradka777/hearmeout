@@ -15,7 +15,7 @@ export function AlbumCard({ album, sub }: { album: Album; sub?: string }) {
   return (
     <button onClick={() => openAlbum(album.id)} style={{ textAlign: 'left', color: 'inherit' }}>
       <div className="cvw">
-        <CoverArt url={cover} fallbackLetter={album.artist[0] || '?'} className="cov" style={{ width: '100%', aspectRatio: '1' }} />
+        <CoverArt url={cover} fallbackLetter={album.artist[0] || '?'} className="cov" px={170} style={{ width: '100%', aspectRatio: '1' }} />
         {mine && <span className="bdg">{fmt1(mine.stars)}</span>}
       </div>
       <b style={{ display: 'block', marginTop: 10 }}>{album.title}</b>

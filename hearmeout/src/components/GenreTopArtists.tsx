@@ -1,6 +1,7 @@
 'use client';
 
 import { useApp } from '@/lib/AppContext';
+import { sizedImage } from '@/lib/imageSize';
 
 const GENRES = ['Rock', 'Hip-Hop', 'Electronic', 'R&B', 'Pop', 'Latin'];
 
@@ -19,7 +20,7 @@ function GenreRow({ genre, region }: { genre: string; region: string }) {
           : !artists.length ? <span className="muted">{t('genreTop.empty')}</span>
           : artists.map((ar) => (
             <button className="chip" key={ar.id} onClick={() => openSpotifyArtist(ar.id, ar.name)}>
-              <span className="dot" style={ar.photo ? { backgroundImage: `url('${ar.photo}')`, backgroundSize: 'cover', color: 'transparent' } : undefined}>{ar.name[0]}</span>
+              <span className="dot" style={ar.photo ? { backgroundImage: `url('${sizedImage(ar.photo, 60)}')`, backgroundSize: 'cover', color: 'transparent' } : undefined}>{ar.name[0]}</span>
               {ar.name}
             </button>
           ))}

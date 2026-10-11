@@ -4,6 +4,7 @@ import { usePlayer } from '@/lib/PlayerContext';
 import { useApp } from '@/lib/AppContext';
 import { PreviewButton } from './redesign/PreviewButton';
 import { NextIcon, CloseIcon } from './ui/Icons';
+import { sizedImage } from '@/lib/imageSize';
 
 function formatTime(sec: number) {
   if (!Number.isFinite(sec) || sec < 0) sec = 0;
@@ -26,7 +27,7 @@ export function GlobalPlayer() {
     <div id="plhost">
       <div className="mplay">
         <div className="mp-np">
-          <div className="cov" style={{ width: 40, height: 40, flex: 'none', ...(currentTrack.cover ? { backgroundImage: `url('${currentTrack.cover}')`, backgroundSize: 'cover' } : {}) }} />
+          <div className="cov" style={{ width: 40, height: 40, flex: 'none', ...(currentTrack.cover ? { backgroundImage: `url('${sizedImage(currentTrack.cover, 40)}')`, backgroundSize: 'cover' } : {}) }} />
           <div className="mp-tt">
             <b>{currentTrack.title}</b>
             <small>{currentTrack.artist}</small>

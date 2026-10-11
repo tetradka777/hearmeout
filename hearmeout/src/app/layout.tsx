@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { pickLanguage } from "@/lib/i18n";
 import { previewLang, siteMetadata } from "@/lib/siteMeta";
+import { ErrorReporter } from "@/components/ErrorReporter";
+import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import "@/styles/fonts.css";
 import "@/styles/tokens.css";
 import "@/styles/components.css";
@@ -18,6 +20,11 @@ export async function generateMetadata(): Promise<Metadata> {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // The phone's status bar / browser chrome in the site's background colour.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F6EFE0" },
+    { media: "(prefers-color-scheme: dark)", color: "#15120F" },
+  ],
 };
 
 const THEME_INIT_SCRIPT = `
@@ -63,7 +70,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         {process.env.NODE_ENV === "development" && <script dangerouslySetInnerHTML={{ __html: DEV_HOST_SCRIPT }} />}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <body>{children}</body>
+      <body>
+        <ErrorReporter />
+        <ServiceWorkerRegister />
+        {children}
+      </body>
     </html>
   );
 }

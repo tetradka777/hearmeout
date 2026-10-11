@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
 import { regionDisplayName, toLocale, LANGUAGES, LANGUAGE_LABEL, type Language, type TranslationKey } from '@/lib/i18n';
@@ -8,6 +8,8 @@ import { PALETTES, type Design, type Mode } from '@/lib/palettes';
 import { exportRatingsCsv } from '@/lib/csvExport';
 import { ConnectionRows, ImportTile } from '../ConnectionBlocks';
 import { RegionInput } from '../RegionInput';
+import { SETTINGS_SECTION_EVENT, takeRecentEvent } from '@/lib/uiEvents';
+import { PushToggle } from '../PushToggle';
 
 type Section = 'appearance' | 'language' | 'account' | 'connections' | 'privacy';
 
@@ -168,7 +170,8 @@ function LanguageTab() {
 }
 
 function AccountTab() {
-  const { t, me, updateProfileName, claimAccount, logout, replayOnboarding, deleteAccount, showToast } = useApp();
+  const { t, me, updateProfileName, claimAccount, logout, logoutEverywhere, replayOnboarding, deleteAccount, showToast } = useApp();
+  const [confirmSignOutAll, setConfirmSignOutAll] = useState(false);
   const [name, setName] = useState(me?.name ?? '');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -241,6 +244,13 @@ function AccountTab() {
           <div><b>{t('settings.replayOnboarding')}</b><small className="muted">{t('settings.replayOnboardingHint')}</small></div>
           <button className="btn ghost" onClick={replayOnboarding}>{t('settings.replayOnboardingBtn')}</button>
         </div>
+        <PushToggle />
+        <div className="setrow">
+          <div><b>{t('settings.signOutAll')}</b><small className="muted">{t('settings.signOutAllHint')}</small></div>
+          {confirmSignOutAll
+            ? <button className="btn" onClick={async () => { if (!(await logoutEverywhere())) { setConfirmSignOutAll(false); showToast(t('settings.signOutAllFailed')); } }}>{t('settings.signOutAllConfirm')}</button>
+            : <button className="btn ghost" onClick={() => setConfirmSignOutAll(true)}>{t('settings.signOutAll')}</button>}
+        </div>
         <div className="acts">
           <button className="btn" onClick={saveChanges}>{t('settings.saveChanges')}</button>
           <button className="btn ghost" onClick={() => logout()}>{t('settings.menuSignOut')}</button>
@@ -307,6 +317,14 @@ function PrivacyTab() {
 export function SettingsScreen(_props: { device: Device }) {
   const { t, me } = useApp();
   const [section, setSection] = useState<Section>('appearance');
+  // Home's "import your history" lands on Connections.
+  useEffect(() => {
+    const onSection = (e: Event) => setSection((e as CustomEvent<Section>).detail);
+    const pending = takeRecentEvent<Section>(SETTINGS_SECTION_EVENT);
+    if (pending) setSection(pending);
+    window.addEventListener(SETTINGS_SECTION_EVENT, onSection);
+    return () => window.removeEventListener(SETTINGS_SECTION_EVENT, onSection);
+  }, []);
   if (!me) return null;
 
   const NAV: { key: Section; label: string }[] = [

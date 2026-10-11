@@ -1,6 +1,7 @@
 'use client';
 
 import { useApp } from '@/lib/AppContext';
+import { sizedImage } from '@/lib/imageSize';
 
 // discoverHtml() "Lesser-known artists": a row of artist tiles (letter
 // circle, name, one line under it). The data is real low-popularity
@@ -20,7 +21,7 @@ export function ObscureAlbums({ genre }: { genre: string }) {
     <div className="hrow">
       {artists.map((a) => (
         <button className="tile" key={a.id} onClick={() => (a.artistId ? openSpotifyArtist(a.artistId, a.artist) : openAlbum(a.id))} style={{ textAlign: 'left', minWidth: 190 }}>
-          <span className="ph" style={{ width: 64, height: 64, fontSize: 26, ...(a.cover ? { backgroundImage: `url('${a.cover}')`, backgroundSize: 'cover', color: 'transparent' } : {}) }}>{a.artist[0]}</span>
+          <span className="ph" style={{ width: 64, height: 64, fontSize: 26, ...(a.cover ? { backgroundImage: `url('${sizedImage(a.cover, 64)}')`, backgroundSize: 'cover', color: 'transparent' } : {}) }}>{a.artist[0]}</span>
           <b style={{ display: 'block', marginTop: 10 }}>{a.artist}</b>
           <small className="muted" style={{ fontWeight: 700 }}>{a.title}</small>
         </button>

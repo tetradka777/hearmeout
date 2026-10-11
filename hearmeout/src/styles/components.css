@@ -623,3 +623,15 @@ html::-webkit-scrollbar, .rd ::-webkit-scrollbar { display: none; }
 .rd .skip { position: fixed; left: 12px; top: -60px; z-index: 400; padding: 10px 16px; border-radius: 999px; background: var(--fg); color: var(--bg); font-weight: 800; }
 .rd .skip:focus { top: 12px; }
 .rd main:focus, .rd main:focus-visible { outline: none !important; }
+/* Contrast (WCAG AA, checked across 2 designs × 2 modes × 13 palettes):
+   - calendar hours on light/medium heat cells get a paper backdrop (the
+     cell's accent tint made small text too faint in half the palettes);
+   - a muted part inside a coloured number ("/ 7") takes the tile's text
+     colour, not the number's accent;
+   - muted text on accent tiles uses the tile's full text colour (as on
+     t-pop tiles already);
+   - tags get a lighter tint behind their small bold text. */
+.rd .cd.l1 .hm, .rd .cd.l2 .hm { background: color-mix(in srgb, var(--paper) 78%, transparent); color: var(--fg); padding: 0 3px; border-radius: 4px; }
+.rd .num > small.muted { color: color-mix(in srgb, var(--tfg, var(--fg)) 85%, transparent); }
+.rd .t-ac .muted { color: var(--tfg); }
+.rd .tag { background: color-mix(in srgb, currentColor 10%, transparent); }

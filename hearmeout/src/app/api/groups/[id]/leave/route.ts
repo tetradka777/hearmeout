@@ -14,5 +14,10 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
   const { error } = await admin.from('group_members').delete().eq('group_id', id).eq('user_id', userId);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  // The last one out removes the group (and with it its votes and mutes),
+  // instead of leaving an empty group in the database for good.
+  const { count } = await admin.from('group_members').select('user_id', { count: 'exact', head: true }).eq('group_id', id);
+  if (count === 0) await admin.from('groups').delete().eq('id', id);
+
   return NextResponse.json({ ok: true });
 }

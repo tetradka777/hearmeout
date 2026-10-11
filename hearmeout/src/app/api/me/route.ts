@@ -22,6 +22,9 @@ export async function GET() {
     fetchIsOpenProfile(admin, userId),
     fetchRegionAuto(admin, userId),
   ]);
+  // How many plays the account has (Home suggests importing the Spotify
+  // history while it's small).
+  const { count: playsCount } = await admin.from('listening_events').select('id', { count: 'exact', head: true }).eq('user_id', userId);
   const { data: codeRow } = await admin.from('users').select('invite_code').eq('id', userId).maybeSingle();
 
   if (!profile) return NextResponse.json({ error: 'not_found' }, { status: 404 });
@@ -44,6 +47,7 @@ export async function GET() {
   const me: Me = {
     ...profile,
     connections: { spotify: connSet.has('spotify'), appleMusic: connSet.has('apple_music') },
+    playsCount: playsCount ?? 0,
     friends,
     language: (prefs?.language as Me['language']) || 'en',
     region: prefs?.region ?? null,

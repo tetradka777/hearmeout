@@ -97,6 +97,7 @@ export type PublicProfile = ApiUser & {
 
 export type Me = PublicProfile & {
   connections: { spotify: boolean; appleMusic: boolean };
+  playsCount?: number;
   friends: ApiUser[];
   language: import('./i18n').Language;
   region: string | null;

@@ -28,7 +28,7 @@ function SpotifyAlbumCard({ album, fallbackLetter, onOpen, unreleasedLabel, scor
 }) {
   return (
     <button className="cvw" onClick={() => onOpen(album.id)} style={{ textAlign: 'left', width: '100%' }}>
-      <CoverArt url={album.cover ?? undefined} fallbackLetter={fallbackLetter} className={`cov${unreleasedLabel ? ' ann' : ''}`} style={{ width: '100%', aspectRatio: '1' }}>
+      <CoverArt url={album.cover ?? undefined} fallbackLetter={fallbackLetter} className={`cov${unreleasedLabel ? ' ann' : ''}`} px={170} style={{ width: '100%', aspectRatio: '1' }}>
         {score != null && <span className="bdg">{fmt1(score)}</span>}
       </CoverArt>
       <b style={{ display: 'block', marginTop: 10 }}>{album.title}</b>
@@ -442,7 +442,7 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
             const year = g['first-release-date'] ? g['first-release-date'].slice(0, 4) : '—';
             return (
               <button key={g.id} onClick={() => openMbGroup(g.title, art.name, g.id)} style={{ textAlign: 'left', color: 'inherit', opacity: resolvingGroup === g.id ? 0.6 : 1 }}>
-                <CoverArt url={coverArtUrl(g.id)} fallbackLetter={g.title[0] || '?'} className="cov mb" style={{ width: '100%', aspectRatio: '1' }} />
+                <CoverArt url={coverArtUrl(g.id)} fallbackLetter={g.title[0] || '?'} className="cov mb" px={170} style={{ width: '100%', aspectRatio: '1' }} />
                 <b style={{ display: 'block', marginTop: 8, fontSize: 14 }}>{g.title}</b>
                 <small className="muted" style={{ fontWeight: 600 }}>{year}</small>
               </button>

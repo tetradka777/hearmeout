@@ -211,6 +211,7 @@ type AppContextValue = {
   loginWithPassword: (handle: string, password: string) => Promise<void>;
   claimAccount: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  logoutEverywhere: () => Promise<boolean>;
   deleteAccount: () => Promise<boolean>;
   updateProfileName: (name: string) => Promise<boolean>;
   updateProfileHandle: (handle: string) => Promise<boolean>;
@@ -272,6 +273,23 @@ const initialState: AppState = {
   toast: null,
   justRegistered: false,
 };
+
+// Chrome doesn't recompute colours written as color-mix(… currentColor …)
+// (muted text, hairlines, soft fills — 46 places in components.css) when the
+// inherited colour changes: after a light ↔ dark switch muted text kept the
+// old theme's colour, dark on dark, until a reload. A moment of display:none
+// on the app root makes it recompute everything; the scroll position is
+// kept.
+function restyleAfterThemeChange(): void {
+  const el = document.querySelector<HTMLElement>('.rd');
+  if (!el) return;
+  const y = window.scrollY;
+  const prev = el.style.display;
+  el.style.display = 'none';
+  void el.offsetHeight;
+  el.style.display = prev;
+  window.scrollTo(0, y);
+}
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(initialState);
@@ -477,9 +495,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!me) return;
     const root = document.documentElement;
+    const themeKey = () => `${root.dataset.design}|${root.dataset.palette}|${root.dataset.mode}`;
+    const before = themeKey();
     root.dataset.design = me.design;
     root.dataset.palette = me.palette;
     root.dataset.mode = resolveMode(me.mode);
+    if (before !== themeKey()) restyleAfterThemeChange();
     try {
       localStorage.setItem('hmo-appearance', JSON.stringify({
         design: me.design, mode: me.mode, palette: me.palette, motionEnabled: me.motionEnabled,
@@ -503,7 +524,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     let onColorSchemeChange: (() => void) | null = null;
     if (me.mode === 'system') {
       colorSchemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      onColorSchemeChange = () => { root.dataset.mode = resolveMode('system'); };
+      onColorSchemeChange = () => { root.dataset.mode = resolveMode('system'); restyleAfterThemeChange(); };
       colorSchemeQuery.addEventListener('change', onColorSchemeChange);
     }
     return () => {
@@ -607,6 +628,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await fetch('/api/auth/logout', { method: 'POST' });
     setMe(null);
     patch({ authStatus: 'anonymous' });
+  }, [patch]);
+
+  // Signs out every device, this one included (/api/auth/logout-all).
+  const logoutEverywhere = useCallback(async (): Promise<boolean> => {
+    const res = await fetch('/api/auth/logout-all', { method: 'POST' }).catch(() => null);
+    if (!res?.ok) return false;
+    setMe(null);
+    patch({ authStatus: 'anonymous' });
+    return true;
   }, [patch]);
 
   const deleteAccount = useCallback(async (): Promise<boolean> => {
@@ -1102,6 +1132,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
           artistName: params.get('name') ?? undefined,
           artistSource: (params.get('source') as 'spotify' | 'musicbrainz' | null) ?? undefined,
         });
+        // A recap link may name its period (the weekly recap push does).
+        const period = params.get('period');
+        if (screen === 'recap' && (period === 'day' || period === 'week' || period === 'month' || period === 'season')) {
+          setState((s) => ({ ...s, recapPeriod: period, recapSeasonKey: null, recapOffset: 0 }));
+        }
       } else {
         // No deep link — seed this very first entry with a real snapshot
         // too, so going back to it later restores 'catalog' the normal way
@@ -1128,7 +1163,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     showScreen, viewHistory, goBack, openAlbum, viewFriend, viewGroup, openRecap, closeRecap,
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, setRecapOffset, recapSeasons,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
-    registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
+    registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, logoutEverywhere, deleteAccount,
     updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateLanguage, updateRegion, updateRegionAuto, updateOpenProfile, updateAppearance, updatePrivacy,
     addFriend, respondToFriendRequest, removeFriend, notifications, markNotificationsRead, sendHi, shareRecapWithFriends, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyObscure,
@@ -1136,7 +1171,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setRecapSeasonKey, setRecapOffset, recapSeasons,
     viewFriend, viewGroup, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,
-    registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, deleteAccount,
+    registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, logoutEverywhere, deleteAccount,
     updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateLanguage, updateRegion, updateRegionAuto, updateOpenProfile, updateAppearance, updatePrivacy,
     addFriend, respondToFriendRequest, removeFriend, notifications, markNotificationsRead, sendHi, shareRecapWithFriends, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast]);
 

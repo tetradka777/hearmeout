@@ -74,7 +74,7 @@ function Top4Tile({ ids, scores }: { ids: string[]; scores: Map<string, number> 
       {shown.map(({ id, a }) => (
         <button key={id} onClick={() => openAlbum(id)} style={{ textAlign: 'left', color: 'inherit' }}>
           <div className="cvw">
-            <CoverArt url={spotifyCovers[a!.id] || a!.cover} fallbackLetter={a!.artist[0] || '?'} className="cov" style={{ width: '100%', aspectRatio: '1' }} />
+            <CoverArt url={spotifyCovers[a!.id] || a!.cover} fallbackLetter={a!.artist[0] || '?'} className="cov" px={170} style={{ width: '100%', aspectRatio: '1' }} />
             {scores.has(id) && <span className="bdg">{fmt1(scores.get(id)!)}</span>}
           </div>
           <b style={{ display: 'block', marginTop: 8, fontSize: 14 }}>{a!.title}</b>

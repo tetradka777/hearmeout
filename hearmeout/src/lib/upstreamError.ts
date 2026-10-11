@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { logServerError } from './errorLog';
 
 // Spotify (and other upstream APIs) answered 429. retryAfter is in seconds,
 // from the upstream Retry-After header when it sent one.
@@ -25,6 +26,6 @@ export function upstreamErrorResponse(err: unknown, where: string): NextResponse
   if (err instanceof RateLimitError) {
     return NextResponse.json({ error: 'rate_limited', retryAfter: err.retryAfter }, { status: 503, headers: { 'Retry-After': String(err.retryAfter) } });
   }
-  console.error(`${where}:`, err);
+  logServerError(where, err);
   return NextResponse.json({ error: 'upstream_error' }, { status: 502 });
 }
