@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { fmt1 } from '@/lib/numberFormat';
-import { PROFILE_TAB_EVENT } from '../redesign/AvatarMenu';
+import { PROFILE_TAB_EVENT, takeRecentEvent } from '@/lib/uiEvents';
 import { useApp } from '@/lib/AppContext';
+import { squareImageDataUrl } from '@/lib/imageResize';
 import { invitePath } from '@/lib/pendingInvite';
 import type { Device, RatingRecord } from '@/lib/types';
 import { userAvatarStyle, formatJoinDate, formatRelative } from '@/lib/format';
@@ -443,6 +444,9 @@ export function ProfileScreen(_props: { device: Device }) {
   // The avatar menu's "Friend requests" item lands here on the friends tab.
   useEffect(() => {
     const onTab = (e: Event) => setTab((e as CustomEvent<ProfileTab>).detail);
+    // A jump that opened this screen for the first time fired before it mounted.
+    const pending = takeRecentEvent<ProfileTab>(PROFILE_TAB_EVENT);
+    if (pending) setTab(pending);
     window.addEventListener(PROFILE_TAB_EVENT, onTab);
     return () => window.removeEventListener(PROFILE_TAB_EVENT, onTab);
   }, []);
@@ -471,12 +475,12 @@ export function ProfileScreen(_props: { device: Device }) {
             type="file"
             accept="image/*"
             hidden
-            onChange={(e) => {
+            onChange={async (e) => {
               const file = e.target.files?.[0];
+              e.target.value = '';
               if (!file) return;
-              const reader = new FileReader();
-              reader.onload = () => updateAvatar(reader.result as string);
-              reader.readAsDataURL(file);
+              const dataUrl = await squareImageDataUrl(file);
+              if (dataUrl) updateAvatar(dataUrl);
             }}
           />
           <span className="avhint">{t('profile.changePhoto')}</span>

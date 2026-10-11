@@ -6,7 +6,8 @@ import { userAvatarStyle } from '@/lib/format';
 import { NotificationsModal } from './NotificationsModal';
 
 // Asks ProfileScreen (always mounted) to switch to a given tab.
-export const PROFILE_TAB_EVENT = 'hmo:profile-tab';
+export { PROFILE_TAB_EVENT } from '@/lib/uiEvents';
+import { PROFILE_TAB_EVENT } from '@/lib/uiEvents';
 
 // Avatar menu popover (spec 3.9, 13.20): Profile, Friend requests (only
 // when there are incoming ones; the avatar then carries a count badge),

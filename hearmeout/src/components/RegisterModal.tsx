@@ -12,6 +12,8 @@ const ERROR_KEY: Record<string, TranslationKey> = {
   invalid_credentials: 'login.invalidCredentials',
   account_not_linked: 'login.accountNotLinked',
   server_config: 'auth.serverConfig',
+  name_length: 'register.nameLength',
+  too_many_attempts: 'auth.tooManyAttempts',
 };
 
 // Landing (signed out, spec "Landing", 13.1) — pixel-exact copy of the
@@ -139,7 +141,7 @@ export function RegisterModal() {
             {mode === 'register' ? (
               <>
                 <label htmlFor="au1">{t('register.nameLabel')}</label>
-                <input id="au1" className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('register.namePlaceholder')} autoComplete="name" autoFocus aria-invalid={!!error1} aria-describedby="e1" />
+                <input id="au1" className="field" maxLength={24} value={name} onChange={(e) => setName(e.target.value)} placeholder={t('register.namePlaceholder')} autoComplete="name" autoFocus aria-invalid={!!error1} aria-describedby="e1" />
               </>
             ) : (
               <>

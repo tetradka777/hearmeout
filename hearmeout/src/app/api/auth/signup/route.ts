@@ -4,6 +4,7 @@ import { setCurrentUserId, hasSessionSecret } from '@/lib/identity';
 import { slugifyHandle } from '@/lib/slug';
 import { isStrongEnoughPassword } from '@/lib/authValidation';
 import { INTERNAL_EMAIL_DOMAIN } from '@/lib/authInternalEmail';
+import { clientIp, hit, underLimit } from '@/lib/rateLimit';
 
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
@@ -15,6 +16,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'server_config' }, { status: 500 });
   }
   if (!name) return NextResponse.json({ error: 'name_required' }, { status: 400 });
+  if (name.length > 24) return NextResponse.json({ error: 'name_length' }, { status: 400 });
+  // A few new accounts per address per hour: enough for a household, not
+  // for a script creating thousands.
+  const ipKey = `signup-ip:${clientIp(request)}`;
+  if (!underLimit(ipKey, 5, 60 * 60 * 1000)) return NextResponse.json({ error: 'too_many_attempts' }, { status: 429 });
   if (!isStrongEnoughPassword(password)) return NextResponse.json({ error: 'weak_password' }, { status: 400 });
 
   const admin = supabaseAdmin();
@@ -55,6 +61,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: insertErr?.message || 'signup_failed' }, { status: 500 });
   }
 
+  hit(ipKey);
   await setCurrentUserId(created.id);
   return NextResponse.json({ id: created.id, name: created.name, handle: created.handle, avatarUrl: created.avatar_url });
 }

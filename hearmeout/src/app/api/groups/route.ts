@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
 import { handleIlikePattern } from '@/lib/slug';
+import { isFriendOf } from '@/lib/userProfile';
 import type { GroupSummary } from '@/lib/types';
 
 export async function GET() {
@@ -72,6 +73,8 @@ export async function POST(request: NextRequest) {
   if (rawInvite) {
     const { data: target } = await admin.from('users').select('id').ilike('handle', handleIlikePattern(rawInvite)).maybeSingle();
     if (!target) return NextResponse.json({ error: 'invite_not_found' }, { status: 404 });
+    // Same rule as adding members later: friends only.
+    if (target.id !== userId && !(await isFriendOf(admin, userId, target.id))) return NextResponse.json({ error: 'invite_not_friends' }, { status: 403 });
     if (target.id !== userId) inviteeId = target.id;
   }
 

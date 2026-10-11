@@ -11,7 +11,7 @@ import { toLocale, pluralForKey } from '@/lib/i18n';
 import { CoverArt } from '../ui/CoverArt';
 import { MascotIcon } from '../redesign/icons';
 import { BlendButton } from '../BlendButton';
-import { MATCH_FRIEND_EVENT } from '@/lib/uiEvents';
+import { MATCH_FRIEND_EVENT, takeRecentEvent } from '@/lib/uiEvents';
 import { PROFILE_TAB_EVENT } from '../redesign/AvatarMenu';
 
 type RawInfo = { profile: PublicProfile | null; stats6m: StatsData | null; weekHours: number | null };
@@ -66,6 +66,9 @@ export function MatchScreen(_props: { device: Device }) {
   // "Compare with …" / Taste match rows elsewhere pick the friend here.
   useEffect(() => {
     const onPick = (e: Event) => setSelectedId((e as CustomEvent<string>).detail);
+    // A jump that opened this screen for the first time fired before it mounted.
+    const pending = takeRecentEvent<string>(MATCH_FRIEND_EVENT);
+    if (pending) setSelectedId(pending);
     window.addEventListener(MATCH_FRIEND_EVENT, onPick);
     return () => window.removeEventListener(MATCH_FRIEND_EVENT, onPick);
   }, []);
