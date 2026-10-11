@@ -274,6 +274,23 @@ const initialState: AppState = {
   justRegistered: false,
 };
 
+// Chrome doesn't recompute colours written as color-mix(… currentColor …)
+// (muted text, hairlines, soft fills — 46 places in components.css) when the
+// inherited colour changes: after a light ↔ dark switch muted text kept the
+// old theme's colour, dark on dark, until a reload. A moment of display:none
+// on the app root makes it recompute everything; the scroll position is
+// kept.
+function restyleAfterThemeChange(): void {
+  const el = document.querySelector<HTMLElement>('.rd');
+  if (!el) return;
+  const y = window.scrollY;
+  const prev = el.style.display;
+  el.style.display = 'none';
+  void el.offsetHeight;
+  el.style.display = prev;
+  window.scrollTo(0, y);
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(initialState);
   const [me, setMe] = useState<Me | null>(null);
@@ -478,9 +495,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!me) return;
     const root = document.documentElement;
+    const themeKey = () => `${root.dataset.design}|${root.dataset.palette}|${root.dataset.mode}`;
+    const before = themeKey();
     root.dataset.design = me.design;
     root.dataset.palette = me.palette;
     root.dataset.mode = resolveMode(me.mode);
+    if (before !== themeKey()) restyleAfterThemeChange();
     try {
       localStorage.setItem('hmo-appearance', JSON.stringify({
         design: me.design, mode: me.mode, palette: me.palette, motionEnabled: me.motionEnabled,
@@ -504,7 +524,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     let onColorSchemeChange: (() => void) | null = null;
     if (me.mode === 'system') {
       colorSchemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      onColorSchemeChange = () => { root.dataset.mode = resolveMode('system'); };
+      onColorSchemeChange = () => { root.dataset.mode = resolveMode('system'); restyleAfterThemeChange(); };
       colorSchemeQuery.addEventListener('change', onColorSchemeChange);
     }
     return () => {
