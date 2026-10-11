@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import { StarSlider } from './Stars';
+import { sizedImage } from '@/lib/imageSize';
 
 // The now-playing bar (spec 4.1, 7.9, 15.1, 16.2/16.3): the account's own
 // currently playing or last-played track, fixed at the bottom in both
@@ -37,7 +38,7 @@ export function NowPlayingBar() {
   return (
     <div className="player">
       <div className="np">
-        <div className="cov" style={{ width: 40, height: 40, flex: 'none', borderRadius: 10, ...(np.cover ? { backgroundImage: `url('${np.cover}')`, backgroundSize: 'cover' } : {}) }} />
+        <div className="cov" style={{ width: 40, height: 40, flex: 'none', borderRadius: 10, ...(np.cover ? { backgroundImage: `url('${sizedImage(np.cover, 40)}')`, backgroundSize: 'cover' } : {}) }} />
         <div>
           <b>{np.title}</b>
           <small>{np.artist}</small>

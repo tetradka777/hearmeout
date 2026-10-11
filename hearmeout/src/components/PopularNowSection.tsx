@@ -22,7 +22,7 @@ export function PopularNowSection({ limit = 12, genre }: { limit?: number; genre
     <div className="hrow">
       {ranked.length ? ranked.map((a) => (
         <button key={a.id} onClick={() => openAlbum(a.id)} style={{ textAlign: 'left', color: 'inherit' }}>
-          <CoverArt url={spotifyCovers[a.id] || a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: '100%', aspectRatio: '1' }} />
+          <CoverArt url={spotifyCovers[a.id] || a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" px={170} style={{ width: '100%', aspectRatio: '1' }} />
           <b style={{ display: 'block', marginTop: 8, fontSize: 14 }}>{a.title}</b>
           <small className="muted" style={{ fontWeight: 700 }}>{a.artist} · {t('discover.rankN', { n: a.popularRank! })}</small>
         </button>

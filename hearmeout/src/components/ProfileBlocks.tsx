@@ -3,6 +3,7 @@
 import { useApp } from '@/lib/AppContext';
 import { CoverArt } from './ui/CoverArt';
 import { HeartIcon } from './ui/Icons';
+import { sizedImage } from '@/lib/imageSize';
 
 // vProfile()'s loveRows(kind,keys): three distinct row shapes per type, not
 // one merged list — tracks are plain text (no cover, no click-through),
@@ -54,7 +55,7 @@ export function LovedArtistsColumn() {
       {items.map((li) => (
         <div className="row" key={li.id}>
           <button className="rowlink" onClick={() => li.itemId && openSpotifyArtist(li.itemId, li.title)} style={{ cursor: li.itemId ? 'pointer' : 'default' }}>
-            <span className="dot" style={li.cover ? { backgroundImage: `url('${li.cover}')`, backgroundSize: 'cover', color: 'transparent' } : undefined}>{li.title[0]}</span>
+            <span className="dot" style={li.cover ? { backgroundImage: `url('${sizedImage(li.cover, 44)}')`, backgroundSize: 'cover', color: 'transparent' } : undefined}>{li.title[0]}</span>
             <span className="g"><b>{li.title}</b></span>
           </button>
           <button className="ib love on" onClick={() => toggleLoved(li.type, li.title, li.artist, li.itemId, li.cover)} aria-pressed="true" aria-label={t('album.removeFromLoved')}><HeartIcon /></button>

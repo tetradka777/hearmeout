@@ -222,7 +222,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
                 const mine = detail.vote.myVote === c.albumId;
                 return (
                   <div key={c.albumId}>
-                    <CoverArt url={a?.cover} fallbackLetter={a?.artist[0] || '?'} className="cov" style={{ width: '100%', aspectRatio: '1' }} />
+                    <CoverArt url={a?.cover} fallbackLetter={a?.artist[0] || '?'} className="cov" px={170} style={{ width: '100%', aspectRatio: '1' }} />
                     <b style={{ display: 'block', margin: '8px 0 2px', fontSize: 14 }}>{a ? a.title : '…'}</b>
                     <div className="meter" style={{ height: 10 }}><i style={{ width: `${pct}%` }} /></div>
                     <small style={{ fontWeight: 700 }}>{t('groups.voteCount', { count: c.count, word: pluralForKey(language, c.count, 'groups.voteOne', 'groups.voteFew', 'groups.voteMany') })} · {pct}%</small>
