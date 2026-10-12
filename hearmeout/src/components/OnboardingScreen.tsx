@@ -161,7 +161,8 @@ export function OnboardingScreen() {
   const sub = [t('onboarding.connectBody'), t('onboarding.lookSubtitle'), t('onboarding.peopleBody')][step];
 
   return (
-    <div style={{ maxWidth: 680, margin: '0 auto' }}>
+    <div className="obwrap9">
+    <div className="obmain9">
       <p className="eyebrow muted">{t('onboarding.eyebrow')}</p>
       <div className="chips">
         {steps.map((x, i) => <span key={x} className={`chip${i === step ? ' on' : ''}`}>{i + 1} · {x}</span>)}
@@ -183,6 +184,60 @@ export function OnboardingScreen() {
           </button>
         </div>
       </div>
+    </div>
+    {/* Rev 9: a side card per step on wide screens (hidden on phones). */}
+    <aside className="obside9" aria-hidden="true"><OnboardingAside step={step} /></aside>
+    </div>
+  );
+}
+
+function AsideRow({ icon, title, sub }: { icon: string; title: string; sub: string }) {
+  return (
+    <div className="r9">
+      <span className="i9"><i className={`ic ic-${icon}`} /></span>
+      <span className="g"><b>{title}</b><small className="muted">{sub}</small></span>
+    </div>
+  );
+}
+
+function OnboardingAside({ step }: { step: 0 | 1 | 2 }) {
+  const { t } = useApp();
+  if (step === 0) {
+    return (
+      <>
+        <div className="tile t-ac aside9">
+          <small className="k9">{t('onboarding.asideAfterConnect')}</small>
+          <p style={{ font: '800 26px/1.05 var(--font-display)', margin: '8px 0 4px' }}>{t('onboarding.asideHistoryTitle')}</p>
+          <p style={{ fontWeight: 700 }}>{t('onboarding.asideHistoryBody')}</p>
+        </div>
+        <div className="tile aside9" style={{ marginTop: 14 }}>
+          <AsideRow icon="check" title={t('home.rateWhatPlayed')} sub={t('onboarding.asideRateSub')} />
+          <AsideRow icon="check" title={t('home.tasteMatchTitle')} sub={t('onboarding.asideMatchSub')} />
+          <AsideRow icon="x" title={t('settings.neverPost')} sub={t('settings.neverPostSub')} />
+        </div>
+      </>
+    );
+  }
+  if (step === 1) {
+    return (
+      <div className="tile aside9">
+        <small className="k9 muted">{t('onboarding.asideLookTitle')}</small>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8, marginTop: 10 }}>
+          <div className="tile t-ink" style={{ minHeight: 90, padding: 12 }}><span className="pill" style={{ fontSize: 11 }}>{t('home.heroSticker')}</span></div>
+          <div className="tile t-ac" style={{ minHeight: 90, padding: 12 }} />
+          <div className="tile t-pop" style={{ minHeight: 60, padding: 12 }} />
+          <div className="tile t-soft2" style={{ minHeight: 60, padding: 12 }} />
+        </div>
+        <p className="muted" style={{ fontWeight: 600, marginTop: 10 }}>{t('onboarding.asideLookBody')}</p>
+      </div>
+    );
+  }
+  return (
+    <div className="tile t-pop aside9">
+      <small className="k9">{t('onboarding.asideWhyFriends')}</small>
+      <AsideRow icon="users" title={t('home.tasteMatchTitle')} sub={t('onboarding.asideMatchSub')} />
+      <AsideRow icon="star" title={t('groups.title')} sub={t('onboarding.asideGroupsSub')} />
+      <AsideRow icon="disc" title={t('recap.friendsRecaps')} sub={t('onboarding.asideRecapsSub')} />
     </div>
   );
 }

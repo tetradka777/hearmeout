@@ -1253,6 +1253,16 @@ const ru = {
   'friend.unlockRecap': 'Рекап недели',
   'friend.unlockAwards': 'Награды',
   'friend.sendRequestToUnlock': 'Отправь заявку в друзья, чтобы открыть',
+  'onboarding.asideAfterConnect': 'после подключения',
+  'onboarding.asideHistoryTitle': 'Твоя история станет статистикой',
+  'onboarding.asideHistoryBody': 'Оценивай сыгранное в одно касание, а в понедельник получишь первый рекап.',
+  'onboarding.asideRateSub': 'Самые прослушиваемые альбомы — сразу под рукой',
+  'onboarding.asideMatchSub': 'Готово, как только к тебе присоединится друг',
+  'onboarding.asideLookTitle': 'твоя главная в этом виде',
+  'onboarding.asideLookBody': 'Поменять можно в любой момент в настройках. Функции в обоих видах одинаковые.',
+  'onboarding.asideWhyFriends': 'зачем друзья',
+  'onboarding.asideGroupsSub': 'Награды месяца и голосование за альбом',
+  'onboarding.asideRecapsSub': 'Сравнивай недели и делись итогами',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2502,6 +2512,16 @@ const en: Dict = {
   'friend.unlockRecap': 'Weekly recap',
   'friend.unlockAwards': 'Awards',
   'friend.sendRequestToUnlock': 'Send a friend request to unlock',
+  'onboarding.asideAfterConnect': 'after you connect',
+  'onboarding.asideHistoryTitle': 'Your history becomes your stats',
+  'onboarding.asideHistoryBody': 'Rate what you played in one tap and get your first recap on Monday.',
+  'onboarding.asideRateSub': 'Your most played albums, ready to score',
+  'onboarding.asideMatchSub': 'Ready the moment a friend joins',
+  'onboarding.asideLookTitle': 'your home, in this look',
+  'onboarding.asideLookBody': 'Change it any time in Settings. Both looks have the same features.',
+  'onboarding.asideWhyFriends': 'why friends',
+  'onboarding.asideGroupsSub': 'Monthly awards and an album vote',
+  'onboarding.asideRecapsSub': 'Compare your weeks and share them',
 };
 
 const fr: Dict = {
@@ -3748,6 +3768,16 @@ const fr: Dict = {
   'friend.unlockRecap': 'Bilan de la semaine',
   'friend.unlockAwards': 'Récompenses',
   'friend.sendRequestToUnlock': 'Envoie une demande d’ami pour débloquer',
+  'onboarding.asideAfterConnect': 'une fois connecté',
+  'onboarding.asideHistoryTitle': 'Ton historique devient tes stats',
+  'onboarding.asideHistoryBody': 'Note ce que tu as écouté en un geste et reçois ton premier bilan lundi.',
+  'onboarding.asideRateSub': 'Tes albums les plus écoutés, prêts à noter',
+  'onboarding.asideMatchSub': 'Prête dès qu’un ami te rejoint',
+  'onboarding.asideLookTitle': 'ton accueil, avec ce style',
+  'onboarding.asideLookBody': 'Tu peux changer à tout moment dans les réglages. Les deux styles ont les mêmes fonctions.',
+  'onboarding.asideWhyFriends': 'pourquoi des amis',
+  'onboarding.asideGroupsSub': 'Récompenses du mois et vote pour un album',
+  'onboarding.asideRecapsSub': 'Compare vos semaines et partage-les',
 };
 
 const es: Dict = {
@@ -4994,6 +5024,16 @@ const es: Dict = {
   'friend.unlockRecap': 'Resumen semanal',
   'friend.unlockAwards': 'Premios',
   'friend.sendRequestToUnlock': 'Envía una solicitud de amistad para verlo',
+  'onboarding.asideAfterConnect': 'al conectar',
+  'onboarding.asideHistoryTitle': 'Tu historial se vuelve estadísticas',
+  'onboarding.asideHistoryBody': 'Valora lo que escuchaste con un toque y recibe tu primer resumen el lunes.',
+  'onboarding.asideRateSub': 'Tus álbumes más escuchados, listos para valorar',
+  'onboarding.asideMatchSub': 'Lista en cuanto se una un amigo',
+  'onboarding.asideLookTitle': 'tu inicio, con este estilo',
+  'onboarding.asideLookBody': 'Cámbialo cuando quieras en Ajustes. Los dos estilos tienen las mismas funciones.',
+  'onboarding.asideWhyFriends': 'por qué amigos',
+  'onboarding.asideGroupsSub': 'Premios del mes y votación de álbum',
+  'onboarding.asideRecapsSub': 'Compara vuestras semanas y compártelas',
 };
 
 const de: Dict = {
@@ -6240,6 +6280,16 @@ const de: Dict = {
   'friend.unlockRecap': 'Wochenrückblick',
   'friend.unlockAwards': 'Auszeichnungen',
   'friend.sendRequestToUnlock': 'Schick eine Freundschaftsanfrage, um es zu sehen',
+  'onboarding.asideAfterConnect': 'nach dem Verbinden',
+  'onboarding.asideHistoryTitle': 'Dein Verlauf wird zu Statistiken',
+  'onboarding.asideHistoryBody': 'Bewerte Gehörtes mit einem Tipp und bekomm am Montag deinen ersten Rückblick.',
+  'onboarding.asideRateSub': 'Deine meistgehörten Alben, bereit zum Bewerten',
+  'onboarding.asideMatchSub': 'Bereit, sobald ein Freund dazukommt',
+  'onboarding.asideLookTitle': 'deine Startseite in diesem Look',
+  'onboarding.asideLookBody': 'Jederzeit in den Einstellungen änderbar. Beide Looks können dasselbe.',
+  'onboarding.asideWhyFriends': 'warum Freunde',
+  'onboarding.asideGroupsSub': 'Monatsauszeichnungen und Album-Abstimmung',
+  'onboarding.asideRecapsSub': 'Vergleicht eure Wochen und teilt sie',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };
