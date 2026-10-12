@@ -1175,6 +1175,8 @@ const ru = {
   'catalog.colYou': 'Ты',
   'catalog.showFewer': 'Свернуть',
   'catalog.showAll': 'Показать все ({n})',
+  'artist.albumsCount': '{n} {n|альбом|альбома|альбомов}',
+  'artist.friendsWhoListen': 'Друзья, которые слушают {name}',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2346,6 +2348,8 @@ const en: Dict = {
   'catalog.colYou': 'You',
   'catalog.showFewer': 'Show fewer',
   'catalog.showAll': 'Show all {n}',
+  'artist.albumsCount': '{n} {n|album|albums}',
+  'artist.friendsWhoListen': 'Friends who listen to {name}',
 };
 
 const fr: Dict = {
@@ -3514,6 +3518,8 @@ const fr: Dict = {
   'catalog.colYou': 'Toi',
   'catalog.showFewer': 'Afficher moins',
   'catalog.showAll': 'Tout afficher ({n})',
+  'artist.albumsCount': '{n} {n|album|albums}',
+  'artist.friendsWhoListen': 'Tes amis qui écoutent {name}',
 };
 
 const es: Dict = {
@@ -4682,6 +4688,8 @@ const es: Dict = {
   'catalog.colYou': 'Tú',
   'catalog.showFewer': 'Mostrar menos',
   'catalog.showAll': 'Mostrar los {n}',
+  'artist.albumsCount': '{n} {n|álbum|álbumes}',
+  'artist.friendsWhoListen': 'Amigos que escuchan a {name}',
 };
 
 const de: Dict = {
@@ -5850,6 +5858,8 @@ const de: Dict = {
   'catalog.colYou': 'Du',
   'catalog.showFewer': 'Weniger anzeigen',
   'catalog.showAll': 'Alle {n} anzeigen',
+  'artist.albumsCount': '{n} {n|Album|Alben}',
+  'artist.friendsWhoListen': 'Freunde, die {name} hören',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };
