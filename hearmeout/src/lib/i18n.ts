@@ -1242,6 +1242,17 @@ const ru = {
   'settings.pvLive': 'видно в реальном времени',
   'settings.pvFriendList': 'Друзья и награды',
   'settings.pvAlways': 'друзья видят всегда',
+  'friend.youAnd': 'ты и {name}',
+  'friend.mutualN': '{n} {n|общий друг|общих друга|общих друзей}',
+  'friend.afterAccept': 'после того как заявку примут',
+  'friend.whatYouWillSee': 'Что станет видно',
+  'friend.unlockRatings': 'Оценки',
+  'friend.unlockMatch': 'Совпадение вкусов',
+  'friend.unlockTop4': 'Топ-4 альбома',
+  'friend.unlockArtists': 'Любимые артисты',
+  'friend.unlockRecap': 'Рекап недели',
+  'friend.unlockAwards': 'Награды',
+  'friend.sendRequestToUnlock': 'Отправь заявку в друзья, чтобы открыть',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2480,6 +2491,17 @@ const en: Dict = {
   'settings.pvLive': 'shown as it happens',
   'settings.pvFriendList': 'Friend list and awards',
   'settings.pvAlways': 'always visible to friends',
+  'friend.youAnd': 'you and {name}',
+  'friend.mutualN': '{n} mutual {n|friend|friends}',
+  'friend.afterAccept': 'after they accept',
+  'friend.whatYouWillSee': 'What you will be able to see',
+  'friend.unlockRatings': 'Ratings',
+  'friend.unlockMatch': 'Taste match',
+  'friend.unlockTop4': 'Top 4 albums',
+  'friend.unlockArtists': 'Top artists',
+  'friend.unlockRecap': 'Weekly recap',
+  'friend.unlockAwards': 'Awards',
+  'friend.sendRequestToUnlock': 'Send a friend request to unlock',
 };
 
 const fr: Dict = {
@@ -3715,6 +3737,17 @@ const fr: Dict = {
   'settings.pvLive': 'affiché en direct',
   'settings.pvFriendList': 'Amis et récompenses',
   'settings.pvAlways': 'toujours visibles par tes amis',
+  'friend.youAnd': 'toi et {name}',
+  'friend.mutualN': '{n} {n|ami commun|amis communs}',
+  'friend.afterAccept': 'une fois la demande acceptée',
+  'friend.whatYouWillSee': 'Ce que tu pourras voir',
+  'friend.unlockRatings': 'Notes',
+  'friend.unlockMatch': 'Affinité',
+  'friend.unlockTop4': 'Top 4 albums',
+  'friend.unlockArtists': 'Artistes préférés',
+  'friend.unlockRecap': 'Bilan de la semaine',
+  'friend.unlockAwards': 'Récompenses',
+  'friend.sendRequestToUnlock': 'Envoie une demande d’ami pour débloquer',
 };
 
 const es: Dict = {
@@ -4950,6 +4983,17 @@ const es: Dict = {
   'settings.pvLive': 'se ve en directo',
   'settings.pvFriendList': 'Amigos y premios',
   'settings.pvAlways': 'siempre visibles para amigos',
+  'friend.youAnd': 'tú y {name}',
+  'friend.mutualN': '{n} {n|amigo en común|amigos en común}',
+  'friend.afterAccept': 'cuando acepte la solicitud',
+  'friend.whatYouWillSee': 'Lo que podrás ver',
+  'friend.unlockRatings': 'Valoraciones',
+  'friend.unlockMatch': 'Afinidad',
+  'friend.unlockTop4': 'Top 4 álbumes',
+  'friend.unlockArtists': 'Artistas favoritos',
+  'friend.unlockRecap': 'Resumen semanal',
+  'friend.unlockAwards': 'Premios',
+  'friend.sendRequestToUnlock': 'Envía una solicitud de amistad para verlo',
 };
 
 const de: Dict = {
@@ -6185,6 +6229,17 @@ const de: Dict = {
   'settings.pvLive': 'live sichtbar',
   'settings.pvFriendList': 'Freundesliste und Auszeichnungen',
   'settings.pvAlways': 'für Freunde immer sichtbar',
+  'friend.youAnd': 'du und {name}',
+  'friend.mutualN': '{n} gemeinsame{n|r Freund| Freunde}',
+  'friend.afterAccept': 'nach der Annahme',
+  'friend.whatYouWillSee': 'Was du dann siehst',
+  'friend.unlockRatings': 'Bewertungen',
+  'friend.unlockMatch': 'Geschmacks-Match',
+  'friend.unlockTop4': 'Top-4-Alben',
+  'friend.unlockArtists': 'Top-Künstler',
+  'friend.unlockRecap': 'Wochenrückblick',
+  'friend.unlockAwards': 'Auszeichnungen',
+  'friend.sendRequestToUnlock': 'Schick eine Freundschaftsanfrage, um es zu sehen',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };

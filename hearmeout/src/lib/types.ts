@@ -86,6 +86,8 @@ export type PublicProfile = ApiUser & {
   // already an accepted friend of this person — lets friends discover
   // mutual connections without exposing a stranger's whole friend graph.
   friends?: ApiUser[];
+  // Locked profiles: friends you both have (who you'd know in common).
+  mutualFriends?: ApiUser[];
   recentRatings?: RatingRecord[];
   // Friend-only extras (spec 6.4), same visibility as recentRatings:
   // their most recent play however old (the "last played" tile), when the
