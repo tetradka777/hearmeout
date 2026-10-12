@@ -128,6 +128,9 @@ export type Me = PublicProfile & {
   shareLive: boolean;
   publicReviews: boolean;
   discoverable: boolean;
+  // Settings → Notifications: new releases (migration 028).
+  notifyReleasesMine: boolean;
+  notifyReleasesPopular: boolean;
 };
 
 export type FriendRequest = { id: number; user: ApiUser; createdAt: string };
@@ -136,11 +139,13 @@ export type FriendRequest = { id: number; user: ApiUser; createdAt: string };
 // sharing their recap for a period (payload.period / payload.offset).
 export type AppNotification = {
   id: number;
-  kind: 'hi' | 'recap';
-  payload: { period?: RecapPeriod; offset?: number };
+  kind: 'hi' | 'recap' | 'release';
+  // release (migration 028): albumId is a Spotify album id.
+  payload: { period?: RecapPeriod; offset?: number; albumId?: string; artist?: string; title?: string; date?: string; cover?: string | null; popular?: boolean };
   createdAt: string;
   read: boolean;
-  actor: ApiUser;
+  // null for a release: it comes from the site, not a person.
+  actor: ApiUser | null;
 };
 
 // Home feed (redesign spec 6.1, 8 "Feed events"). Album/track metadata is

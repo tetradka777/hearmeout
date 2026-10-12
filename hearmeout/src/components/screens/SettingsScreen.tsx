@@ -170,7 +170,7 @@ function LanguageTab() {
 }
 
 function AccountTab() {
-  const { t, me, updateProfileName, claimAccount, logout, logoutEverywhere, replayOnboarding, deleteAccount, showToast } = useApp();
+  const { t, me, updateProfileName, claimAccount, logout, logoutEverywhere, replayOnboarding, deleteAccount, showToast, updatePrivacy } = useApp();
   const [confirmSignOutAll, setConfirmSignOutAll] = useState(false);
   const [name, setName] = useState(me?.name ?? '');
   const [email, setEmail] = useState('');
@@ -245,6 +245,9 @@ function AccountTab() {
           <button className="btn ghost" onClick={replayOnboarding}>{t('settings.replayOnboardingBtn')}</button>
         </div>
         <PushToggle />
+        {/* What new releases to tell about, in the bell and as a push (migration 028). */}
+        <Sw title={t('settings.releasesMine')} hint={t('settings.releasesMineHint')} on={!!me.notifyReleasesMine} onToggle={() => updatePrivacy({ notifyReleasesMine: !me.notifyReleasesMine })} />
+        <Sw title={t('settings.releasesPopular')} hint={t('settings.releasesPopularHint')} on={!!me.notifyReleasesPopular} onToggle={() => updatePrivacy({ notifyReleasesPopular: !me.notifyReleasesPopular })} />
         <div className="setrow">
           <div><b>{t('settings.signOutAll')}</b><small className="muted">{t('settings.signOutAllHint')}</small></div>
           {confirmSignOutAll

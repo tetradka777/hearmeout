@@ -26,6 +26,9 @@ export async function GET() {
   // history while it's small).
   const { count: playsCount } = await admin.from('listening_events').select('id', { count: 'exact', head: true }).eq('user_id', userId);
   const { data: codeRow } = await admin.from('users').select('invite_code').eq('id', userId).maybeSingle();
+  // Release notification switches (migration 028), apart so a missing
+  // column can't break the rest of the account.
+  const { data: notifyRow } = await admin.from('users').select('notify_releases_mine, notify_releases_popular').eq('id', userId).maybeSingle();
 
   if (!profile) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
@@ -69,6 +72,8 @@ export async function GET() {
     shareLive: prefs?.share_live !== false,
     publicReviews: prefs?.public_reviews !== false,
     discoverable: prefs?.discoverable !== false,
+    notifyReleasesMine: (notifyRow as { notify_releases_mine?: boolean } | null)?.notify_releases_mine !== false,
+    notifyReleasesPopular: (notifyRow as { notify_releases_popular?: boolean } | null)?.notify_releases_popular === true,
   };
   return NextResponse.json(me);
 }
@@ -126,6 +131,15 @@ export async function PATCH(request: NextRequest) {
     if (body.regionAuto && detectedRegion) autoPatch.region = detectedRegion;
     const { error: autoErr } = await admin.from('users').update(autoPatch).eq('id', userId);
     if (autoErr) return NextResponse.json({ error: autoErr.message }, { status: 500 });
+  }
+  // Release notification switches (migration 028), their own update for
+  // the same reason as regionAuto.
+  const notifyPatch: Record<string, boolean> = {};
+  if (typeof body?.notifyReleasesMine === 'boolean') notifyPatch.notify_releases_mine = body.notifyReleasesMine;
+  if (typeof body?.notifyReleasesPopular === 'boolean') notifyPatch.notify_releases_popular = body.notifyReleasesPopular;
+  if (Object.keys(notifyPatch).length) {
+    const { error: notifyErr } = await admin.from('users').update(notifyPatch).eq('id', userId);
+    if (notifyErr) return NextResponse.json({ error: notifyErr.message }, { status: 500 });
   }
   if (!Object.keys(patch).length) return NextResponse.json({ ok: true });
 

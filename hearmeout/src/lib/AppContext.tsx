@@ -227,6 +227,7 @@ type AppContextValue = {
   }>) => Promise<void>;
   updatePrivacy: (updates: Partial<{
     ratingsVisible: boolean; shareLive: boolean; publicReviews: boolean; discoverable: boolean;
+    notifyReleasesMine: boolean; notifyReleasesPopular: boolean;
   }>) => Promise<void>;
   addFriend: (handle: string) => Promise<void>;
   respondToFriendRequest: (requestId: number, action: 'accept' | 'decline' | 'cancel') => Promise<void>;
@@ -869,6 +870,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updatePrivacy = useCallback(async (updates: Partial<{
     ratingsVisible: boolean; shareLive: boolean; publicReviews: boolean; discoverable: boolean;
+    notifyReleasesMine: boolean; notifyReleasesPopular: boolean;
   }>) => {
     setMe((prev) => (prev ? { ...prev, ...updates } : prev));
     await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) });

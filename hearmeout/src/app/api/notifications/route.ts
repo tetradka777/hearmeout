@@ -4,7 +4,8 @@ import { getCurrentUserId } from '@/lib/identity';
 import type { AppNotification, RecapPeriod } from '@/lib/types';
 
 // In-app notifications (migration 021): "Say hi" from a friend's profile
-// and "Send to friends" from the recap. Only friends can be notified, and
+// and "Send to friends" from the recap; new releases (migration 028,
+// lib/releaseNotify) come from the site itself and have no actor. Only friends can be notified, and
 // both are rate-limited so a button can't be used to spam.
 const HI_COOLDOWN_MS = 60 * 60 * 1000;          // one hi per friend per hour
 const RECAP_COOLDOWN_MS = 24 * 60 * 60 * 1000;  // one recap share per day
@@ -22,14 +23,14 @@ export async function GET() {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   const items: AppNotification[] = (data || []).flatMap((n) => {
     const a = n.actor as unknown as { id: string; name: string; handle: string; avatar_url: string | null } | null;
-    if (!a) return [];
+    if (!a && n.kind !== 'release') return [];
     return [{
       id: n.id as number,
       kind: n.kind as AppNotification['kind'],
       payload: (n.payload || {}) as AppNotification['payload'],
       createdAt: n.created_at as string,
       read: !!n.read_at,
-      actor: { id: a.id, name: a.name, handle: a.handle, avatarUrl: a.avatar_url },
+      actor: a ? { id: a.id, name: a.name, handle: a.handle, avatarUrl: a.avatar_url } : null,
     }];
   });
   return NextResponse.json({ items, unread: items.filter((n) => !n.read).length });
