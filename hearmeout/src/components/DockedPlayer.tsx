@@ -18,8 +18,9 @@ function formatTime(sec: number) {
 // breakpoints already handle desktop vs. mobile layout for one markup).
 export function GlobalPlayer() {
   const { t } = useApp();
-  const { currentTrack, status, progress, next, close } = usePlayer();
-  if (!currentTrack) return null;
+  const { currentTrack, quiet, status, progress, next, close } = usePlayer();
+  // Quiet playback (the recap's song of the period) has no bar.
+  if (!currentTrack || quiet) return null;
   const openSpotifyUrl = currentTrack.spotifyId ? `https://open.spotify.com/album/${currentTrack.spotifyId}` : null;
   const elapsed = formatTime(progress * 30);
 

@@ -1,11 +1,22 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { fetchTrackPreview } from './deezer';
+import { fetchTrackPreview, prefetchTrackPreview } from './deezer';
 
 export type QueueTrack = { title: string; artist: string; cover?: string | null; albumId?: string | null; spotifyId?: string | null };
 
 type Status = 'idle' | 'loading' | 'ready' | 'unavailable';
+
+// The Spotify album a queue track belongs to: spotifyId is the album's, and
+// a raw Spotify albumId works too (the server picks the exact recording).
+function albumOf(track: QueueTrack): string | null {
+  return track.spotifyId || (track.albumId && /^[0-9A-Za-z]{22}$/.test(track.albumId) ? track.albumId : null);
+}
+
+// Look a track up ahead of time so play starts without waiting.
+export function prefetchQueueTrack(track: QueueTrack): void {
+  prefetchTrackPreview(track.artist, track.title, albumOf(track));
+}
 
 type PlayerValue = {
   queue: QueueTrack[];
@@ -14,7 +25,10 @@ type PlayerValue = {
   progress: number; // 0..1 of the current 30s preview
   status: Status;
   currentTrack: QueueTrack | null;
-  playQueue: (tracks: QueueTrack[], startIndex: number) => void;
+  // Playing without the mini-player (the recap's song of the period, which
+  // has its own play button on the page).
+  quiet: boolean;
+  playQueue: (tracks: QueueTrack[], startIndex: number, opts?: { quiet?: boolean }) => void;
   toggle: () => void;
   next: () => void;
   close: () => void;
@@ -38,6 +52,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState<Status>('idle');
+  const [quiet, setQuiet] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const requestToken = useRef(0);
 
@@ -58,9 +73,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const myToken = ++requestToken.current;
     setStatus('loading');
     setProgress(0);
-    // spotifyId is the track's Spotify album; a raw Spotify albumId works too.
-    const album = track.spotifyId || (track.albumId && /^[0-9A-Za-z]{22}$/.test(track.albumId) ? track.albumId : null);
-    fetchTrackPreview(track.artist, track.title, album)
+    fetchTrackPreview(track.artist, track.title, albumOf(track))
       .then((tr) => {
         if (requestToken.current !== myToken) return;
         if (!tr) {
@@ -76,7 +89,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queue, index]);
 
-  const playQueue = useCallback((tracks: QueueTrack[], startIndex: number) => {
+  const playQueue = useCallback((tracks: QueueTrack[], startIndex: number, opts?: { quiet?: boolean }) => {
+    setQuiet(!!opts?.quiet);
     setQueue(tracks);
     setIndex(Math.max(0, Math.min(startIndex, tracks.length - 1)));
   }, []);
@@ -101,11 +115,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setQueue([]);
     setIndex(0);
     setPlaying(false);
+    setQuiet(false);
   }, []);
 
   const value = useMemo<PlayerValue>(() => ({
-    queue, index, playing, progress, status, currentTrack, playQueue, toggle, next, close,
-  }), [queue, index, playing, progress, status, currentTrack, playQueue, toggle, next, close]);
+    queue, index, playing, progress, status, currentTrack, quiet, playQueue, toggle, next, close,
+  }), [queue, index, playing, progress, status, currentTrack, quiet, playQueue, toggle, next, close]);
 
   return (
     <PlayerContext.Provider value={value}>
