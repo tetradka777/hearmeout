@@ -1144,6 +1144,12 @@ const ru = {
   'groups.voteLeads': 'Голосование: лидирует «{album}»',
   'groups.latestTitle': 'Последнее в твоих группах',
   'groups.recentRated': '{name} оценил(а) «{album}» на {stars}',
+  'groups.heroTopAlbums': 'лучшие альбомы группы',
+  'groups.tasteDesc': 'Совпадение вкусов каждой пары участников.',
+  'groups.tasteClosestLabel': 'ближе всех',
+  'groups.tasteFurthestLabel': 'дальше всех',
+  'groups.pairNames': '{a} и {b}',
+  'groups.streakChip': 'серия {n} дн.',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2284,6 +2290,12 @@ const en: Dict = {
   'groups.voteLeads': 'Vote: {album} leads',
   'groups.latestTitle': 'Latest in your groups',
   'groups.recentRated': '{name} rated {album} {stars}',
+  'groups.heroTopAlbums': 'the club’s top albums',
+  'groups.tasteDesc': 'Taste match between every pair of members.',
+  'groups.tasteClosestLabel': 'closest',
+  'groups.tasteFurthestLabel': 'furthest',
+  'groups.pairNames': '{a} and {b}',
+  'groups.streakChip': '{n}-day streak',
 };
 
 const fr: Dict = {
@@ -3421,6 +3433,12 @@ const fr: Dict = {
   'groups.voteLeads': 'Vote : {album} en tête',
   'groups.latestTitle': 'Du nouveau dans tes groupes',
   'groups.recentRated': '{name} a noté {album} {stars}',
+  'groups.heroTopAlbums': 'les meilleurs albums du groupe',
+  'groups.tasteDesc': 'L’affinité entre chaque paire de membres.',
+  'groups.tasteClosestLabel': 'les plus proches',
+  'groups.tasteFurthestLabel': 'les plus éloignés',
+  'groups.pairNames': '{a} et {b}',
+  'groups.streakChip': 'série de {n} j',
 };
 
 const es: Dict = {
@@ -4558,6 +4576,12 @@ const es: Dict = {
   'groups.voteLeads': 'Votación: va primero {album}',
   'groups.latestTitle': 'Lo último en tus grupos',
   'groups.recentRated': '{name} valoró {album} con {stars}',
+  'groups.heroTopAlbums': 'los mejores álbumes del grupo',
+  'groups.tasteDesc': 'La afinidad entre cada par de miembros.',
+  'groups.tasteClosestLabel': 'los más cercanos',
+  'groups.tasteFurthestLabel': 'los más lejanos',
+  'groups.pairNames': '{a} y {b}',
+  'groups.streakChip': 'racha de {n} días',
 };
 
 const de: Dict = {
@@ -5695,6 +5719,12 @@ const de: Dict = {
   'groups.voteLeads': 'Abstimmung: {album} führt',
   'groups.latestTitle': 'Neues aus deinen Gruppen',
   'groups.recentRated': '{name} hat {album} mit {stars} bewertet',
+  'groups.heroTopAlbums': 'die Top-Alben der Gruppe',
+  'groups.tasteDesc': 'Der Geschmacks-Match jedes Mitgliederpaars.',
+  'groups.tasteClosestLabel': 'am nächsten',
+  'groups.tasteFurthestLabel': 'am weitesten',
+  'groups.pairNames': '{a} und {b}',
+  'groups.streakChip': '{n} Tage am Stück',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };

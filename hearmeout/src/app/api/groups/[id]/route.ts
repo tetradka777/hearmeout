@@ -289,7 +289,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   for (const [id, at] of latestPlayByUser.entries()) {
     if (!latest || at > latest.at) latest = { id, at };
   }
-  if (latest) records.push({ label: 'recordLatestListener', holder: userById.get(latest.id) || null, value: new Date(latest.at).toLocaleDateString() });
+  if (latest) records.push({ label: 'recordLatestListener', holder: userById.get(latest.id) || null, value: latest.at });
   let hotTake: { id: string; gap: number } | null = null;
   for (const r of personalMonthRatings) {
     const albumStat = albumStatsThisMonth.get(r.album_id as string);
