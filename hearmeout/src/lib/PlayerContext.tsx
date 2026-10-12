@@ -23,7 +23,10 @@ type PlayerValue = {
   queue: QueueTrack[];
   index: number;
   playing: boolean;
-  progress: number; // 0..1 of the current 30s preview
+  progress: number; // 0..1 of the current 30s preview (a few times a second)
+  // The exact position right now, read from the audio element: for the
+  // ring, which redraws every frame without re-rendering anything.
+  getProgress: () => number;
   status: Status;
   currentTrack: QueueTrack | null;
   // Playing without the mini-player (the recap's song of the period, which
@@ -136,9 +139,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const signedIn = !!me;
   useEffect(() => { if (!signedIn) close(); }, [signedIn, close]);
 
+  const getProgress = useCallback(() => {
+    const a = audioRef.current;
+    return a && a.duration ? Math.min(1, a.currentTime / a.duration) : 0;
+  }, []);
+
   const value = useMemo<PlayerValue>(() => ({
-    queue, index, playing, progress, status, currentTrack, quiet, playQueue, toggle, next, close,
-  }), [queue, index, playing, progress, status, currentTrack, quiet, playQueue, toggle, next, close]);
+    queue, index, playing, progress, getProgress, status, currentTrack, quiet, playQueue, toggle, next, close,
+  }), [queue, index, playing, progress, getProgress, status, currentTrack, quiet, playQueue, toggle, next, close]);
 
   return (
     <PlayerContext.Provider value={value}>
