@@ -1120,6 +1120,8 @@ const ru = {
   'settings.releasesMineHint': 'Тех, кого ты слушаешь чаще всего, и тех, на кого подписан(а).',
   'settings.releasesPopular': 'Новые релизы популярных артистов',
   'settings.releasesPopularHint': 'Самые слушаемые артисты в мире.',
+  'groups.awardTimeTraveler': 'Путешественник во времени',
+  'groups.awardTimeTravelerDetail': 'музыка ≈{year} года',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2236,6 +2238,8 @@ const en: Dict = {
   'settings.releasesMineHint': 'The artists you play most and the ones you follow.',
   'settings.releasesPopular': 'New releases from popular artists',
   'settings.releasesPopularHint': 'The most streamed artists in the world.',
+  'groups.awardTimeTraveler': 'Time traveler',
+  'groups.awardTimeTravelerDetail': 'music from ≈{year}',
 };
 
 const fr: Dict = {
@@ -3349,6 +3353,8 @@ const fr: Dict = {
   'settings.releasesMineHint': 'Les artistes que tu écoutes le plus et ceux que tu suis.',
   'settings.releasesPopular': 'Nouvelles sorties des artistes populaires',
   'settings.releasesPopularHint': 'Les artistes les plus écoutés au monde.',
+  'groups.awardTimeTraveler': 'Voyageur temporel',
+  'groups.awardTimeTravelerDetail': 'musique de ≈{year}',
 };
 
 const es: Dict = {
@@ -4462,6 +4468,8 @@ const es: Dict = {
   'settings.releasesMineHint': 'Los artistas que más escuchas y los que sigues.',
   'settings.releasesPopular': 'Nuevos lanzamientos de artistas populares',
   'settings.releasesPopularHint': 'Los artistas más escuchados del mundo.',
+  'groups.awardTimeTraveler': 'Viajero en el tiempo',
+  'groups.awardTimeTravelerDetail': 'música de ≈{year}',
 };
 
 const de: Dict = {
@@ -5575,6 +5583,8 @@ const de: Dict = {
   'settings.releasesMineHint': 'Die Künstler, die du am meisten hörst, und denen du folgst.',
   'settings.releasesPopular': 'Neue Releases populärer Künstler',
   'settings.releasesPopularHint': 'Die meistgestreamten Künstler der Welt.',
+  'groups.awardTimeTraveler': 'Zeitreisender',
+  'groups.awardTimeTravelerDetail': 'Musik von ≈{year}',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };

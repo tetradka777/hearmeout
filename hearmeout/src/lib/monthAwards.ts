@@ -12,10 +12,13 @@ export type AwardEvent = {
   artist?: string | null;
   album_id?: string | null;
   album?: string | null;
+  release_year?: number | null;
 };
 
 const SCOUT_LEAD_MS = 60 * 60 * 1000;
 const STUCK_MIN_PLAYS = 5;
+const TRAVELER_MIN_PLAYS = 20;
+const TRAVELER_MIN_AGE = 10;
 
 // Scout: who heard an album first. Counted per album that at least two
 // people played in the window: the one whose first play came before
@@ -61,8 +64,32 @@ export function stuckAward(events: AwardEvent[], userById: Map<string, ApiUser>)
   return best && u ? { label: 'awardStuck', winner: u, detail: `${best.title} · ${best.n}×` } : null;
 }
 
+// Time traveler: whose music is the oldest. The median release year of
+// someone's plays (only those with a known year, at least 20 of them); the
+// earliest median wins if it's at least ten years back. Detail = the year.
+export function timeTravelerAward(events: AwardEvent[], userById: Map<string, ApiUser>, now = new Date()): GroupAward | null {
+  const years = new Map<string, number[]>();
+  for (const e of events) {
+    const y = Number(e.release_year);
+    if (!y || y < 1900) continue;
+    const arr = years.get(e.user_id) || [];
+    arr.push(y);
+    years.set(e.user_id, arr);
+  }
+  let best: { id: string; year: number } | null = null;
+  for (const [id, arr] of years) {
+    if (arr.length < TRAVELER_MIN_PLAYS) continue;
+    arr.sort((a, b) => a - b);
+    const mid = arr.length >> 1;
+    const year = arr.length % 2 ? arr[mid] : Math.round((arr[mid - 1] + arr[mid]) / 2);
+    if (!best || year < best.year) best = { id, year };
+  }
+  const u = best && best.year <= now.getFullYear() - TRAVELER_MIN_AGE ? userById.get(best.id) : undefined;
+  return best && u ? { label: 'awardTimeTraveler', winner: u, detail: String(best.year) } : null;
+}
+
 // The "real data" monthly awards (most active, night owl, harshest critic,
-// genre explorer, scout, stuck) as a pure function of one month's rows for a set
+// genre explorer, scout, stuck, time traveler) as a pure function of one month's rows for a set
 // of people. Used by the group page (live month and past-months history)
 // and by the friend profile (awards a friend won within their own circle).
 // Leaves out the group page's streak award: a consecutive-day streak isn't
@@ -141,6 +168,8 @@ export function computeMonthAwards(
   if (scout) awards.push(scout);
   const stuck = stuckAward(monthEvents, userById);
   if (stuck) awards.push(stuck);
+  const traveler = timeTravelerAward(monthEvents, userById);
+  if (traveler) awards.push(traveler);
 
   return awards;
 }

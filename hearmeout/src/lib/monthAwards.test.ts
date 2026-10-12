@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { scoutAward, stuckAward, type AwardEvent } from './monthAwards';
+import { scoutAward, stuckAward, timeTravelerAward, type AwardEvent } from './monthAwards';
 
 const users = new Map(['a', 'b', 'c'].map((id) => [id, { id, name: id, handle: id, avatarUrl: null }] as const));
 const play = (user_id: string, played_at: string, extra: Partial<AwardEvent>): AwardEvent =>
@@ -26,4 +26,15 @@ test('stuck: most plays of one track, at least five', () => {
   assert.deepEqual(stuckAward([...t('a', 's1', 4), ...t('b', 's2', 6), ...t('c', 's3', 5)], users),
     { label: 'awardStuck', winner: users.get('b'), detail: 'S2 · 6×' });
   assert.equal(stuckAward(t('a', 's1', 4), users), null);
+});
+
+test('time traveler: oldest median release year, 20+ plays, 10+ years back', () => {
+  const plays = (user: string, years: number[]) => years.map((y) => play(user, '2026-10-01T10:00:00Z', { release_year: y }));
+  const now = new Date('2026-10-12T00:00:00Z');
+  const twenty = (y: number) => Array(20).fill(y);
+  assert.deepEqual(
+    timeTravelerAward([...plays('a', twenty(1985)), ...plays('b', [...twenty(1972), 2025]), ...plays('c', Array(19).fill(1960))], users, now),
+    { label: 'awardTimeTraveler', winner: users.get('b'), detail: '1972' },
+  );
+  assert.equal(timeTravelerAward(plays('a', twenty(2020)), users, now), null);
 });
