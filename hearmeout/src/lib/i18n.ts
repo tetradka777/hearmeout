@@ -1425,7 +1425,7 @@ const en: Dict = {
   'home.filterAll': 'all',
   'home.filterFirstPlays': 'first plays',
   'home.filterRated': 'rated',
-  'home.filterSession': 'triple w',
+  'home.filterSession': 'your session',
   'home.feedEmpty': "Quiet in here — nobody played anything in this filter today.",
   'home.firstPlayTag': 'first play',
   'ticker.disagree': 'and {friend} disagree on {album}',
