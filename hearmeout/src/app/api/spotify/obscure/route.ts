@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   const market = params.get('market');
   try {
     const albums = await withSpotifyCache(
-      `obscure:${genre}:${market || 'global'}`,
+      `obscure:v2:${genre}:${market || 'global'}`,
       3600,
       () => fetchObscureAlbums(genre, 10, market)
     );

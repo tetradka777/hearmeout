@@ -9,6 +9,7 @@ import { computeMatch } from '@/lib/matchScore';
 import { cachedJson, peekJson } from '@/lib/cachedJson';
 import { CoverArt } from '../ui/CoverArt';
 import { toLocale, pluralForKey, type TranslationKey } from '@/lib/i18n';
+import { sinceLabel } from './GroupsScreen';
 import { isDemoAccountId } from '@/lib/demoAccounts';
 import { BlendButton } from '../BlendButton';
 import { MascotIcon } from '../redesign/icons';
@@ -287,7 +288,7 @@ export function FriendScreen({ device: _device }: { device: Device }) {
         <h1 className="big" style={{ margin: 0, fontSize: 'clamp(34px,7vw,60px)' }}>{f.name}</h1>
         <p className="muted" style={{ fontWeight: 600 }}>
           @{f.handle.replace(/^@/, '')}
-          {isFriend && f.friendsSince ? ` · ${t('friend.friendsSince', { date: new Date(f.friendsSince).toLocaleDateString(toLocale(language), { month: 'long' }) })}` : ''}
+          {isFriend && f.friendsSince ? ` · ${t('friend.friendsSince', { date: sinceLabel(f.friendsSince, language) })}` : ''}
         </p>
         {!f.locked && f.nowPlaying && (
           <p className="nowl"><span className="eqs"><span className="eq"><b /><b /><b /></span></span> {t('friend.nowPlaying', { title: f.nowPlaying.title, artist: f.nowPlaying.artist })}</p>

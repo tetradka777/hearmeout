@@ -1020,8 +1020,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // different value than `id`; for everything else they're the same.
   const ensureLiveAlbum = useCallback((id: string, spotifyId?: string) => {
     if (!id || requestedAlbumIds.current.has(id)) return;
+    // A catalog slug is fetched by its Spotify id (callers often pass only
+    // the slug); anything else that isn't a Spotify id can't be fetched.
+    const target = spotifyId || ALBUMS.find((x) => x.id === id)?.spotifyId || id;
+    if (!/^[0-9A-Za-z]{22}$/.test(target)) { setFailedAlbumIds((s) => (id in s ? s : { ...s, [id]: true })); return; }
     requestedAlbumIds.current.add(id);
-    fetch(`/api/spotify/album/${spotifyId || id}`)
+    fetch(`/api/spotify/album/${target}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((detail: AlbumDetail | null) => {
         requestedAlbumIds.current.delete(id);

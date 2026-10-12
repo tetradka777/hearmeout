@@ -127,7 +127,8 @@ export function computeMonthAwards(
     const pct = Math.round((v.night / v.total) * 100);
     if (!nightOwl || pct > nightOwl.pct) nightOwl = { id: k, pct };
   }
-  if (nightOwl && nightOwl.pct > 0) {
+  // Under a tenth of plays at night isn't a night owl.
+  if (nightOwl && nightOwl.pct >= 10) {
     const u = userById.get(nightOwl.id);
     if (u) awards.push({ label: 'awardNightOwl', winner: u, detail: `${nightOwl.pct}%` });
   }

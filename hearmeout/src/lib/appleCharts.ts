@@ -1,5 +1,5 @@
 import { withSpotifyCache } from './spotifyCache';
-import { resolveSpotifyAlbumId } from './spotifyCatalog';
+import { isFunctionalAudio, resolveSpotifyAlbumId } from './spotifyCatalog';
 import { RateLimitError } from './upstreamError';
 
 // "Popular now": what people are actually playing this week — Apple Music's
@@ -54,7 +54,10 @@ async function appleChart(country: string): Promise<AppleResult[] | null> {
 // Matching to Spotify runs four at a time; a Spotify rate limit stops it
 // and the albums matched so far are used.
 async function build(country: string): Promise<ChartAlbum[]> {
-  const results = (await appleChart(country)) ?? (country !== 'us' ? await appleChart('us') : null) ?? [];
+  // Children's albums and sleep/noise audio are left out: not what anyone
+  // comes here to rate.
+  const all = (await appleChart(country)) ?? (country !== 'us' ? await appleChart('us') : null) ?? [];
+  const results = all.filter((r) => !(r.genres || []).some((g) => g.genreId === '4' || /дет|child|kinder|enfant|infantil/i.test(g.name)) && !isFunctionalAudio(r.name, r.artistName));
   const ids: (string | null)[] = new Array(results.length).fill(null);
   let next = 0;
   let limited = false;
@@ -73,7 +76,7 @@ async function build(country: string): Promise<ChartAlbum[]> {
     if (!spotifyId) continue;
     const bucket = bucketOf(r.genres || []);
     out.push({
-      rank: i + 1,
+      rank: all.indexOf(r) + 1,
       spotifyId,
       title: r.name,
       artist: r.artistName,
@@ -89,5 +92,5 @@ async function build(country: string): Promise<ChartAlbum[]> {
 // Six hours per country; the matching to Spotify is cached for a month.
 export function chartAlbums(region: string | null): Promise<ChartAlbum[]> {
   const country = region && /^[A-Za-z]{2}$/.test(region) ? region.toLowerCase() : 'us';
-  return withSpotifyCache(`apple-chart:v3:${country}`, 6 * 3600, () => build(country));
+  return withSpotifyCache(`apple-chart:v4:${country}`, 6 * 3600, () => build(country));
 }
