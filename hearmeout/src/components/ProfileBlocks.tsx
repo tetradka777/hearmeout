@@ -2,12 +2,13 @@
 
 import { useApp } from '@/lib/AppContext';
 import { CoverArt } from './ui/CoverArt';
+import { fmt1 } from '@/lib/numberFormat';
 import { HeartIcon } from './ui/Icons';
 import { sizedImage } from '@/lib/imageSize';
 
-// vProfile()'s loveRows(kind,keys): three distinct row shapes per type, not
-// one merged list — tracks are plain text (no cover, no click-through),
-// albums link to the album/rate page, artists link to the artist page.
+// vProfile()'s loveRows(kind,keys), with rev 9's covers and counts: tracks
+// show their album cover, albums their year and your score, artists their
+// photo; albums open the album page, artists the artist page.
 export function LovedTracksColumn() {
   const { t, lovedItems, toggleLoved } = useApp();
   const items = lovedItems.filter((li) => li.type === 'track');
@@ -16,6 +17,7 @@ export function LovedTracksColumn() {
     <>
       {items.map((li) => (
         <div className="row" key={li.id}>
+          <CoverArt url={li.cover ?? undefined} fallbackLetter={(li.artist || li.title)[0] || '?'} className="cov" px={44} style={{ width: 44, height: 44 }} />
           <span className="g"><b>{li.title}</b>{li.artist && <small className="muted" style={{ fontWeight: 600 }}>{li.artist}</small>}</span>
           <button className="ib love on" onClick={() => toggleLoved(li.type, li.title, li.artist, li.itemId, li.cover)} aria-pressed="true" aria-label={t('album.removeFromLoved')}><HeartIcon /></button>
         </div>
@@ -25,7 +27,7 @@ export function LovedTracksColumn() {
 }
 
 export function LovedAlbumsColumn() {
-  const { t, lovedItems, toggleLoved, albums, liveAlbums, openAlbum } = useApp();
+  const { t, lovedItems, toggleLoved, albums, liveAlbums, openAlbum, myRatings } = useApp();
   const items = lovedItems.filter((li) => li.type === 'album');
   if (!items.length) return <p className="muted" style={{ fontWeight: 600 }}>{t('profile.lovedEmptyAlbum')}</p>;
   return (
@@ -36,7 +38,7 @@ export function LovedAlbumsColumn() {
           <div className="row" key={li.id}>
             <button className="rowlink" onClick={() => a && openAlbum(a.id)} style={{ cursor: a ? 'pointer' : 'default' }}>
               <CoverArt url={li.cover ?? undefined} fallbackLetter={(li.artist || li.title)[0] || '?'} className="cov" style={{ width: 44, height: 44 }} />
-              <span className="g"><b>{li.title}</b><small className="muted" style={{ fontWeight: 600 }}>{li.artist}</small></span>
+              <span className="g"><b>{li.title}</b><small className="muted" style={{ fontWeight: 600 }}>{[li.artist, a?.year || null, (() => { const mine = a ? myRatings.find((r) => r.albumId === a.id)?.stars : undefined; return mine != null ? t('stats.youRated', { score: fmt1(mine) }) : null; })()].filter(Boolean).join(' · ')}</small></span>
             </button>
             <button className="ib love on" onClick={() => toggleLoved(li.type, li.title, li.artist, li.itemId, li.cover)} aria-pressed="true" aria-label={t('album.removeFromLoved')}><HeartIcon /></button>
           </div>
