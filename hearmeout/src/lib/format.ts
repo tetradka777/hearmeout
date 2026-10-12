@@ -2,11 +2,6 @@ import type { CSSProperties } from 'react';
 import { translate, type Language } from './i18n';
 import type { TimeFormat } from './palettes';
 
-export function starsText(n: number): string {
-  const full = Math.round(n);
-  return '★'.repeat(full) + '☆'.repeat(Math.max(0, 5 - full));
-}
-
 export function userAvatarStyle(u: { avatarUrl: string | null }): CSSProperties {
   return u.avatarUrl ? { backgroundImage: `url('${u.avatarUrl}')` } : {};
 }

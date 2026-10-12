@@ -289,7 +289,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   for (const [id, at] of latestPlayByUser.entries()) {
     if (!latest || at > latest.at) latest = { id, at };
   }
-  if (latest) records.push({ label: 'recordLatestListener', holder: userById.get(latest.id) || null, value: new Date(latest.at).toLocaleDateString() });
+  if (latest) records.push({ label: 'recordLatestListener', holder: userById.get(latest.id) || null, value: latest.at });
   let hotTake: { id: string; gap: number } | null = null;
   for (const r of personalMonthRatings) {
     const albumStat = albumStatsThisMonth.get(r.album_id as string);
@@ -322,6 +322,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
         avgMatch: Math.round(pairs.reduce((s, p) => s + p.pct, 0) / pairs.length),
         closest: [...pairs].sort((a, b) => b.pct - a.pct)[0],
         furthest: [...pairs].sort((a, b) => a.pct - b.pct)[0],
+        pairs: pairs.map((p) => ({ a: p.a.id, b: p.b.id, pct: p.pct })),
       }
     : null;
 

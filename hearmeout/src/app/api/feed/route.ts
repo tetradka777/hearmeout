@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { fetchAllRows } from '@/lib/supabasePaginate';
 import { getCurrentUserId } from '@/lib/identity';
@@ -7,7 +7,7 @@ import type { ApiUser, FeedDisagreement, FeedEvent, FeedResponse } from '@/lib/t
 
 // Home feed (redesign spec 6.1, 8): real friend activity plus today's
 // biggest taste disagreement. Nothing here is premium-gated.
-export async function GET() {
+export async function GET(request: NextRequest) {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
 
@@ -16,7 +16,10 @@ export async function GET() {
   const friendIds = (friendRows || []).map((r) => r.friend_id as string);
 
   const now = Date.now();
-  const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0);
+  // "Today" is the viewer's day (?tz = the browser's getTimezoneOffset()).
+  const tzMin = Math.max(-840, Math.min(840, Number(new URL(request.url).searchParams.get('tz')) || 0));
+  const local = new Date(now - tzMin * 60000);
+  const dayStart = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate()) + tzMin * 60000);
   const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
   const monthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -32,7 +35,7 @@ export async function GET() {
       ? admin.from('users').select('id, name, handle, avatar_url').in('id', friendIds)
       : Promise.resolve({ data: [] as { id: string; name: string; handle: string; avatar_url: string | null }[] }),
     friendIds.length
-      ? admin.from('ratings').select('user_id, album_id, stars, review, created_at, is_private').in('user_id', friendIds).gte('created_at', weekAgo).order('created_at', { ascending: false }).limit(20)
+      ? admin.from('ratings').select('user_id, album_id, stars, review, created_at, is_private').in('user_id', friendIds).gte('created_at', weekAgo).order('created_at', { ascending: false }).limit(300)
       : Promise.resolve({ data: [] as { user_id: string; album_id: string; stars: number; review: string | null; created_at: string; is_private: boolean | null }[] }),
     admin.from('ratings').select('album_id, stars').eq('user_id', userId),
     friendIds.length
@@ -41,7 +44,7 @@ export async function GET() {
     friendIds.length
       ? fetchAllRows((f, t) => admin.from('listening_events').select('user_id, track_id, track_title').in('user_id', friendIds).gte('played_at', monthAgo).lt('played_at', dayStart.toISOString()).order('id').range(f, t)).then((r) => ({ data: r.rows }))
       : Promise.resolve({ data: [] as { user_id: string; track_id: string | null; track_title: string | null }[] }),
-    admin.from('listening_events').select('duration_ms, artist, album_id, cover_url, played_at').eq('user_id', userId).gte('played_at', dayStart.toISOString()),
+    admin.from('listening_events').select('duration_ms, artist, album_id, cover_url, played_at, track_title').eq('user_id', userId).gte('played_at', dayStart.toISOString()),
   ]);
 
   // "Rate what you played": the viewer's own recently played albums, most
@@ -79,6 +82,7 @@ export async function GET() {
   // Rating-with-review events: friends' recent written reviews.
   const ratingEvents: FeedEvent[] = visibleFriendRatings
     .filter((r) => !!r.review)
+    .slice(0, 20)
     .map((r) => ({
       type: 'rating_review' as const,
       user: userById.get(r.user_id) || { id: r.user_id, name: '?', handle: '', avatarUrl: null },
@@ -150,6 +154,33 @@ export async function GET() {
     }
   }
 
-  const body: FeedResponse = { hero, events, recentAlbumIds };
+  // Trending in your circle: this week's friend ratings by album.
+  const byAlbum = new Map<string, { raters: Set<string>; sum: number; n: number }>();
+  for (const r of visibleFriendRatings) {
+    const cur = byAlbum.get(r.album_id) || { raters: new Set<string>(), sum: 0, n: 0 };
+    cur.raters.add(r.user_id);
+    cur.sum += Number(r.stars);
+    cur.n += 1;
+    byAlbum.set(r.album_id, cur);
+  }
+  const trending = [...byAlbum.entries()]
+    .map(([albumId, v]) => ({ albumId, count: v.raters.size, avg: Math.round((v.sum / v.n) * 10) / 10 }))
+    .sort((a, b) => b.count - a.count || b.avg - a.avg)
+    .slice(0, 5);
+
+  // Your day so far: the play times, and the track on repeat (2+ plays).
+  const todayPlays = (mySessionRows || []).map((r) => r.played_at as string);
+  const trackCounts = new Map<string, { title: string; artist: string; plays: number }>();
+  for (const r of mySessionRows || []) {
+    if (!r.track_title) continue;
+    const k = `${r.track_title}|${r.artist ?? ''}`;
+    const cur = trackCounts.get(k) || { title: r.track_title as string, artist: (r.artist as string | null) ?? '', plays: 0 };
+    cur.plays += 1;
+    trackCounts.set(k, cur);
+  }
+  const topTrack = [...trackCounts.values()].sort((a, b) => b.plays - a.plays)[0];
+  const onRepeat = topTrack && topTrack.plays >= 2 ? topTrack : null;
+
+  const body: FeedResponse = { hero, events, recentAlbumIds, trending, todayPlays, onRepeat };
   return NextResponse.json(body);
 }

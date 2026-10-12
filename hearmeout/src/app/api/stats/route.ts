@@ -231,6 +231,15 @@ export async function GET(request: NextRequest) {
     .sort((a, b) => b.ms - a.ms)
     .slice(0, 10)
     .map((a) => ({ name: a.name, id: a.id, cover: a.cover, hours: Math.round((a.ms / 3600000) * 10) / 10, plays: a.plays }));
+  const albumAgg = new Map<string, { title: string; artist: string; cover: string | null; ms: number }>();
+  for (const r of inRange) {
+    if (!r.album_id) continue;
+    const cur = albumAgg.get(r.album_id) || { title: r.album || '', artist: r.artist || '', cover: r.cover_url, ms: 0 };
+    cur.ms += r.duration_ms || 0;
+    albumAgg.set(r.album_id, cur);
+  }
+  const topAlbums = [...albumAgg.entries()].sort((a, b) => b[1].ms - a[1].ms).slice(0, 4)
+    .map(([albumId, a]) => ({ albumId, title: a.title, artist: a.artist, cover: a.cover, hours: Math.round((a.ms / 3600000) * 10) / 10 }));
   const artistNames = [...artistAgg.values()].filter((a) => a.plays >= 2).sort((a, b) => b.plays - a.plays).slice(0, 300).map((a) => a.name);
 
   const genreCounts = new Map<string, number>();
@@ -314,7 +323,7 @@ export async function GET(request: NextRequest) {
     comparisonPct,
     comparisonNote,
     hours, trackCount, artistCount, newArtistCount, avgRating, peakHour,
-    topArtists, artistNames, heatmap: hourCounts, genreSplit, bars, recentPlays,
+    topArtists, artistNames, topAlbums, heatmap: hourCounts, genreSplit, bars, recentPlays,
     calendar: { days, activeDays, totalDays, longestStreak, bestDay },
     seasonChips,
   };

@@ -3,6 +3,8 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
 import { handleIlikePattern } from '@/lib/slug';
 import { isFriendOf } from '@/lib/userProfile';
+import { fetchAllRows } from '@/lib/supabasePaginate';
+import { DEFAULT_PRIVACY, fetchPrivacy } from '@/lib/privacy';
 import type { GroupSummary } from '@/lib/types';
 
 export async function GET() {
@@ -26,10 +28,21 @@ export async function GET() {
   // week: {name} · {hours}h" — both missing before, even though the data
   // (users + this-week listening_events) is the same the group detail page
   // already fetches per group.
-  const [{ data: users }, { data: weekEvents }] = await Promise.all([
+  // Paged: one request returns at most 1000 rows, which cut active groups'
+  // hours short.
+  const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const now = new Date();
+  const monthKey = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+  const [{ data: users }, { rows: weekEvents }, { rows: monthRatings }, { data: votes }, privacy] = await Promise.all([
     admin.from('users').select('id, name, handle, avatar_url').in('id', allMemberIds),
-    admin.from('listening_events').select('user_id, duration_ms').in('user_id', allMemberIds).gte('played_at', since),
+    fetchAllRows((f, t) => admin.from('listening_events').select('user_id, duration_ms').in('user_id', allMemberIds).gte('played_at', since).order('id').range(f, t)),
+    fetchAllRows((f, t) => admin.from('ratings').select('user_id, album_id, stars, created_at, is_private').in('user_id', allMemberIds).gte('created_at', monthAgo).order('id').range(f, t)),
+    admin.from('group_votes').select('group_id, candidate_id').in('group_id', groupIds).eq('month_key', monthKey),
+    fetchPrivacy(admin, allMemberIds),
   ]);
+  // Ratings others may see: not "keep private", and the person's "ratings
+  // visible to friends" switch on (your own always count).
+  const visibleRatings = (monthRatings || []).filter((r) => !r.is_private && (r.user_id === userId || (privacy.get(r.user_id as string) ?? DEFAULT_PRIVACY).ratingsVisible));
   const userById = new Map((users || []).map((u) => [u.id as string, { id: u.id as string, name: u.name as string, handle: u.handle as string, avatarUrl: u.avatar_url as string | null }]));
   const hoursByUser = new Map<string, number>();
   for (const e of weekEvents || []) {
@@ -50,7 +63,18 @@ export async function GET() {
       .map((user) => ({ user, hours: Math.round(((hoursByUser.get(user.id) || 0) / 3600000) * 10) / 10 }))
       .sort((a, b) => b.hours - a.hours);
     const topListener = ranked.length && ranked[0].hours > 0 ? ranked[0] : null;
-    summaries.push({ id: g.id, name: g.name, memberCount: memberIds.length, newPlays: count || 0, createdAt: g.created_at as string, members, topListener });
+    const memberSet = new Set(memberIds);
+    const ratings = visibleRatings.filter((r) => memberSet.has(r.user_id as string));
+    const coverAlbumIds = [...ratings].sort((a, b) => Number(b.stars) - Number(a.stars))
+      .map((r) => r.album_id as string).filter((id, i, all) => all.indexOf(id) === i).slice(0, 3);
+    const tally = new Map<string, number>();
+    for (const v of votes || []) if (v.group_id === g.id) tally.set(v.candidate_id as string, (tally.get(v.candidate_id as string) || 0) + 1);
+    const leadingVote = [...tally.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+    const recent = [...ratings].sort((a, b) => (a.created_at < b.created_at ? 1 : -1)).slice(0, 2)
+      .map((r) => ({ user: userById.get(r.user_id as string)!, albumId: r.album_id as string, stars: Number(r.stars), at: r.created_at as string }))
+      .filter((r) => !!r.user);
+    const hoursWeek = Math.round(ranked.reduce((s, x) => s + x.hours, 0));
+    summaries.push({ id: g.id, name: g.name, memberCount: memberIds.length, newPlays: count || 0, createdAt: g.created_at as string, members, topListener, coverAlbumIds, hoursWeek, leadingVote, recent });
   }
   return NextResponse.json(summaries);
 }

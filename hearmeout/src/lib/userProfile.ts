@@ -112,7 +112,22 @@ export async function getUserProfile(
   // the owner opted their profile open. Search and sending a friend request
   // still work either way; *viewing* the profile is what's gated.
   if (!isOpen && !isPublicTeaser) {
+    // Friends you have in common (rev 9 private profile): their friends
+    // that are also yours, nothing else of their friend list.
+    let mutualFriends: ApiUser[] = [];
+    if (viewerId) {
+      const [{ data: theirs }, { data: mine }] = await Promise.all([
+        admin.from('friendships').select('friend_id').eq('user_id', userId),
+        admin.from('friendships').select('friend:friend_id(id, name, handle, avatar_url)').eq('user_id', viewerId),
+      ]);
+      const theirIds = new Set((theirs || []).map((r) => r.friend_id as string));
+      mutualFriends = (mine || []).flatMap((row) => {
+        const f = row.friend as unknown as { id: string; name: string; handle: string; avatar_url: string | null } | null;
+        return f && theirIds.has(f.id) ? [{ id: f.id, name: f.name, handle: f.handle, avatarUrl: f.avatar_url }] : [];
+      });
+    }
     return {
+      mutualFriends,
       id: user.id,
       name: user.name,
       handle: user.handle,

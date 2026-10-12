@@ -10,6 +10,7 @@ import { ConnectionRows, ImportTile } from '../ConnectionBlocks';
 import { RegionInput } from '../RegionInput';
 import { SETTINGS_SECTION_EVENT, takeRecentEvent } from '@/lib/uiEvents';
 import { PushToggle } from '../PushToggle';
+import { SettingsAside } from '../SettingsAside';
 
 type Section = 'appearance' | 'language' | 'account' | 'connections' | 'privacy';
 
@@ -80,7 +81,7 @@ function AppearanceTab() {
         <div className="optgrid" role="radiogroup" aria-label={t('settings.design')}>
           {DESIGNS.map(([id, name, hint]) => (
             <button key={id} className="optcard" role="radio" aria-checked={me.design === id} onClick={() => updateAppearance({ design: id })}>
-              <span className="chk">✓</span>
+              <span className="chk"><i className="ic ic-check" /></span>
               <DesignPreview design={id} mode={effectiveMode} />
               <b>{name}</b>
               <small className="muted" style={{ fontWeight: 600 }}>{t(hint)}</small>
@@ -342,7 +343,7 @@ export function SettingsScreen(_props: { device: Device }) {
     <>
       <p className="eyebrow muted">{t('settings.eyebrow')}</p>
       <h1 className="big">{t('settings.title')}</h1>
-      <div className="setgrid">
+      <div className={`setgrid${section === 'appearance' ? '' : ' has3'}`}>
         <div className="stabs" role="tablist" aria-label={t('settings.sectionsAria')}>
           {NAV.map((n) => (
             <button key={n.key} role="tab" aria-selected={section === n.key} className={section === n.key ? 'on' : ''} onClick={() => setSection(n.key)}>{n.label}</button>
@@ -355,6 +356,7 @@ export function SettingsScreen(_props: { device: Device }) {
           {section === 'connections' && <ConnectionsTab />}
           {section === 'privacy' && <PrivacyTab />}
         </div>
+        <SettingsAside section={section} />
       </div>
     </>
   );

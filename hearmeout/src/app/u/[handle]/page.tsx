@@ -109,7 +109,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 
         {profile.locked ? (
           <div className="tile t-soft2 empty" style={{ marginTop: 14 }}>
-            <span className="num" style={{ fontSize: 54 }}>🔒</span>
+            <span className="num" style={{ fontSize: 54 }}><i className="ic ic-lock" /></span>
             <h3>{t('pub.privateTitle')}</h3>
             <p className="muted" style={{ fontWeight: 600 }}>{t('pub.privateBody', { name: first })}</p>
             {addButton}

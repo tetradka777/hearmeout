@@ -8,8 +8,9 @@ import { formatRelative, userAvatarStyle } from '@/lib/format';
 import { computeMatch } from '@/lib/matchScore';
 import { cachedJson, peekJson } from '@/lib/cachedJson';
 import { CoverArt } from '../ui/CoverArt';
-import { toLocale, pluralForKey, type TranslationKey } from '@/lib/i18n';
+import { pluralForKey } from '@/lib/i18n';
 import { sinceLabel } from './GroupsScreen';
+import { AwardGallery } from '../AwardGallery';
 import { isDemoAccountId } from '@/lib/demoAccounts';
 import { BlendButton } from '../BlendButton';
 import { MascotIcon } from '../redesign/icons';
@@ -264,7 +265,7 @@ export function FriendScreen({ device: _device }: { device: Device }) {
         <button className="btn ghost" onClick={() => setConfirmRemove(false)}>{t('friend.keep')}</button>
       </span>
     ) : (
-      <button className="btn ghost" onClick={() => setConfirmRemove(true)}>{t('friend.friendsCheck')}</button>
+      <button className="btn ghost" onClick={() => setConfirmRemove(true)}>{t('friend.friendsCheck')} <i className="ic ic-check" /></button>
     )
   ) : outgoing ? (
     <button className="btn ghost" onClick={() => respondToFriendRequest(outgoing.id, 'cancel')}>{t('friend.requestSentCancel')}</button>
@@ -308,10 +309,39 @@ export function FriendScreen({ device: _device }: { device: Device }) {
     return (
       <>
         {head}
-        <div className="tile t-soft2 empty" style={{ marginTop: 14 }}>
-          <span className="num" style={{ fontSize: 54 }}>🔒</span>
-          <h3>{t('friend.closedProfileTitle')}</h3>
-          <p className="muted" style={{ fontWeight: 600 }}>{t('friend.lockedHint', { name: f.name })}</p>
+        {/* Rev 9: who you have in common, what opens up after they accept, and a blurred preview. */}
+        <div className="bento b3" style={{ marginTop: 14 }}>
+          {f.mutualFriends && f.mutualFriends.length > 0 && (
+            <div className="tile t-pop">
+              <small className="k9">{t('friend.youAnd', { name: f.name })}</small>
+              <h3 style={{ margin: '2px 0 8px' }}>{t('friend.mutualN', { n: f.mutualFriends.length })}</h3>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {f.mutualFriends.map((m) => (
+                  <button className="chip" key={m.id} onClick={() => viewFriend(m.id)}><span className="dot" style={userAvatarStyle(m)}>{!m.avatarUrl && m.name[0]}</span>{m.name}</button>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className={`tile t-soft2 ${f.mutualFriends && f.mutualFriends.length > 0 ? 's2' : 's3'}`}>
+            <small className="k9 muted">{t('friend.afterAccept')}</small>
+            <h3 style={{ margin: '2px 0 10px' }}>{t('friend.whatYouWillSee')}</h3>
+            <div className="chips" style={{ margin: 0 }}>
+              {(['friend.unlockRatings', 'friend.unlockMatch', 'friend.unlockTop4', 'friend.unlockArtists', 'friend.unlockRecap', 'friend.unlockAwards'] as const).map((k) => <span className="chip" key={k}>{t(k)}</span>)}
+            </div>
+            <p className="muted" style={{ fontWeight: 600, marginTop: 12 }}>{t('friend.lockedHint', { name: f.name })}</p>
+          </div>
+          <div className="locked9 s3">
+            <div className="lkgrid9" aria-hidden="true">
+              {[70, 55, 65].map((w, i) => (
+                <div className="tile lk9" key={i}>
+                  <span className="sk" style={{ height: 12, width: `${w}%` }} />
+                  <span className="sk" style={{ height: 12, width: `${w - 20}%` }} />
+                  <span className="sk" style={{ height: 40, width: '100%' }} />
+                </div>
+              ))}
+            </div>
+            <div className="lkbadge9"><span aria-hidden="true"><i className="ic ic-lock" /></span>{t('friend.closedProfileTitle')}<small>{t('friend.sendRequestToUnlock')}</small></div>
+          </div>
         </div>
       </>
     );
@@ -402,9 +432,9 @@ export function FriendScreen({ device: _device }: { device: Device }) {
 
         <div className="tile">
           <h2>{t('friend.awards')}</h2>
-          <div className="chips" style={{ margin: 0 }}>
+          <div>
             {f.awards?.length
-              ? f.awards.map((aw) => <span className="chip on" key={aw.label}>{t(`groups.${aw.label}` as TranslationKey)}</span>)
+              ? <AwardGallery earned={f.awards.map((aw) => aw.label)} />
               : <span className="muted" style={{ fontWeight: 600 }}>{t('friend.noAwards')}</span>}
           </div>
         </div>

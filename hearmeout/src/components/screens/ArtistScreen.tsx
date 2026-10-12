@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { fmt1 } from '@/lib/numberFormat';
+import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import { usePlayer, type QueueTrack } from '@/lib/PlayerContext';
 import type { ApiUser, Device, SpotifyArtistAlbum } from '@/lib/types';
@@ -59,18 +59,20 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
   // null = not loaded; configured=false = no Ticketmaster key on the server.
   const [concerts, setConcerts] = useState<{ configured: boolean; list: Concert[] } | 'error' | null>(null);
   const [topFan, setTopFan] = useState<{ id: string; name: string; handle: string; avatarUrl: string | null; hours: number } | null>(null);
+  const [fans, setFans] = useState<{ id: string; name: string; handle: string; avatarUrl: string | null; hours: number }[]>([]);
 
   const isSpotify = art?.source === 'spotify';
 
   useEffect(() => { setTab('popular'); }, [art?.id]);
 
   useEffect(() => {
-    if (!art || !isSpotify) { setTopFan(null); return; }
+    if (!art || !isSpotify) { setTopFan(null); setFans([]); return; }
     let cancelled = false;
     setTopFan(null);
+    setFans([]);
     fetch(`/api/artist/${art.id}/top-fan?name=${encodeURIComponent(art.name)}`)
       .then((r) => (r.ok ? r.json() : { topFan: null }))
-      .then((d) => { if (!cancelled) setTopFan(d.topFan); });
+      .then((d) => { if (!cancelled) { setTopFan(d.topFan); setFans(d.fans || []); } });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [art?.id, art?.name, isSpotify]);
@@ -206,7 +208,7 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
               const isCur = currentTrack?.albumId === tr.albumId && currentTrack?.title === tr.title;
               return (
                 <div className="row poprow" key={tr.id}>
-                  <span className="num" style={{ fontSize: 22, width: 20, opacity: 0.8 }}>{i + 1}</span>
+                  <span className="num" style={{ fontSize: 22, minWidth: 28, opacity: 0.8, whiteSpace: 'nowrap' }}>{i + 1}</span>
                   <button className="rowlink" onClick={() => openAlbum(tr.albumId)}>
                     <span className="g">
                       <b>{tr.title}</b>
@@ -414,6 +416,51 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
           )}
         </div>
 
+        {/* Rev 9c: the albums shelf with scores, and friends who listen. */}
+        {(art.releasedAlbums?.length || fans.length) ? (
+          <div className="bento b3" style={{ margin: '14px 0' }}>
+            {art.releasedAlbums?.length ? (
+              <div className="tile s3 ash9">
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'baseline', flexWrap: 'wrap' }}>
+                  <h2 style={{ margin: 0 }}>{t('artist.albums')}</h2>
+                  <small className="muted" style={{ fontWeight: 800 }}>{t('artist.albumsCount', { n: art.releasedAlbums.length })}</small>
+                </div>
+                <div className="hshelf9">
+                  {art.releasedAlbums.slice(0, 6).map((al) => {
+                    const mine = myScoreByAlbum.get(al.id);
+                    const community = albumRatings[al.id]?.avg;
+                    const score = mine ?? community;
+                    return (
+                      <button key={al.id} onClick={() => openAlbum(al.id)} style={{ textAlign: 'left' }}>
+                        <div className="cvw">
+                          <CoverArt url={al.cover ?? undefined} fallbackLetter={art.name[0] || '?'} className="cov" px={170} style={{ width: '100%', aspectRatio: '1' }} />
+                          {score != null && <span className="bdg">{fmt1(score)}</span>}
+                        </div>
+                        <b>{al.title}</b>
+                        <small className="muted" style={{ fontWeight: 600 }}>{al.year ?? '—'}{score != null ? ` · ${mine != null ? t('artist.yourScoreLabel') : t('artist.communityScoreLabel')}` : ''}</small>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+            {fans.length > 0 && (
+              <div className="tile t-soft2 s3">
+                <h2>{t('artist.friendsWhoListen', { name: art.name })}</h2>
+                {fans.map((f, i) => (
+                  <button className="row" key={f.id} onClick={() => viewFriend(f.id)}>
+                    <span className={`md9${i < 3 ? ` g${i + 1}` : ''}`}>{i + 1}</span>
+                    <span className="dot" style={userAvatarStyle(f)}>{!f.avatarUrl && f.name[0]}</span>
+                    <span className="g"><b>{f.name}</b></span>
+                    <div className="meter" style={{ flex: 'none', width: '34%' }}><i style={{ width: `${Math.round((f.hours / fans[0].hours) * 100)}%` }} /></div>
+                    <b style={{ width: 60, textAlign: 'right' }}>{fmtHours(f.hours)}{t('unit.h')}</b>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : null}
+
         <div className="chips" style={{ margin: '18px 0' }} role="tablist">
           {TABS.map((tb) => (
             <button key={tb.key} role="tab" aria-selected={tab === tb.key} className={`chip${tab === tb.key ? ' on' : ''}`} onClick={() => setTab(tb.key)}>{tb.label}</button>
@@ -445,6 +492,7 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
                 <CoverArt url={coverArtUrl(g.id)} fallbackLetter={g.title[0] || '?'} className="cov mb" px={170} style={{ width: '100%', aspectRatio: '1' }} />
                 <b style={{ display: 'block', marginTop: 8, fontSize: 14 }}>{g.title}</b>
                 <small className="muted" style={{ fontWeight: 600 }}>{year}</small>
+                <span className="tag" style={{ marginTop: 6 }}>{t('artist.mbNoRatings')}</span>
               </button>
             );
           })}
@@ -463,6 +511,16 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
           <h1 className="big" style={{ margin: 0, fontSize: 'clamp(34px,7vw,56px)' }}>{art.name}</h1>
           <p className="muted" style={{ fontWeight: 600, marginTop: 4 }}>{t('artist.mbSimpleView')}</p>
         </div>
+        {/* Rev 9: how many albums and the years active. */}
+        {art.albums && art.albums.length > 0 && (() => {
+          const years = art.albums.map((g) => parseInt((g['first-release-date'] || '').slice(0, 4), 10)).filter((y) => y > 0).sort((x, y) => x - y);
+          return (
+            <div className="s3x" style={{ margin: 0, minWidth: 180 }}>
+              <div><b className="num">{art.albums.length}</b><small>{t('artist.mbAlbums')}</small></div>
+              {years.length > 0 && <div><b className="num">{years[0] === years[years.length - 1] ? years[0] : `${years[0]}–${years[years.length - 1]}`}</b><small>{t('artist.mbActive')}</small></div>}
+            </div>
+          );
+        })()}
       </div>
       {body}
     </>

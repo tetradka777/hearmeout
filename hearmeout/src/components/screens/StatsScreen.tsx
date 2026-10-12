@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { fmt1 } from '@/lib/numberFormat';
+import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { Device, StatsCalendarDay, StatsData, StatsPeriodType, StatsSeasonKey } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
@@ -138,7 +138,7 @@ function ListeningCalendar({ data, t, language, weekStart }: { data: StatsData; 
   }
 
   return (
-    <div className="tile s3">
+    <div className="tile s3 cal11">
       <h2>{t('stats.calendarTitle')}</h2>
       <p className="muted" style={{ margin: '-6px 0 18px', fontWeight: 600 }}>{t('stats.calendarHelp')}</p>
       <div className="cal" ref={calRef}>
@@ -169,7 +169,7 @@ function ListeningCalendar({ data, t, language, weekStart }: { data: StatsData; 
 }
 
 export function StatsScreen(_props: { device: Device }) {
-  const { t, language, me, lovedItems, toggleLoved, openRecap, ensureRecap, recapCache, laterItems, toggleLaterTrack, showToast } = useApp();
+  const { t, language, me, lovedItems, toggleLoved, openRecap, ensureRecap, recapCache, laterItems, toggleLaterTrack, showToast, myRatings, openAlbum } = useApp();
   const { playQueue } = usePlayer();
   const [savingRow, setSavingRow] = useState<number | null>(null);
 
@@ -329,73 +329,84 @@ export function StatsScreen(_props: { device: Device }) {
       ) : (
         <>
           <div className="bento b3">
-            <div className="tile t-ac s2">
-              <span className="num" style={{ fontSize: 'clamp(96px,20vw,170px)', display: 'block' }}>{data.hours}</span>
-              <p style={{ fontWeight: 800, marginTop: 12 }}>{t('stats.hoursOfMusic')}{deltaTxt ? ` · ${deltaTxt}` : ''}</p>
-            </div>
-            <div className="stack">
-              <div className="tile t-pop"><span className="num" style={{ fontSize: 44 }}>{data.trackCount.toLocaleString(toLocale(language))}</span><br /><small style={{ fontWeight: 700 }}>{t('stats.tracks')}</small></div>
-              <div className="tile t-ink"><span className="num" style={{ fontSize: 44 }}>{data.artistCount}</span><br /><small style={{ fontWeight: 700 }}>{t('stats.artistsNew', { count: data.newArtistCount })}</small></div>
-            </div>
-
-            <div className="s3 stats3" style={{ margin: 0 }}>
-              <div className="tile t-soft2"><span className="num">{data.avgRating ? fmt1(Number(data.avgRating)) : '–'}</span><small>{t('stats.avgRatingIn', { word })}</small></div>
-              <div className="tile"><span className="num" style={{ color: 'var(--acct)' }}>{peak}</span><small>{t('stats.peakHour')}</small></div>
-              <div className="tile t-pop"><span className="num">{data.topArtists.length}</span><small>{t('stats.artistsTracked')}</small></div>
+            {/* One summary tile (rev 11): hours and the small figures on the left, hours per day or week on the right. */}
+            <div className="tile t-ac s3 sum11">
+              <div className="l">
+                <span className="num">{fmtHours(data.hours)}</span>
+                <p>{t('stats.hoursOfMusic')}{deltaTxt ? ` · ${deltaTxt}` : ''}</p>
+                <div className="kv11">
+                  <span><b className="num">{data.trackCount.toLocaleString(toLocale(language))}</b><small>{t('stats.tracks')}</small></span>
+                  <span><b className="num">{data.artistCount}</b><small>{t('stats.artistsNew', { count: data.newArtistCount })}</small></span>
+                  {data.peakHour != null && <span><b className="num">{peak}</b><small>{t('stats.peakHour')}</small></span>}
+                  {data.avgRating ? <span><b className="num">{fmt1(Number(data.avgRating))}</b><small>{t('stats.avgRatingIn', { word })}</small></span> : null}
+                </div>
+              </div>
+              <div className="r">
+                <div className="bars" role="img" aria-label={periodType === 'season' ? t('stats.hoursPerWeek') : t('stats.hoursPerDay')}>
+                  {data.bars.map((b, i) => <i key={i} style={{ height: `${Math.max(3, Math.round((b.hours / maxBar) * 100))}%`, opacity: b.future ? 0.25 : 1 }} title={`${b.label}: ${b.hours}h`} />)}
+                </div>
+                {barsAxis}
+              </div>
             </div>
 
             <ListeningCalendar data={data} t={t} language={language} weekStart={me.weekStart ?? 'mon'} />
-
-            <div className="tile">
-              <h2>{periodType === 'season' ? t('stats.hoursPerWeek') : t('stats.hoursPerDay')}</h2>
-              <div className={`bars${periodType === 'month' ? ' dense' : ''}`} role="img" aria-label={periodType === 'season' ? t('stats.hoursPerWeek') : t('stats.hoursPerDay')}>
-                {data.bars.map((b, i) => <i key={i} style={{ height: `${Math.max(3, Math.round((b.hours / maxBar) * 100))}%`, opacity: b.future ? 0.25 : 1 }} title={`${b.label}: ${b.hours}h`} />)}
-              </div>
-              {barsAxis}
-            </div>
 
             <div className="tile t-soft2">
               <h2>{t('stats.topArtists')}</h2>
               {data.topArtists.length ? data.topArtists.slice(0, 4).map((a, i) => (
                 <div className="row" key={a.id || a.name}>
-                  <span className="num" style={{ fontSize: 24, width: 18 }}>{i + 1}</span>
+                  <span className="rk11">{i + 1}</span>
                   <b className="g">{a.name}</b>
                   <div className="meter" style={{ flex: 'none', width: 80 }}><i style={{ width: `${Math.round((a.plays / maxArtistPlays) * 100)}%` }} /></div>
                   <b style={{ width: 36, textAlign: 'right' }}>{a.plays}</b>
                 </div>
               )) : <p className="muted" style={{ fontWeight: 600 }}>{t('stats.notEnough')}</p>}
-              {data.topArtists.length > 0 && <p className="muted" style={{ fontSize: 13, fontWeight: 600, marginTop: 8 }}>{t('stats.playsInThis', { word })}</p>}
             </div>
 
+            <div className="tile s2">
+              <div className="hd10"><div><h2 style={{ margin: 0 }}>{t('stats.topAlbums')}</h2><small className="muted" style={{ fontWeight: 700 }}>{t('stats.topAlbumsSub')}</small></div></div>
+              {data.topAlbums?.length ? data.topAlbums.map((a, i) => {
+                const mine = myRatings.find((r) => r.albumId === a.albumId)?.stars;
+                return (
+                  <button className="row" key={a.albumId} onClick={() => openAlbum(a.albumId)}>
+                    <span className="rk11">{i + 1}</span>
+                    <CoverArt url={a.cover ?? undefined} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: 44, height: 44 }} />
+                    <span className="g"><b>{a.title}</b><small className="muted">{a.artist}</small></span>
+                    <span className={`tag${mine != null ? ' on9' : ''}`}>{mine != null ? t('stats.youRated', { score: fmt1(mine) }) : t('stats.notRated')}</span>
+                    <b className="num" style={{ fontSize: 22, minWidth: 40, textAlign: 'right' }}>{fmtHours(a.hours)}{t('unit.h')}</b>
+                  </button>
+                );
+              }) : <p className="muted" style={{ fontWeight: 600 }}>{t('stats.notEnough')}</p>}
+            </div>
+
+            {/* Time of day and genres in one tile. */}
             <div className="tile">
               <h2>{t('stats.whenYouListen')}</h2>
               <div className="tod" role="img" aria-label={t('stats.todAria', { hour: peak })}>
                 {data.heatmap.map((n, h) => <i key={h} className={h === data.peakHour ? 'pk' : ''} style={{ height: `${Math.max(4, Math.round((n / maxHeat) * 100))}%` }} title={formatHour(h, tf)} />)}
               </div>
               <div className="todax" aria-hidden="true">{[0, 6, 12, 18, 23].map((h) => <span key={h}>{formatHour(h, tf)}</span>)}</div>
-              {data.peakHour != null && <p className="muted" style={{ marginTop: 10, fontSize: 14, fontWeight: 600 }}>{t('stats.peakSentencePre')} <b>{peak}</b>.</p>}
+              {data.peakHour != null && <p className="muted" style={{ margin: '6px 0 0', fontWeight: 700 }}>{t('stats.peakSentencePre')} <b>{peak}</b>.</p>}
+              {data.genreSplit.length > 0 && (
+                <>
+                  <h2 style={{ marginTop: 22 }}>{t('stats.genreSplit')}</h2>
+                  <div className="gbar" role="img" aria-label={t('stats.genreSplit')}>
+                    {data.genreSplit.map((g, i) => (
+                      <i key={g.genre} style={{ flex: g.pct, background: `color-mix(in srgb, var(--acct) ${GENRE_SHADE[i] ?? 10}%, var(--paper))` }} />
+                    ))}
+                  </div>
+                  <div className="glegend">
+                    {data.genreSplit.map((g, i) => (
+                      <span key={g.genre}><i style={{ background: `color-mix(in srgb, var(--acct) ${GENRE_SHADE[i] ?? 10}%, var(--paper))` }} />{g.genre} <b>{g.pct}%</b></span>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
-
-            {data.genreSplit.length > 0 && (
-              <div className="tile s3">
-                <h2>{t('stats.genreSplit')}</h2>
-                <div className="gbar" role="img" aria-label={t('stats.genreSplit')}>
-                  {data.genreSplit.map((g, i) => (
-                    <i key={g.genre} style={{ flex: g.pct, background: `color-mix(in srgb, var(--acct) ${GENRE_SHADE[i] ?? 10}%, var(--paper))` }} />
-                  ))}
-                </div>
-                <div className="glegend">
-                  {data.genreSplit.map((g, i) => (
-                    <span key={g.genre}><i style={{ background: `color-mix(in srgb, var(--acct) ${GENRE_SHADE[i] ?? 10}%, var(--paper))` }} />{g.genre} <b>{g.pct}%</b></span>
-                  ))}
-                </div>
-              </div>
-            )}
 
             <div className="tile s2">
               <h2>{t('stats.recentPlays')}</h2>
-              <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 6px' }}>{t('stats.recentPlaysHint')}</p>
-              {data.recentPlays.length ? data.recentPlays.map((p, i) => {
+              {data.recentPlays.length ? data.recentPlays.slice(0, 4).map((p, i) => {
                 const loved = lovedItems.some((li) => li.type === 'track' && li.title === p.title && li.artist === p.artist);
                 const later = laterItems.some((li) => li.type === 'track' && li.title === p.title && li.artist === p.artist);
                 return (

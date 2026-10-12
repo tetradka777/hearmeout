@@ -54,6 +54,8 @@ export type RecapData = {
   avgScore: number | null;
   awards: string[];
   range: { start: string; end: string | null };
+  // Week recaps: minutes on each of the seven days.
+  daily?: number[];
 };
 
 export type ApiUser = { id: string; name: string; handle: string; avatarUrl: string | null };
@@ -84,6 +86,8 @@ export type PublicProfile = ApiUser & {
   // already an accepted friend of this person — lets friends discover
   // mutual connections without exposing a stranger's whole friend graph.
   friends?: ApiUser[];
+  // Locked profiles: friends you both have (who you'd know in common).
+  mutualFriends?: ApiUser[];
   recentRatings?: RatingRecord[];
   // Friend-only extras (spec 6.4), same visibility as recentRatings:
   // their most recent play however old (the "last played" tile), when the
@@ -156,7 +160,15 @@ export type FeedRatingEvent = { type: 'rating_review'; user: ApiUser; albumId: s
 export type FeedSessionEvent = { type: 'session'; plays: number; minutes: number; artists: number; albumId: string | null; cover: string | null; at: string };
 export type FeedEvent = FeedFirstPlayEvent | FeedRatingEvent | FeedSessionEvent;
 export type FeedDisagreement = { friend: ApiUser; albumId: string; mine: number; theirs: number; at: string };
-export type FeedResponse = { hero: FeedDisagreement | null; events: FeedEvent[]; recentAlbumIds: string[] };
+// Trending in your circle: albums friends rated this week, most raters first.
+export type FeedTrending = { albumId: string; count: number; avg: number };
+export type FeedResponse = {
+  hero: FeedDisagreement | null; events: FeedEvent[]; recentAlbumIds: string[];
+  trending?: FeedTrending[];
+  // Your day so far: when each of today's plays happened (the client buckets
+  // them by its own hour) and the track played most today.
+  todayPlays?: string[]; onRepeat?: { title: string; artist: string; plays: number } | null;
+};
 
 export type RatingRecord = {
   albumId: string;
@@ -214,6 +226,8 @@ export type StatsData = {
   // Every artist played at least twice in the window, most played first
   // (up to 300): for "shared artists" (lib/sharedArtists).
   artistNames?: string[];
+  // Top albums by time listened in the window (rev 11 Stats).
+  topAlbums?: { albumId: string; title: string; artist: string; cover: string | null; hours: number }[];
   heatmap: number[]; // 24 buckets (hour of day), play counts
   peakHour: number | null;
   genreSplit: { genre: string; pct: number }[];
@@ -232,7 +246,14 @@ export type StatsData = {
   seasonChips: StatsSeasonChip[];
 };
 
-export type GroupSummary = { id: string; name: string; memberCount: number; newPlays: number; createdAt: string; members: ApiUser[]; topListener: { user: ApiUser; hours: number } | null };
+export type GroupSummary = {
+  id: string; name: string; memberCount: number; newPlays: number; createdAt: string; members: ApiUser[]; topListener: { user: ApiUser; hours: number } | null;
+  // List card (prototype rev 11): the group's best-rated albums lately (for
+  // the cover stack), hours together this week, this month's leading vote
+  // and the latest ratings.
+  coverAlbumIds?: string[]; hoursWeek?: number; leadingVote?: string | null;
+  recent?: { user: ApiUser; albumId: string; stars: number; at: string }[];
+};
 export type GroupMember = ApiUser;
 export type GroupAward = { label: string; winner: ApiUser | null; detail: string };
 export type GroupActivityEvent = {
@@ -262,7 +283,8 @@ export type GroupMemberStats = { userId: string; hoursMonth: number; ratingsMont
 export type GroupRecord = { label: string; holder: ApiUser | null; value: string };
 export type GroupTopAlbum = { albumId: string; avgScore: number; count: number };
 export type GroupTastePair = { a: ApiUser; b: ApiUser; pct: number };
-export type GroupTaste = { avgMatch: number | null; closest: GroupTastePair | null; furthest: GroupTastePair | null };
+// pairs: every pair's match by user id (the taste matrix).
+export type GroupTaste = { avgMatch: number | null; closest: GroupTastePair | null; furthest: GroupTastePair | null; pairs?: { a: string; b: string; pct: number }[] };
 // Past-months awards history (spec gap): each past calendar month's winners,
 // recomputed on demand from retained listening_events/ratings — see
 // GET /api/groups/[id]. monthKey is "YYYY-MM"; the client formats it with
