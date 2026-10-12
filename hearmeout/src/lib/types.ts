@@ -54,6 +54,8 @@ export type RecapData = {
   avgScore: number | null;
   awards: string[];
   range: { start: string; end: string | null };
+  // Week recaps: minutes on each of the seven days.
+  daily?: number[];
 };
 
 export type ApiUser = { id: string; name: string; handle: string; avatarUrl: string | null };

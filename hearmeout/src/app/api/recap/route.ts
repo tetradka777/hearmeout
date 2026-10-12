@@ -13,7 +13,7 @@ import type { ApiUser } from '@/lib/types';
 const MEMO_TTL_MS = 3 * 60 * 1000;
 const RECAP_MEMO = new Map<string, { at: number; body: RecapData }>();
 
-type Row = { track_id: string | null; track_title: string | null; artist: string | null; artist_id: string | null; album_id: string | null; cover_url: string | null; genre: string | null; duration_ms: number | null };
+type Row = { track_id: string | null; track_title: string | null; artist: string | null; artist_id: string | null; album_id: string | null; cover_url: string | null; genre: string | null; duration_ms: number | null; played_at: string };
 
 export async function GET(request: NextRequest) {
   const viewerId = await getCurrentUserId();
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
   const { rows, error } = await fetchAllRows<Row>((from, to) => {
     let q = admin
       .from('listening_events')
-      .select('track_id, track_title, artist, artist_id, album_id, cover_url, genre, duration_ms')
+      .select('track_id, track_title, artist, artist_id, album_id, cover_url, genre, duration_ms, played_at')
       .eq('user_id', targetUserId)
       .gte('played_at', since);
     if (until) q = q.lt('played_at', until);
@@ -129,6 +129,17 @@ export async function GET(request: NextRequest) {
     .sort((a, b) => b.count - a.count)
     .slice(0, 5)
     .map((t) => ({ title: t.title, artist: t.artist, albumId: t.albumId, cover: t.cover, plays: t.count }));
+  // Day by day (rev 10 recap, week only): minutes on each of the seven
+  // local days, counted from the window's start.
+  const daily: number[] | undefined = period === 'week' && !parsedSeason ? new Array(7).fill(0) : undefined;
+  if (daily) {
+    const start = new Date(since).getTime();
+    for (const r of rows) {
+      const i = Math.floor((new Date(r.played_at).getTime() - start) / 86400000);
+      if (i >= 0 && i < 7) daily[i] += (r.duration_ms || 0) / 60000;
+    }
+    for (let i = 0; i < 7; i++) daily[i] = Math.round(daily[i]);
+  }
   const totalGenre = [...genreCounts.values()].reduce((s, n) => s + n, 0);
   const topGenres = [...genreCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3)
     .map(([genre, n]) => ({ genre, pct: totalGenre ? Math.round((n / totalGenre) * 100) : 0 }));
@@ -154,7 +165,7 @@ export async function GET(request: NextRequest) {
 
   const recap: RecapData = {
     topArtists, topSongs, topGenres, minutes, uniqueArtists, trackCount: rows.length,
-    newArtists, avgScore, awards, range: labelRange,
+    newArtists, avgScore, awards, range: labelRange, daily,
   };
   if (RECAP_MEMO.size > 500) for (const [k, v] of RECAP_MEMO) if (Date.now() - v.at > MEMO_TTL_MS) RECAP_MEMO.delete(k);
   RECAP_MEMO.set(memoKey, { at: Date.now(), body: recap });

@@ -1161,6 +1161,9 @@ const ru = {
   'stats.topAlbumsSub': 'по времени прослушивания',
   'stats.youRated': 'ты: {score}',
   'stats.notRated': 'без оценки',
+  'recap.dayByDay': 'По дням',
+  'recap.busiest': 'больше всего: {day}',
+  'recap.playsSub': 'прослушивания',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2318,6 +2321,9 @@ const en: Dict = {
   'stats.topAlbumsSub': 'by listening time',
   'stats.youRated': 'you {score}',
   'stats.notRated': 'not rated',
+  'recap.dayByDay': 'Day by day',
+  'recap.busiest': 'busiest: {day}',
+  'recap.playsSub': 'plays',
 };
 
 const fr: Dict = {
@@ -3472,6 +3478,9 @@ const fr: Dict = {
   'stats.topAlbumsSub': 'par temps d’écoute',
   'stats.youRated': 'toi : {score}',
   'stats.notRated': 'pas noté',
+  'recap.dayByDay': 'Jour par jour',
+  'recap.busiest': 'le plus chargé : {day}',
+  'recap.playsSub': 'écoutes',
 };
 
 const es: Dict = {
@@ -4626,6 +4635,9 @@ const es: Dict = {
   'stats.topAlbumsSub': 'por tiempo de escucha',
   'stats.youRated': 'tú: {score}',
   'stats.notRated': 'sin valorar',
+  'recap.dayByDay': 'Día a día',
+  'recap.busiest': 'el más intenso: {day}',
+  'recap.playsSub': 'reproducciones',
 };
 
 const de: Dict = {
@@ -5780,6 +5792,9 @@ const de: Dict = {
   'stats.topAlbumsSub': 'nach Hördauer',
   'stats.youRated': 'du: {score}',
   'stats.notRated': 'nicht bewertet',
+  'recap.dayByDay': 'Tag für Tag',
+  'recap.busiest': 'am meisten: {day}',
+  'recap.playsSub': 'Wiedergaben',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };

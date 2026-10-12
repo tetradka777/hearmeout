@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { fmt1 } from '@/lib/numberFormat';
+import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { Device, PublicProfile, RecapData, RecapPeriod } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
-import { toLocale, pluralForKey, type Language, type TranslationKey, quoted } from '@/lib/i18n';
+import { toLocale, type Language, type TranslationKey, quoted } from '@/lib/i18n';
 import { recapLine } from '@/lib/recapLine';
 import { completedWeekRange, isoWeekNumber } from '@/lib/weeks';
 import { markRecapSeen } from '@/lib/recapSeen';
@@ -14,6 +14,12 @@ import { drawStoryCard } from '@/lib/posterCanvas';
 import { CoverArt } from '../ui/CoverArt';
 import { CloseIcon } from '../ui/Icons';
 import { prefetchQueueTrack, usePlayer } from '@/lib/PlayerContext';
+
+// Award glyphs on the recap's pills (SVG masks, no emoji).
+const RECAP_AWARD_ICON: Record<string, string> = {
+  awardMostActive: 'bolt', awardNightOwl: 'moon', awardHarshestCritic: 'lens', awardGenreExplorer: 'compass',
+  awardStreak: 'flame', awardScout: 'target', awardStuck: 'repeat', awardTimeTraveler: 'clock',
+};
 
 const PERIODS: RecapPeriod[] = ['day', 'week', 'month', 'season'];
 const PERIOD_KEY: Record<RecapPeriod, TranslationKey> = { day: 'recap.day', week: 'recap.week', month: 'recap.month', season: 'recap.season' };
@@ -250,22 +256,52 @@ export function RecapScreen(_props: { device: Device }) {
         <p className="muted" style={{ marginTop: 14 }}>{t('recap.loading')}</p>
       ) : (
         <div className="two" style={{ alignItems: 'start' }}>
-          <div className="story">
-            <span className="pill" style={{ alignSelf: 'flex-start' }}>{pill}</span>
-            <q>{line.lead}{line.em && <> <em>{line.em}</em></>}</q>
-            <div className="four">
-              {storyNumbers.map((n) => <div key={n.label}><b>{n.value}</b><small>{n.label}</small></div>)}
+          {/* Left (rev 11): the story, day by day, the awards as pills. */}
+          <div className="stack">
+            <div className="story">
+              <span className="pill" style={{ alignSelf: 'flex-start' }}>{pill}</span>
+              <q>{line.lead}{line.em && <> <em>{line.em}</em></>}</q>
+              <div className="four">
+                {storyNumbers.map((n) => <div key={n.label}><b>{n.value}</b><small>{n.label}</small></div>)}
+              </div>
             </div>
+
+            {r.daily && r.daily.some((m) => m > 0) && (() => {
+              const days = r.daily!;
+              const mx = Math.max(...days);
+              const pk = days.indexOf(mx);
+              const start = new Date(r.range.start);
+              const dayName = (i: number, style: 'short' | 'narrow') => new Date(start.getTime() + i * 86400000).toLocaleDateString(toLocale(language), { weekday: style, timeZone: 'UTC' });
+              return (
+                <div className="tile">
+                  <div className="hd10"><h2 style={{ margin: 0 }}>{t('recap.dayByDay')}</h2><small className="muted" style={{ fontWeight: 700 }}>{t('recap.busiest', { day: dayName(pk, 'short') })}</small></div>
+                  <div className="dy10" role="img" aria-label={t('recap.dayByDay')}>
+                    {days.map((m, i) => (
+                      <span key={i} className={i === pk ? 'pk' : ''}>
+                        <i style={{ height: `${Math.round((m / mx) * 100)}%` }} />
+                        <b>{fmtHours(Math.round((m / 60) * 10) / 10)}</b>
+                        <small>{dayName(i, 'narrow')}</small>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {isMe && (
+              <div className="tile t-soft2">
+                <h2>{t('recap.awardsEarned')}</h2>
+                {r.awards.length ? (
+                  <div className="aw11">
+                    {r.awards.map((a) => <span className="tag" key={a}><i className={`ic ic-${RECAP_AWARD_ICON[a] ?? 'star'}`} style={{ fontSize: 15 }} />{t(`groups.${a}` as TranslationKey)}</span>)}
+                  </div>
+                ) : <p className="muted" style={{ fontWeight: 600 }}>{t('recap.noAwards')}</p>}
+              </div>
+            )}
           </div>
 
+          {/* Right: the song of the period, top artists, top songs, genres, friends' recaps. */}
           <div className="stack">
-            <div className="g2">
-              <div className="tile t-pop"><span className="num" style={{ fontSize: 40 }}>{r.minutes.toLocaleString(toLocale(language))}</span><br /><small style={{ fontWeight: 700 }}>{t('recap.minutesL')}</small></div>
-              <div className="tile t-ink"><span className="num" style={{ fontSize: 40 }}>{r.uniqueArtists}</span><br /><small style={{ fontWeight: 700 }}>{t('recap.uniqueArtists')}</small></div>
-              <div className="tile"><span className="num" style={{ fontSize: 40, color: 'var(--acct)' }}>{r.topGenres.length}</span><br /><small className="muted" style={{ fontWeight: 700 }}>{t('recap.genresL')}</small></div>
-              <div className="tile t-soft2"><span className="num" style={{ fontSize: 40 }}>{r.trackCount}</span><br /><small style={{ fontWeight: 700 }}>{t('recap.playsL')}</small></div>
-            </div>
-
             {r.topSongs[0] && (
               <div className="tile t-ac" style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
                 <CoverArt url={r.topSongs[0].cover ?? undefined} fallbackLetter={r.topSongs[0].artist[0] || '?'} className="cov" style={{ width: 72, height: 72 }} />
@@ -279,31 +315,33 @@ export function RecapScreen(_props: { device: Device }) {
                   onClick={() => (onSong || (currentTrack?.title === song!.title && currentTrack?.albumId === song!.albumId) ? toggle() : playQueue(songQueue, 0))}
                   aria-label={`${onSong ? t('player.pause') : t('player.play')} ${song!.title}`}
                 >
-                  {onSong ? '❚❚' : '▶'}
+                  <i className={`ic ${onSong ? 'ic-pause' : 'ic-play'}`} />
                 </button>
               </div>
             )}
 
             <div className="tile">
-              <h2>{t('recap.topArtists')}</h2>
+              <div className="hd10"><h2 style={{ margin: 0 }}>{t('recap.topArtists')}</h2><small className="muted" style={{ fontWeight: 700 }}>{t('recap.playsSub')}</small></div>
               {r.topArtists.length ? r.topArtists.map((a, i) => (
                 <button className="row" key={`${a.id ?? a.name}-${i}`} onClick={() => a.id && openSpotifyArtist(a.id, a.name)} style={{ cursor: a.id ? 'pointer' : 'default' }}>
-                  <span className="num" style={{ fontSize: 24, width: 20 }}>{i + 1}</span>
-                  <b className="g">{a.name}</b>
-                  <span className="muted" style={{ fontWeight: 800 }}>{t('stats.playsCount', { count: a.plays, word: pluralForKey(language, a.plays, 'stats.playOne', 'stats.playFew', 'stats.playMany') })}</span>
+                  <span className="rk11">{i + 1}</span>
+                  <CoverArt url={a.cover ?? undefined} fallbackLetter={a.name[0] || '?'} className="cov" style={{ width: 44, height: 44 }} />
+                  <span className="g"><b>{a.name}</b><span className="meter" style={{ display: 'block', marginTop: 5 }}><i style={{ width: `${Math.round((a.plays / r.topArtists[0].plays) * 100)}%` }} /></span></span>
+                  <b>{a.plays}</b>
                 </button>
               )) : <p className="muted">{t('recap.noData')}</p>}
             </div>
 
             <div className="tile t-soft2">
-              <h2>{t('recap.topSongs')}</h2>
+              <div className="hd10"><h2 style={{ margin: 0 }}>{t('recap.topSongs')}</h2><small className="muted" style={{ fontWeight: 700 }}>{t('recap.playsSub')}</small></div>
               {r.topSongs.length ? r.topSongs.map((s, i) => {
                 const album = s.albumId ? (liveAlbums[s.albumId] || albums.find((x) => x.id === s.albumId)) : undefined;
                 return (
                   <button className="row" key={`${s.albumId ?? s.title}-${i}`} onClick={() => s.albumId && openAlbum(s.albumId)} style={{ cursor: s.albumId ? 'pointer' : 'default' }}>
-                    <span className="num" style={{ fontSize: 24, width: 20 }}>{i + 1}</span>
-                    <span className="g"><b>{s.title}</b><small className="muted" style={{ fontWeight: 600 }}>{s.artist}{album ? ` · ${album.title}` : ''}</small></span>
-                    <span className="muted" style={{ fontWeight: 800 }}>{s.plays}</span>
+                    <span className="rk11">{i + 1}</span>
+                    <CoverArt url={s.cover ?? undefined} fallbackLetter={s.artist[0] || '?'} className="cov" style={{ width: 44, height: 44 }} />
+                    <span className="g"><b>{s.title}</b><small className="muted" style={{ fontWeight: 600 }}>{s.artist}{album ? ` · ${album.title}` : ''}</small><span className="meter" style={{ display: 'block', marginTop: 4 }}><i style={{ width: `${Math.round((s.plays / r.topSongs[0].plays) * 100)}%` }} /></span></span>
+                    <b>{s.plays}</b>
                   </button>
                 );
               }) : <p className="muted">{t('recap.noData')}</p>}
@@ -312,23 +350,19 @@ export function RecapScreen(_props: { device: Device }) {
             <div className="tile">
               <h2>{t('recap.topGenres')}</h2>
               {r.topGenres.length ? (
-                <div className="chips" style={{ margin: 0 }}>
-                  {r.topGenres.map((g, i) => <span className={`chip${i === 0 ? ' on' : ''}`} key={g.genre}>{g.genre} · {g.pct}%</span>)}
-                </div>
+                <>
+                  <div className="gbar10" role="img" aria-label={t('recap.topGenres')}>
+                    {r.topGenres.map((g, i) => <i key={g.genre} className={`gx${i % 4}`} style={{ flex: g.pct }} />)}
+                  </div>
+                  <div className="gleg10">
+                    {r.topGenres.map((g, i) => <span key={g.genre}><i className={`sw gx${i % 4}`} /><b>{g.genre}</b> {g.pct}%</span>)}
+                  </div>
+                </>
               ) : <p className="muted">{t('recap.noData')}</p>}
             </div>
 
             {isMe ? (
               <>
-                <div className="tile t-soft2">
-                  <h2>{t('recap.awardsEarned')}</h2>
-                  <div className="chips" style={{ margin: 0 }}>
-                    {r.awards.length
-                      ? r.awards.map((a) => <span className="chip on" key={a}>{t(`groups.${a}` as TranslationKey)}</span>)
-                      : <span className="muted" style={{ fontWeight: 600 }}>{t('recap.noAwards')}</span>}
-                  </div>
-                </div>
-
                 {friends.length > 0 && (
                   <div className="tile">
                     <h2>{t('recap.friendsRecaps')}</h2>
@@ -337,10 +371,13 @@ export function RecapScreen(_props: { device: Device }) {
                       const fr = recapCache[fk];
                       const fLine = fr ? recapLine(fr, language, t) : null;
                       const text = recapLocked[fk] ? t('recap.friendPrivate') : !fr ? t('recap.loading') : fr.trackCount ? quoted(language, `${fLine!.lead}${fLine!.em ? ' ' + fLine!.em : ''}`) : t('recap.friendQuiet');
+                      const fCover = fr?.topSongs[0]?.cover;
                       return (
                         <button className="row" key={f.id} onClick={() => openRecap(f.id)}>
                           <span className="dot" style={userAvatarStyle(f)}>{!f.avatarUrl && f.name[0]}</span>
                           <span className="g"><b>{f.name}</b><small className="muted" style={{ fontWeight: 600 }}>{text}</small></span>
+                          {fCover && <CoverArt url={fCover} fallbackLetter="?" className="cov" style={{ width: 34, height: 34 }} />}
+                          {fr && fr.minutes > 0 && <span className="tag">{fmtHours(Math.round(fr.minutes / 60))}{t('unit.h')}</span>}
                           <span className="tag">{t('recap.friendOpen')}</span>
                         </button>
                       );
