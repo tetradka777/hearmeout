@@ -8,6 +8,7 @@ import type { Device, GroupDetail, GroupLeaderboardPeriod } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
 import { toLocale, pluralForKey } from '@/lib/i18n';
 import { CoverArt } from '../ui/CoverArt';
+import { useCachedJson } from '@/lib/cachedJson';
 import { sinceLabel } from './GroupsScreen';
 
 const AWARD_LABEL_KEY: Record<string, string> = {
@@ -25,7 +26,6 @@ const AWARD_LABEL_KEY: Record<string, string> = {
 // with its own back crumb — not a locally-selected panel any more.
 export function GroupScreen({ device: _device }: { device: Device }) {
   const { t, language, me, state, goBack, showScreen, albums, liveAlbums, openAlbum, showToast, viewFriend } = useApp();
-  const [detail, setDetail] = useState<GroupDetail | null>(null);
   const [inviteHandle, setInviteHandle] = useState('');
   const [inviteErr, setInviteErr] = useState('');
   const [period, setPeriod] = useState<GroupLeaderboardPeriod>('month');
@@ -33,13 +33,14 @@ export function GroupScreen({ device: _device }: { device: Device }) {
 
   const groupId = state.viewingGroupId;
 
-  const load = (p: GroupLeaderboardPeriod = period) => {
-    if (!groupId) return;
-    fetch(`/api/groups/${groupId}?period=${p}`).then((r) => (r.ok ? r.json() : null)).then(setDetail);
-  };
-  useEffect(() => { setDetail(null); setLeavingConfirm(false); setInviteErr(''); setInviteHandle(''); load('month'); setPeriod('month');   }, [groupId]);
+  // Shared cache (lib/cachedJson): a group the preloader already fetched
+  // opens at once; after a change here the answer is fetched again.
+  const groupQuery = useCachedJson<GroupDetail>(groupId ? `/api/groups/${groupId}?period=${period}` : null);
+  const detail = groupQuery.data;
+  const load = () => { groupQuery.reload(); };
+  useEffect(() => { setLeavingConfirm(false); setInviteErr(''); setInviteHandle(''); setPeriod('month'); }, [groupId]);
 
-  const changePeriod = (p: GroupLeaderboardPeriod) => { setPeriod(p); load(p); };
+  const changePeriod = (p: GroupLeaderboardPeriod) => setPeriod(p);
 
   if (!me) return null;
   if (!detail) return (

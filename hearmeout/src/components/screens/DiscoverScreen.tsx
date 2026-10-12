@@ -15,6 +15,7 @@ import { ConcertsFeed } from '../ConcertsFeed';
 import { ObscureAlbums } from '../ObscureAlbums';
 import { GenreTopArtists } from '../GenreTopArtists';
 import { MascotIcon } from '../redesign/icons';
+import { cachedJson, peekJson } from '@/lib/cachedJson';
 
 // Discover: this is where the old Home/catalog-browser content lives now
 // (redesign spec 13.3 — "Discover is where the old catalog lives"). Empty
@@ -92,15 +93,12 @@ type SiteReview = { stars: number; review: string; createdAt: string; albumId: s
 
 function SiteReviewsBlock() {
   const { t, language, albums, liveAlbums, spotifyCovers, openAlbum } = useApp();
-  const [reviews, setReviews] = useState<SiteReview[] | null>(null);
+  const [reviews, setReviews] = useState<SiteReview[] | null>(() => peekJson<{ reviews: SiteReview[] }>('/api/reviews/recent')?.reviews ?? null);
 
   useEffect(() => {
     let cancelled = false;
     // Server-side: no private ratings, respects "Public reviews".
-    fetch('/api/reviews/recent')
-      .then((r) => (r.ok ? r.json() : { reviews: [] }))
-      .then((d: { reviews: SiteReview[] }) => { if (!cancelled) setReviews(d.reviews); })
-      .catch(() => { if (!cancelled) setReviews([]); });
+    cachedJson<{ reviews: SiteReview[] }>('/api/reviews/recent').then((d) => { if (!cancelled) setReviews(d?.reviews ?? []); });
     return () => { cancelled = true; };
   }, []);
 
@@ -134,7 +132,7 @@ export function DiscoverScreen(_props: { device: Device }) {
   const [catalogLimit, setCatalogLimit] = useState(CATALOG_PAGE);
   const [people, setPeople] = useState<PersonResult[] | null>(null);
   const [mbFound, setMbFound] = useState<boolean | null>(null);
-  const [discoverPeople, setDiscoverPeople] = useState<DiscoverMatchPerson[] | null>(null);
+  const [discoverPeople, setDiscoverPeople] = useState<DiscoverMatchPerson[] | null>(() => peekJson<{ people: DiscoverMatchPerson[] }>('/api/match/discover')?.people ?? null);
 
   const query = state.searchQuery;
   const q = query.trim().toLowerCase();
@@ -165,7 +163,7 @@ export function DiscoverScreen(_props: { device: Device }) {
   useEffect(() => {
     if (!me || showLive) return;
     let cancelled = false;
-    fetch('/api/match/discover').then((r) => (r.ok ? r.json() : { people: [] })).then((d) => { if (!cancelled) setDiscoverPeople(d.people); });
+    cachedJson<{ people: DiscoverMatchPerson[] }>('/api/match/discover').then((d) => { if (!cancelled) setDiscoverPeople(d?.people ?? []); });
     return () => { cancelled = true; };
   }, [me, showLive]);
 

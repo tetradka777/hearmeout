@@ -6,7 +6,7 @@ import { useApp } from '@/lib/AppContext';
 import type { ApiUser, Device, PublicProfile, StatsData } from '@/lib/types';
 import { formatRelative, userAvatarStyle } from '@/lib/format';
 import { computeMatch } from '@/lib/matchScore';
-import { cachedJson } from '@/lib/cachedJson';
+import { cachedJson, peekJson } from '@/lib/cachedJson';
 import { CoverArt } from '../ui/CoverArt';
 import { toLocale, pluralForKey, type TranslationKey } from '@/lib/i18n';
 import { isDemoAccountId } from '@/lib/demoAccounts';
@@ -142,13 +142,15 @@ export function FriendScreen({ device: _device }: { device: Device }) {
   useEffect(() => {
     if (!state.viewingUserId) { setF(null); setLoading(false); return; }
     let cancelled = false;
-    setLoading(true);
     setConfirmRemove(false);
     // Loaded once per open (audit D3: it used to re-fetch every 30s and post
-    // a match snapshot each time).
-    fetch(`/api/users/${state.viewingUserId}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => { if (!cancelled) { setF(data); setLoading(false); } });
+    // a match snapshot each time). A profile the preloader already fetched
+    // (lib/cachedJson) shows at once while the fresh one loads.
+    const url = `/api/users/${state.viewingUserId}`;
+    const stored = peekJson<PublicProfile>(url);
+    setF(stored);
+    setLoading(!stored);
+    cachedJson<PublicProfile>(url).then((data) => { if (!cancelled) { if (data || !stored) setF(data); setLoading(false); } });
     return () => { cancelled = true; };
   }, [state.viewingUserId]);
 
@@ -215,13 +217,17 @@ export function FriendScreen({ device: _device }: { device: Device }) {
   useEffect(() => {
     if (!f || f.locked) { setMatchHistory(null); return; }
     let cancelled = false;
-    fetch(`/api/match/${f.id}/history`).then((r) => (r.ok ? r.json() : { history: [] })).then((d) => { if (!cancelled) setMatchHistory(d.history); });
+    const url = `/api/match/${f.id}/history`;
+    setMatchHistory(peekJson<{ history: { pct: number; date: string }[] }>(url)?.history ?? null);
+    cachedJson<{ history: { pct: number; date: string }[] }>(url).then((d) => { if (!cancelled) setMatchHistory(d?.history ?? []); });
     return () => { cancelled = true; };
   }, [f?.id, f?.locked]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!f || f.locked) { setMyStats(null); setFriendStats(null); return; }
     let cancelled = false;
+    setMyStats(peekJson<StatsData>('/api/stats?range=6m'));
+    setFriendStats(peekJson<StatsData>(`/api/stats?range=6m&userId=${f.id}`));
     Promise.all([
       cachedJson<StatsData>('/api/stats?range=6m'),
       cachedJson<StatsData>(`/api/stats?range=6m&userId=${f.id}`),

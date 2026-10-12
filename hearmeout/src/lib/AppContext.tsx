@@ -5,6 +5,7 @@ import { setNumberLanguage } from './numberFormat';
 import { ALBUMS } from './data';
 import { translate, type Language, type TranslationKey } from './i18n';
 import { clearStatsCache } from './statsClientCache';
+import { peekJson, setJsonCacheOwner, storeJson } from './cachedJson';
 import type {
   Album, AlbumRatingInfo, AppNotification, ArtistState, Device, FeedResponse, FriendRequest, LaterItem, LovedItem, LovedItemType, Me, RatingRecord, RecapData, RecapPeriod, ScreenName, SeasonOption,
 } from './types';
@@ -334,12 +335,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const refreshMe = useCallback(async () => {
     const res = await fetch('/api/me');
     if (res.status === 401 || res.status === 404) {
+      setJsonCacheOwner(null);
       setMe(null);
       patch({ authStatus: 'anonymous', language: 'en' });
       return;
     }
     if (!res.ok) return;
     const data: Me = await res.json();
+    setJsonCacheOwner(data.id);
+    storeJson('/api/me', data);
     setMe(data);
     patch({ authStatus: 'ready', language: data.language });
   }, [patch]);
@@ -352,19 +356,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     for (const row of data || []) {
       map[row.album_id as string] = { avg: Number(row.avg_stars), count: Number(row.ratings_count) };
     }
+    if (res?.ok) storeJson('/api/albums/summary', data);
     setAlbumRatings(map);
   }, []);
 
   const refreshMyRatings = useCallback(async () => {
     const res = await fetch('/api/ratings/mine');
     if (!res.ok) return;
-    setMyRatings(await res.json());
+    const data = await res.json();
+    storeJson('/api/ratings/mine', data);
+    setMyRatings(data);
   }, []);
 
   const refreshLovedItems = useCallback(async () => {
     const res = await fetch('/api/loved');
     if (!res.ok) return;
     const data = await res.json();
+    storeJson('/api/loved', data);
     setLovedItems(data.items || []);
   }, []);
 
@@ -382,6 +390,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const res = await fetch('/api/later');
     if (!res.ok) return;
     const data = await res.json();
+    storeJson('/api/later', data);
     setLaterItems(data.items || []);
   }, []);
 
@@ -445,12 +454,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => mq.removeEventListener('change', update);
   }, [patch]);
 
-  useEffect(() => { refreshMe(); }, [refreshMe]);
+  // Start from the last session's copy (lib/cachedJson) so a returning
+  // visitor sees their account, ratings and lists at once; the requests
+  // below replace it, and /api/me signs out if the session is gone.
+  useEffect(() => {
+    const cachedMe = peekJson<Me>('/api/me');
+    if (cachedMe) {
+      setMe(cachedMe);
+      patch({ authStatus: 'ready', language: cachedMe.language });
+      const ratings = peekJson<RatingRecord[]>('/api/ratings/mine');
+      if (ratings) setMyRatings(ratings);
+      const loved = peekJson<{ items?: LovedItem[] }>('/api/loved');
+      if (loved) setLovedItems(loved.items || []);
+      const later = peekJson<{ items?: LaterItem[] }>('/api/later');
+      if (later) setLaterItems(later.items || []);
+      const covers = peekJson<Record<string, string>>('/api/spotify/covers');
+      if (covers) setSpotifyCovers(covers);
+      const summary = peekJson<{ album_id: string; avg_stars: number; ratings_count: number }[]>('/api/albums/summary');
+      if (summary) setAlbumRatings(Object.fromEntries(summary.map((r) => [r.album_id, { avg: Number(r.avg_stars), count: Number(r.ratings_count) }])));
+    }
+    refreshMe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useEffect(() => { refreshAlbumRatings(); }, [refreshAlbumRatings]);
   useEffect(() => {
     fetch('/api/spotify/covers')
-      .then((res) => (res.ok ? res.json() : {}))
-      .then(setSpotifyCovers)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((d) => { if (d) { storeJson('/api/spotify/covers', d); setSpotifyCovers(d); } })
       .catch(() => {});
   }, []);
 
@@ -627,6 +657,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
+    setJsonCacheOwner(null);
     setMe(null);
     patch({ authStatus: 'anonymous' });
   }, [patch]);
@@ -635,6 +666,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const logoutEverywhere = useCallback(async (): Promise<boolean> => {
     const res = await fetch('/api/auth/logout-all', { method: 'POST' }).catch(() => null);
     if (!res?.ok) return false;
+    setJsonCacheOwner(null);
     setMe(null);
     patch({ authStatus: 'anonymous' });
     return true;
@@ -643,6 +675,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const deleteAccount = useCallback(async (): Promise<boolean> => {
     const res = await fetch('/api/me', { method: 'DELETE' });
     if (!res.ok) return false;
+    setJsonCacheOwner(null);
     setMe(null);
     patch({ authStatus: 'anonymous' });
     return true;
@@ -730,7 +763,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Weeks follow the *viewer's* week-start setting, so a friend's recap
     // chips line up with your own.
     const weekQS = period === 'week' ? `&weekStart=${me?.weekStart ?? 'mon'}` : '';
-    fetch(`/api/recap?period=${period}&userId=${targetId}${seasonQS}${weekQS}`)
+    const url = `/api/recap?period=${period}&userId=${targetId}${seasonQS}${weekQS}`;
+    // The stored copy shows at once; the request below refreshes it.
+    const stored = peekJson<RecapData>(url);
+    if (stored) setRecapCache((s) => ({ ...s, [key]: stored }));
+    fetch(url)
       .then((res) => {
         // A friend's recap is just another view into their listening data
         // (same friends-only boundary as their profile) — vRecap() in the
@@ -740,7 +777,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return res.ok ? res.json() : null;
       })
       .then((data: RecapData | null) => {
-        if (data) setRecapCache((s) => ({ ...s, [key]: data }));
+        if (data) { storeJson(url, data); setRecapCache((s) => ({ ...s, [key]: data })); }
         else requestedRecapKeys.current.delete(key);
       })
       .catch(() => requestedRecapKeys.current.delete(key));
@@ -752,7 +789,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const recapSeasonsTarget = state.recapViewUserId === 'me' ? me?.id : state.recapViewUserId;
   const recapSeasons = recapSeasonsTarget ? seasonsByUser[recapSeasonsTarget] ?? null : null;
   useEffect(() => {
-    if (state.activeScreen !== 'recap' || state.recapPeriod !== 'season') return;
+    // Loaded ahead of time (not only once the Season chip is picked).
     const targetId = recapSeasonsTarget;
     if (!targetId || seasonsByUser[targetId]) return;
     let cancelled = false;

@@ -1,21 +1,25 @@
 import type { StatsData } from './types';
+import { invalidateJson, jsonAge, peekJson, storeJson } from './cachedJson';
 
-// Stats answers kept in the browser for the session, by query string, so
-// going back to a period shows it at once (it used to blank and reload on
-// every switch). An entry older than FRESH_MS is shown but refreshed in the
-// background. A sync clears it, since the numbers change.
+// Stats answers by query string, kept in the shared browser cache
+// (lib/cachedJson) so going back to a period shows it at once, and so does
+// a reload or a period the preloader already fetched. An entry older than
+// FRESH_MS is shown but refreshed in the background. A sync clears it,
+// since the numbers change.
 const FRESH_MS = 60 * 1000;
-const cache = new Map<string, { at: number; data: StatsData }>();
+const url = (key: string) => `/api/stats?${key}`;
 
 export function cachedStats(key: string): { data: StatsData; fresh: boolean } | null {
-  const hit = cache.get(key);
-  return hit ? { data: hit.data, fresh: Date.now() - hit.at < FRESH_MS } : null;
+  const data = peekJson<StatsData>(url(key));
+  if (!data) return null;
+  const age = jsonAge(url(key));
+  return { data, fresh: age != null && age < FRESH_MS };
 }
 
 export function storeStats(key: string, data: StatsData): void {
-  cache.set(key, { at: Date.now(), data });
+  storeJson(url(key), data);
 }
 
 export function clearStatsCache(): void {
-  cache.clear();
+  invalidateJson('/api/stats');
 }

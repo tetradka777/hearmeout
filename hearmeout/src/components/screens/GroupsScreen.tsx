@@ -7,6 +7,7 @@ import type { Device, GroupSummary } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
 import { toLocale, pluralForKey, type Language } from '@/lib/i18n';
 import { MascotIcon } from '../redesign/icons';
+import { useCachedJson } from '@/lib/cachedJson';
 
 // vGroups() "since march": the month, plus the year outside the current one.
 // Russian takes the genitive ("с марта"), which Intl only produces next to
@@ -32,7 +33,9 @@ export function sinceLabel(iso: string, language: Language): string {
 // so the browser's back button and a shared link to a group didn't work.
 export function GroupsScreen(_props: { device: Device }) {
   const { t, language, me, viewGroup, showToast } = useApp();
-  const [groups, setGroups] = useState<GroupSummary[] | null>(null);
+  // Shared cache (lib/cachedJson): the list shows at once and refreshes.
+  const groupsQuery = useCachedJson<GroupSummary[]>('/api/groups');
+  const groups = groupsQuery.data ?? (groupsQuery.failed ? [] : null);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
   const [firstInvite, setFirstInvite] = useState('');
@@ -40,10 +43,7 @@ export function GroupsScreen(_props: { device: Device }) {
   const [inviteErr, setInviteErr] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const loadGroups = () => {
-    fetch('/api/groups').then((r) => (r.ok ? r.json() : [])).then((d: GroupSummary[]) => setGroups(d));
-  };
-  useEffect(() => { loadGroups(); }, []);
+  const loadGroups = () => { groupsQuery.reload(); };
 
   useEffect(() => {
     if (!creating) return;

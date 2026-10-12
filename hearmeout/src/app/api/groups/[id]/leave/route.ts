@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
+import { invalidateGroupDetail } from '@/lib/groupDetailCache';
 
 // Leave group (spec 6.6 item 12): removes only this member's row — a
 // group someone else created keeps existing for the rest, and the
@@ -9,6 +10,7 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
   const { id } = await context.params;
+  invalidateGroupDetail(id);
 
   const admin = supabaseAdmin();
   const { error } = await admin.from('group_members').delete().eq('group_id', id).eq('user_id', userId);

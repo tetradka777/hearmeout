@@ -6,7 +6,7 @@ import { PROFILE_TAB_EVENT, takeRecentEvent } from '@/lib/uiEvents';
 import { useApp } from '@/lib/AppContext';
 import { squareImageDataUrl } from '@/lib/imageResize';
 import { invitePath } from '@/lib/pendingInvite';
-import type { Device, RatingRecord } from '@/lib/types';
+import type { Device, RatingRecord, RecapData, StatsData } from '@/lib/types';
 import { userAvatarStyle, formatJoinDate, formatRelative } from '@/lib/format';
 import { toLocale, quoted } from '@/lib/i18n';
 import { LovedTracksColumn, LovedAlbumsColumn, LovedArtistsColumn } from '../ProfileBlocks';
@@ -18,6 +18,7 @@ import type { TranslationKey } from '@/lib/i18n';
 import { LaterRow, useLaterPlay } from './LaterScreen';
 import { RegionInput } from '../RegionInput';
 import { Initial } from '../ui/Initial';
+import { cachedJson, peekJson } from '@/lib/cachedJson';
 
 type ProfileTab = 'ratings' | 'reviews' | 'loved' | 'later' | 'taste' | 'awards' | 'listening' | 'friends';
 const TAB_ORDER: ProfileTab[] = ['ratings', 'reviews', 'loved', 'later', 'taste', 'awards', 'listening', 'friends'];
@@ -237,12 +238,11 @@ function AwardsTab({ onGoToFriends }: { onGoToFriends: () => void }) {
     if (!me) return;
     let cancelled = false;
     const people: Person[] = [{ id: me.id, name: me.name, avatarUrl: me.avatarUrl }, ...me.friends.map((f) => ({ id: f.id, name: f.name, avatarUrl: f.avatarUrl }))];
-    Promise.all(people.map(async (p) => {
-      const res = await fetch(`/api/recap?period=month&userId=${p.id}`);
-      if (!res.ok) return null;
-      const d = await res.json();
-      return { ...p, minutes: d.minutes as number, artists: d.uniqueArtists as number, awards: (d.awards || []) as string[] };
-    })).then((rows) => {
+    // Same month recaps the recap screen and the preloader use
+    // (lib/cachedJson): stored copies first, then fresh ones.
+    const url = (id: string) => `/api/recap?period=month&userId=${id}`;
+    const row = (p: Person, d: RecapData | null) => (d ? { ...p, minutes: d.minutes, artists: d.uniqueArtists, awards: (d.awards || []) as string[] } : null);
+    const build = (rows: ReturnType<typeof row>[]) => {
       if (cancelled) return;
       const valid = rows.filter((r): r is NonNullable<typeof r> => !!r);
       const active = valid.filter((r) => r.minutes > 0);
@@ -253,7 +253,10 @@ function AwardsTab({ onGoToFriends }: { onGoToFriends: () => void }) {
         minutes: me.friends.length && byMin ? { ...byMin, v: Math.round(byMin.minutes / 60) } : null,
         niche: me.friends.length && byNiche ? { ...byNiche, v: byNiche.artists } : null,
       });
-    });
+    };
+    const stored = people.map((p) => row(p, peekJson<RecapData>(url(p.id))));
+    if (stored[0]) build(stored);
+    Promise.all(people.map(async (p) => row(p, await cachedJson<RecapData>(url(p.id))))).then(build);
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupKey]);
@@ -301,7 +304,10 @@ function ListeningTab() {
   useEffect(() => {
     if (!me) return;
     let cancelled = false;
-    fetch(`/api/stats?period=week&weekStart=${me.weekStart}`).then((r) => (r.ok ? r.json() : null)).then((d) => { if (!cancelled) setPlays(d?.recentPlays ?? []); });
+    const url = `/api/stats?period=week&weekStart=${me.weekStart}`;
+    const stored = peekJson<StatsData>(url);
+    if (stored) setPlays(stored.recentPlays ?? []);
+    cachedJson<StatsData>(url).then((d) => { if (!cancelled) setPlays(d?.recentPlays ?? []); });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [me?.id]);

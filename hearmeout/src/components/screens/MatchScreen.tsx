@@ -6,7 +6,7 @@ import { useApp } from '@/lib/AppContext';
 import type { ApiUser, Device, DiscoverMatchPerson, GroupSummary, PublicProfile, StatsData } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
 import { computeMatch } from '@/lib/matchScore';
-import { cachedJson } from '@/lib/cachedJson';
+import { cachedJson, peekJson, useCachedJson } from '@/lib/cachedJson';
 import { toLocale, pluralForKey } from '@/lib/i18n';
 import { CoverArt } from '../ui/CoverArt';
 import { MascotIcon } from '../redesign/icons';
@@ -58,10 +58,12 @@ function useCountUp(target: number | null, replayKey: unknown): number | null {
 export function MatchScreen(_props: { device: Device }) {
   const { t, language, me, state, myRatings, albums, liveAlbums, spotifyCovers, openAlbum, viewFriend, viewGroup, showScreen, addFriend, friendRequests } = useApp();
   const [rawInfo, setRawInfo] = useState<Record<string, RawInfo>>({});
-  const [groups, setGroups] = useState<GroupSummary[] | null>(null);
-  const [discover, setDiscover] = useState<DiscoverMatchPerson[] | null>(null);
-  const [myStats6m, setMyStats6m] = useState<StatsData | null>(null);
-  const [myWeekHours, setMyWeekHours] = useState<number | null>(null);
+  // All from the shared cache (lib/cachedJson): shown at once, refreshed.
+  const groups = useCachedJson<GroupSummary[]>('/api/groups').data;
+  const discover = useCachedJson<{ people: DiscoverMatchPerson[] }>(me ? '/api/match/discover' : null).data?.people ?? null;
+  const myStats6m = useCachedJson<StatsData>(me ? '/api/stats?range=6m' : null).data;
+  const myWeek = useCachedJson<StatsData>(me ? '/api/stats?period=week' : null).data;
+  const myWeekHours = myWeek ? myWeek.hours : null;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // "Compare with …" / Taste match rows elsewhere pick the friend here.
   useEffect(() => {
@@ -72,16 +74,6 @@ export function MatchScreen(_props: { device: Device }) {
     window.addEventListener(MATCH_FRIEND_EVENT, onPick);
     return () => window.removeEventListener(MATCH_FRIEND_EVENT, onPick);
   }, []);
-  const [history, setHistory] = useState<{ pct: number; date: string }[] | null>(null);
-
-  useEffect(() => {
-    if (!me) return;
-    let cancelled = false;
-    cachedJson<StatsData>('/api/stats?range=6m').then((d) => { if (!cancelled) setMyStats6m(d); });
-    fetch('/api/stats?period=week').then((r) => (r.ok ? r.json() : null)).then((d) => { if (!cancelled) setMyWeekHours(d ? d.hours : null); });
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [me?.id]);
 
   // Each friend loads on its own and shows as soon as it arrives: waiting
   // for every friend's three requests at once (one failure dropped them
@@ -96,6 +88,11 @@ export function MatchScreen(_props: { device: Device }) {
     let cancelled = false;
     const patch = (id: string, part: Partial<RawInfo>) => { if (!cancelled) setRawInfo((prev) => ({ ...prev, [id]: { ...EMPTY_INFO, ...prev[id], ...part } })); };
     for (const id of ids) {
+      patch(id, {
+        profile: peekJson<PublicProfile>(`/api/users/${id}`),
+        stats6m: peekJson<StatsData>(`/api/stats?range=6m&userId=${id}`),
+        weekHours: peekJson<StatsData>(`/api/stats?period=week&userId=${id}`)?.hours ?? null,
+      });
       cachedJson<PublicProfile>(`/api/users/${id}`).then((profile) => patch(id, { profile }));
       cachedJson<StatsData>(`/api/stats?range=6m&userId=${id}`).then((stats6m) => patch(id, { stats6m }));
       cachedJson<StatsData>(`/api/stats?period=week&userId=${id}`).then((week) => patch(id, { weekHours: week ? week.hours : null }));
@@ -110,19 +107,6 @@ export function MatchScreen(_props: { device: Device }) {
     return out;
   }, [rawInfo, myGenres]);
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/groups').then((r) => (r.ok ? r.json() : [])).then((d) => { if (!cancelled) setGroups(d); });
-    return () => { cancelled = true; };
-  }, []);
-
-  useEffect(() => {
-    if (!me) return;
-    let cancelled = false;
-    fetch('/api/match/discover').then((r) => (r.ok ? r.json() : { people: [] })).then((d) => { if (!cancelled) setDiscover(d.people); });
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [me?.id]);
 
   const isActiveScreen = state.activeScreen === 'match';
 
@@ -138,12 +122,7 @@ export function MatchScreen(_props: { device: Device }) {
   // visible too — otherwise it would only ever animate off-screen at load.
   const shownPct = useCountUp(activeInfo?.score ?? null, isActiveScreen ? activeId : null);
 
-  useEffect(() => {
-    if (!activeId) { setHistory(null); return; }
-    let cancelled = false;
-    fetch(`/api/match/${activeId}/history`).then((r) => (r.ok ? r.json() : { history: [] })).then((d) => { if (!cancelled) setHistory(d.history); });
-    return () => { cancelled = true; };
-  }, [activeId]);
+  const history = useCachedJson<{ history: { pct: number; date: string }[] }>(activeId ? `/api/match/${activeId}/history` : null).data?.history ?? null;
 
   if (!me) return null;
 
