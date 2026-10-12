@@ -5,7 +5,7 @@ import { useApp } from '@/lib/AppContext';
 import { searchLibrary, type LibraryArtist, type LibraryReleaseGroup } from '@/lib/musicbrainz';
 
 export function LiveLibrarySearch({ query, onResult }: { query: string; onResult?: (hasResults: boolean) => void }) {
-  const { t, openArtist, openAlbum, showToast } = useApp();
+  const { t, albums, openArtist, openAlbum, showToast } = useApp();
   const [result, setResult] = useState<{ artists: LibraryArtist[]; groups: LibraryReleaseGroup[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,9 +34,17 @@ export function LiveLibrarySearch({ query, onResult }: { query: string; onResult
       searchLibrary(query)
         .then((r) => {
           if (cancelled) return;
-          setResult(r);
+          // MusicBrainz placeholders ("[unknown]", "[no artist]") and artists
+          // already in our catalog aren't "from the open library".
+          const inCatalog = new Set(albums.map((a) => a.artist.toLowerCase()));
+          const placeholder = (n: string) => /^\[.*\]$/.test(n.trim());
+          const clean = {
+            artists: r.artists.filter((a) => !placeholder(a.name) && !inCatalog.has(a.name.toLowerCase())),
+            groups: r.groups.filter((g) => !placeholder(g.title) && !(g['artist-credit'] || []).some((c) => placeholder(c.name))),
+          };
+          setResult(clean);
           setLoading(false);
-          onResult?.(r.artists.length > 0 || r.groups.length > 0);
+          onResult?.(clean.artists.length > 0 || clean.groups.length > 0);
         })
         .catch(() => {
           if (cancelled) return;

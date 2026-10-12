@@ -3,12 +3,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
-import type { Device, DiscoverMatchPerson } from '@/lib/types';
+import type { Album, Device, DiscoverMatchPerson } from '@/lib/types';
 import { userAvatarStyle, formatRelative } from '@/lib/format';
 import { CoverArt } from '../ui/CoverArt';
-import { Stars } from '../redesign/Stars';
 import { regionDisplayName, quoted } from '@/lib/i18n';
-import { AlbumCard } from '../ui/AlbumCard';
 import { LiveLibrarySearch } from '../LiveLibrarySearch';
 import { PopularNowSection } from '../PopularNowSection';
 import { ConcertsFeed } from '../ConcertsFeed';
@@ -25,7 +23,6 @@ import { cachedJson, peekJson } from '@/lib/cachedJson';
 
 const GENRES = ['Всё', 'Rock', 'Hip-Hop', 'Electronic', 'R&B', 'Pop', 'Latin'];
 type Filter = 'all' | 'albums' | 'artists' | 'people';
-const CATALOG_PAGE = 24;
 
 type PersonResult = { id: string; name: string; handle: string; avatarUrl: string | null; score?: number; sharedAlbums?: number };
 
@@ -66,7 +63,7 @@ function ArtistChip({ name, avg }: { name: string; avg: number | null }) {
   const [resolving, setResolving] = useState(false);
   return (
     <button
-      className="chip"
+      className="row"
       style={{ opacity: resolving ? 0.6 : 1 }}
       onClick={async () => {
         if (resolving) return;
@@ -83,8 +80,25 @@ function ArtistChip({ name, avg }: { name: string; avg: number | null }) {
         }
       }}
     >
-      <span className="dot">{name[0]}</span>{name}
-      {avg != null && <small className="muted" style={{ fontWeight: 700 }}> {fmt1(avg)}</small>}
+      <span className="dot" style={{ width: 44, height: 44, fontSize: 18 }}>{name[0]}</span>
+      <span className="g"><b>{name}</b></span>
+      {avg != null && <b className="num" style={{ fontSize: 22, color: 'var(--acct)' }}>{fmt1(avg)}</b>}
+    </button>
+  );
+}
+
+// Search results as rows (rev 10c/11): cover, title, artist · year, the
+// community score and your own.
+function AlbumRow({ album: a }: { album: Album }) {
+  const { t, albumRatings, myRatings, spotifyCovers, openAlbum } = useApp();
+  const score = albumRatings[a.id]?.avg;
+  const mine = myRatings.find((r) => r.albumId === a.id)?.stars;
+  return (
+    <button className="row alr10" onClick={() => openAlbum(a.id)}>
+      <CoverArt url={spotifyCovers[a.id] || a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" px={48} style={{ width: 48, height: 48 }} />
+      <span className="g"><b>{a.title}</b><small className="muted">{a.artist} · {a.year}</small></span>
+      {score != null && <b className="num" style={{ fontSize: 22, color: 'var(--acct)' }}>{fmt1(score)}</b>}
+      {mine != null && <span className="tag on9">{t('stats.youRated', { score: fmt1(mine) })}</span>}
     </button>
   );
 }
@@ -92,7 +106,7 @@ function ArtistChip({ name, avg }: { name: string; avg: number | null }) {
 type SiteReview = { stars: number; review: string; createdAt: string; albumId: string; user: { name: string; handle: string; avatarUrl: string | null } };
 
 function SiteReviewsBlock() {
-  const { t, language, albums, liveAlbums, spotifyCovers, openAlbum } = useApp();
+  const { t, language, albums, liveAlbums, openAlbum } = useApp();
   const [reviews, setReviews] = useState<SiteReview[] | null>(() => peekJson<{ reviews: SiteReview[] }>('/api/reviews/recent')?.reviews ?? null);
 
   useEffect(() => {
@@ -110,15 +124,15 @@ function SiteReviewsBlock() {
   if (!resolved.length) return <p className="muted" style={{ fontWeight: 600 }}>{t('reviews.empty')}</p>;
 
   return (
-    <div className="bento b3">
-      {resolved.map(({ r, a }, i) => (
-        <button className="tile" key={i} onClick={() => openAlbum(a.id)} style={{ textAlign: 'left' }}>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10 }}>
-            <CoverArt url={spotifyCovers[a.id] || a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: 46, height: 46 }} />
-            <div><b>{a.title}</b><br /><small className="muted" style={{ fontWeight: 700 }}>{r.user.name} · {formatRelative(r.createdAt, language)}</small></div>
-            <span className="num" style={{ marginLeft: 'auto', fontSize: 30, color: 'var(--acct)' }}>{fmt1(r.stars)}</span>
-          </div>
-          <p className="quote" style={{ fontSize: 17 }}>{quoted(language, r.review)}</p>
+    <div className="tile t-soft2">
+      {resolved.slice(0, 3).map(({ r, a }, i) => (
+        <button className="row rv10" key={i} onClick={() => openAlbum(a.id)}>
+          <span className="dot" style={userAvatarStyle(r.user)}>{!r.user.avatarUrl && r.user.name[0]}</span>
+          <span className="g">
+            <small className="muted" style={{ fontWeight: 700 }}>{t('reviews.onAlbum', { name: r.user.name, album: a.title, when: formatRelative(r.createdAt, language) })}</small>
+            <span className="quote" style={{ fontSize: 17, display: 'block', marginTop: 2 }}>{quoted(language, r.review)}</span>
+          </span>
+          <b className="num" style={{ fontSize: 26, color: 'var(--acct)' }}>{fmt1(r.stars)}</b>
         </button>
       ))}
     </div>
@@ -126,10 +140,10 @@ function SiteReviewsBlock() {
 }
 
 export function DiscoverScreen(_props: { device: Device }) {
-  const { t, language, me, state, albums, albumRatings, spotifyCovers, openAlbum, setSearchQuery, setActiveGenre, setSortBy, showScreen } = useApp();
+  const { t, language, me, state, albums, albumRatings, spotifyCovers, openAlbum, setSearchQuery, setActiveGenre, setSortBy, showScreen, myRatings } = useApp();
   const [filter, setFilter] = useState<Filter>('all');
   // Full catalog in pages (it used to render every album at once, ~10,000px).
-  const [catalogLimit, setCatalogLimit] = useState(CATALOG_PAGE);
+  const [catalogAll, setCatalogAll] = useState(false);
   const [people, setPeople] = useState<PersonResult[] | null>(null);
   const [mbFound, setMbFound] = useState<boolean | null>(null);
   const [discoverPeople, setDiscoverPeople] = useState<DiscoverMatchPerson[] | null>(() => peekJson<{ people: DiscoverMatchPerson[] }>('/api/match/discover')?.people ?? null);
@@ -205,7 +219,7 @@ export function DiscoverScreen(_props: { device: Device }) {
   const topRatedFiltered = albums
     .filter((a) => albumRatings[a.id] && albumRatings[a.id].count >= MIN_RATINGS_FOR_TOP && (genreFilter === 'Всё' || a.genreBucket === genreFilter))
     .sort((a, b) => albumRatings[b.id].avg - albumRatings[a.id].avg)
-    .slice(0, 3);
+    .slice(0, 4);
 
   const catalogFiltered = genreFilter === 'Всё' ? albums : albums.filter((a) => a.genreBucket === genreFilter);
   const sorted = [...catalogFiltered].sort((a, b) => {
@@ -258,13 +272,13 @@ export function DiscoverScreen(_props: { device: Device }) {
           {hasAlbums && (
             <>
               <h2>{t('discover.albumsHeading')}</h2>
-              <div className="cgrid">{albumResults.map((a) => <AlbumCard key={a.id} album={a} />)}</div>
+              <div className="tile">{albumResults.map((a) => <AlbumRow key={a.id} album={a} />)}</div>
             </>
           )}
           {hasArtists && (
             <>
               <h2 style={{ marginTop: 26 }}>{t('discover.artistsHeading')}</h2>
-              <div className="chips">{artistResults.map((a) => <ArtistChip key={a.name} name={a.name} avg={a.avg} />)}</div>
+              <div className="tile t-soft2">{artistResults.map((a) => <ArtistChip key={a.name} name={a.name} avg={a.avg} />)}</div>
             </>
           )}
           {peopleContribute && hasPeople && (
@@ -310,62 +324,82 @@ export function DiscoverScreen(_props: { device: Device }) {
 
           {filter !== 'albums' && <ConcertsFeed />}
 
+          {/* Top rated beside reviews worth reading (rev 10c/11): rows, not tiles. */}
           {filter !== 'artists' && (
-            <>
-              <h2 style={{ marginTop: 34 }}>{t('catalog.topRated')}</h2>
-              {!topRatedFiltered.length && (
-                <div className="tile t-soft2 empty"><MascotIcon /><p className="muted" style={{ fontWeight: 600 }}>{t('catalog.topRatedEmpty', { n: MIN_RATINGS_FOR_TOP })}</p></div>
-              )}
-              {topRatedFiltered.length > 0 && <div className="bento b3">
-                {topRatedFiltered.map((a, i) => (
-                  <button className={`tile${i === 0 ? ' t-ac' : ''}`} key={a.id} onClick={() => openAlbum(a.id)} style={{ textAlign: 'left', display: 'flex', gap: 14, alignItems: 'center' }}>
-                    <span className="num" style={{ fontSize: 54 }}>{i + 1}</span>
-                    <CoverArt url={spotifyCovers[a.id] || a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: 64, height: 64 }} />
-                    <div style={{ minWidth: 0 }}>
-                      <b>{a.title}</b><br />
-                      <small className="muted" style={{ fontWeight: 700 }}>{a.artist}</small><br />
-                      <span className="stars"><Stars value={albumRatings[a.id].avg} size={13} /></span> <small style={{ fontWeight: 800 }}>{fmt1(albumRatings[a.id].avg)} · {albumRatings[a.id].count}</small>
-                    </div>
-                  </button>
-                ))}
-              </div>}
-            </>
+            <div className="sec two" style={{ marginTop: 34 }}>
+              <div>
+                <h2>{t('catalog.topRated')}</h2>
+                {topRatedFiltered.length ? (
+                  <div className="tile">
+                    {topRatedFiltered.map((a, i) => (
+                      <button className="row" key={a.id} onClick={() => openAlbum(a.id)}>
+                        <span className="rk11" style={i === 0 ? { color: 'var(--acct)' } : undefined}>{i + 1}</span>
+                        <CoverArt url={spotifyCovers[a.id] || a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" px={50} style={{ width: 50, height: 50 }} />
+                        <span className="g"><b>{a.title}</b><small className="muted" style={{ fontWeight: 600 }}>{a.artist} · {t('groups.ratingsN', { n: albumRatings[a.id].count })}</small></span>
+                        <b className="num" style={{ fontSize: 26, color: 'var(--acct)' }}>{fmt1(albumRatings[a.id].avg)}</b>
+                      </button>
+                    ))}
+                  </div>
+                ) : <div className="tile t-soft2 empty"><MascotIcon /><p className="muted" style={{ fontWeight: 600 }}>{t('catalog.topRatedEmpty', { n: MIN_RATINGS_FOR_TOP })}</p></div>}
+              </div>
+              <div>
+                <h2>{t('discover.reviewsWorthReading')}</h2>
+                <SiteReviewsBlock />
+              </div>
+            </div>
           )}
 
-          {(genreFilter === 'Всё' || genreFilter === 'Electronic') && (
-            <>
-              <h2 style={{ marginTop: 34 }}>{t('catalog.obscureArtists')} · Electronic</h2>
-              <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 12px' }}>{t('discover.obscureSubtitle', { region: regionLabel })}</p>
-              <ObscureAlbums genre="Electronic" />
-            </>
-          )}
-
+          {/* Top artists by genre beside lesser-known artists. */}
           {filter !== 'albums' && (
-            <>
-              <h2 style={{ marginTop: 34 }}>{t('catalog.genreTops')}</h2>
-              <GenreTopArtists onlyGenre={genreFilter} region={regionLabel} />
-            </>
+            <div className="sec two" style={{ marginTop: 34 }}>
+              <div>
+                <h2>{t('catalog.genreTops')}</h2>
+                <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 12px' }}>{regionLabel}</p>
+                <GenreTopArtists onlyGenre={genreFilter} />
+              </div>
+              {(genreFilter === 'Всё' || genreFilter === 'Electronic') && (
+                <div>
+                  <h2>{t('catalog.obscureArtists')}</h2>
+                  <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 12px' }}>Electronic · {t('discover.obscureSubtitle', { region: regionLabel })}</p>
+                  <ObscureAlbums genre="Electronic" />
+                </div>
+              )}
+            </div>
           )}
 
+          {/* Full catalog as a table: eight rows, then "show all". */}
           {filter !== 'artists' && (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginTop: 34 }}>
-                <h2 style={{ margin: 0 }}>{t('catalog.fullCatalog')}</h2>
+                <h2 style={{ margin: 0 }}>{t('catalog.fullCatalog')} <span className="cnt">{sorted.length}</span></h2>
                 <div className="chips" style={{ margin: 0 }} role="group" aria-label={t('catalog.sortAria')}>
                   {SORT_OPTIONS.map((s) => (
                     <button key={s.key} className={`chip ${state.sortBy === s.key ? 'on' : ''}`} onClick={() => setSortBy(s.key)}>{s.label}</button>
                   ))}
                 </div>
               </div>
-              <div className="cgrid" style={{ marginTop: 14 }}>{sorted.slice(0, catalogLimit).map((a) => <AlbumCard key={a.id} album={a} />)}</div>
-              {sorted.length > catalogLimit && (
-                <div className="acts" style={{ justifyContent: 'center' }}>
-                  <button className="btn ghost" onClick={() => setCatalogLimit((n) => n + CATALOG_PAGE)}>{t('catalog.showMore', { n: Math.min(CATALOG_PAGE, sorted.length - catalogLimit) })}</button>
-                </div>
+              <div className="tile cat10" style={{ marginTop: 14 }}>
+                <div className="ch"><span /><span>{t('match.colAlbum')}</span><span>{t('catalog.colGenre')}</span><span>{t('catalog.colYear')}</span><span>{t('catalog.colScore')}</span><span>{t('catalog.colYou')}</span></div>
+                {(catalogAll ? sorted : sorted.slice(0, 8)).map((a) => {
+                  const mine = myRatings.find((r) => r.albumId === a.id)?.stars;
+                  const score = albumRatings[a.id]?.avg;
+                  return (
+                    <button className="row" key={a.id} onClick={() => openAlbum(a.id)}>
+                      <CoverArt url={spotifyCovers[a.id] || a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" px={40} style={{ width: 40, height: 40 }} />
+                      <span className="g"><b>{a.title}</b><small className="muted" style={{ fontWeight: 600 }}>{a.artist}</small></span>
+                      <span className="tag gn">{a.genreBucket}</span>
+                      <span className="yy">{a.year}</span>
+                      <b className="num sc">{score != null ? fmt1(score) : '–'}</b>
+                      <span className="yu">{mine != null ? <span className="tag on9">{fmt1(mine)}</span> : <span className="muted">–</span>}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {sorted.length > 8 && (
+                <button className="btn ghost" style={{ marginTop: 12 }} onClick={() => setCatalogAll((v) => !v)}>
+                  {catalogAll ? t('catalog.showFewer') : t('catalog.showAll', { n: sorted.length })}
+                </button>
               )}
-
-              <h2 style={{ marginTop: 34 }}>{t('discover.reviewsWorthReading')}</h2>
-              <SiteReviewsBlock />
             </>
           )}
         </>

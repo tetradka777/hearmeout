@@ -3,10 +3,10 @@
 import { useApp } from '@/lib/AppContext';
 import { CoverArt } from './ui/CoverArt';
 
-// discoverHtml() "Lesser-known artists": a row of artist tiles (album
-// cover, name, one line under it). The data is real low-popularity
-// Spotify albums, so each artist appears once with the album that put
-// them here; the tile opens the artist page (or the album without an id).
+// "Lesser-known artists" (prototype rev 11, lighter rows): real
+// low-popularity Spotify albums, one row per artist (the album cover, the
+// artist, the album that put them here); a row opens the artist page (or
+// the album without an artist id).
 export function ObscureAlbums({ genre }: { genre: string }) {
   const { t, spotifyObscure, openAlbum, openSpotifyArtist } = useApp();
   const albums = spotifyObscure[genre];
@@ -16,14 +16,14 @@ export function ObscureAlbums({ genre }: { genre: string }) {
   if (!albums.length) return <p className="muted" style={{ fontWeight: 600 }}>{t('obscure.empty')}</p>;
 
   const seen = new Set<string>();
-  const artists = albums.filter((a) => (seen.has(a.artist) ? false : (seen.add(a.artist), true)));
+  // Compilations ("Various Artists") aren't an artist to discover.
+  const artists = albums.filter((a) => !/^various artists$/i.test(a.artist) && (seen.has(a.artist) ? false : (seen.add(a.artist), true))).slice(0, 6);
   return (
-    <div className="hrow">
+    <div className="tile t-soft2">
       {artists.map((a) => (
-        <button className="tile" key={a.id} onClick={() => (a.artistId ? openSpotifyArtist(a.artistId, a.artist) : openAlbum(a.id))} style={{ textAlign: 'left', minWidth: 190 }}>
-          <CoverArt url={a.cover ?? undefined} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: 64, height: 64 }} />
-          <b style={{ display: 'block', marginTop: 10 }}>{a.artist}</b>
-          <small className="muted" style={{ fontWeight: 700 }}>{a.title}</small>
+        <button className="row" key={a.id} onClick={() => (a.artistId ? openSpotifyArtist(a.artistId, a.artist) : openAlbum(a.id))}>
+          <CoverArt url={a.cover ?? undefined} fallbackLetter={a.artist[0] || '?'} className="cov" px={44} style={{ width: 44, height: 44 }} />
+          <span className="g"><b>{a.artist}</b><small className="muted">{a.title}</small></span>
         </button>
       ))}
     </div>

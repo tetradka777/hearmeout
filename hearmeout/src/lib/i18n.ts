@@ -1164,6 +1164,17 @@ const ru = {
   'recap.dayByDay': 'По дням',
   'recap.busiest': 'больше всего: {day}',
   'recap.playsSub': 'прослушивания',
+  'discover.numberOneNow': '№1 прямо сейчас',
+  'discover.communityScore': '{score} по {n} {n|оценке|оценкам|оценкам}',
+  'discover.youRatedIt': 'твоя оценка: {score}',
+  'discover.notRatedYet': 'ты ещё не оценил(а)',
+  'reviews.onAlbum': '{name} о «{album}» · {when}',
+  'catalog.colGenre': 'Жанр',
+  'catalog.colYear': 'Год',
+  'catalog.colScore': 'Оценка',
+  'catalog.colYou': 'Ты',
+  'catalog.showFewer': 'Свернуть',
+  'catalog.showAll': 'Показать все ({n})',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2324,6 +2335,17 @@ const en: Dict = {
   'recap.dayByDay': 'Day by day',
   'recap.busiest': 'busiest: {day}',
   'recap.playsSub': 'plays',
+  'discover.numberOneNow': '#1 right now',
+  'discover.communityScore': '{score} from {n} {n|rating|ratings}',
+  'discover.youRatedIt': 'you rated it {score}',
+  'discover.notRatedYet': 'you haven’t rated it',
+  'reviews.onAlbum': '{name} on {album} · {when}',
+  'catalog.colGenre': 'Genre',
+  'catalog.colYear': 'Year',
+  'catalog.colScore': 'Score',
+  'catalog.colYou': 'You',
+  'catalog.showFewer': 'Show fewer',
+  'catalog.showAll': 'Show all {n}',
 };
 
 const fr: Dict = {
@@ -3481,6 +3503,17 @@ const fr: Dict = {
   'recap.dayByDay': 'Jour par jour',
   'recap.busiest': 'le plus chargé : {day}',
   'recap.playsSub': 'écoutes',
+  'discover.numberOneNow': 'n°1 en ce moment',
+  'discover.communityScore': '{score} sur {n} {n|note|notes}',
+  'discover.youRatedIt': 'ta note : {score}',
+  'discover.notRatedYet': 'pas encore noté',
+  'reviews.onAlbum': '{name} sur {album} · {when}',
+  'catalog.colGenre': 'Genre',
+  'catalog.colYear': 'Année',
+  'catalog.colScore': 'Note',
+  'catalog.colYou': 'Toi',
+  'catalog.showFewer': 'Afficher moins',
+  'catalog.showAll': 'Tout afficher ({n})',
 };
 
 const es: Dict = {
@@ -4638,6 +4671,17 @@ const es: Dict = {
   'recap.dayByDay': 'Día a día',
   'recap.busiest': 'el más intenso: {day}',
   'recap.playsSub': 'reproducciones',
+  'discover.numberOneNow': 'n.º 1 ahora mismo',
+  'discover.communityScore': '{score} de {n} {n|valoración|valoraciones}',
+  'discover.youRatedIt': 'tu valoración: {score}',
+  'discover.notRatedYet': 'aún no lo valoraste',
+  'reviews.onAlbum': '{name} sobre {album} · {when}',
+  'catalog.colGenre': 'Género',
+  'catalog.colYear': 'Año',
+  'catalog.colScore': 'Nota',
+  'catalog.colYou': 'Tú',
+  'catalog.showFewer': 'Mostrar menos',
+  'catalog.showAll': 'Mostrar los {n}',
 };
 
 const de: Dict = {
@@ -5795,6 +5839,17 @@ const de: Dict = {
   'recap.dayByDay': 'Tag für Tag',
   'recap.busiest': 'am meisten: {day}',
   'recap.playsSub': 'Wiedergaben',
+  'discover.numberOneNow': 'Gerade auf Platz 1',
+  'discover.communityScore': '{score} aus {n} {n|Bewertung|Bewertungen}',
+  'discover.youRatedIt': 'deine Bewertung: {score}',
+  'discover.notRatedYet': 'noch nicht bewertet',
+  'reviews.onAlbum': '{name} über {album} · {when}',
+  'catalog.colGenre': 'Genre',
+  'catalog.colYear': 'Jahr',
+  'catalog.colScore': 'Wertung',
+  'catalog.colYou': 'Du',
+  'catalog.showFewer': 'Weniger anzeigen',
+  'catalog.showAll': 'Alle {n} anzeigen',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };
