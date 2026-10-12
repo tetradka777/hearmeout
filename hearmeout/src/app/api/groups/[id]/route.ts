@@ -5,6 +5,7 @@ import { computeMatch } from '@/lib/matchScore';
 import { computeMonthAwards, scoutAward, stuckAward, timeTravelerAward, type AwardEvent } from '@/lib/monthAwards';
 import { DEFAULT_PRIVACY, fetchPrivacy } from '@/lib/privacy';
 import { fetchAllRows } from '@/lib/supabasePaginate';
+import { cachedGroupDetail, storeGroupDetail } from '@/lib/groupDetailCache';
 import type { ApiUser, GroupAward, GroupDetail, GroupLeaderboardPeriod, GroupMemberStats, GroupPastAwards, GroupRecord, GroupTastePair, GroupTopAlbum, GroupVoteCandidate } from '@/lib/types';
 
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -13,6 +14,9 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   const { id } = await context.params;
   const url = new URL(request.url);
   const leaderboardPeriod: GroupLeaderboardPeriod = url.searchParams.get('period') === 'week' ? 'week' : 'month';
+  // Only ever stored after the membership check below passed for this viewer.
+  const cached = cachedGroupDetail(id, userId, leaderboardPeriod);
+  if (cached) return NextResponse.json(cached);
 
   const admin = supabaseAdmin();
   const { data: group } = await admin.from('groups').select('id, name, created_by, created_at').eq('id', id).maybeSingle();
@@ -366,5 +370,6 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     members, memberStats, awards, pastAwards, activity, leaderboard, leaderboardPeriod,
     records, topAlbums, taste, vote, muted,
   };
+  storeGroupDetail(id, userId, leaderboardPeriod, detail);
   return NextResponse.json(detail);
 }

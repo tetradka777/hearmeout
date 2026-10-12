@@ -14,6 +14,7 @@ import { useFriendScores } from '@/lib/useFriendScores';
 import { toLocale, quoted } from '@/lib/i18n';
 import { recapLine } from '@/lib/recapLine';
 import { completedWeekRange, isoWeekNumber } from '@/lib/weeks';
+import { cachedJson, peekJson } from '@/lib/cachedJson';
 import { ImportNudge } from '../ConnectionBlocks';
 
 // Home feed (redesign spec 6.1). Replaces the old Home = catalog-browser
@@ -262,7 +263,10 @@ export function HomeScreen(_props: { device: Device }) {
   useEffect(() => {
     if (!me) return;
     let cancelled = false;
-    fetch('/api/feed').then((r) => (r.ok ? r.json() : null)).then((d: FeedResponse | null) => { if (!cancelled) setFeed(d); });
+    // The stored copy first (lib/cachedJson), then the fresh feed.
+    const stored = peekJson<FeedResponse>('/api/feed');
+    if (stored) setFeed(stored);
+    cachedJson<FeedResponse>('/api/feed').then((d) => { if (!cancelled && d) setFeed(d); });
     return () => { cancelled = true; };
   }, [me, setFeed]);
 

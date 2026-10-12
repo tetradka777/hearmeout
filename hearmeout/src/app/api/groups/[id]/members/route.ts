@@ -3,11 +3,13 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
 import { handleIlikePattern } from '@/lib/slug';
 import { isFriendOf } from '@/lib/userProfile';
+import { invalidateGroupDetail } from '@/lib/groupDetailCache';
 
 export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
   const { id } = await context.params;
+  invalidateGroupDetail(id);
 
   const admin = supabaseAdmin();
   const { data: membership } = await admin.from('group_members').select('user_id').eq('group_id', id).eq('user_id', userId).maybeSingle();

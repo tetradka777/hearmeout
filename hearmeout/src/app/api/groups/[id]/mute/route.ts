@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
+import { invalidateGroupDetail } from '@/lib/groupDetailCache';
 
 // Mute notifications for this group (prototype's hero "Mute notifications"
 // toggle, spec gap) — per member, per group; see migration_018.
@@ -8,6 +9,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
   const { id } = await context.params;
+  invalidateGroupDetail(id);
 
   const body = await request.json().catch(() => null);
   if (typeof body?.muted !== 'boolean') return NextResponse.json({ error: 'invalid_payload' }, { status: 400 });
