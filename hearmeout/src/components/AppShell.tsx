@@ -22,6 +22,7 @@ import { StatesScreen } from './screens/StatesScreen';
 import { LaterScreen } from './screens/LaterScreen';
 import { OnboardingScreen } from './OnboardingScreen';
 import { preloadDetails } from '@/lib/backgroundPreload';
+import { useScrollMemory } from '@/lib/scrollMemory';
 
 // Every screen mounts the first time it's opened (or when the background
 // preload gets to it) and stays mounted after
@@ -86,11 +87,18 @@ export function AppShell() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [meId]);
 
-  // Screen change scrolls to top; an in-screen filter/setting change (which
-  // never changes activeScreen) keeps the scroll position (spec 5.3).
-  useEffect(() => {
-    if (state.navAction === 'push') window.scrollTo(0, 0);
-  }, [state.activeScreen, state.navAction]);
+  // Each page keeps its scroll position (lib/scrollMemory): switching
+  // sections and coming back returns to the same place; a page not seen
+  // before (another album, another friend) opens at the top. An in-screen
+  // filter/setting change doesn't change the page, so it never scrolls.
+  const pageKey = state.justRegistered ? 'onboarding'
+    : state.activeScreen === 'rate' ? `rate:${state.currentAlbumId ?? ''}`
+    : state.activeScreen === 'friend' ? `friend:${state.viewingUserId ?? ''}`
+    : state.activeScreen === 'group' ? `group:${state.viewingGroupId ?? ''}`
+    : state.activeScreen === 'artist' ? `artist:${state.currentArtist?.id ?? ''}`
+    : state.activeScreen === 'recap' ? `recap:${state.recapViewUserId}`
+    : state.activeScreen;
+  useScrollMemory(pageKey);
 
   return (
     <RedesignShell>
