@@ -6,6 +6,7 @@ import { ALBUMS } from './data';
 import { translate, type Language, type TranslationKey } from './i18n';
 import { clearStatsCache } from './statsClientCache';
 import { peekJson, setJsonCacheOwner, storeJson } from './cachedJson';
+import { completedWeekRange } from './weeks';
 import type {
   Album, AlbumRatingInfo, AppNotification, ArtistState, Device, FeedResponse, FriendRequest, LaterItem, LovedItem, LovedItemType, Me, RatingRecord, RecapData, RecapPeriod, ScreenName, SeasonOption,
 } from './types';
@@ -762,8 +763,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const seasonQS = seasonKey ? `&season=${encodeURIComponent(seasonKey)}` : offset ? `&offset=${offset}` : '';
     // Weeks follow the *viewer's* week-start setting, so a friend's recap
     // chips line up with your own.
-    const weekQS = period === 'week' ? `&weekStart=${me?.weekStart ?? 'mon'}` : '';
-    const url = `/api/recap?period=${period}&userId=${targetId}${seasonQS}${weekQS}`;
+    // The week is named by its start date too, so last week's stored copy
+    // (lib/cachedJson) is never shown as this week's; tz = this device's
+    // clock, which decides when a day, week and month turn over.
+    const weekQS = period === 'week'
+      ? `&weekStart=${me?.weekStart ?? 'mon'}&wk=${completedWeekRange(offset, me?.weekStart ?? 'mon').start.toISOString().slice(0, 10)}`
+      : '';
+    const url = `/api/recap?period=${period}&userId=${targetId}${seasonQS}${weekQS}&tz=${new Date().getTimezoneOffset()}`;
     // The stored copy shows at once; the request below refreshes it.
     const stored = peekJson<RecapData>(url);
     if (stored) setRecapCache((s) => ({ ...s, [key]: stored }));
