@@ -13,8 +13,10 @@ export async function fetchDeezerArtistPhoto(name: string): Promise<string | nul
   }
 }
 
-export async function fetchTrackPreview(artistName: string, trackTitle: string): Promise<{ title: string; preview: string } | null> {
-  const res = await fetch(`/api/deezer/preview?artist=${encodeURIComponent(artistName)}&title=${encodeURIComponent(trackTitle)}`);
+// albumSpotifyId lets the server pick the exact recording from that album.
+export async function fetchTrackPreview(artistName: string, trackTitle: string, albumSpotifyId?: string | null): Promise<{ title: string; preview: string } | null> {
+  const album = albumSpotifyId ? `&album=${encodeURIComponent(albumSpotifyId)}` : '';
+  const res = await fetch(`/api/deezer/preview?artist=${encodeURIComponent(artistName)}&title=${encodeURIComponent(trackTitle)}${album}`);
   if (res.status === 404) return null;
   if (!res.ok) throw new Error('request failed');
   return res.json();
