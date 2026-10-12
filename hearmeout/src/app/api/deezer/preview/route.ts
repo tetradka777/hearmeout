@@ -3,111 +3,104 @@ import { getCurrentUserId } from '@/lib/identity';
 import { upstreamErrorResponse } from '@/lib/upstreamError';
 import { deezerGet } from '@/lib/deezerServer';
 import { withSpotifyCache } from '@/lib/spotifyCache';
+import { fetchSpotifyAlbumDetail, fetchSpotifyTrackIsrc, searchSpotifyTracks } from '@/lib/spotifyCatalog';
 
-// Server-side so it never depends on the public corsproxy.io service the
-// client used to call directly — that proxy is flaky enough (rate limits,
-// outages) that it was leaving the preview player permanently stuck in
-// "loading" for real visitors. A plain server-to-server fetch has no CORS
-// restriction at all, so no proxy is needed here.
+// 30-second previews come from Deezer, looked up on the server (no CORS
+// proxy). Finding the right recording is the whole job here: a loose
+// keyword search used to play another track of the album, or a track by a
+// different artist with a similar name ("Miley" → Miley Cyrus).
 
 type DeezerTrack = { id: number; title: string; preview: string; artist?: { name?: string } };
-type DeezerAlbum = { id: number; artist?: { name?: string } };
 
+// Letters and digits in any script (an ASCII-only version used to erase
+// Cyrillic, Japanese, … names, so those tracks never matched), lower case,
+// accents dropped.
 function normalize(s: string): string {
-  const stripped = s
-    .split('')
-    .filter((ch) => {
-      const code = ch.codePointAt(0) ?? 0;
-      return code < 0x0300 || code > 0x036f; // drop combining diacritics (café -> cafe)
-    })
-    .join('');
-  return stripped.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  return s.normalize('NFKD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+}
+// The title without "(feat. …)", "[Live]" or " - Remastered 2009".
+function core(s: string): string {
+  return normalize(s.replace(/\s*[([].*?[)\]]/g, '').replace(/\s+-\s+.*$/, ''));
+}
+function sameTitle(a: string, b: string): boolean {
+  if (normalize(a) === normalize(b)) return true;
+  const ca = core(a);
+  return !!ca && ca === core(b);
+}
+// Exact artist match only: one of the credited artists is the one asked
+// for ("Miley" is not "Miley Cyrus").
+function sameArtist(candidates: string[], wanted: string): boolean {
+  const want = new Set([wanted, ...wanted.split(/\s*,\s*|\s+&\s+/)].map(normalize).filter(Boolean));
+  return candidates.some((c) => want.has(normalize(c))) || want.has(normalize(candidates.join(', ')));
 }
 
-// Deezer's plain keyword search matches loosely against track titles — for
-// an ALBUM title that isn't itself a track name (most albums), that can
-// return something from a completely different artist. Scoring candidates
-// by how closely their artist name matches the one we asked for catches
-// that instead of blindly trusting the first hit.
-function artistMatchScore(candidateArtist: string | undefined, wantedArtist: string): number {
-  const a = normalize(candidateArtist || '');
-  const w = normalize(wantedArtist);
-  if (!a || !w) return 0;
-  if (a === w) return 3;
-  if (a.includes(w) || w.includes(a)) return 2;
-  if (w.split(' ').some((word) => word.length > 2 && a.includes(word))) return 1;
-  return 0;
-}
-
-async function searchDeezer<T>(path: string, q: string, limit: number): Promise<T[]> {
-  const data = await deezerGet<{ data?: T[] }>(`${path}?q=${encodeURIComponent(q)}&limit=${limit}`);
-  return data.data || [];
-}
-
-function bestByArtist<T extends { artist?: { name?: string } }>(items: T[], wantedArtist: string): { item: T; score: number } | null {
-  let best: { item: T; score: number } | null = null;
-  for (const item of items) {
-    const score = artistMatchScore(item.artist?.name, wantedArtist);
-    if (score > (best?.score ?? 0)) best = { item, score };
-  }
-  return best;
-}
+const SPOTIFY_ID = /^[0-9A-Za-z]{22}$/;
 
 export async function GET(request: NextRequest) {
-  // Signed-in only: this calls Spotify/Deezer/Ticketmaster on the server, and
-  // an open endpoint let anyone spend the app's shared API quota.
+  // Signed-in only: this calls Spotify/Deezer on the server, and an open
+  // endpoint let anyone spend the app's shared API quota.
   if (!(await getCurrentUserId())) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
   const params = new URL(request.url).searchParams;
   const artist = params.get('artist') || '';
   const title = params.get('title') || '';
-  if (!artist && !title) return NextResponse.json({ error: 'missing_query' }, { status: 400 });
+  const album = params.get('album') || '';
+  if (!artist || !title) return NextResponse.json({ error: 'missing_query' }, { status: 400 });
 
   try {
     // Preview URLs are signed for 15 minutes, so a found preview is cached
-    // for 10 and never served stale. The album search only runs when the
-    // track search found nothing usable.
-    const key = `dz-preview:v1:${artist.toLowerCase()}|${title.toLowerCase()}`;
-    const result = await withSpotifyCache(key, 600, () => findPreview(artist, title), 0);
+    // for 10 and never served stale.
+    const albumId = SPOTIFY_ID.test(album) ? album : '';
+    const key = `dz-preview:v2:${albumId}|${artist.toLowerCase()}|${title.toLowerCase()}`;
+    const result = await withSpotifyCache(key, 600, () => findPreview(artist, title, albumId), 0);
     if (!result) return NextResponse.json({ error: 'not_found' }, { status: 404 });
-    // Deliberately no Cache-Control: this route is keyed by artist/title
-    // query params, and an edge cache that only looks at the path (not the
-    // full query string) would serve one album's preview for every request.
+    // Deliberately no Cache-Control: an edge cache that only looks at the
+    // path (not the query string) would serve one preview for every track.
     return NextResponse.json(result);
   } catch (err) {
     return upstreamErrorResponse(err, '/api/deezer/preview');
   }
 }
 
-async function findPreview(artist: string, title: string): Promise<{ title: string; preview: string } | null> {
-  const tracks = await searchDeezer<DeezerTrack>('/search', `${artist} ${title}`, 5);
-  const bestTrack = bestByArtist(tracks, artist);
-
-  let result: { title: string; preview: string } | null = null;
-
-  // `title` here is always a specific track title (every caller passes
-  // one, not an album title) — a direct track match is the accurate one,
-  // so it's tried first. Picking the album match whenever it scored at
-  // least as well as the track match (as this used to) meant every track
-  // in an album resolved to whatever track happened to come first in that
-  // album's listing, regardless of which one was actually requested.
-  if (bestTrack && bestTrack.score > 0 && bestTrack.item.preview) {
-    result = { title: bestTrack.item.title, preview: bestTrack.item.preview };
+// 1) The exact recording: the Spotify track (from its album's track list,
+//    or a search matching both artist and title) → its ISRC → the same
+//    recording on Deezer. 2) Otherwise a Deezer search where both the
+//    artist and the title must match. Never "something by a similar
+//    artist" or "the album's first track": no preview beats a wrong one.
+async function findPreview(artist: string, title: string, albumId: string): Promise<{ title: string; preview: string } | null> {
+  try {
+    const exact = await previewByIsrc(artist, title, albumId);
+    if (exact) return exact;
+  } catch {
+    // Spotify rate-limited or down: the Deezer search below still works
+    // (and reports Deezer's own rate limit if that's the problem).
   }
+  return previewBySearch(artist, title);
+}
 
-  // Fallback for a single that's missing from Deezer's track index but
-  // whose parent album isn't: look for a track inside that album whose
-  // title actually matches what was asked for, only falling back to
-  // "whatever's first" if nothing in the album matches by title either.
-  const bestAlbum = result ? null : bestByArtist(await searchDeezer<DeezerAlbum>('/search/album', `${artist} ${title}`, 3), artist);
-  if (!result && bestAlbum && bestAlbum.score > 0) {
-    const albumData = await deezerGet<{ tracks?: { data?: DeezerTrack[] } }>(`/album/${bestAlbum.item.id}`);
-    const albumTracks = albumData.tracks?.data || [];
-    const wanted = normalize(title);
-    const titleMatch = albumTracks.find((t) => t.preview && normalize(t.title) === wanted)
-      || albumTracks.find((t) => t.preview && wanted && (normalize(t.title).includes(wanted) || wanted.includes(normalize(t.title))));
-    const fallback = titleMatch || albumTracks.find((t) => t.preview);
-    if (fallback) result = { title: fallback.title, preview: fallback.preview };
+async function previewByIsrc(artist: string, title: string, albumId: string): Promise<{ title: string; preview: string } | null> {
+  let trackId: string | null = null;
+  if (albumId) {
+    const detail = await withSpotifyCache(`album:${albumId}`, 14 * 86400, () => fetchSpotifyAlbumDetail(albumId));
+    const list = detail?.tracklist || [];
+    trackId = (list.find((t) => normalize(t.title) === normalize(title)) || list.find((t) => sameTitle(t.title, title)))?.id ?? null;
   }
+  if (!trackId) {
+    const hits = await withSpotifyCache(`sp-trksearch:v1:${artist.toLowerCase()}|${title.toLowerCase()}`, 7 * 86400, () => searchSpotifyTracks(artist, title));
+    trackId = hits.find((h) => sameTitle(h.title, title) && sameArtist(h.artists, artist))?.id ?? null;
+  }
+  if (!trackId) return null;
+  const id = trackId;
+  const isrc = await withSpotifyCache(`sp-isrc:v1:${id}`, 90 * 86400, () => fetchSpotifyTrackIsrc(id));
+  if (!isrc) return null;
+  const dz = await deezerGet<DeezerTrack>(`/track/isrc:${encodeURIComponent(isrc)}`).catch(() => null); // not on Deezer
+  return dz?.preview ? { title: dz.title, preview: dz.preview } : null;
+}
 
-  return result;
+async function previewBySearch(artist: string, title: string): Promise<{ title: string; preview: string } | null> {
+  for (const q of [`artist:"${artist}" track:"${title}"`, `${artist} ${title}`]) {
+    const data = await deezerGet<{ data?: DeezerTrack[] }>(`/search?q=${encodeURIComponent(q)}&limit=15`);
+    const hit = (data.data || []).find((t) => t.preview && sameTitle(t.title, title) && sameArtist([t.artist?.name || ''], artist));
+    if (hit) return { title: hit.title, preview: hit.preview };
+  }
+  return null;
 }

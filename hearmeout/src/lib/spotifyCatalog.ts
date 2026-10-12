@@ -295,3 +295,28 @@ export async function fetchArtistAlbumsSplit(id: string): Promise<{ released: Sp
 
 export type ArtistTopTrack = { id: string; title: string; durationMs: number; albumId: string; albumTitle: string; albumCover: string | null; trackNumber: number };
 
+
+// A track's ISRC, the recording code that's the same on every service (the
+// preview player finds the exact recording on Deezer by it). Single-track
+// lookups still work in development mode; album track lists don't carry it.
+export async function fetchSpotifyTrackIsrc(id: string): Promise<string | null> {
+  const token = await getSpotifyAppToken();
+  const res = await spotifyFetch(`https://api.spotify.com/v1/tracks/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+  if (res.status === 404 || res.status === 400) return null;
+  if (!res.ok) throw new Error(`Spotify request failed (/tracks/${id}): ${res.status}`);
+  const t = await res.json();
+  return (t.external_ids?.isrc as string | undefined) ?? null;
+}
+
+// Track search by artist and title; the caller decides which hit (if any)
+// really is the track.
+export async function searchSpotifyTracks(artist: string, title: string): Promise<{ id: string; title: string; artists: string[] }[]> {
+  const token = await getSpotifyAppToken();
+  const q = encodeURIComponent(`track:${title} artist:${artist}`);
+  const res = await spotifyFetch(`https://api.spotify.com/v1/search?type=track&limit=10&q=${q}`, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) throw new Error(`Spotify request failed (/search track): ${res.status}`);
+  const data = await res.json();
+  return (data.tracks?.items || []).map((t: { id: string; name: string; artists?: { name: string }[] }) => ({
+    id: t.id, title: t.name, artists: (t.artists || []).map((a) => a.name),
+  }));
+}

@@ -58,7 +58,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const myToken = ++requestToken.current;
     setStatus('loading');
     setProgress(0);
-    fetchTrackPreview(track.artist, track.title)
+    // spotifyId is the track's Spotify album; a raw Spotify albumId works too.
+    const album = track.spotifyId || (track.albumId && /^[0-9A-Za-z]{22}$/.test(track.albumId) ? track.albumId : null);
+    fetchTrackPreview(track.artist, track.title, album)
       .then((tr) => {
         if (requestToken.current !== myToken) return;
         if (!tr) {

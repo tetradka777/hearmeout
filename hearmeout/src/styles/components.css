@@ -125,7 +125,8 @@ html { background: var(--bg); -webkit-text-size-adjust: 100%; text-size-adjust: 
 [data-design="toxic"] .rd .pill { background: var(--hi); color: #0E0E0C; }
 .rd .dot { width: 28px; height: 28px; border-radius: 50%; display: inline-grid; place-items: center; font: 800 12px var(--font-display); flex: none; background: color-mix(in srgb, currentColor 15%, transparent); }
 .rd .chip .dot { width: 22px; height: 22px; font-size: 11px; }
-.rd .cov { border-radius: 22px; overflow: hidden; line-height: 0; flex: none; background: var(--pop); outline: var(--bw) solid var(--tb); outline-offset: calc(var(--bw) * -1); }
+/* Rounded square at every size: 22px on big tiles, about a fifth of the side on small row covers (a fixed 22px made a 40px cover a circle). */
+.rd .cov { border-radius: min(22px, 20%); overflow: hidden; line-height: 0; flex: none; background: var(--pop); outline: var(--bw) solid var(--tb); outline-offset: calc(var(--bw) * -1); }
 .rd .cov svg { width: 100%; height: auto; display: block; }
 .rd .cov text { font-family: var(--font-display); font-weight: 800; letter-spacing: -.04em; }
 .rd .fp { fill: var(--pop); } .rd .fa { fill: var(--acc); } .rd .fi { fill: var(--ink); } .rd .tp { fill: var(--ink); } .rd .ta { fill: var(--onacc); } .rd .ti { fill: var(--cream); }
