@@ -1263,6 +1263,9 @@ const ru = {
   'onboarding.asideWhyFriends': 'зачем друзья',
   'onboarding.asideGroupsSub': 'Награды месяца и голосование за альбом',
   'onboarding.asideRecapsSub': 'Сравнивай недели и делись итогами',
+  'artist.mbAlbums': 'альбомов',
+  'artist.mbActive': 'годы',
+  'artist.mbNoRatings': 'оценок пока нет',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2522,6 +2525,9 @@ const en: Dict = {
   'onboarding.asideWhyFriends': 'why friends',
   'onboarding.asideGroupsSub': 'Monthly awards and an album vote',
   'onboarding.asideRecapsSub': 'Compare your weeks and share them',
+  'artist.mbAlbums': 'albums',
+  'artist.mbActive': 'active',
+  'artist.mbNoRatings': 'no ratings yet',
 };
 
 const fr: Dict = {
@@ -3778,6 +3784,9 @@ const fr: Dict = {
   'onboarding.asideWhyFriends': 'pourquoi des amis',
   'onboarding.asideGroupsSub': 'Récompenses du mois et vote pour un album',
   'onboarding.asideRecapsSub': 'Compare vos semaines et partage-les',
+  'artist.mbAlbums': 'albums',
+  'artist.mbActive': 'actif',
+  'artist.mbNoRatings': 'pas encore de notes',
 };
 
 const es: Dict = {
@@ -5034,6 +5043,9 @@ const es: Dict = {
   'onboarding.asideWhyFriends': 'por qué amigos',
   'onboarding.asideGroupsSub': 'Premios del mes y votación de álbum',
   'onboarding.asideRecapsSub': 'Compara vuestras semanas y compártelas',
+  'artist.mbAlbums': 'álbumes',
+  'artist.mbActive': 'activo',
+  'artist.mbNoRatings': 'sin valoraciones aún',
 };
 
 const de: Dict = {
@@ -6290,6 +6302,9 @@ const de: Dict = {
   'onboarding.asideWhyFriends': 'warum Freunde',
   'onboarding.asideGroupsSub': 'Monatsauszeichnungen und Album-Abstimmung',
   'onboarding.asideRecapsSub': 'Vergleicht eure Wochen und teilt sie',
+  'artist.mbAlbums': 'Alben',
+  'artist.mbActive': 'aktiv',
+  'artist.mbNoRatings': 'noch keine Bewertungen',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };

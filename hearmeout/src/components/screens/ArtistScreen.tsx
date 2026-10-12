@@ -492,6 +492,7 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
                 <CoverArt url={coverArtUrl(g.id)} fallbackLetter={g.title[0] || '?'} className="cov mb" px={170} style={{ width: '100%', aspectRatio: '1' }} />
                 <b style={{ display: 'block', marginTop: 8, fontSize: 14 }}>{g.title}</b>
                 <small className="muted" style={{ fontWeight: 600 }}>{year}</small>
+                <span className="tag" style={{ marginTop: 6 }}>{t('artist.mbNoRatings')}</span>
               </button>
             );
           })}
@@ -510,6 +511,16 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
           <h1 className="big" style={{ margin: 0, fontSize: 'clamp(34px,7vw,56px)' }}>{art.name}</h1>
           <p className="muted" style={{ fontWeight: 600, marginTop: 4 }}>{t('artist.mbSimpleView')}</p>
         </div>
+        {/* Rev 9: how many albums and the years active. */}
+        {art.albums && art.albums.length > 0 && (() => {
+          const years = art.albums.map((g) => parseInt((g['first-release-date'] || '').slice(0, 4), 10)).filter((y) => y > 0).sort((x, y) => x - y);
+          return (
+            <div className="s3x" style={{ margin: 0, minWidth: 180 }}>
+              <div><b className="num">{art.albums.length}</b><small>{t('artist.mbAlbums')}</small></div>
+              {years.length > 0 && <div><b className="num">{years[0] === years[years.length - 1] ? years[0] : `${years[0]}–${years[years.length - 1]}`}</b><small>{t('artist.mbActive')}</small></div>}
+            </div>
+          );
+        })()}
       </div>
       {body}
     </>
