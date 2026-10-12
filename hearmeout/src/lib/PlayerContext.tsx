@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { fetchTrackPreview, prefetchTrackPreview } from './deezer';
+import { useApp } from './AppContext';
 
 export type QueueTrack = { title: string; artist: string; cover?: string | null; albumId?: string | null; spotifyId?: string | null };
 
@@ -117,6 +118,23 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setPlaying(false);
     setQuiet(false);
   }, []);
+
+  // Leaving the site stops the music: switching to another tab or app, or
+  // locking the phone, pauses it (the bar stays, so it can be resumed);
+  // signing out clears the player.
+  useEffect(() => {
+    const pause = () => { if (document.hidden) audioRef.current?.pause(); };
+    const pauseNow = () => audioRef.current?.pause();
+    document.addEventListener('visibilitychange', pause);
+    window.addEventListener('pagehide', pauseNow);
+    return () => {
+      document.removeEventListener('visibilitychange', pause);
+      window.removeEventListener('pagehide', pauseNow);
+    };
+  }, []);
+  const { me } = useApp();
+  const signedIn = !!me;
+  useEffect(() => { if (!signedIn) close(); }, [signedIn, close]);
 
   const value = useMemo<PlayerValue>(() => ({
     queue, index, playing, progress, status, currentTrack, quiet, playQueue, toggle, next, close,
