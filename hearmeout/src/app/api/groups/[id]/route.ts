@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
 import { computeMatch } from '@/lib/matchScore';
-import { computeMonthAwards, scoutAward, stuckAward, type AwardEvent } from '@/lib/monthAwards';
+import { computeMonthAwards, scoutAward, stuckAward, timeTravelerAward, type AwardEvent } from '@/lib/monthAwards';
 import { DEFAULT_PRIVACY, fetchPrivacy } from '@/lib/privacy';
 import { fetchAllRows } from '@/lib/supabasePaginate';
 import type { ApiUser, GroupAward, GroupDetail, GroupLeaderboardPeriod, GroupMemberStats, GroupPastAwards, GroupRecord, GroupTastePair, GroupTopAlbum, GroupVoteCandidate } from '@/lib/types';
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     fetchAllRows(build).then((r) => ({ data: r.rows }));
   const [{ data: ratingsRows }, { data: eventsRows }, { data: allRatingsRows }, { data: monthRatingsRows }, { data: pastEventsRows }, { data: pastRatingsRows }] = await Promise.all([
     admin.from('ratings').select('user_id, album_id, stars, review, created_at, is_private').in('user_id', memberIds).order('created_at', { ascending: false }).limit(60),
-    all((f, t) => admin.from('listening_events').select('user_id, played_at, duration_ms, genre, track_id, track_title, artist, album_id').in('user_id', memberIds).gte('played_at', monthAgo).order('id').range(f, t)),
+    all((f, t) => admin.from('listening_events').select('user_id, played_at, duration_ms, genre, track_id, track_title, artist, album_id, release_year').in('user_id', memberIds).gte('played_at', monthAgo).order('id').range(f, t)),
     // Full rating history per member (not just the last 60 across the whole
     // group) — needed for a real longest-streak count, which the capped
     // activity-feed query above isn't enough data for.
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     all((f, t) => admin.from('ratings').select('user_id, album_id, stars, created_at, is_private').in('user_id', memberIds).gte('created_at', monthStart).order('id').range(f, t)),
     // Past-months awards: listening_events/ratings for the lookback window,
     // bucketed by calendar month in JS below.
-    all((f, t) => admin.from('listening_events').select('user_id, played_at, duration_ms, genre, track_id, track_title, artist, album_id').in('user_id', memberIds).gte('played_at', pastWindowStart).lt('played_at', monthStart).order('id').range(f, t)),
+    all((f, t) => admin.from('listening_events').select('user_id, played_at, duration_ms, genre, track_id, track_title, artist, album_id, release_year').in('user_id', memberIds).gte('played_at', pastWindowStart).lt('played_at', monthStart).order('id').range(f, t)),
     all((f, t) => admin.from('ratings').select('user_id, stars, created_at, is_private').in('user_id', memberIds).gte('created_at', pastWindowStart).lt('created_at', monthStart).order('id').range(f, t)),
   ]);
 
@@ -204,11 +204,14 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     if (u) awards.push({ label: 'awardStreak', winner: u, detail: `${streak.days}d` });
   }
 
-  // Scout (heard an album before the rest) and Stuck (one track on repeat).
+  // Scout (heard an album before the rest), Stuck (one track on repeat) and
+  // Time traveler (the oldest music).
   const scout = scoutAward(eventsRows || [], userById);
   if (scout) awards.push(scout);
   const stuck = stuckAward(eventsRows || [], userById);
   if (stuck) awards.push(stuck);
+  const traveler = timeTravelerAward(eventsRows || [], userById);
+  if (traveler) awards.push(traveler);
 
   // ----- This-month-scoped figures for Members cards and Member records -----
   const monthRatings = (monthRatingsRows || []).filter((r) => !r.is_private);

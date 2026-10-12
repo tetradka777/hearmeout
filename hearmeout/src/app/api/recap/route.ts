@@ -162,7 +162,7 @@ async function circleAwards(admin: ReturnType<typeof supabaseAdmin>, userId: str
   const ids = circle.map((u) => u.id);
   // Paged (one request returns at most 1000 rows), each page a fresh query.
   const ev = () => {
-    const q = admin.from('listening_events').select('user_id, played_at, duration_ms, genre, track_id, track_title, artist, album_id').in('user_id', ids).gte('played_at', since);
+    const q = admin.from('listening_events').select('user_id, played_at, duration_ms, genre, track_id, track_title, artist, album_id, release_year').in('user_id', ids).gte('played_at', since);
     return until ? q.lt('played_at', until) : q;
   };
   const rt = () => {
