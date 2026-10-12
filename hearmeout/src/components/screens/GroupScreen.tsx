@@ -16,6 +16,8 @@ const AWARD_LABEL_KEY: Record<string, string> = {
   awardHarshestCritic: 'groups.awardHarshestCritic',
   awardGenreExplorer: 'groups.awardGenreExplorer',
   awardStreak: 'groups.awardStreak',
+  awardScout: 'groups.awardScout',
+  awardStuck: 'groups.awardStuck',
 };
 
 // Group page (spec 6.6): a real full-screen route reached via viewGroup,
@@ -157,7 +159,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
           {detail.awards.length ? detail.awards.map((a, i) => (
             <div className="row" key={i}>
               {a.winner && <Av u={a.winner} />}
-              <span className="g"><b>{t(AWARD_LABEL_KEY[a.label] as never)}</b><small className="muted" style={{ fontWeight: 600 }}>{a.winner?.name} · {a.detail}</small></span>
+              <span className="g"><b>{t(AWARD_LABEL_KEY[a.label] as never)}</b><small className="muted" style={{ fontWeight: 600 }}>{a.winner?.name} · {a.label === 'awardScout' ? t('groups.awardScoutDetail', { n: Number(a.detail) }) : a.detail}</small></span>
             </div>
           )) : <p className="muted" style={{ fontWeight: 600 }}>{t('groups.noAwardsYet')}</p>}
           {detail.pastAwards.length > 0 && (

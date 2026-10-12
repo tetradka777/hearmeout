@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ApiUser, NowPlaying, PublicProfile } from './types';
 import { isDemoAccountId } from './demoAccounts';
-import { computeMonthAwards } from './monthAwards';
+import { computeMonthAwards, type AwardEvent } from './monthAwards';
 import { DEFAULT_PRIVACY, fetchPrivacy } from './privacy';
 import { fetchAllRows } from './supabasePaginate';
 
@@ -52,12 +52,12 @@ async function fetchCircleAwards(admin: SupabaseClient, userId: string, friends:
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
   const [{ data: events }, { data: monthRatings }] = await Promise.all([
-    fetchAllRows((f, t) => admin.from('listening_events').select('user_id, played_at, duration_ms, genre').in('user_id', ids).gte('played_at', monthStart.toISOString()).order('id').range(f, t)).then((r) => ({ data: r.rows })),
+    fetchAllRows((f, t) => admin.from('listening_events').select('user_id, played_at, duration_ms, genre, track_id, track_title, artist, album_id').in('user_id', ids).gte('played_at', monthStart.toISOString()).order('id').range(f, t)).then((r) => ({ data: r.rows })),
     fetchAllRows((f, t) => admin.from('ratings').select('user_id, stars').in('user_id', ids).gte('created_at', monthStart.toISOString()).order('id').range(f, t)).then((r) => ({ data: r.rows })),
   ]);
   const userById = new Map(circle.map((u) => [u.id, u] as const));
   return computeMonthAwards(
-    (events || []) as { user_id: string; played_at: string; duration_ms: number | null; genre: string | null }[],
+    (events || []) as AwardEvent[],
     (monthRatings || []) as { user_id: string; stars: number }[],
     userById,
   )
