@@ -815,3 +815,8 @@
 .rd .nudge11{flex-wrap:wrap}
 .rd .nudge11 .g{flex:1 1 220px}
 .rd .nudge11 .na11{flex:1 0 100%;margin-top:4px}
+
+/* App adjustments: award names are already written as they should read
+   (no Title Case), and long Russian words wrap at syllables, not mid-letter. */
+.rd .awc9 b{text-transform:none;font-size:15px;overflow-wrap:normal;word-break:normal;hyphens:auto}
+.rd .aw9 b{overflow-wrap:normal;word-break:normal;hyphens:auto}

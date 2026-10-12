@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { fmt1 } from '@/lib/numberFormat';
+import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { PROFILE_TAB_EVENT, takeRecentEvent } from '@/lib/uiEvents';
 import { useApp } from '@/lib/AppContext';
 import { squareImageDataUrl } from '@/lib/imageResize';
 import { invitePath } from '@/lib/pendingInvite';
-import type { Device, RatingRecord, RecapData, StatsData } from '@/lib/types';
+import type { Device, GroupSummary, RatingRecord, RecapData, StatsData } from '@/lib/types';
 import { userAvatarStyle, formatJoinDate, formatRelative } from '@/lib/format';
 import { toLocale, quoted } from '@/lib/i18n';
 import { LovedTracksColumn, LovedAlbumsColumn, LovedArtistsColumn } from '../ProfileBlocks';
@@ -18,7 +18,9 @@ import type { TranslationKey } from '@/lib/i18n';
 import { LaterRow, useLaterPlay } from './LaterScreen';
 import { RegionInput } from '../RegionInput';
 import { Initial } from '../ui/Initial';
-import { cachedJson, peekJson } from '@/lib/cachedJson';
+import { cachedJson, peekJson, useCachedJson } from '@/lib/cachedJson';
+import { AwardGallery } from '../AwardGallery';
+import { useAlbum } from '@/lib/useAlbum';
 
 type ProfileTab = 'ratings' | 'reviews' | 'loved' | 'later' | 'taste' | 'awards' | 'listening' | 'friends';
 const TAB_ORDER: ProfileTab[] = ['ratings', 'reviews', 'loved', 'later', 'taste', 'awards', 'listening', 'friends'];
@@ -265,24 +267,21 @@ function AwardsTab({ onGoToFriends }: { onGoToFriends: () => void }) {
   const who = (p: Person) => (p.id === me.id ? t('profile.you') : p.name);
   return (
     <div className="bento b3">
-      <div className="tile">
+      <div className="tile s2">
         <h2>{t('profile.yourAwards')}</h2>
-        <div className="chips" style={{ margin: 0 }}>
-          {data === null ? <span className="muted">{t('awards.computing')}</span>
-            : data.mine.length ? data.mine.map((a) => <span className="chip on" key={a}>{t(`groups.${a}` as TranslationKey)}</span>)
-            : <span className="muted" style={{ fontWeight: 600 }}>{t('recap.noAwards')}</span>}
-        </div>
+        <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 12px' }}>{t('profile.awardsSub')}</p>
+        {data === null ? <span className="muted">{t('awards.computing')}</span> : <AwardGallery earned={data.mine} showLocked />}
       </div>
-      <div className="tile s2 t-soft2">
+      <div className="tile t-soft2">
         <h2>{t('profile.monthAwards')}</h2>
         {data && data.minutes && data.niche ? (
           <>
             <div className="row">
-              <span className="dot" style={userAvatarStyle(data.minutes)}>{!data.minutes.avatarUrl && data.minutes.name[0]}</span>
+              <span className="gl9 sm" aria-hidden="true"><i className="ic ic-clock" /></span>
               <span className="g"><b>{t('awards.mostMinutes')}</b><small className="muted" style={{ fontWeight: 600 }}>{who(data.minutes)} · {t('profile.hoursN', { n: data.minutes.v })}</small></span>
             </div>
             <div className="row">
-              <span className="dot" style={userAvatarStyle(data.niche)}>{!data.niche.avatarUrl && data.niche.name[0]}</span>
+              <span className="gl9 sm" aria-hidden="true"><i className="ic ic-gem" /></span>
               <span className="g"><b>{t('awards.mostNiche')}</b><small className="muted" style={{ fontWeight: 600 }}>{who(data.niche)} · {t('profile.uniqueArtistsN', { n: data.niche.v })}</small></span>
             </div>
           </>
@@ -301,17 +300,35 @@ function AwardsTab({ onGoToFriends }: { onGoToFriends: () => void }) {
 function ListeningTab() {
   const { t, language, me, openAlbum } = useApp();
   const [plays, setPlays] = useState<{ title: string; artist: string; cover: string | null; playedAt: string; albumId: string | null }[] | null>(null);
+  const [week, setWeek] = useState<StatsData | null>(null);
   useEffect(() => {
     if (!me) return;
     let cancelled = false;
     const url = `/api/stats?period=week&weekStart=${me.weekStart}`;
     const stored = peekJson<StatsData>(url);
-    if (stored) setPlays(stored.recentPlays ?? []);
-    cachedJson<StatsData>(url).then((d) => { if (!cancelled) setPlays(d?.recentPlays ?? []); });
+    if (stored) { setPlays(stored.recentPlays ?? []); setWeek(stored); }
+    cachedJson<StatsData>(url).then((d) => { if (!cancelled) { setPlays(d?.recentPlays ?? []); setWeek(d); } });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [me?.id]);
   return (
+    <>
+    {/* This week at a glance (rev 9c). */}
+    {week && week.hours > 0 && (
+      <div className="tile t-pop" style={{ marginBottom: 14 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+          <div>
+            <small className="k9">{t('profile.thisWeek')}</small>
+            <div className="vsline">
+              <div><span className="num" style={{ fontSize: 44 }}>{fmtHours(week.hours)}{t('unit.h')}</span><br /><small style={{ fontWeight: 700 }}>{t('recap.listened')}</small></div>
+              <div><span className="num" style={{ fontSize: 44 }}>{week.newArtistCount}</span><br /><small style={{ fontWeight: 700 }}>{t('recap.newArtists')}</small></div>
+              {week.peakHour != null && <div><span className="num" style={{ fontSize: 44 }}>{String(week.peakHour).padStart(2, '0')}:00</span><br /><small style={{ fontWeight: 700 }}>{t('stats.peakHour')}</small></div>}
+            </div>
+          </div>
+          <div style={{ flex: 1, minWidth: 200, maxWidth: 340 }}><WeekBars bars={week.bars} /></div>
+        </div>
+      </div>
+    )}
     <div className="tile">
       {plays === null ? <p className="muted">{t('stats.loading')}</p> : plays.length ? plays.slice(0, 8).map((p, i) => (
         <button className="row" key={i} onClick={() => p.albumId && openAlbum(p.albumId)} style={{ cursor: p.albumId ? 'pointer' : 'default' }}>
@@ -327,6 +344,18 @@ function ListeningTab() {
         </>
       )}
     </div>
+    </>
+  );
+}
+
+// A week of hours as small bars with the day initials under them.
+function WeekBars({ bars }: { bars: StatsData['bars'] }) {
+  const mx = Math.max(0.1, ...bars.map((b) => b.hours));
+  return (
+    <>
+      <span className="b9" aria-hidden="true">{bars.map((b, i) => <i key={i} style={{ height: `${Math.round((b.hours / mx) * 100)}%`, opacity: b.future ? 0.3 : undefined }} />)}</span>
+      <span className="m9" aria-hidden="true">{bars.map((b, i) => <span key={i}>{b.label.slice(0, 1)}</span>)}</span>
+    </>
   );
 }
 
@@ -443,8 +472,36 @@ function FriendsTab() {
   );
 }
 
+// Ratings by whole star, as small bars (the Ratings history tile).
+function RatingHistogram({ stars }: { stars: number[] }) {
+  const hist = [0, 0, 0, 0, 0];
+  for (const v of stars) hist[Math.min(4, Math.max(0, Math.ceil(v) - 1))]++;
+  const mx = Math.max(1, ...hist);
+  return (
+    <>
+      <span className="b9 inv" aria-hidden="true">{hist.map((v, i) => <i key={i} style={{ height: `${Math.round((v / mx) * 100)}%` }} />)}</span>
+      <span className="m9" aria-hidden="true"><span>1<i className="ic ic-star" /></span><span>5<i className="ic ic-star" /></span></span>
+    </>
+  );
+}
+
+// A group on the profile's Groups tile: the leading vote's cover, the name, three members.
+function GroupLine({ g }: { g: GroupSummary }) {
+  const album = useAlbum(g.leadingVote ?? g.coverAlbumIds?.[0] ?? null);
+  const shown = g.members.slice(0, 3);
+  return (
+    <span className="gr9">
+      <span className="gcv"><CoverArt url={album?.cover} fallbackLetter={g.name[0] || '?'} className="cov" px={28} style={{ width: 28, height: 28 }} /></span>
+      <b>{g.name}</b>
+      <span className="stk9" aria-hidden="true">{shown.map((m) => <span key={m.id} className="dot" style={userAvatarStyle(m)}>{!m.avatarUrl && m.name[0]}</span>)}{g.members.length > 3 && <span className="dot more">+{g.members.length - 3}</span>}</span>
+    </span>
+  );
+}
+
 export function ProfileScreen(_props: { device: Device }) {
   const { t, language, me, myRatings, updateProfileName, updateProfileHandle, updateAvatar, showScreen, viewHistory, friendRequests, showToast } = useApp();
+  const weekStats = useCachedJson<StatsData>(me ? `/api/stats?period=week&weekStart=${me.weekStart}` : null).data;
+  const myGroups = useCachedJson<GroupSummary[]>('/api/groups').data;
   const [tab, setTab] = useState<ProfileTab>('ratings');
   const incomingRequests = friendRequests.incoming.length;
   // The avatar menu's "Friend requests" item lands here on the friends tab.
@@ -532,13 +589,16 @@ export function ProfileScreen(_props: { device: Device }) {
 
       <div className="bento" style={{ margin: '14px 0' }}>
         <button className="tile t-ac" style={{ textAlign: 'left' }} onClick={() => viewHistory('profile')}>
-          <h3>{t('profile.quickHistory')}</h3><p style={{ fontWeight: 600, marginTop: 4 }}>{t('profile.quickHistorySub')}</p>
+          <h3>{t('profile.quickHistory')}</h3><p style={{ fontWeight: 600, marginTop: 4 }}>{myRatings.length ? `${t('profile.ratedN', { n: myRatings.length })} · ` : ''}{t('profile.quickHistorySub')}</p>
+          {myRatings.length > 0 && <RatingHistogram stars={myRatings.map((r) => r.stars)} />}
         </button>
         <button className="tile t-pop" style={{ textAlign: 'left' }} onClick={() => showScreen('stats')}>
-          <h3>{t('profile.quickStats')}</h3><p className="muted" style={{ fontWeight: 600, marginTop: 4 }}>{t('profile.quickStatsSub')}</p>
+          <h3>{t('profile.quickStats')}</h3><p style={{ fontWeight: 600, marginTop: 4 }}>{weekStats && weekStats.hours > 0 ? `${t('profile.hoursWeek', { h: fmtHours(weekStats.hours) })} · ` : ''}{t('profile.quickStatsSub')}</p>
+          {weekStats && weekStats.hours > 0 && <WeekBars bars={weekStats.bars} />}
         </button>
         <button className="tile" style={{ textAlign: 'left' }} onClick={() => showScreen('groups')}>
           <h3>{t('profile.quickGroups')}</h3><p className="muted" style={{ fontWeight: 600, marginTop: 4 }}>{t('profile.quickGroupsSub')}</p>
+          {(myGroups || []).slice(0, 3).map((g) => <GroupLine key={g.id} g={g} />)}
         </button>
         <div className="tile t-soft2">
           <h3>{t('profile.quickSettings')}</h3>

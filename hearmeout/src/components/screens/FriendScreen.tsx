@@ -8,8 +8,9 @@ import { formatRelative, userAvatarStyle } from '@/lib/format';
 import { computeMatch } from '@/lib/matchScore';
 import { cachedJson, peekJson } from '@/lib/cachedJson';
 import { CoverArt } from '../ui/CoverArt';
-import { toLocale, pluralForKey, type TranslationKey } from '@/lib/i18n';
+import { pluralForKey } from '@/lib/i18n';
 import { sinceLabel } from './GroupsScreen';
+import { AwardGallery } from '../AwardGallery';
 import { isDemoAccountId } from '@/lib/demoAccounts';
 import { BlendButton } from '../BlendButton';
 import { MascotIcon } from '../redesign/icons';
@@ -402,9 +403,9 @@ export function FriendScreen({ device: _device }: { device: Device }) {
 
         <div className="tile">
           <h2>{t('friend.awards')}</h2>
-          <div className="chips" style={{ margin: 0 }}>
+          <div>
             {f.awards?.length
-              ? f.awards.map((aw) => <span className="chip on" key={aw.label}>{t(`groups.${aw.label}` as TranslationKey)}</span>)
+              ? <AwardGallery earned={f.awards.map((aw) => aw.label)} />
               : <span className="muted" style={{ fontWeight: 600 }}>{t('friend.noAwards')}</span>}
           </div>
         </div>
