@@ -8,6 +8,7 @@ import { userAvatarStyle } from '@/lib/format';
 import { toLocale, pluralForKey, type Language, type TranslationKey, quoted } from '@/lib/i18n';
 import { recapLine } from '@/lib/recapLine';
 import { completedWeekRange, isoWeekNumber } from '@/lib/weeks';
+import { markRecapSeen } from '@/lib/recapSeen';
 import { parseSeasonKey } from '@/lib/seasons';
 import { drawStoryCard } from '@/lib/posterCanvas';
 import { CoverArt } from '../ui/CoverArt';
@@ -97,6 +98,12 @@ export function RecapScreen(_props: { device: Device }) {
   const weekSong = me ? recapCache[`${me.id}:week`]?.topSongs[0] : undefined;
   const monthSong = me ? recapCache[`${me.id}:month`]?.topSongs[0] : undefined;
   useEffect(() => { if (me) { ensureRecap('me', 'week'); ensureRecap('me', 'month'); } }, [me, ensureRecap]);
+  // Opening your latest week shrinks Home's recap card to one line.
+  useEffect(() => {
+    if (state.activeScreen === 'recap' && isMe && me && period === 'week' && offset === 0) {
+      markRecapSeen(completedWeekRange(0, me.weekStart).start.toISOString().slice(0, 10));
+    }
+  }, [state.activeScreen, isMe, me, period, offset]);
   useEffect(() => {
     for (const s of [autoSong, weekSong, monthSong]) if (s) prefetchQueueTrack({ title: s.title, artist: s.artist, albumId: s.albumId });
   }, [autoSong, weekSong, monthSong]);
