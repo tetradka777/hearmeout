@@ -30,7 +30,7 @@ function useAlbum(albumId: string | null) {
 }
 
 function HeroTile() {
-  const { t, feed, openAlbum, showScreen } = useApp();
+  const { t, feed, showScreen } = useApp();
   const openMatchWith = (friendId: string) => { showScreen('match'); window.dispatchEvent(new CustomEvent(MATCH_FRIEND_EVENT, { detail: friendId })); };
   const hero = feed?.hero || null;
   const album = useAlbum(hero?.albumId || null);
@@ -54,9 +54,7 @@ function HeroTile() {
         <div className="bub b-pop r"><span className="num">{fmt1(hero.theirs)}</span><span className="w">{hero.friend.name}</span></div>
       </div>
       <div className="acts">
-        {/* Prototype: "Defend your rating" opens Rate with the review box focused. */}
-        <button className="btn lg" onClick={() => { openAlbum(album.id); setTimeout(() => document.getElementById('rv')?.focus(), 80); }}>{t('home.defendRating')}</button>
-        <button className="btn ghost lg" onClick={() => openMatchWith(hero.friend.id)}>{t('home.compareWith', { friend: hero.friend.name })}</button>
+        <button className="btn lg" onClick={() => openMatchWith(hero.friend.id)}>{t('home.compareWith', { friend: hero.friend.name })}</button>
       </div>
     </section>
   );
@@ -178,7 +176,8 @@ function FeedSection() {
       </div>
       {filtered.length ? (
         <div className="bento b3">
-          {filtered.map((e, i) => <FeedTile key={i} event={e} />)}
+          {/* Two at most: each tile is big, more pushed the rest of Home far down. */}
+          {filtered.slice(0, 2).map((e, i) => <FeedTile key={i} event={e} />)}
         </div>
       ) : (
         <div className="tile s2 empty">
