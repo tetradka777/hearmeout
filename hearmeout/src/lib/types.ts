@@ -222,6 +222,8 @@ export type StatsData = {
   // Every artist played at least twice in the window, most played first
   // (up to 300): for "shared artists" (lib/sharedArtists).
   artistNames?: string[];
+  // Top albums by time listened in the window (rev 11 Stats).
+  topAlbums?: { albumId: string; title: string; artist: string; cover: string | null; hours: number }[];
   heatmap: number[]; // 24 buckets (hour of day), play counts
   peakHour: number | null;
   genreSplit: { genre: string; pct: number }[];

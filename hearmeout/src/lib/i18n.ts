@@ -1157,6 +1157,10 @@ const ru = {
   'match.colAlbum': 'Альбом',
   'match.colGap': 'разница',
   'match.same': 'совпали',
+  'stats.topAlbums': 'Топ альбомов',
+  'stats.topAlbumsSub': 'по времени прослушивания',
+  'stats.youRated': 'ты: {score}',
+  'stats.notRated': 'без оценки',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2310,6 +2314,10 @@ const en: Dict = {
   'match.colAlbum': 'Album',
   'match.colGap': 'gap',
   'match.same': 'same',
+  'stats.topAlbums': 'Top albums',
+  'stats.topAlbumsSub': 'by listening time',
+  'stats.youRated': 'you {score}',
+  'stats.notRated': 'not rated',
 };
 
 const fr: Dict = {
@@ -3460,6 +3468,10 @@ const fr: Dict = {
   'match.colAlbum': 'Album',
   'match.colGap': 'écart',
   'match.same': 'pareil',
+  'stats.topAlbums': 'Top albums',
+  'stats.topAlbumsSub': 'par temps d’écoute',
+  'stats.youRated': 'toi : {score}',
+  'stats.notRated': 'pas noté',
 };
 
 const es: Dict = {
@@ -4610,6 +4622,10 @@ const es: Dict = {
   'match.colAlbum': 'Álbum',
   'match.colGap': 'diferencia',
   'match.same': 'igual',
+  'stats.topAlbums': 'Top álbumes',
+  'stats.topAlbumsSub': 'por tiempo de escucha',
+  'stats.youRated': 'tú: {score}',
+  'stats.notRated': 'sin valorar',
 };
 
 const de: Dict = {
@@ -5760,6 +5776,10 @@ const de: Dict = {
   'match.colAlbum': 'Album',
   'match.colGap': 'Abstand',
   'match.same': 'gleich',
+  'stats.topAlbums': 'Top-Alben',
+  'stats.topAlbumsSub': 'nach Hördauer',
+  'stats.youRated': 'du: {score}',
+  'stats.notRated': 'nicht bewertet',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };
