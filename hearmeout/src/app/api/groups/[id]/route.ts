@@ -322,6 +322,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
         avgMatch: Math.round(pairs.reduce((s, p) => s + p.pct, 0) / pairs.length),
         closest: [...pairs].sort((a, b) => b.pct - a.pct)[0],
         furthest: [...pairs].sort((a, b) => a.pct - b.pct)[0],
+        pairs: pairs.map((p) => ({ a: p.a.id, b: p.b.id, pct: p.pct })),
       }
     : null;
 
