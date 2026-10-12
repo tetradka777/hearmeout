@@ -3,12 +3,12 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
-import type { ApiUser, Device, DiscoverMatchPerson, GroupSummary, PublicProfile, StatsData } from '@/lib/types';
+import type { ApiUser, Device, DiscoverMatchPerson, PublicProfile, StatsData } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
 import { computeMatch } from '@/lib/matchScore';
 import { cachedJson, peekJson, useCachedJson } from '@/lib/cachedJson';
 import { sharedArtists } from '@/lib/sharedArtists';
-import { toLocale, pluralForKey } from '@/lib/i18n';
+import { toLocale } from '@/lib/i18n';
 import { CoverArt } from '../ui/CoverArt';
 import { MascotIcon } from '../redesign/icons';
 import { BlendButton } from '../BlendButton';
@@ -53,10 +53,9 @@ function useCountUp(target: number | null, replayKey: unknown): number | null {
 // numbers here are real (computeMatch, shared ratings, /api/stats), unlike
 // the prototype's own hardcoded demo data.
 export function MatchScreen(_props: { device: Device }) {
-  const { t, language, me, state, myRatings, albums, liveAlbums, spotifyCovers, openAlbum, viewFriend, viewGroup, showScreen, addFriend, friendRequests } = useApp();
+  const { t, language, me, state, myRatings, albums, liveAlbums, spotifyCovers, openAlbum, viewFriend, showScreen, addFriend, friendRequests } = useApp();
   const [rawInfo, setRawInfo] = useState<Record<string, RawInfo>>({});
   // All from the shared cache (lib/cachedJson): shown at once, refreshed.
-  const groups = useCachedJson<GroupSummary[]>('/api/groups').data;
   const discover = useCachedJson<{ people: DiscoverMatchPerson[] }>(me ? '/api/match/discover' : null).data?.people ?? null;
   const myStats6m = useCachedJson<StatsData>(me ? '/api/stats?range=6m' : null).data;
   const myWeek = useCachedJson<StatsData>(me ? '/api/stats?period=week' : null).data;
@@ -155,11 +154,19 @@ export function MatchScreen(_props: { device: Device }) {
     ? new Date(history[0].date).toLocaleDateString(toLocale(language), language === 'ru' ? { day: 'numeric', month: 'long' } : { month: 'long' })
     : '';
 
-  const leaderboard = [
-    { id: 'me', name: t('friend.you'), hours: myWeekHours ?? 0 },
-    ...ranked.map((f) => ({ id: f.id, name: f.name, hours: info[f.id]?.weekHours ?? 0 })),
+  const leaderboard: { id: string; name: string; hours: number; user: ApiUser | null }[] = [
+    { id: 'me', name: t('friend.you'), hours: myWeekHours ?? 0, user: me },
+    ...ranked.map((f) => ({ id: f.id, name: f.name, hours: info[f.id]?.weekHours ?? 0, user: f })),
   ].sort((a, b) => b.hours - a.hours);
   const maxHours = Math.max(1, ...leaderboard.map((l) => l.hours));
+  // How far you are from first, and the minutes a day that would close it
+  // by the end of the week (days left counted from today).
+  const myRank = leaderboard.findIndex((l) => l.id === 'me');
+  const leader = leaderboard[0];
+  const daysLeft = (() => { const dow = new Date().getDay(); return me.weekStart === 'sun' ? 7 - dow : dow === 0 ? 1 : 8 - dow; })();
+  const gapHint = myRank > 0 && leader.hours > 0
+    ? t('match.gapHint', { h: fmtHours(Math.round((leader.hours - leaderboard[myRank].hours) * 10) / 10), name: leader.name, m: Math.max(1, Math.round(((leader.hours - leaderboard[myRank].hours) * 60) / daysLeft)) })
+    : myRank === 0 && leaderboard.length > 1 && leader.hours > 0 ? t('match.leadHint', { h: fmtHours(Math.round((leader.hours - leaderboard[1].hours) * 10) / 10) }) : null;
 
   return (
     <>
@@ -238,79 +245,72 @@ export function MatchScreen(_props: { device: Device }) {
               <BlendButton me={me.id} friend={active.id} friendName={active.name.split(' ')[0]} matchPct={pct} />
             </div>
           )}
-          <div className="tile">
-            <h2>{t('match.weeklyLeaderboard')}</h2>
-            <>
-              {leaderboard.map((l, i) => (
-                <div className="row" key={l.id}>
-                  <span className="num" style={{ fontSize: 28, width: 20 }}>{i + 1}</span>
-                  <b style={{ width: 64 }}>{l.name}</b>
-                  <div className="meter"><i style={{ width: `${(l.hours / maxHours) * 100}%` }} /></div>
-                  <b style={{ width: 44, textAlign: 'right' }}>{fmtHours(l.hours)}{t('unit.h')}</b>
-                </div>
-              ))}
-            </>
+          {/* Weekly leaderboard (rev 11): rank, who, a bar, hours, and how far you are from first. */}
+          <div className="tile lb10">
+            <div className="hd10"><div><h2 style={{ margin: 0 }}>{t('match.weeklyLeaderboard')}</h2><small className="muted" style={{ fontWeight: 700 }}>{t('match.leaderboardSub')}</small></div></div>
+            {leaderboard.map((l, i) => (
+              <div className="row" key={l.id}>
+                <span className="rk11">{i + 1}</span>
+                <span className="dot" style={l.user ? userAvatarStyle(l.user) : undefined}>{l.user ? !l.user.avatarUrl && l.user.name[0] : t('friend.you')[0]}</span>
+                <span className="g"><b>{l.name}</b><span className="meter" style={{ display: 'block', marginTop: 5 }}><i style={{ width: `${(l.hours / maxHours) * 100}%` }} /></span></span>
+                <b style={{ fontSize: 20, minWidth: 48, textAlign: 'right' }}>{fmtHours(l.hours)}{t('unit.h')}</b>
+              </div>
+            ))}
+            {gapHint && <p className="gap10"><i className="ic ic-trend" /><span>{gapHint}</span></p>}
           </div>
         </div>
       </div>
 
       <div className="sec two">
-        <div>
-          <h2>{t('match.yourFriendsByMatch')}</h2>
-          <div className="tile">
-            {ranked.map((f, i) => (
-              <button className="row" key={f.id} onClick={() => { setSelectedId(f.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-                <span className="num" style={{ fontSize: 26, width: 22 }}>{i + 1}</span>
-                <span className="dot" style={userAvatarStyle(f)}>{!f.avatarUrl && f.name[0]}</span>
-                <span className="g"><b>{f.name}</b><small className="muted" style={{ fontWeight: 600 }}>{t('match.sharedArtistsCount', { count: sharedArtistNames(myStats6m, info[f.id]?.stats6m ?? null).length })}</small></span>
-                <span className="num" style={{ fontSize: 32, color: 'var(--acct)' }}>{info[f.id]?.score != null ? `${info[f.id]!.score}%` : '–'}</span>
-              </button>
-            ))}
-          </div>
+        <div className="tile">
+          <div className="hd10"><h2 style={{ margin: 0 }}>{t('match.yourFriendsByMatch')}</h2></div>
+          {ranked.map((f, i) => (
+            <button className="row" key={f.id} onClick={() => { setSelectedId(f.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
+              <span className="rk11">{i + 1}</span>
+              <span className="dot" style={userAvatarStyle(f)}>{!f.avatarUrl && f.name[0]}</span>
+              <span className="g"><b>{f.name}</b><span className="meter" style={{ display: 'block', marginTop: 5 }}><i style={{ width: `${info[f.id]?.score ?? 0}%` }} /></span></span>
+              <b className="num" style={{ fontSize: 26, color: 'var(--acct)' }}>{info[f.id]?.score != null ? `${info[f.id]!.score}%` : '–'}</b>
+            </button>
+          ))}
         </div>
-        <div>
-          <h2>{t('match.discoverTitle')}</h2>
-          <div className="tile t-soft2">
-            {discover !== null && discover.length ? discover.map((p) => (
-              <div className="row" key={p.id}>
-                <button className="rowlink" onClick={() => viewFriend(p.id)}>
-                  <span className="dot" style={userAvatarStyle(p)}>{!p.avatarUrl && p.name[0]}</span>
-                  <span className="g"><b>{p.name}</b><small className="muted" style={{ fontWeight: 600 }}>@{p.handle.replace(/^@/, '')} · {t('match.discoverRowSubtitle', { score: p.score, count: p.sharedAlbums })}</small></span>
-                </button>
-                {friendRequests.outgoing.some((r) => r.user.id === p.id)
-                  ? <span className="tag">{t('friend.requestSent')}</span>
-                  : <button className="btn" style={{ padding: '8px 16px' }} onClick={() => addFriend(p.handle)}>{t('friend.addFriend')}</button>}
-              </div>
-            )) : <p className="muted" style={{ fontWeight: 600 }}>{t('match.allFriendsMatched')}</p>}
-          </div>
+        <div className="tile t-soft2">
+          <div className="hd10"><h2 style={{ margin: 0 }}>{t('match.discoverTitle')}</h2></div>
+          {discover !== null && discover.length ? discover.slice(0, 3).map((p) => (
+            <div className="row" key={p.id}>
+              <button className="rowlink" onClick={() => viewFriend(p.id)}>
+                <span className="dot" style={userAvatarStyle(p)}>{!p.avatarUrl && p.name[0]}</span>
+                <span className="g"><b>{p.name}</b><small className="muted" style={{ fontWeight: 600 }}>{t('match.discoverRowSubtitle', { score: p.score, count: p.sharedAlbums })}</small></span>
+              </button>
+              {friendRequests.outgoing.some((r) => r.user.id === p.id)
+                ? <span className="tag">{t('friend.requestSent')}</span>
+                : <button className="btn" style={{ padding: '8px 16px' }} onClick={() => addFriend(p.handle)}>{t('friend.addFriend')}</button>}
+            </div>
+          )) : <p className="muted" style={{ fontWeight: 600 }}>{t('match.allFriendsMatched')}</p>}
         </div>
       </div>
 
-      <div className="sec">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
-          <h2 style={{ margin: 0 }}>{t('groups.yourGroups')}</h2>
-          <button className="btn ghost" onClick={() => showScreen('groups')}>{t('groups.openAll')}</button>
-        </div>
-        {groups === null ? (
-          <p className="muted">{t('groups.loading')}</p>
-        ) : !groups.length ? (
-          <div className="tile empty"><p>{t('groups.noneYet')}</p></div>
-        ) : (
-          <div className="bento b3">
-            {groups.slice(0, 3).map((g) => (
-              <button className="tile gl" key={g.id} onClick={() => viewGroup(g.id)} style={{ textAlign: 'left' }}>
-                <h3>{g.name}</h3>
-                <div style={{ display: 'flex', gap: 6, margin: '12px 0 8px', flexWrap: 'wrap' }}>
-                  {g.members.map((m) => (
-                    <span key={m.id} className="dot" style={userAvatarStyle(m)}>{!m.avatarUrl && m.name[0]}</span>
-                  ))}
-                </div>
-                <small className="muted" style={{ fontWeight: 700 }}>{t('groups.memberCount', { count: g.memberCount, word: pluralForKey(language, g.memberCount, 'groups.memberOne', 'groups.memberFew', 'groups.memberMany') })}{g.newPlays > 0 ? ` · ${t('groups.newPlaysTag', { count: g.newPlays })}` : ''}</small>
-              </button>
-            ))}
+      {/* Everything you both rated (rev 10/11): the biggest gaps first, five rows. */}
+      {gaps.length > 0 && active && (
+        <div className="sec">
+          <div className="tile sh10">
+            <div className="hd10"><h2 style={{ margin: 0 }}>{t('match.bothRatedTitle')}</h2></div>
+            <div className="shh"><span>{t('match.colAlbum')}</span><span>{t('friend.youLower')}</span><span>{active.name}</span><span>{t('match.colGap')}</span></div>
+            {gaps.slice(0, 5).map((g) => {
+              const a = liveAlbums[g.albumId] || albums.find((x) => x.id === g.albumId);
+              const d = Math.abs(g.mine - g.theirs);
+              return (
+                <button className="row" key={g.albumId} onClick={() => openAlbum(g.albumId)}>
+                  <CoverArt url={a ? spotifyCovers[a.id] || a.cover : undefined} fallbackLetter={a?.artist[0] || '?'} className="cov" style={{ width: 40, height: 40 }} />
+                  <span className="g"><b>{a?.title ?? '…'}</b></span>
+                  <b className="n">{fmt1(g.mine)}</b>
+                  <b className="n">{fmt1(g.theirs)}</b>
+                  <span className={`tag${d >= 2 ? ' hot' : d <= 0.5 ? ' same' : ''}`}>{d <= 0.5 ? t('match.same') : fmt1(d)}</span>
+                </button>
+              );
+            })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </>
   );
 }

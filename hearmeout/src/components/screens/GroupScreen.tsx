@@ -25,7 +25,7 @@ const AWARD_LABEL_KEY: Record<string, string> = {
 // Glyphs for the award and record cards (rev 9b; monochrome SVG masks, no emoji).
 const AWARD_ICON: Record<string, string> = {
   awardMostActive: 'bolt', awardNightOwl: 'moon', awardHarshestCritic: 'lens', awardGenreExplorer: 'compass',
-  awardStreak: 'flame', awardScout: 'medal', awardStuck: 'repeat', awardTimeTraveler: 'clock',
+  awardStreak: 'flame', awardScout: 'target', awardStuck: 'repeat', awardTimeTraveler: 'clock',
 };
 const RECORD_ICON: Record<string, string> = {
   recordLongestStreak: 'flame', recordMostRatings: 'star', recordHighestAverage: 'heart',

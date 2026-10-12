@@ -1150,6 +1150,13 @@ const ru = {
   'groups.tasteFurthestLabel': 'дальше всех',
   'groups.pairNames': '{a} и {b}',
   'groups.streakChip': 'серия {n} дн.',
+  'match.gapHint': 'До {name} — {h}ч. Примерно {m} мин в день, и к концу недели первое место твоё.',
+  'match.leadHint': 'Ты на первом месте, отрыв — {h}ч.',
+  'match.leaderboardSub': 'часы прослушивания за неделю',
+  'match.bothRatedTitle': 'Всё, что вы оба оценили',
+  'match.colAlbum': 'Альбом',
+  'match.colGap': 'разница',
+  'match.same': 'совпали',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2296,6 +2303,13 @@ const en: Dict = {
   'groups.tasteFurthestLabel': 'furthest',
   'groups.pairNames': '{a} and {b}',
   'groups.streakChip': '{n}-day streak',
+  'match.gapHint': '{h}h behind {name}. About {m} more minutes a day gets you first by the end of the week.',
+  'match.leadHint': 'You’re first, {h}h ahead.',
+  'match.leaderboardSub': 'hours listened this week',
+  'match.bothRatedTitle': 'Everything you both rated',
+  'match.colAlbum': 'Album',
+  'match.colGap': 'gap',
+  'match.same': 'same',
 };
 
 const fr: Dict = {
@@ -3439,6 +3453,13 @@ const fr: Dict = {
   'groups.tasteFurthestLabel': 'les plus éloignés',
   'groups.pairNames': '{a} et {b}',
   'groups.streakChip': 'série de {n} j',
+  'match.gapHint': '{h} h derrière {name}. Environ {m} min de plus par jour et tu passes premier·e d’ici la fin de la semaine.',
+  'match.leadHint': 'Tu es en tête, avec {h} h d’avance.',
+  'match.leaderboardSub': 'heures d’écoute cette semaine',
+  'match.bothRatedTitle': 'Tout ce que vous avez noté tous les deux',
+  'match.colAlbum': 'Album',
+  'match.colGap': 'écart',
+  'match.same': 'pareil',
 };
 
 const es: Dict = {
@@ -4582,6 +4603,13 @@ const es: Dict = {
   'groups.tasteFurthestLabel': 'los más lejanos',
   'groups.pairNames': '{a} y {b}',
   'groups.streakChip': 'racha de {n} días',
+  'match.gapHint': 'A {h} h de {name}. Unos {m} min más al día y terminas la semana en primer lugar.',
+  'match.leadHint': 'Vas primero, con {h} h de ventaja.',
+  'match.leaderboardSub': 'horas escuchadas esta semana',
+  'match.bothRatedTitle': 'Todo lo que habéis valorado los dos',
+  'match.colAlbum': 'Álbum',
+  'match.colGap': 'diferencia',
+  'match.same': 'igual',
 };
 
 const de: Dict = {
@@ -5725,6 +5753,13 @@ const de: Dict = {
   'groups.tasteFurthestLabel': 'am weitesten',
   'groups.pairNames': '{a} und {b}',
   'groups.streakChip': '{n} Tage am Stück',
+  'match.gapHint': '{h} Std. hinter {name}. Etwa {m} Min. mehr am Tag, und du bist bis Wochenende vorn.',
+  'match.leadHint': 'Du bist vorn, {h} Std. Vorsprung.',
+  'match.leaderboardSub': 'gehörte Stunden diese Woche',
+  'match.bothRatedTitle': 'Alles, was ihr beide bewertet habt',
+  'match.colAlbum': 'Album',
+  'match.colGap': 'Abstand',
+  'match.same': 'gleich',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };
