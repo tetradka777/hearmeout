@@ -7,16 +7,18 @@ import { formatRelative, userAvatarStyle } from '@/lib/format';
 import type { AppNotification, RecapPeriod } from '@/lib/types';
 import type { TranslationKey } from '@/lib/i18n';
 import { CloseIcon } from '../ui/Icons';
+import { CoverArt } from '../ui/CoverArt';
 
 const PERIOD_KEY: Record<RecapPeriod, TranslationKey> = { day: 'recap.day', week: 'recap.week', month: 'recap.month', season: 'recap.season' };
 
 // In-app notifications list (migration 021), opened from the avatar menu.
 // Opening it marks everything read. A "hi" opens the friend's profile, a
-// shared recap opens that friend's recap for the shared period.
+// shared recap opens that friend's recap for the shared period, a new
+// release (migration 028) opens the album.
 // Portaled into .rd for the same reason as the New group modal: screens
 // animate a transform, which would trap position:fixed.
 export function NotificationsModal({ onClose }: { onClose: () => void }) {
-  const { t, language, notifications, markNotificationsRead, viewFriend, openRecap, setRecapOffset } = useApp();
+  const { t, language, notifications, markNotificationsRead, viewFriend, openRecap, setRecapOffset, openAlbum } = useApp();
 
   useEffect(() => {
     markNotificationsRead();
@@ -31,7 +33,11 @@ export function NotificationsModal({ onClose }: { onClose: () => void }) {
 
   const open = (n: AppNotification) => {
     onClose();
-    if (n.kind === 'recap') {
+    if (n.kind === 'release') {
+      if (n.payload.albumId) openAlbum(n.payload.albumId);
+    } else if (!n.actor) {
+      return;
+    } else if (n.kind === 'recap') {
       openRecap(n.actor.id, n.payload.period ?? 'week');
       if (n.payload.offset) setRecapOffset(n.payload.offset);
     } else {
@@ -48,14 +54,18 @@ export function NotificationsModal({ onClose }: { onClose: () => void }) {
         </div>
         {notifications.items.length ? notifications.items.map((n) => (
           <button className="row" key={n.id} onClick={() => open(n)} style={{ width: '100%', textAlign: 'left', fontWeight: n.read ? 600 : 800 }}>
-            <span className="avt" style={{ ...userAvatarStyle(n.actor), width: 34, height: 34, fontSize: 14 }}>{n.actor.name[0]?.toUpperCase()}</span>
+            {n.kind === 'release' || !n.actor
+              ? <CoverArt url={n.payload.cover ?? undefined} fallbackLetter={(n.payload.artist || '?')[0]} className="cov" style={{ width: 34, height: 34, flex: 'none' }} />
+              : <span className="avt" style={{ ...userAvatarStyle(n.actor), width: 34, height: 34, fontSize: 14 }}>{n.actor.name[0]?.toUpperCase()}</span>}
             <span className="g">
-              <b>{n.kind === 'hi'
-                ? t('notify.hiFrom', { name: n.actor.name })
-                : t('notify.recapFrom', { name: n.actor.name, period: t(PERIOD_KEY[n.payload.period ?? 'week']).toLowerCase() })}</b>
+              <b>{n.kind === 'release' || !n.actor
+                ? t('notify.newRelease', { artist: n.payload.artist ?? '', title: n.payload.title ?? '' })
+                : n.kind === 'hi'
+                  ? t('notify.hiFrom', { name: n.actor.name })
+                  : t('notify.recapFrom', { name: n.actor.name, period: t(PERIOD_KEY[n.payload.period ?? 'week']).toLowerCase() })}</b>
               <small className="muted" style={{ fontWeight: 600 }}>{formatRelative(n.createdAt, language)}</small>
             </span>
-            {n.kind === 'recap' && <span className="tag">{t('notify.open')}</span>}
+            {(n.kind === 'recap' || n.kind === 'release') && <span className="tag">{t('notify.open')}</span>}
           </button>
         )) : <p className="muted" style={{ fontWeight: 600 }}>{t('notify.empty')}</p>}
       </div>

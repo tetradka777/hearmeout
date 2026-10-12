@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { maybeRunAutoSync } from '@/lib/autoSync';
 import { maybeSendWeeklyRecaps } from '@/lib/weeklyRecapPush';
+import { maybeNotifyReleases } from '@/lib/releaseNotify';
 
 // Keep-alive target (cron-job.org / UptimeRobot / the GitHub Actions ping):
 // any incoming request keeps Render's free instance awake. Once an hour it
@@ -22,6 +23,8 @@ export async function GET() {
   maybeRunAutoSync();
   // Monday's "weekly recap is ready" push (lib/weeklyRecapPush).
   maybeSendWeeklyRecaps();
+  // New releases by people's artists, every 3 hours (lib/releaseNotify).
+  maybeNotifyReleases();
   if (Date.now() - lastRun > EVERY_MS) {
     lastRun = Date.now();
     try {

@@ -1104,7 +1104,7 @@ const ru = {
   'push.weeklyRecapTitle': 'Рекап недели готов',
   'push.weeklyRecapBody': 'Что ты слушал(а) на прошлой неделе — заходи посмотреть',
   'settings.notifications': 'Уведомления',
-  'settings.notificationsHint': 'Новые заявки в друзья и готовый рекап недели — на этом устройстве.',
+  'settings.notificationsHint': 'Заявки в друзья, рекап недели и новые релизы — на этом устройстве.',
   'settings.notificationsIos': 'На iPhone уведомления работают, когда сайт добавлен на экран «Домой»: Поделиться → «На экран Домой», потом открой его оттуда.',
   'settings.notificationsUnsupported': 'Этот браузер не поддерживает уведомления.',
   'settings.notificationsBlocked': 'Уведомления запрещены в настройках браузера — разреши их для сайта.',
@@ -1113,6 +1113,13 @@ const ru = {
   'groups.awardScout': 'Разведчик',
   'groups.awardStuck': 'Заело',
   'groups.awardScoutDetail': '{n} {n|альбом|альбома|альбомов} раньше всех',
+  'notify.newRelease': 'Новый релиз: {artist} — {title}',
+  'push.newReleaseTitle': 'Новый релиз',
+  'push.newReleaseBody': '{artist} — {title}',
+  'settings.releasesMine': 'Новые релизы моих артистов',
+  'settings.releasesMineHint': 'Тех, кого ты слушаешь чаще всего, и тех, на кого подписан(а).',
+  'settings.releasesPopular': 'Новые релизы популярных артистов',
+  'settings.releasesPopularHint': 'Самые слушаемые артисты в мире.',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2213,7 +2220,7 @@ const en: Dict = {
   'push.weeklyRecapTitle': 'Your weekly recap is ready',
   'push.weeklyRecapBody': 'See what you listened to last week',
   'settings.notifications': 'Notifications',
-  'settings.notificationsHint': 'New friend requests and your weekly recap — on this device.',
+  'settings.notificationsHint': 'Friend requests, your weekly recap and new releases — on this device.',
   'settings.notificationsIos': 'On iPhone, notifications work once the site is on the Home Screen: Share → Add to Home Screen, then open it from there.',
   'settings.notificationsUnsupported': 'This browser doesn’t support notifications.',
   'settings.notificationsBlocked': 'Notifications are blocked in the browser settings — allow them for this site.',
@@ -2222,6 +2229,13 @@ const en: Dict = {
   'groups.awardScout': 'Scout',
   'groups.awardStuck': 'On repeat',
   'groups.awardScoutDetail': '{n} {n|album|albums} before anyone else',
+  'notify.newRelease': 'New release: {artist} — {title}',
+  'push.newReleaseTitle': 'New release',
+  'push.newReleaseBody': '{artist} — {title}',
+  'settings.releasesMine': 'New releases from my artists',
+  'settings.releasesMineHint': 'The artists you play most and the ones you follow.',
+  'settings.releasesPopular': 'New releases from popular artists',
+  'settings.releasesPopularHint': 'The most streamed artists in the world.',
 };
 
 const fr: Dict = {
@@ -3319,7 +3333,7 @@ const fr: Dict = {
   'push.weeklyRecapTitle': 'Ton bilan de la semaine est prêt',
   'push.weeklyRecapBody': 'Découvre ce que tu as écouté la semaine dernière',
   'settings.notifications': 'Notifications',
-  'settings.notificationsHint': 'Nouvelles demandes d’ami et ton bilan de la semaine — sur cet appareil.',
+  'settings.notificationsHint': 'Demandes d’ami, ton bilan de la semaine et les nouvelles sorties — sur cet appareil.',
   'settings.notificationsIos': 'Sur iPhone, les notifications marchent une fois le site sur l’écran d’accueil : Partager → Sur l’écran d’accueil, puis ouvre-le depuis là.',
   'settings.notificationsUnsupported': 'Ce navigateur ne gère pas les notifications.',
   'settings.notificationsBlocked': 'Les notifications sont bloquées dans les réglages du navigateur — autorise-les pour ce site.',
@@ -3328,6 +3342,13 @@ const fr: Dict = {
   'groups.awardScout': 'Éclaireur',
   'groups.awardStuck': 'En boucle',
   'groups.awardScoutDetail': '{n} {n|album|albums} avant tout le monde',
+  'notify.newRelease': 'Nouvelle sortie : {artist} — {title}',
+  'push.newReleaseTitle': 'Nouvelle sortie',
+  'push.newReleaseBody': '{artist} — {title}',
+  'settings.releasesMine': 'Nouvelles sorties de mes artistes',
+  'settings.releasesMineHint': 'Les artistes que tu écoutes le plus et ceux que tu suis.',
+  'settings.releasesPopular': 'Nouvelles sorties des artistes populaires',
+  'settings.releasesPopularHint': 'Les artistes les plus écoutés au monde.',
 };
 
 const es: Dict = {
@@ -4425,7 +4446,7 @@ const es: Dict = {
   'push.weeklyRecapTitle': 'Tu resumen semanal está listo',
   'push.weeklyRecapBody': 'Mira lo que escuchaste la semana pasada',
   'settings.notifications': 'Notificaciones',
-  'settings.notificationsHint': 'Nuevas solicitudes de amistad y tu resumen semanal, en este dispositivo.',
+  'settings.notificationsHint': 'Solicitudes de amistad, tu resumen semanal y nuevos lanzamientos, en este dispositivo.',
   'settings.notificationsIos': 'En iPhone, las notificaciones funcionan cuando el sitio está en la pantalla de inicio: Compartir → Añadir a pantalla de inicio, y ábrelo desde ahí.',
   'settings.notificationsUnsupported': 'Este navegador no admite notificaciones.',
   'settings.notificationsBlocked': 'Las notificaciones están bloqueadas en el navegador: permítelas para este sitio.',
@@ -4434,6 +4455,13 @@ const es: Dict = {
   'groups.awardScout': 'Pionero',
   'groups.awardStuck': 'En bucle',
   'groups.awardScoutDetail': '{n} {n|álbum|álbumes} antes que nadie',
+  'notify.newRelease': 'Nuevo lanzamiento: {artist} — {title}',
+  'push.newReleaseTitle': 'Nuevo lanzamiento',
+  'push.newReleaseBody': '{artist} — {title}',
+  'settings.releasesMine': 'Nuevos lanzamientos de mis artistas',
+  'settings.releasesMineHint': 'Los artistas que más escuchas y los que sigues.',
+  'settings.releasesPopular': 'Nuevos lanzamientos de artistas populares',
+  'settings.releasesPopularHint': 'Los artistas más escuchados del mundo.',
 };
 
 const de: Dict = {
@@ -5531,7 +5559,7 @@ const de: Dict = {
   'push.weeklyRecapTitle': 'Dein Wochenrückblick ist da',
   'push.weeklyRecapBody': 'Sieh dir an, was du letzte Woche gehört hast',
   'settings.notifications': 'Benachrichtigungen',
-  'settings.notificationsHint': 'Neue Freundschaftsanfragen und dein Wochenrückblick – auf diesem Gerät.',
+  'settings.notificationsHint': 'Freundschaftsanfragen, dein Wochenrückblick und neue Releases – auf diesem Gerät.',
   'settings.notificationsIos': 'Auf dem iPhone gehen Benachrichtigungen, wenn die Seite auf dem Home-Bildschirm ist: Teilen → Zum Home-Bildschirm, dann von dort öffnen.',
   'settings.notificationsUnsupported': 'Dieser Browser unterstützt keine Benachrichtigungen.',
   'settings.notificationsBlocked': 'Benachrichtigungen sind im Browser blockiert – erlaube sie für diese Seite.',
@@ -5540,6 +5568,13 @@ const de: Dict = {
   'groups.awardScout': 'Späher',
   'groups.awardStuck': 'Dauerschleife',
   'groups.awardScoutDetail': '{n} {n|Album|Alben} vor allen anderen',
+  'notify.newRelease': 'Neue Veröffentlichung: {artist} – {title}',
+  'push.newReleaseTitle': 'Neue Veröffentlichung',
+  'push.newReleaseBody': '{artist} – {title}',
+  'settings.releasesMine': 'Neue Releases meiner Künstler',
+  'settings.releasesMineHint': 'Die Künstler, die du am meisten hörst, und denen du folgst.',
+  'settings.releasesPopular': 'Neue Releases populärer Künstler',
+  'settings.releasesPopularHint': 'Die meistgestreamten Künstler der Welt.',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };
