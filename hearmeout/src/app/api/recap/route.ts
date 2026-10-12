@@ -6,7 +6,7 @@ import { canViewProfileData } from '@/lib/userProfile';
 import type { RecapData, RecapPeriod } from '@/lib/types';
 import { parseSeasonKey, seasonBounds } from '@/lib/seasons';
 import { completedWeekRange } from '@/lib/weeks';
-import { computeMonthAwards } from '@/lib/monthAwards';
+import { computeMonthAwards, type AwardEvent } from '@/lib/monthAwards';
 import type { ApiUser } from '@/lib/types';
 
 // Finished recaps per viewer + query for a few minutes, like /api/stats.
@@ -162,7 +162,7 @@ async function circleAwards(admin: ReturnType<typeof supabaseAdmin>, userId: str
   const ids = circle.map((u) => u.id);
   // Paged (one request returns at most 1000 rows), each page a fresh query.
   const ev = () => {
-    const q = admin.from('listening_events').select('user_id, played_at, duration_ms, genre').in('user_id', ids).gte('played_at', since);
+    const q = admin.from('listening_events').select('user_id, played_at, duration_ms, genre, track_id, track_title, artist, album_id').in('user_id', ids).gte('played_at', since);
     return until ? q.lt('played_at', until) : q;
   };
   const rt = () => {
@@ -174,7 +174,7 @@ async function circleAwards(admin: ReturnType<typeof supabaseAdmin>, userId: str
     fetchAllRows((f, t) => rt().order('id').range(f, t), 50000, 6),
   ]);
   return computeMonthAwards(
-    (events || []) as { user_id: string; played_at: string; duration_ms: number | null; genre: string | null }[],
+    (events || []) as AwardEvent[],
     (ratings || []) as { user_id: string; stars: number }[],
     new Map(circle.map((u) => [u.id, u] as const)),
   )

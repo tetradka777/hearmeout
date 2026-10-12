@@ -1110,6 +1110,9 @@ const ru = {
   'settings.notificationsBlocked': 'Уведомления запрещены в настройках браузера — разреши их для сайта.',
   'settings.notificationsUnavailable': 'Уведомления пока не настроены на сервере.',
   'settings.notificationsOn': 'Уведомления включены',
+  'groups.awardScout': 'Разведчик',
+  'groups.awardStuck': 'Заело',
+  'groups.awardScoutDetail': '{n} {n|альбом|альбома|альбомов} раньше всех',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2216,6 +2219,9 @@ const en: Dict = {
   'settings.notificationsBlocked': 'Notifications are blocked in the browser settings — allow them for this site.',
   'settings.notificationsUnavailable': 'Notifications aren’t set up on the server yet.',
   'settings.notificationsOn': 'Notifications on',
+  'groups.awardScout': 'Scout',
+  'groups.awardStuck': 'On repeat',
+  'groups.awardScoutDetail': '{n} {n|album|albums} before anyone else',
 };
 
 const fr: Dict = {
@@ -3319,6 +3325,9 @@ const fr: Dict = {
   'settings.notificationsBlocked': 'Les notifications sont bloquées dans les réglages du navigateur — autorise-les pour ce site.',
   'settings.notificationsUnavailable': 'Les notifications ne sont pas encore configurées sur le serveur.',
   'settings.notificationsOn': 'Notifications activées',
+  'groups.awardScout': 'Éclaireur',
+  'groups.awardStuck': 'En boucle',
+  'groups.awardScoutDetail': '{n} {n|album|albums} avant tout le monde',
 };
 
 const es: Dict = {
@@ -4422,6 +4431,9 @@ const es: Dict = {
   'settings.notificationsBlocked': 'Las notificaciones están bloqueadas en el navegador: permítelas para este sitio.',
   'settings.notificationsUnavailable': 'Las notificaciones aún no están configuradas en el servidor.',
   'settings.notificationsOn': 'Notificaciones activadas',
+  'groups.awardScout': 'Pionero',
+  'groups.awardStuck': 'En bucle',
+  'groups.awardScoutDetail': '{n} {n|álbum|álbumes} antes que nadie',
 };
 
 const de: Dict = {
@@ -5525,6 +5537,9 @@ const de: Dict = {
   'settings.notificationsBlocked': 'Benachrichtigungen sind im Browser blockiert – erlaube sie für diese Seite.',
   'settings.notificationsUnavailable': 'Benachrichtigungen sind auf dem Server noch nicht eingerichtet.',
   'settings.notificationsOn': 'Benachrichtigungen an',
+  'groups.awardScout': 'Späher',
+  'groups.awardStuck': 'Dauerschleife',
+  'groups.awardScoutDetail': '{n} {n|Album|Alben} vor allen anderen',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };

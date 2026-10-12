@@ -1,13 +1,74 @@
 import type { ApiUser, GroupAward } from './types';
 
-// The four "real data" monthly awards (most active, night owl, harshest
-// critic, genre explorer) as a pure function of one month's rows for a set
+// A play as the awards read it; the track/album fields feed Scout and Stuck
+// (callers that don't select them just don't get those two).
+export type AwardEvent = {
+  user_id: string;
+  played_at: string;
+  duration_ms: number | null;
+  genre: string | null;
+  track_id?: string | null;
+  track_title?: string | null;
+  artist?: string | null;
+  album_id?: string | null;
+  album?: string | null;
+};
+
+const SCOUT_LEAD_MS = 60 * 60 * 1000;
+const STUCK_MIN_PLAYS = 5;
+
+// Scout: who heard an album first. Counted per album that at least two
+// people played in the window: the one whose first play came before
+// everyone else's by an hour or more (not two friends listening together)
+// scouted it. The most scouted albums wins; detail = how many.
+export function scoutAward(events: AwardEvent[], userById: Map<string, ApiUser>): GroupAward | null {
+  const firstPlay = new Map<string, Map<string, number>>(); // album → user → first play
+  for (const e of events) {
+    const album = e.album_id || (e.album ? `${e.album}\u0000${e.artist ?? ''}` : null);
+    if (!album) continue;
+    const t = new Date(e.played_at).getTime();
+    const byUser = firstPlay.get(album) || new Map<string, number>();
+    if (!byUser.has(e.user_id) || t < byUser.get(e.user_id)!) byUser.set(e.user_id, t);
+    firstPlay.set(album, byUser);
+  }
+  const scouted = new Map<string, number>();
+  for (const byUser of firstPlay.values()) {
+    if (byUser.size < 2) continue;
+    const [first, second] = [...byUser.entries()].sort((a, b) => a[1] - b[1]);
+    if (second[1] - first[1] >= SCOUT_LEAD_MS) scouted.set(first[0], (scouted.get(first[0]) || 0) + 1);
+  }
+  let best: { id: string; n: number } | null = null;
+  for (const [id, n] of scouted) if (!best || n > best.n) best = { id, n };
+  const u = best ? userById.get(best.id) : undefined;
+  return best && u ? { label: 'awardScout', winner: u, detail: String(best.n) } : null;
+}
+
+// Stuck: the most plays of one track by one person in the window (at least
+// five). Detail = "track · N×".
+export function stuckAward(events: AwardEvent[], userById: Map<string, ApiUser>): GroupAward | null {
+  const counts = new Map<string, { user: string; title: string; n: number }>();
+  for (const e of events) {
+    const track = e.track_id || (e.track_title ? `${e.track_title}\u0000${e.artist ?? ''}` : null);
+    if (!track) continue;
+    const key = `${e.user_id}\u0000${track}`;
+    const cur = counts.get(key) || { user: e.user_id, title: e.track_title || '', n: 0 };
+    cur.n += 1;
+    counts.set(key, cur);
+  }
+  let best: { user: string; title: string; n: number } | null = null;
+  for (const c of counts.values()) if (!best || c.n > best.n) best = c;
+  const u = best && best.n >= STUCK_MIN_PLAYS ? userById.get(best.user) : undefined;
+  return best && u ? { label: 'awardStuck', winner: u, detail: `${best.title} · ${best.n}×` } : null;
+}
+
+// The "real data" monthly awards (most active, night owl, harshest critic,
+// genre explorer, scout, stuck) as a pure function of one month's rows for a set
 // of people. Used by the group page (live month and past-months history)
 // and by the friend profile (awards a friend won within their own circle).
 // Leaves out the group page's streak award: a consecutive-day streak isn't
 // bounded by one calendar month the way these are.
 export function computeMonthAwards(
-  monthEvents: { user_id: string; played_at: string; duration_ms: number | null; genre: string | null }[],
+  monthEvents: AwardEvent[],
   monthRatings: { user_id: string; stars: number }[],
   userById: Map<string, ApiUser>
 ): GroupAward[] {
@@ -75,6 +136,11 @@ export function computeMonthAwards(
     const u = userById.get(genreExplorer.id);
     if (u) awards.push({ label: 'awardGenreExplorer', winner: u, detail: String(genreExplorer.count) });
   }
+
+  const scout = scoutAward(monthEvents, userById);
+  if (scout) awards.push(scout);
+  const stuck = stuckAward(monthEvents, userById);
+  if (stuck) awards.push(stuck);
 
   return awards;
 }
