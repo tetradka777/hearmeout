@@ -80,7 +80,7 @@ function AppearanceTab() {
         <div className="optgrid" role="radiogroup" aria-label={t('settings.design')}>
           {DESIGNS.map(([id, name, hint]) => (
             <button key={id} className="optcard" role="radio" aria-checked={me.design === id} onClick={() => updateAppearance({ design: id })}>
-              <span className="chk">✓</span>
+              <span className="chk"><i className="ic ic-check" /></span>
               <DesignPreview design={id} mode={effectiveMode} />
               <b>{name}</b>
               <small className="muted" style={{ fontWeight: 600 }}>{t(hint)}</small>

@@ -39,7 +39,7 @@ function StackCover({ albumId, i }: { albumId: string; i: number }) {
   const px = i === 0 ? 88 : 68;
   return (
     <span className={`c c${i}`} style={{ width: px }}>
-      <CoverArt url={album ? spotifyCovers[album.id] || album.cover : undefined} fallbackLetter={album?.artist[0] || '♪'} className="cov" px={px} style={{ width: px, height: px }} />
+      <CoverArt url={album ? spotifyCovers[album.id] || album.cover : undefined} fallbackLetter={album?.artist[0] || '?'} className="cov" px={px} style={{ width: px, height: px }} />
     </span>
   );
 }

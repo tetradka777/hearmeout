@@ -101,7 +101,7 @@ function RecapCard({ r, week }: { r: RecapData | undefined; week: number }) {
       <span className="rc-top"><span>{eyebrow}</span>{r && <span className="rc-new"><i aria-hidden="true" />{t('home.rcNew')}</span>}</span>
       <span className="rc-stage" aria-hidden="true">
         {covers.map((c, i) => (
-          <span key={c} className={i === 0 ? 'c1' : 'c2'}><CoverArt url={c} fallbackLetter="♪" className="cov" px={116} style={{ width: '100%', aspectRatio: '1' }} /></span>
+          <span key={c} className={i === 0 ? 'c1' : 'c2'}><CoverArt url={c} fallbackLetter="?" className="cov" px={116} style={{ width: '100%', aspectRatio: '1' }} /></span>
         ))}
         {award && <span className="rc-stat"><small>{t('home.rcStatus')}</small><b>{t(`groups.${award}` as never)}</b></span>}
       </span>
@@ -120,7 +120,7 @@ function RecapStrip({ r, week }: { r: RecapData; week: number }) {
   const award = r.awards[0];
   return (
     <button className="tile rcstrip" onClick={() => openRecap('me', 'week')}>
-      <span className="mini">{recapCovers(r).map((c) => <CoverArt key={c} url={c} fallbackLetter="♪" className="cov" px={34} style={{ width: 34, aspectRatio: '1' }} />)}</span>
+      <span className="mini">{recapCovers(r).map((c) => <CoverArt key={c} url={c} fallbackLetter="?" className="cov" px={34} style={{ width: 34, aspectRatio: '1' }} />)}</span>
       <span className="tt">{t('home.rcStripTitle', { n: week })}</span>
       <span className="mt">
         {award ? `${t(`groups.${award}` as never)} · ` : ''}{fmtHours(Math.round(r.minutes / 60))}{t('unit.h')} · <span className="x">{r.newArtists} {t('recap.newArtists')} · </span>{r.avgScore != null ? `${fmt1(r.avgScore)} ${t('recap.avgScore')}` : ''}
@@ -148,7 +148,7 @@ function FeedRow({ event }: { event: FeedEvent }) {
       <button className="row fd11" onClick={open}>
         <Dot label={t('friend.you')[0]} />
         <span className="g"><b>{t('home.sessionTitle', { time: minutesLabel(event.minutes, t) })}</b><small className="muted">{t('home.sessionSub', { artists: event.artists, tracks: event.plays })} · {time}</small></span>
-        <CoverArt url={cover} fallbackLetter="♪" className="cov" style={{ width: 44, height: 44 }} />
+        <CoverArt url={cover} fallbackLetter="?" className="cov" style={{ width: 44, height: 44 }} />
       </button>
     );
   }

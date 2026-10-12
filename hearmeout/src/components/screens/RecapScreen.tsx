@@ -220,7 +220,7 @@ export function RecapScreen(_props: { device: Device }) {
       <>
         {top}
         <div className="tile t-soft2 empty" style={{ marginTop: 12 }}>
-          <span className="num" style={{ fontSize: 54 }}>🔒</span>
+          <span className="num" style={{ fontSize: 54 }}><i className="ic ic-lock" /></span>
           <h3>{t('recap.lockedTitle', { name })}</h3>
           <p className="muted" style={{ fontWeight: 600 }}>{t('recap.lockedHint')}</p>
         </div>

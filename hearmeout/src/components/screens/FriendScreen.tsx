@@ -264,7 +264,7 @@ export function FriendScreen({ device: _device }: { device: Device }) {
         <button className="btn ghost" onClick={() => setConfirmRemove(false)}>{t('friend.keep')}</button>
       </span>
     ) : (
-      <button className="btn ghost" onClick={() => setConfirmRemove(true)}>{t('friend.friendsCheck')}</button>
+      <button className="btn ghost" onClick={() => setConfirmRemove(true)}>{t('friend.friendsCheck')} <i className="ic ic-check" /></button>
     )
   ) : outgoing ? (
     <button className="btn ghost" onClick={() => respondToFriendRequest(outgoing.id, 'cancel')}>{t('friend.requestSentCancel')}</button>
@@ -309,7 +309,7 @@ export function FriendScreen({ device: _device }: { device: Device }) {
       <>
         {head}
         <div className="tile t-soft2 empty" style={{ marginTop: 14 }}>
-          <span className="num" style={{ fontSize: 54 }}>🔒</span>
+          <span className="num" style={{ fontSize: 54 }}><i className="ic ic-lock" /></span>
           <h3>{t('friend.closedProfileTitle')}</h3>
           <p className="muted" style={{ fontWeight: 600 }}>{t('friend.lockedHint', { name: f.name })}</p>
         </div>
