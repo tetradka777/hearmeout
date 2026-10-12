@@ -10,7 +10,7 @@ import { Stars, StarSlider } from '../redesign/Stars';
 import { PreviewButton } from '../redesign/PreviewButton';
 import { pluralForKey } from '@/lib/i18n';
 import type { QueueTrack } from '@/lib/PlayerContext';
-import { usePlayer } from '@/lib/PlayerContext';
+import { usePlayer, prefetchQueueTrack } from '@/lib/PlayerContext';
 import { userAvatarStyle } from '@/lib/format';
 import { AlbumReviews } from '../AlbumReviews';
 import { AlbumRatingDistribution } from '../AlbumRatingDistribution';
@@ -117,6 +117,13 @@ export function RateScreen({ device: _device }: { device: Device }) {
   const existingTagsKey = (existing?.tags ?? []).join(',');
   const [tags, setTags] = useState<string[]>(existing?.tags ?? []);
   useEffect(() => setTags(existing?.tags ?? []), [state.currentAlbumId, existingTagsKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  // The first track's preview is looked up when the album opens, so the
+  // big play button starts at once (other tracks: on hover / focus).
+  const firstTrack = a?.tracklist[0];
+  useEffect(() => {
+    if (a && firstTrack) prefetchQueueTrack({ title: firstTrack, artist: a.artist, albumId: a.id, spotifyId: a.spotifyId });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [a?.id, firstTrack]);
   const toggleTag = (id: string) => {
     setTags((cur) => {
       if (cur.includes(id)) return cur.filter((x) => x !== id);
@@ -161,7 +168,7 @@ export function RateScreen({ device: _device }: { device: Device }) {
         const trackSaved = laterItems.some((li) => li.type === 'track' && li.albumId === a.id && li.trackIndex === i);
         return (
           <div className={`row trk${isRowCurrent ? ' cur' : ''}`} key={`${i}-${tr}`}>
-            <button className="rowlink" onClick={() => playQueue(trackQueue, i)} aria-label={t('album.playPreviewOf', { title: tr })}>
+            <button className="rowlink" onClick={() => playQueue(trackQueue, i)} onPointerEnter={() => prefetchQueueTrack(trackQueue[i])} onFocus={() => prefetchQueueTrack(trackQueue[i])} aria-label={t('album.playPreviewOf', { title: tr })}>
               <span className="num" style={{ fontSize: 20, width: 24, opacity: 0.8 }}>{i + 1}</span>
               <span className="g"><b>{tr}</b></span>
               {fmtDur(a.trackDurations?.[i]) && <small className="muted" style={{ fontWeight: 700 }}>{fmtDur(a.trackDurations?.[i])}</small>}

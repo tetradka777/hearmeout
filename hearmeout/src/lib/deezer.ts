@@ -13,11 +13,41 @@ export async function fetchDeezerArtistPhoto(name: string): Promise<string | nul
   }
 }
 
+// Found previews kept for 10 minutes (their links are signed for 15), so a
+// track looked up ahead of time (prefetchTrackPreview) starts at once.
+const PREVIEW_TTL_MS = 10 * 60 * 1000;
+const previewCache = new Map<string, { at: number; promise: Promise<{ title: string; preview: string } | null> }>();
+
 // albumSpotifyId lets the server pick the exact recording from that album.
-export async function fetchTrackPreview(artistName: string, trackTitle: string, albumSpotifyId?: string | null): Promise<{ title: string; preview: string } | null> {
+export function fetchTrackPreview(artistName: string, trackTitle: string, albumSpotifyId?: string | null): Promise<{ title: string; preview: string } | null> {
+  const key = `${artistName}|${trackTitle}|${albumSpotifyId ?? ''}`;
+  const hit = previewCache.get(key);
+  if (hit && Date.now() - hit.at < PREVIEW_TTL_MS) return hit.promise;
   const album = albumSpotifyId ? `&album=${encodeURIComponent(albumSpotifyId)}` : '';
-  const res = await fetch(`/api/deezer/preview?artist=${encodeURIComponent(artistName)}&title=${encodeURIComponent(trackTitle)}${album}`);
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error('request failed');
-  return res.json();
+  const promise = fetch(`/api/deezer/preview?artist=${encodeURIComponent(artistName)}&title=${encodeURIComponent(trackTitle)}${album}`)
+    .then(async (res) => {
+      if (res.status === 404) return null;
+      if (!res.ok) throw new Error('request failed');
+      return res.json() as Promise<{ title: string; preview: string }>;
+    });
+  previewCache.set(key, { at: Date.now(), promise });
+  // A failure isn't kept: the next try asks again.
+  promise.catch(() => previewCache.delete(key));
+  return promise;
+}
+
+// Look a track's preview up now so pressing play doesn't wait for it, and
+// let the browser start downloading the audio too.
+const warmedAudio = new Set<string>();
+export function prefetchTrackPreview(artistName: string, trackTitle: string, albumSpotifyId?: string | null): void {
+  fetchTrackPreview(artistName, trackTitle, albumSpotifyId)
+    .then((tr) => {
+      if (tr?.preview && typeof window !== 'undefined' && !warmedAudio.has(tr.preview)) {
+        warmedAudio.add(tr.preview);
+        const a = new Audio();
+        a.preload = 'auto';
+        a.src = tr.preview;
+      }
+    })
+    .catch(() => {});
 }

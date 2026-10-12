@@ -70,8 +70,8 @@ export function RedesignShell({ children }: { children: ReactNode }) {
   // History lights up "Rate" only when it was opened from the Rate screen
   // (prototype: histFrom === 'rate').
   const activeGroup = state.activeScreen === 'history' ? (state.historyOrigin === 'rate' ? 'rate' : null) : NAV_GROUP[state.activeScreen];
-  const { currentTrack } = usePlayer();
-  const hasPlayer = !!currentTrack;
+  const { currentTrack, quiet } = usePlayer();
+  const hasPlayer = !!currentTrack && !quiet;
   const hasNowPlaying = !!me?.nowPlaying;
 
   return (

@@ -12,7 +12,7 @@ import { parseSeasonKey } from '@/lib/seasons';
 import { drawStoryCard } from '@/lib/posterCanvas';
 import { CoverArt } from '../ui/CoverArt';
 import { CloseIcon } from '../ui/Icons';
-import { usePlayer } from '@/lib/PlayerContext';
+import { prefetchQueueTrack, usePlayer } from '@/lib/PlayerContext';
 
 const PERIODS: RecapPeriod[] = ['day', 'week', 'month', 'season'];
 const PERIOD_KEY: Record<RecapPeriod, TranslationKey> = { day: 'recap.day', week: 'recap.week', month: 'recap.month', season: 'recap.season' };
@@ -48,7 +48,7 @@ export function RecapScreen(_props: { device: Device }) {
     setRecapPeriod, setRecapSeasonKey, setRecapOffset, recapSeasons, openAlbum, openSpotifyArtist,
     viewFriend, openRecap, showScreen, showToast, shareRecapWithFriends,
   } = useApp();
-  const { currentTrack, playing, toggle, playQueue } = usePlayer();
+  const { currentTrack, playing, quiet, toggle, playQueue, close } = usePlayer();
   const targetId = state.recapViewUserId === 'me' ? me?.id : state.recapViewUserId;
   const isMe = state.recapViewUserId === 'me' || (!!me && state.recapViewUserId === me.id);
   const [profile, setProfile] = useState<PublicProfile | null>(null);
@@ -84,17 +84,32 @@ export function RecapScreen(_props: { device: Device }) {
   // Opening a recap plays its song of the period (the most played track)
   // once per recap: switching period or window plays that one's song, and
   // leaving and coming back plays it again. Already playing it: left alone.
-  // A link opened cold may be blocked by the browser's autoplay rule; the
-  // mini-player then just waits for a tap.
+  // It plays quietly (no mini-player: the song tile has its own button) and
+  // stops when you leave the recap. The preview is looked up as soon as the
+  // recap is known, even while the screen is preloading hidden, so it starts
+  // without a wait. A link opened cold may be blocked by the browser's
+  // autoplay rule; the song tile's button then starts it.
   const autoKey = targetId ? recapKey(targetId, period, seasonKey, offset) : null;
   const autoSong = autoKey && !(isSeason && !seasonKey) && !recapLocked[autoKey] ? recapCache[autoKey]?.topSongs[0] : undefined;
   const autoplayed = useRef<string | null>(null);
+  // Also your week's and month's songs (what Home and Stats open), as soon
+  // as those recaps are loaded.
+  const weekSong = me ? recapCache[`${me.id}:week`]?.topSongs[0] : undefined;
+  const monthSong = me ? recapCache[`${me.id}:month`]?.topSongs[0] : undefined;
+  useEffect(() => { if (me) { ensureRecap('me', 'week'); ensureRecap('me', 'month'); } }, [me, ensureRecap]);
   useEffect(() => {
-    if (state.activeScreen !== 'recap') { autoplayed.current = null; return; }
+    for (const s of [autoSong, weekSong, monthSong]) if (s) prefetchQueueTrack({ title: s.title, artist: s.artist, albumId: s.albumId });
+  }, [autoSong, weekSong, monthSong]);
+  useEffect(() => {
+    if (state.activeScreen !== 'recap') {
+      if (autoplayed.current && quiet) close();
+      autoplayed.current = null;
+      return;
+    }
     if (!autoKey || !autoSong || autoplayed.current === autoKey) return;
     autoplayed.current = autoKey;
     if (currentTrack?.title === autoSong.title && currentTrack?.albumId === autoSong.albumId) return;
-    playQueue([{ title: autoSong.title, artist: autoSong.artist, cover: autoSong.cover, albumId: autoSong.albumId }], 0);
+    playQueue([{ title: autoSong.title, artist: autoSong.artist, cover: autoSong.cover, albumId: autoSong.albumId }], 0, { quiet: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.activeScreen, autoKey, autoSong]);
 
