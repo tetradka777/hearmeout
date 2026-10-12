@@ -1140,6 +1140,10 @@ const ru = {
   'home.trendingTitle': 'В тренде у друзей',
   'home.trendingSub': 'больше всего оценок от друзей за неделю',
   'home.trendingFriends': '{n} {n|друг|друга|друзей}',
+  'groups.hoursThisWeek': '{n}ч за неделю',
+  'groups.voteLeads': 'Голосование: лидирует «{album}»',
+  'groups.latestTitle': 'Последнее в твоих группах',
+  'groups.recentRated': '{name} оценил(а) «{album}» на {stars}',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2276,6 +2280,10 @@ const en: Dict = {
   'home.trendingTitle': 'Trending in your circle',
   'home.trendingSub': 'most rated by friends this week',
   'home.trendingFriends': '{n} {n|friend|friends}',
+  'groups.hoursThisWeek': '{n}h this week',
+  'groups.voteLeads': 'Vote: {album} leads',
+  'groups.latestTitle': 'Latest in your groups',
+  'groups.recentRated': '{name} rated {album} {stars}',
 };
 
 const fr: Dict = {
@@ -3409,6 +3417,10 @@ const fr: Dict = {
   'home.trendingTitle': 'Tendance chez tes amis',
   'home.trendingSub': 'les plus notés par tes amis cette semaine',
   'home.trendingFriends': '{n} {n|ami|amis}',
+  'groups.hoursThisWeek': '{n} h cette semaine',
+  'groups.voteLeads': 'Vote : {album} en tête',
+  'groups.latestTitle': 'Du nouveau dans tes groupes',
+  'groups.recentRated': '{name} a noté {album} {stars}',
 };
 
 const es: Dict = {
@@ -4542,6 +4554,10 @@ const es: Dict = {
   'home.trendingTitle': 'Tendencia entre tus amigos',
   'home.trendingSub': 'lo más valorado por tus amigos esta semana',
   'home.trendingFriends': '{n} {n|amigo|amigos}',
+  'groups.hoursThisWeek': '{n} h esta semana',
+  'groups.voteLeads': 'Votación: va primero {album}',
+  'groups.latestTitle': 'Lo último en tus grupos',
+  'groups.recentRated': '{name} valoró {album} con {stars}',
 };
 
 const de: Dict = {
@@ -5675,6 +5691,10 @@ const de: Dict = {
   'home.trendingTitle': 'Im Trend bei deinen Freunden',
   'home.trendingSub': 'diese Woche am häufigsten von Freunden bewertet',
   'home.trendingFriends': '{n} {n|Freund|Freunde}',
+  'groups.hoursThisWeek': '{n} Std. diese Woche',
+  'groups.voteLeads': 'Abstimmung: {album} führt',
+  'groups.latestTitle': 'Neues aus deinen Gruppen',
+  'groups.recentRated': '{name} hat {album} mit {stars} bewertet',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };

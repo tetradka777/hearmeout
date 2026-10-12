@@ -240,7 +240,14 @@ export type StatsData = {
   seasonChips: StatsSeasonChip[];
 };
 
-export type GroupSummary = { id: string; name: string; memberCount: number; newPlays: number; createdAt: string; members: ApiUser[]; topListener: { user: ApiUser; hours: number } | null };
+export type GroupSummary = {
+  id: string; name: string; memberCount: number; newPlays: number; createdAt: string; members: ApiUser[]; topListener: { user: ApiUser; hours: number } | null;
+  // List card (prototype rev 11): the group's best-rated albums lately (for
+  // the cover stack), hours together this week, this month's leading vote
+  // and the latest ratings.
+  coverAlbumIds?: string[]; hoursWeek?: number; leadingVote?: string | null;
+  recent?: { user: ApiUser; albumId: string; stars: number; at: string }[];
+};
 export type GroupMember = ApiUser;
 export type GroupAward = { label: string; winner: ApiUser | null; detail: string };
 export type GroupActivityEvent = {

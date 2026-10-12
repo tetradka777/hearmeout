@@ -18,6 +18,7 @@ import { DEMO_PROFILES } from '@/lib/demoAccounts';
 import { RECAP_SEEN_EVENT, recapSeenWeek } from '@/lib/recapSeen';
 import { ImportNudge } from '../ConnectionBlocks';
 import { PROFILE_TAB_EVENT } from '../redesign/AvatarMenu';
+import { useAlbum } from '@/lib/useAlbum';
 
 // Home (prototype rev 8–11, redesign/v7): the hot take and the week's recap
 // card on top, friends' activity as compact rows in one tile, friends with
@@ -29,13 +30,6 @@ import { PROFILE_TAB_EVENT } from '../redesign/AvatarMenu';
 const RECAP_MIN_TRACKS = 10;
 // Feed rows shown (the account owner asked for at most two).
 const FEED_ROWS = 2;
-
-function useAlbum(albumId: string | null) {
-  const { albums, liveAlbums, ensureLiveAlbum } = useApp();
-  useEffect(() => { if (albumId) ensureLiveAlbum(albumId); }, [albumId, ensureLiveAlbum]);
-  if (!albumId) return null;
-  return liveAlbums[albumId] || albums.find((a) => a.id === albumId) || null;
-}
 
 function Dot({ user, label }: { user?: ApiUser; label?: string }) {
   return <span className="dot" style={user ? userAvatarStyle(user) : undefined}>{user ? (!user.avatarUrl && user.name[0]?.toUpperCase()) : label}</span>;

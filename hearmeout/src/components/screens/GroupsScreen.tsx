@@ -3,7 +3,10 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp } from '@/lib/AppContext';
-import type { Device, GroupSummary } from '@/lib/types';
+import type { ApiUser, Device, GroupSummary } from '@/lib/types';
+import { CoverArt } from '../ui/CoverArt';
+import { useAlbum } from '@/lib/useAlbum';
+import { fmt1 } from '@/lib/numberFormat';
 import { userAvatarStyle } from '@/lib/format';
 import { toLocale, pluralForKey, type Language } from '@/lib/i18n';
 import { MascotIcon } from '../redesign/icons';
@@ -25,6 +28,83 @@ export function sinceLabel(iso: string, language: Language): string {
     label = new Intl.DateTimeFormat(loc, thisYear ? { month: 'long' } : { month: 'long', year: 'numeric' }).format(d);
   }
   return language === 'de' ? label : label.toLowerCase();
+}
+
+// A list card (prototype rev 11): a stack of the group's best-rated albums,
+// the name and new-ratings tag, members and hours this week, the member
+// avatars, and the month's leading vote.
+function StackCover({ albumId, i }: { albumId: string; i: number }) {
+  const { spotifyCovers } = useApp();
+  const album = useAlbum(albumId);
+  const px = i === 0 ? 88 : 68;
+  return (
+    <span className={`c c${i}`} style={{ width: px }}>
+      <CoverArt url={album ? spotifyCovers[album.id] || album.cover : undefined} fallbackLetter={album?.artist[0] || '♪'} className="cov" px={px} style={{ width: px, height: px }} />
+    </span>
+  );
+}
+
+function LeadingVote({ albumId }: { albumId: string }) {
+  const { t } = useApp();
+  const album = useAlbum(albumId);
+  return <>{t('groups.voteLeads', { album: album?.title ?? '…' })}</>;
+}
+
+function GroupCard({ g }: { g: GroupSummary }) {
+  const { t, language, viewGroup } = useApp();
+  const shown = g.members.slice(0, 5);
+  const more = g.members.length - shown.length;
+  return (
+    <button className="tile gl gc11" onClick={() => viewGroup(g.id)}>
+      <span className="gcv11" aria-hidden="true">
+        {(g.coverAlbumIds?.length ? g.coverAlbumIds : []).map((id, i) => <StackCover key={id} albumId={id} i={i} />)}
+        {!g.coverAlbumIds?.length && <span className="c c0" style={{ width: 88 }}><span className="cov" style={{ width: 88, height: 88, display: 'grid', placeItems: 'center' }}><MascotIcon /></span></span>}
+      </span>
+      <span className="gx11">
+        <span style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <h3>{g.name}</h3>
+          {g.newPlays > 0 && <span className="tag" style={{ background: 'var(--acc)', color: 'var(--onacc)' }}>{t('groups.newPlaysTag', { count: g.newPlays })}</span>}
+        </span>
+        <small className="muted" style={{ fontWeight: 700, display: 'block', margin: '4px 0 8px' }}>
+          {t('groups.memberCount', { count: g.memberCount, word: pluralForKey(language, g.memberCount, 'groups.memberOne', 'groups.memberFew', 'groups.memberMany') })} · {t('groups.hoursThisWeek', { n: g.hoursWeek ?? 0 })}
+        </small>
+        <span className="stk9" aria-hidden="true">
+          {shown.map((m) => <span key={m.id} className="dot" style={userAvatarStyle(m)}>{!m.avatarUrl && m.name[0]}</span>)}
+          {more > 0 && <span className="dot more">+{more}</span>}
+        </span>
+        <small className="muted" style={{ fontWeight: 700, display: 'block', marginTop: 10 }}>
+          {g.leadingVote ? <LeadingVote albumId={g.leadingVote} /> : t('groups.voteOpenHint')}
+        </small>
+      </span>
+    </button>
+  );
+}
+
+// "Latest in your groups": the newest ratings across all of them.
+function LatestRow({ user, albumId, stars, group }: { user: ApiUser; albumId: string; stars: number; group: GroupSummary }) {
+  const { t, viewGroup } = useApp();
+  const album = useAlbum(albumId);
+  return (
+    <button className="row" onClick={() => viewGroup(group.id)}>
+      <span className="dot" style={userAvatarStyle(user)}>{!user.avatarUrl && user.name[0]}</span>
+      <span className="g"><b style={{ fontWeight: 700 }}>{t('groups.recentRated', { name: user.name, album: album?.title ?? '…', stars: fmt1(stars) })}</b><small className="muted" style={{ fontWeight: 600 }}>{group.name}</small></span>
+    </button>
+  );
+}
+
+function LatestInGroups({ groups }: { groups: GroupSummary[] }) {
+  const { t } = useApp();
+  const items = groups.flatMap((g) => (g.recent || []).map((r) => ({ ...r, group: g })))
+    .sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, 4);
+  if (!items.length) return null;
+  return (
+    <div className="sec">
+      <div className="tile">
+        <h2>{t('groups.latestTitle')}</h2>
+        {items.map((r) => <LatestRow key={`${r.group.id}-${r.albumId}-${r.at}`} user={r.user} albumId={r.albumId} stars={r.stars} group={r.group} />)}
+      </div>
+    </div>
+  );
 }
 
 // Groups list (spec 6.6 "Groups: list"). Tapping a group opens its own
@@ -93,32 +173,14 @@ export function GroupsScreen(_props: { device: Device }) {
       {groups === null ? (
         <p className="muted">{t('groups.loading')}</p>
       ) : (
-        <div className="bento b3">
-          {groups.map((g) => (
-            <button className="tile gl" key={g.id} onClick={() => viewGroup(g.id)} style={{ textAlign: 'left' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
-                <h3>{g.name}</h3>
-                {g.newPlays > 0 && <span className="tag" style={{ background: 'var(--acc)', color: 'var(--onacc)' }}>{t('groups.newPlaysTag', { count: g.newPlays })}</span>}
-              </div>
-              <div style={{ display: 'flex', margin: '14px 0 10px', gap: 6, flexWrap: 'wrap' }}>
-                {g.members.map((m) => (
-                  <span key={m.id} className="dot" style={userAvatarStyle(m)}>{!m.avatarUrl && m.name[0]}</span>
-                ))}
-              </div>
-              <small className="muted" style={{ fontWeight: 700 }}>{t('groups.memberCount', { count: g.memberCount, word: pluralForKey(language, g.memberCount, 'groups.memberOne', 'groups.memberFew', 'groups.memberMany') })} · {t('groups.since', { date: sinceLabel(g.createdAt, language) })}</small>
-              {g.topListener && (
-                <p style={{ marginTop: 12, fontWeight: 700 }}>{t('groups.listenedMostWeek', { name: g.topListener.user.name, hours: g.topListener.hours })}</p>
-              )}
-              <p className="muted" style={{ fontWeight: 600, marginTop: 2 }}>{t('groups.voteOpenHint')}</p>
-              <span style={{ display: 'inline-block', marginTop: 14, fontWeight: 800 }}>{t('groups.openGroup')} →</span>
-            </button>
-          ))}
-          <button className="tile t-soft2 empty" onClick={openModal} style={{ minHeight: 210 }}>
-            <MascotIcon />
-            <h3>{t('groups.newGroup')}</h3>
-            <p className="muted" style={{ fontWeight: 600 }}>{t('groups.newGroupHint')}</p>
+        <>
+          {groups.length > 0 && <div className="gl11">{groups.map((g) => <GroupCard key={g.id} g={g} />)}</div>}
+          <button className="tile t-soft2 newg11" onClick={openModal}>
+            <span className="avt" style={{ width: 40, height: 40, fontSize: 22 }}>+</span>
+            <span className="g"><b>{t('groups.newGroup')}</b><small className="muted" style={{ fontWeight: 600 }}>{t('groups.newGroupHint')}</small></span>
           </button>
-        </div>
+          <LatestInGroups groups={groups} />
+        </>
       )}
 
       {creating && createPortal(
