@@ -249,7 +249,7 @@ export function MatchScreen(_props: { device: Device }) {
                   <span className="num" style={{ fontSize: 28, width: 20 }}>{i + 1}</span>
                   <b style={{ width: 64 }}>{l.name}</b>
                   <div className="meter"><i style={{ width: `${(l.hours / maxHours) * 100}%` }} /></div>
-                  <b style={{ width: 44, textAlign: 'right' }}>{l.hours}{t('unit.h')}</b>
+                  <b style={{ width: 44, textAlign: 'right' }}>{fmt1(l.hours)}{t('unit.h')}</b>
                 </div>
               ))}
             </>

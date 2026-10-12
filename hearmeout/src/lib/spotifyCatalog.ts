@@ -123,10 +123,21 @@ export async function fetchGenreTopArtists(genreBucket: string, limit = 8, marke
 // bottom-10%-popularity search filter — as the closest real substitute.
 export async function fetchObscureAlbums(genreBucket: string, limit = 10, market?: string | null): Promise<CatalogAlbum[]> {
   const keyword = GENRE_SEARCH_KEYWORD[genreBucket] ?? genreBucket.toLowerCase();
-  const params: Record<string, string> = { q: `tag:hipster ${keyword}`, type: 'album', limit: String(limit) };
-  if (isValidMarket(market)) params.market = market;
-  const data = await spotifyGet('/search', params);
-  return (data.albums?.items || []).map(toCatalogAlbum);
+  // Two pages (development mode caps a page at 10), minus background-noise,
+  // sleep and study albums, which fill the low-popularity end of a search.
+  const page = (offset: number) => {
+    const params: Record<string, string> = { q: `tag:hipster ${keyword}`, type: 'album', limit: '10', offset: String(offset) };
+    if (isValidMarket(market)) params.market = market;
+    return spotifyGet('/search', params).then((d) => (d.albums?.items || []) as Parameters<typeof toCatalogAlbum>[0][]);
+  };
+  const [first, second] = await Promise.all([page(0), page(10).catch(() => [])]);
+  return [...first, ...second].map(toCatalogAlbum).filter((a) => !isFunctionalAudio(a.title, a.artist)).slice(0, limit);
+}
+
+// White/brown noise, sleep, relaxation, study and similar "functional"
+// audio: not music anyone rates.
+export function isFunctionalAudio(title: string, artist: string): boolean {
+  return /\b(white|brown|pink|green) noise\b|\bnoise (for|machine)\b|\bsleep (music|sounds|aid)\b|\bdeep sleep\b|\bfor sleep(ing)?\b|\brelax(ing|ation)\b|meditat|lullab|\basmr\b|rain sounds|nature sounds|ocean waves|binaural|solfeggio|\b\d+ ?hz\b|\bstudy (music|beats)\b|focus music|spa music|\byoga\b|calm(ing)? music|loops for|\bbaby (music|sleep)\b/i.test(`${title} ${artist}`);
 }
 
 // Resolves an arbitrary title/artist pair (e.g. a MusicBrainz release group

@@ -1121,6 +1121,7 @@ const ru = {
   'settings.releasesPopularHint': 'Самые слушаемые артисты в мире.',
   'groups.awardTimeTraveler': 'Путешественник во времени',
   'groups.awardTimeTravelerDetail': 'музыка ≈{year} года',
+  'groups.genresN': '{n} {n|жанр|жанра|жанров}',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2238,6 +2239,7 @@ const en: Dict = {
   'settings.releasesPopularHint': 'The most streamed artists in the world.',
   'groups.awardTimeTraveler': 'Time traveler',
   'groups.awardTimeTravelerDetail': 'music from ≈{year}',
+  'groups.genresN': '{n} {n|genre|genres}',
 };
 
 const fr: Dict = {
@@ -3352,6 +3354,7 @@ const fr: Dict = {
   'settings.releasesPopularHint': 'Les artistes les plus écoutés au monde.',
   'groups.awardTimeTraveler': 'Voyageur temporel',
   'groups.awardTimeTravelerDetail': 'musique de ≈{year}',
+  'groups.genresN': '{n} {n|genre|genres}',
 };
 
 const es: Dict = {
@@ -4466,6 +4469,7 @@ const es: Dict = {
   'settings.releasesPopularHint': 'Los artistas más escuchados del mundo.',
   'groups.awardTimeTraveler': 'Viajero en el tiempo',
   'groups.awardTimeTravelerDetail': 'música de ≈{year}',
+  'groups.genresN': '{n} {n|género|géneros}',
 };
 
 const de: Dict = {
@@ -5580,6 +5584,7 @@ const de: Dict = {
   'settings.releasesPopularHint': 'Die meistgestreamten Künstler der Welt.',
   'groups.awardTimeTraveler': 'Zeitreisender',
   'groups.awardTimeTravelerDetail': 'Musik von ≈{year}',
+  'groups.genresN': '{n} {n|Genre|Genres}',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };

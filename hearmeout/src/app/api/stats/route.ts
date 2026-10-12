@@ -175,7 +175,7 @@ export async function GET(request: NextRequest) {
   // per period. "New artist" needs each artist's first play ever, which
   // comes from a per-user map kept for a while (firstSeenFor).
   const windowStart = prevRange && prevRange.start < range.start ? prevRange.start : range.start;
-  const [{ rows: all, error }, { data: ratings }, firstSeen] = await Promise.all([
+  const [{ rows: all, error }, { data: ratings }, firstSeen, { data: latest }] = await Promise.all([
     fetchAllRows<Row>((from, to) =>
       admin
         .from('listening_events')
@@ -190,6 +190,10 @@ export async function GET(request: NextRequest) {
     ),
     admin.from('ratings').select('stars').eq('user_id', targetUserId),
     firstSeenFor(admin, targetUserId),
+    // "Recently played" is the latest plays whatever the period (on a
+    // Monday the new week is still empty).
+    admin.from('listening_events').select('track_id, track_title, artist, album_id, album, cover_url, played_at')
+      .eq('user_id', targetUserId).order('played_at', { ascending: false }).limit(8),
   ]);
   if (error) return NextResponse.json({ error }, { status: 500 });
 
@@ -272,9 +276,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const recentPlays = [...inRange]
-    .sort((a, b) => new Date(b.played_at).getTime() - new Date(a.played_at).getTime())
-    .slice(0, 8)
+  const recentPlays = (latest || [])
     .map((r) => ({ title: r.track_title || '', artist: r.artist || '', cover: r.cover_url, playedAt: r.played_at, trackId: r.track_id, albumId: r.album_id, album: r.album }));
 
   const bars: StatsData['bars'] = [];

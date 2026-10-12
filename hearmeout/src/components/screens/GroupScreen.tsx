@@ -95,6 +95,20 @@ export function GroupScreen({ device: _device }: { device: Device }) {
   };
 
   const totalHours = detail.leaderboard.reduce((s, r) => s + r.hours, 0);
+  // Award details come from the server as plain numbers ("73.6h", "4d",
+  // "3.6", "9"): shown here with the interface's decimal comma and words.
+  const awardDetail = (label: string, detail: string): string => {
+    const n = parseFloat(detail);
+    switch (label) {
+      case 'awardScout': return t('groups.awardScoutDetail', { n });
+      case 'awardTimeTraveler': return t('groups.awardTimeTravelerDetail', { year: detail });
+      case 'awardMostActive': return `${fmt1(n)}${t('unit.h')}`;
+      case 'awardHarshestCritic': return fmt1(n);
+      case 'awardStreak': return t('groups.daysN', { n });
+      case 'awardGenreExplorer': return t('groups.genresN', { n });
+      default: return detail;
+    }
+  };
   const totalRatingsThisMonth = detail.memberStats.reduce((s, m) => s + m.ratingsMonth, 0);
   const groupAvgScore = detail.memberStats.length ? detail.memberStats.reduce((s, m) => s + m.avgScore, 0) / detail.memberStats.length : 0;
   const statsByUser = new Map(detail.memberStats.map((s) => [s.userId, s]));
@@ -151,7 +165,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
                 {i === 0 && row.hours > 0 && <span className="tag" style={{ background: 'var(--acc)', color: 'var(--onacc)' }}>{t('groups.listenedMostTag')}</span>}
               </span>
               <div className="meter" style={{ flex: '0 1 30%', minWidth: 32 }}><i style={{ width: `${Math.round((row.hours / maxLeader) * 100)}%` }} /></div>
-              <b style={{ width: 52, textAlign: 'right' }}>{row.hours}{t('unit.h')}</b>
+              <b style={{ width: 52, textAlign: 'right' }}>{fmt1(row.hours)}{t('unit.h')}</b>
             </button>
           ))}
         </div>
@@ -161,7 +175,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
           {detail.awards.length ? detail.awards.map((a, i) => (
             <div className="row" key={i}>
               {a.winner && <Av u={a.winner} />}
-              <span className="g"><b>{t(AWARD_LABEL_KEY[a.label] as never)}</b><small className="muted" style={{ fontWeight: 600 }}>{a.winner?.name} · {a.label === 'awardScout' ? t('groups.awardScoutDetail', { n: Number(a.detail) }) : a.label === 'awardTimeTraveler' ? t('groups.awardTimeTravelerDetail', { year: a.detail }) : a.detail}</small></span>
+              <span className="g"><b>{t(AWARD_LABEL_KEY[a.label] as never)}</b><small className="muted" style={{ fontWeight: 600 }}>{a.winner?.name} · {awardDetail(a.label, a.detail)}</small></span>
             </div>
           )) : <p className="muted" style={{ fontWeight: 600 }}>{t('groups.noAwardsYet')}</p>}
           {detail.pastAwards.length > 0 && (
@@ -191,7 +205,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
                     <b>{m.name}{youTag(m.id)}</b>
                     <span className="tag">{m.id === detail.createdBy ? t('groups.owner') : t('groups.member')}</span>
                   </div>
-                  <div className="kv"><span className="muted">{t('groups.figHours')}</span><span>{s ? `${s.hoursMonth}${t('unit.h')}` : '–'}</span></div>
+                  <div className="kv"><span className="muted">{t('groups.figHours')}</span><span>{s ? `${fmt1(s.hoursMonth)}${t('unit.h')}` : '–'}</span></div>
                   <div className="kv"><span className="muted">{t('groups.figRatings')}</span><span>{s ? s.ratingsMonth : '–'}</span></div>
                   <div className="kv"><span className="muted">{t('groups.figStreak')}</span><span>{s ? t('groups.daysN', { n: s.streakDays }) : '–'}</span></div>
                   <div className="kv"><span className="muted">{t('groups.figAvg')}</span><span>{s && s.avgScore ? fmt1(s.avgScore) : '–'}</span></div>
