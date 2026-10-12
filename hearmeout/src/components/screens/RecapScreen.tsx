@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { Device, PublicProfile, RecapData, RecapPeriod } from '@/lib/types';
@@ -80,6 +80,23 @@ export function RecapScreen(_props: { device: Device }) {
     fetch(`/api/users/${targetId}`).then((res) => (res.ok ? res.json() : null)).then((data) => { if (!cancelled) setProfile(data); });
     return () => { cancelled = true; };
   }, [isMe, targetId]);
+
+  // Opening a recap plays its song of the period (the most played track)
+  // once per recap: switching period or window plays that one's song, and
+  // leaving and coming back plays it again. Already playing it: left alone.
+  // A link opened cold may be blocked by the browser's autoplay rule; the
+  // mini-player then just waits for a tap.
+  const autoKey = targetId ? recapKey(targetId, period, seasonKey, offset) : null;
+  const autoSong = autoKey && !(isSeason && !seasonKey) && !recapLocked[autoKey] ? recapCache[autoKey]?.topSongs[0] : undefined;
+  const autoplayed = useRef<string | null>(null);
+  useEffect(() => {
+    if (state.activeScreen !== 'recap') { autoplayed.current = null; return; }
+    if (!autoKey || !autoSong || autoplayed.current === autoKey) return;
+    autoplayed.current = autoKey;
+    if (currentTrack?.title === autoSong.title && currentTrack?.albumId === autoSong.albumId) return;
+    playQueue([{ title: autoSong.title, artist: autoSong.artist, cover: autoSong.cover, albumId: autoSong.albumId }], 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.activeScreen, autoKey, autoSong]);
 
   if (!targetId || !me) return <div className="tile empty"><p>{t('app.loading')}</p></div>;
 
