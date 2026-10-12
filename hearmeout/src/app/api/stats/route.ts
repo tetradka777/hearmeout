@@ -231,6 +231,7 @@ export async function GET(request: NextRequest) {
     .sort((a, b) => b.ms - a.ms)
     .slice(0, 10)
     .map((a) => ({ name: a.name, id: a.id, cover: a.cover, hours: Math.round((a.ms / 3600000) * 10) / 10, plays: a.plays }));
+  const artistNames = [...artistAgg.values()].filter((a) => a.plays >= 2).sort((a, b) => b.plays - a.plays).slice(0, 300).map((a) => a.name);
 
   const genreCounts = new Map<string, number>();
   for (const r of inRange) if (r.genre) genreCounts.set(r.genre, (genreCounts.get(r.genre) || 0) + 1);
@@ -313,7 +314,7 @@ export async function GET(request: NextRequest) {
     comparisonPct,
     comparisonNote,
     hours, trackCount, artistCount, newArtistCount, avgRating, peakHour,
-    topArtists, heatmap: hourCounts, genreSplit, bars, recentPlays,
+    topArtists, artistNames, heatmap: hourCounts, genreSplit, bars, recentPlays,
     calendar: { days, activeDays, totalDays, longestStreak, bestDay },
     seasonChips,
   };

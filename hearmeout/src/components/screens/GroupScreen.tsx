@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { fmt1 } from '@/lib/numberFormat';
+import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import { invitePath } from '@/lib/pendingInvite';
 import type { Device, GroupDetail, GroupLeaderboardPeriod } from '@/lib/types';
@@ -102,7 +102,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
     switch (label) {
       case 'awardScout': return t('groups.awardScoutDetail', { n });
       case 'awardTimeTraveler': return t('groups.awardTimeTravelerDetail', { year: detail });
-      case 'awardMostActive': return `${fmt1(n)}${t('unit.h')}`;
+      case 'awardMostActive': return `${fmtHours(n)}${t('unit.h')}`;
       case 'awardHarshestCritic': return fmt1(n);
       case 'awardStreak': return t('groups.daysN', { n });
       case 'awardGenreExplorer': return t('groups.genresN', { n });
@@ -165,7 +165,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
                 {i === 0 && row.hours > 0 && <span className="tag" style={{ background: 'var(--acc)', color: 'var(--onacc)' }}>{t('groups.listenedMostTag')}</span>}
               </span>
               <div className="meter" style={{ flex: '0 1 30%', minWidth: 32 }}><i style={{ width: `${Math.round((row.hours / maxLeader) * 100)}%` }} /></div>
-              <b style={{ width: 52, textAlign: 'right' }}>{fmt1(row.hours)}{t('unit.h')}</b>
+              <b style={{ width: 52, textAlign: 'right' }}>{fmtHours(row.hours)}{t('unit.h')}</b>
             </button>
           ))}
         </div>
@@ -205,7 +205,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
                     <b>{m.name}{youTag(m.id)}</b>
                     <span className="tag">{m.id === detail.createdBy ? t('groups.owner') : t('groups.member')}</span>
                   </div>
-                  <div className="kv"><span className="muted">{t('groups.figHours')}</span><span>{s ? `${fmt1(s.hoursMonth)}${t('unit.h')}` : '–'}</span></div>
+                  <div className="kv"><span className="muted">{t('groups.figHours')}</span><span>{s ? `${fmtHours(s.hoursMonth)}${t('unit.h')}` : '–'}</span></div>
                   <div className="kv"><span className="muted">{t('groups.figRatings')}</span><span>{s ? s.ratingsMonth : '–'}</span></div>
                   <div className="kv"><span className="muted">{t('groups.figStreak')}</span><span>{s ? t('groups.daysN', { n: s.streakDays }) : '–'}</span></div>
                   <div className="kv"><span className="muted">{t('groups.figAvg')}</span><span>{s && s.avgScore ? fmt1(s.avgScore) : '–'}</span></div>

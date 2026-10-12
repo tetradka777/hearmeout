@@ -240,7 +240,7 @@ function AwardsTab({ onGoToFriends }: { onGoToFriends: () => void }) {
     const people: Person[] = [{ id: me.id, name: me.name, avatarUrl: me.avatarUrl }, ...me.friends.map((f) => ({ id: f.id, name: f.name, avatarUrl: f.avatarUrl }))];
     // Same month recaps the recap screen and the preloader use
     // (lib/cachedJson): stored copies first, then fresh ones.
-    const url = (id: string) => `/api/recap?period=month&userId=${id}`;
+    const url = (id: string) => `/api/recap?period=month&userId=${id}&tz=${new Date().getTimezoneOffset()}`;
     const row = (p: Person, d: RecapData | null) => (d ? { ...p, minutes: d.minutes, artists: d.uniqueArtists, awards: (d.awards || []) as string[] } : null);
     const build = (rows: ReturnType<typeof row>[]) => {
       if (cancelled) return;

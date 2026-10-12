@@ -28,3 +28,10 @@ test('ISO week numbers around the new year', () => {
   assert.equal(isoWeekNumber(new Date('2027-01-04T00:00:00Z')), 1);
   assert.equal(isoWeekNumber(new Date('2025-12-29T00:00:00Z')), 1); // week 1 of 2026
 });
+
+test('local clock: Monday 01:00 in Moscow (Sunday 22:00 UTC) already has the new recap', () => {
+  const utc = new Date('2026-10-11T22:00:00Z');
+  const moscow = new Date(utc.getTime() + 180 * 60000); // local time written as UTC
+  assert.equal(completedWeekRange(0, 'mon', moscow).start.toISOString().slice(0, 10), '2026-10-05');
+  assert.equal(completedWeekRange(0, 'mon', utc).start.toISOString().slice(0, 10), '2026-09-28');
+});

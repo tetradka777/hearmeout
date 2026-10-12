@@ -211,6 +211,9 @@ export type StatsData = {
   newArtistCount: number;
   avgRating: number;
   topArtists: { name: string; id: string | null; cover: string | null; hours: number; plays: number }[];
+  // Every artist played at least twice in the window, most played first
+  // (up to 300): for "shared artists" (lib/sharedArtists).
+  artistNames?: string[];
   heatmap: number[]; // 24 buckets (hour of day), play counts
   peakHour: number | null;
   genreSplit: { genre: string; pct: number }[];

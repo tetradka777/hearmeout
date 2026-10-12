@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import type { Me, PublicProfile, StatsData } from './types';
 import { computeMatch } from './matchScore';
 import { cachedJson } from './cachedJson';
+import { sharedArtists } from './sharedArtists';
 
 export type FriendScore = { pct: number | null; shared: number };
 
@@ -16,7 +17,6 @@ export function useFriendScores(me: Me | null, limit = 6): Record<string, Friend
   useEffect(() => {
     if (!me || !ids) return;
     let cancelled = false;
-    const artistsOf = (d: StatsData | null) => new Set((d?.topArtists || []).map((a) => a.name));
     Promise.all([
       cachedJson<StatsData>('/api/stats?range=6m'),
       ...ids.split(',').map(async (id) => {
@@ -25,10 +25,9 @@ export function useFriendScores(me: Me | null, limit = 6): Record<string, Friend
       }),
     ]).then(([mine, ...friends]) => {
       if (cancelled) return;
-      const myArtists = artistsOf(mine as StatsData | null);
       setScores(Object.fromEntries((friends as { id: string; profile: PublicProfile | null; stats: StatsData | null }[]).map((f) => [f.id, {
         pct: f.profile ? computeMatch(me.genres, f.profile.genres) : null,
-        shared: [...artistsOf(f.stats)].filter((n) => myArtists.has(n)).length,
+        shared: sharedArtists(mine as StatsData | null, f.stats).length,
       }])));
     });
     return () => { cancelled = true; };

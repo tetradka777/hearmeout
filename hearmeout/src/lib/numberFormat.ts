@@ -23,3 +23,9 @@ export function fmt1(n: number, language: Language = current): string {
 export function fmtInt(n: number, language: Language = current): string {
   return Math.round(n).toLocaleString(toLocale(language));
 }
+
+// Hours on leaderboards and awards: "0ч", "12ч", "73,6ч" — a whole number
+// without a ",0".
+export function fmtHours(n: number, language: Language = current): string {
+  return Number.isInteger(n) ? String(n) : fmt1(n, language);
+}

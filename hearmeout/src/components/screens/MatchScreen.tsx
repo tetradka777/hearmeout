@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
-import { fmt1 } from '@/lib/numberFormat';
+import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { ApiUser, Device, DiscoverMatchPerson, GroupSummary, PublicProfile, StatsData } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
 import { computeMatch } from '@/lib/matchScore';
 import { cachedJson, peekJson, useCachedJson } from '@/lib/cachedJson';
+import { sharedArtists } from '@/lib/sharedArtists';
 import { toLocale, pluralForKey } from '@/lib/i18n';
 import { CoverArt } from '../ui/CoverArt';
 import { MascotIcon } from '../redesign/icons';
@@ -18,11 +19,7 @@ type RawInfo = { profile: PublicProfile | null; stats6m: StatsData | null; weekH
 type FriendInfo = RawInfo & { score: number | null };
 const EMPTY_INFO: RawInfo = { profile: null, stats6m: null, weekHours: null };
 
-function sharedArtistNames(a: StatsData | null, b: StatsData | null): string[] {
-  if (!a || !b) return [];
-  const bNames = new Set(b.topArtists.map((x) => x.name));
-  return a.topArtists.filter((x) => bNames.has(x.name)).map((x) => x.name);
-}
+const sharedArtistNames = sharedArtists;
 
 // countUp() in reference/app.js: the hero percentage counts up to its value
 // over 450ms (ease-out cubic), replayed whenever the value changes or the
@@ -228,7 +225,7 @@ export function MatchScreen(_props: { device: Device }) {
             <h2>{t('match.sharedArtistsTitle')}</h2>
             {sharedArt.length ? (
               <div className="chips" style={{ margin: 0 }}>
-                {sharedArt.map((n) => <span className="chip" key={n}>{n}</span>)}
+                {sharedArt.slice(0, 12).map((n) => <span className="chip" key={n}>{n}</span>)}
               </div>
             ) : <p className="muted" style={{ fontWeight: 600 }}>{t('match.noSharedArtists')}</p>}
           </div>
@@ -249,7 +246,7 @@ export function MatchScreen(_props: { device: Device }) {
                   <span className="num" style={{ fontSize: 28, width: 20 }}>{i + 1}</span>
                   <b style={{ width: 64 }}>{l.name}</b>
                   <div className="meter"><i style={{ width: `${(l.hours / maxHours) * 100}%` }} /></div>
-                  <b style={{ width: 44, textAlign: 'right' }}>{fmt1(l.hours)}{t('unit.h')}</b>
+                  <b style={{ width: 44, textAlign: 'right' }}>{fmtHours(l.hours)}{t('unit.h')}</b>
                 </div>
               ))}
             </>

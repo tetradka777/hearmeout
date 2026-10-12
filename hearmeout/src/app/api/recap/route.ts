@@ -42,7 +42,16 @@ export async function GET(request: NextRequest) {
   // of "the last 90 days from now" — parsed to real calendar-month bounds.
   const seasonParam = url.searchParams.get('season');
   const parsedSeason = seasonParam ? parseSeasonKey(seasonParam) : null;
-  const now = new Date();
+  // Day, week and month follow the viewer's own clock (?tz = the browser's
+  // getTimezoneOffset()): a new week's recap appears at Monday 00:00 where
+  // they are, not at midnight UTC (03:00 in Moscow, Sunday evening in the
+  // Americas). The windows are worked out on local dates, then moved to
+  // real instants for the queries; the answer's range keeps the local
+  // dates, which is what the labels show.
+  const tzMin = Math.max(-840, Math.min(840, Number(url.searchParams.get('tz')) || 0));
+  const shiftMs = -tzMin * 60000;
+  const now = new Date(Date.now() + shiftMs);
+  const toInstant = (iso: string) => new Date(new Date(iso).getTime() - shiftMs).toISOString();
   let since: string;
   let until: string | null = null;
   if (parsedSeason) {
@@ -62,6 +71,11 @@ export async function GET(request: NextRequest) {
     const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + offset));
     since = start.toISOString();
     until = new Date(start.getTime() + 24 * 60 * 60 * 1000).toISOString();
+  }
+  const labelRange = { start: since, end: until };
+  if (!parsedSeason) {
+    since = toInstant(since);
+    until = until ? toInstant(until) : null;
   }
 
   // Paginated for the same reason as /api/stats: PostgREST caps a single
@@ -140,7 +154,7 @@ export async function GET(request: NextRequest) {
 
   const recap: RecapData = {
     topArtists, topSongs, topGenres, minutes, uniqueArtists, trackCount: rows.length,
-    newArtists, avgScore, awards, range: { start: since, end: until },
+    newArtists, avgScore, awards, range: labelRange,
   };
   if (RECAP_MEMO.size > 500) for (const [k, v] of RECAP_MEMO) if (Date.now() - v.at > MEMO_TTL_MS) RECAP_MEMO.delete(k);
   RECAP_MEMO.set(memoKey, { at: Date.now(), body: recap });
