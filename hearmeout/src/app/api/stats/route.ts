@@ -306,10 +306,18 @@ export async function GET(request: NextRequest) {
 
   let comparisonPct: number | null = null;
   if (prevRange) {
+    // A period still in progress is compared with the same stretch of the
+    // one before (Monday–Tuesday against last Monday–Tuesday), not with the
+    // whole of it — two days into a week used to read "−100%".
+    const now = Date.now();
+    const elapsed = now - range.start.getTime();
+    const prevEnd = range.end.getTime() > now
+      ? Math.min(prevRange.end.getTime(), prevRange.start.getTime() + elapsed)
+      : prevRange.end.getTime();
     const prevMs = all
       .filter((r) => {
         const t = new Date(r.played_at).getTime();
-        return t >= prevRange!.start.getTime() && t < prevRange!.end.getTime();
+        return t >= prevRange!.start.getTime() && t < prevEnd;
       })
       .reduce((s, r) => s + (r.duration_ms || 0), 0);
     const prevHours = prevMs / 3600000;
