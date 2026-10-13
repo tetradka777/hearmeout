@@ -1,0 +1,44 @@
+/* Round 15 (2026-10-14): profile in the tab bar, endless search shelves,
+   fan clubs, review cards. Scoped under .rd. */
+
+/* Tab bar: your photo where the quick-rate + was. */
+.rd .tabbar .tbp{flex:none;width:50px;height:50px;padding:0;margin-left:2px;border-radius:50%;display:grid;place-items:center}
+.rd .tabbar .tbp .avt{width:44px;height:44px;font-size:18px;outline:0;box-shadow:0 0 0 2px color-mix(in srgb,var(--chr-fg) 70%,transparent)}
+.rd .tabbar .tbp.on .avt{box-shadow:0 0 0 3px var(--acc)}
+
+/* Review card: the earlier darker layout (the user prefers it) — the cover
+   blurred over the whole card, the score top right, the album with its
+   whole cover and whole title, a white play button, "open →" in words. */
+.rd .dkc13.rvc15{background:color-mix(in srgb,var(--ink) 30%,#0e0e11);color:#F4EEE2;outline:0;border-radius:calc(var(--r) + 6px)}
+.rd .dkc13.rvc15::before{inset:-40px;width:auto;height:auto;border-radius:0;filter:blur(42px) saturate(1.25);opacity:.5}
+.rd .dkc13.rvc15::after{display:block;content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.45))}
+.rd .rvc15 .who13 .wp{background:none;padding:0;margin:0;color:rgba(244,238,226,.65);font-size:13px}
+.rd .rvc15 .sc13{background:none;padding:0;color:#F4EEE2;font-size:20px;margin-top:4px}
+.rd .rvc15 .alb13{align-items:center}
+.rd .rvc15 .alb13 .cvb{border-radius:14px;overflow:hidden}
+.rd .rvc15 .alb13 .tt{display:block;-webkit-line-clamp:unset;overflow:visible;white-space:normal;overflow-wrap:break-word}
+.rd .rvc15 .pl13{position:static;width:44px;height:44px;font-size:16px;background:#F4EEE2;color:#111;box-shadow:none}
+.rd .rvc15 .q13{border-left:0;padding-left:0}
+.rd .rvc15 .tg13 span{background:rgba(244,238,226,.12);outline:0}
+.rd .rvc15 .ft{border-top:1px solid rgba(244,238,226,.16);padding:12px 0 14px}
+.rd .dkc13 .op.txt{width:auto;height:auto;border-radius:0;background:none;color:rgba(244,238,226,.75);font-weight:800;font-size:15px;display:inline}
+.rd .dkc13 .op.txt:hover{color:#F4EEE2}
+
+/* Endless shelves: a small spinner at the end of the row while the next
+   page loads (it's also what the shelf watches to ask for more). */
+.rd .hrow.sr14>.sn15{width:56px;flex:none;align-self:stretch;display:grid;place-items:center;scroll-snap-align:none}
+.rd .spin15{width:22px;height:22px;border-radius:50%;border:3px solid color-mix(in srgb,var(--fg) 18%,transparent);border-top-color:var(--acc);animation:spin15 .8s linear infinite}
+@keyframes spin15{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.rd .spin15{animation-duration:2.4s}}
+
+/* Reviews as a shelf: wide cards, each as tall as its own text. */
+.rd .rvs15 .hrow.sr14{align-items:flex-start}
+.rd .rvs15 .hrow.sr14>.dkc13{width:min(320px,82vw);flex:none}
+@media (min-width:900px){.rd .rvs15 .hrow.sr14>.dkc13{width:360px}}
+
+/* Concerts: one card per artist, all its dates under it. */
+.rd .cdl15{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:186px;overflow-y:auto}
+.rd .cdl15 li{font-size:13px;font-weight:700;line-height:1.25}
+.rd .cdl15 a,.rd .cdl15 span{display:block;padding:7px 10px;border-radius:10px;background:var(--soft2);color:var(--fg);text-decoration:none}
+.rd .cdl15 a:hover{background:color-mix(in srgb,var(--acc) 22%,var(--soft2))}
+.rd .cdl15 small{display:block;font-weight:600;opacity:.7;margin-top:1px}

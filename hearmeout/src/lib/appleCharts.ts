@@ -94,3 +94,38 @@ export function chartAlbums(region: string | null): Promise<ChartAlbum[]> {
   const country = region && /^[A-Za-z]{2}$/.test(region) ? region.toLowerCase() : 'us';
   return withSpotifyCache(`apple-chart:v4:${country}`, 6 * 3600, () => build(country));
 }
+
+// For the endless "Popular now" shelf: one country's top 100 at a time,
+// without matching to Spotify (a card is matched when it's opened, so a
+// long scroll doesn't spend the Spotify quota). Your country first, then
+// other big charts; the client drops albums it has already shown.
+export type ChartAlbumLite = { rank: number; title: string; artist: string; cover: string | null; genreBucket: string | null; country: string };
+const MORE_COUNTRIES = ['us', 'gb', 'de', 'fr', 'ca', 'au', 'br', 'mx', 'es', 'it', 'jp', 'kr', 'se', 'nl', 'pl', 'tr', 'in', 'ar', 'za', 'ie'];
+
+export function moreChartCountries(region: string | null): string[] {
+  const own = region && /^[A-Za-z]{2}$/.test(region) ? region.toLowerCase() : 'us';
+  return [own, ...MORE_COUNTRIES.filter((c) => c !== own)];
+}
+
+export function chartPage(country: string): Promise<ChartAlbumLite[]> {
+  return withSpotifyCache(`apple-raw:v1:${country}`, 6 * 3600, async () => {
+    const res = await fetch(`https://rss.applemarketingtools.com/api/v2/${country}/music/most-played/100/albums.json`, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (HearMeOut)' },
+      signal: AbortSignal.timeout(10000),
+    }).catch(() => null);
+    // A failure throws, so it isn't cached as an empty chart.
+    if (!res?.ok) throw new Error('Apple chart unavailable');
+    const data = await res.json().catch(() => null);
+    const all = (data?.feed?.results as AppleResult[] | undefined) ?? [];
+    return all
+      .filter((r) => !(r.genres || []).some((g) => g.genreId === '4' || /дет|child|kinder|enfant|infantil/i.test(g.name)) && !isFunctionalAudio(r.name, r.artistName))
+      .map((r) => ({
+        rank: all.indexOf(r) + 1,
+        title: r.name,
+        artist: r.artistName,
+        cover: r.artworkUrl100 ? r.artworkUrl100.replace(/\/\d+x\d+bb\./, '/400x400bb.') : null,
+        genreBucket: bucketOf(r.genres || []),
+        country,
+      }));
+  });
+}

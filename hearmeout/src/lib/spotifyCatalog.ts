@@ -354,3 +354,21 @@ export async function searchSpotifyArtistPhotoExact(name: string): Promise<{ fou
   const hit = (data.artists?.items || []).find((a: { name: string }) => a.name.toLowerCase() === want) as { images?: { url: string }[] } | undefined;
   return { found: !!hit, photo: hit?.images?.[0]?.url ?? null };
 }
+
+// One page (10, development mode's cap) of a genre's top artists or of its
+// lesser-known albums, for the endless shelves on Discover.
+export async function genreArtistsPage(genreBucket: string, offset: number, market?: string | null): Promise<CatalogArtist[]> {
+  const keyword = GENRE_SEARCH_KEYWORD[genreBucket] ?? genreBucket.toLowerCase();
+  const params: Record<string, string> = { q: `genre:${keyword}`, type: 'artist', limit: '10', offset: String(offset) };
+  if (isValidMarket(market)) params.market = market;
+  const data = await spotifyGet('/search', params);
+  return (data.artists?.items || []).map((a: { id: string; name: string; images: { url: string }[] }) => ({ id: a.id, name: a.name, photo: a.images?.[0]?.url ?? null }));
+}
+
+export async function obscureAlbumsPage(genreBucket: string, offset: number, market?: string | null): Promise<CatalogAlbum[]> {
+  const keyword = GENRE_SEARCH_KEYWORD[genreBucket] ?? genreBucket.toLowerCase();
+  const params: Record<string, string> = { q: `tag:hipster ${keyword}`, type: 'album', limit: '10', offset: String(offset) };
+  if (isValidMarket(market)) params.market = market;
+  const d = await spotifyGet('/search', params);
+  return ((d.albums?.items || []) as Parameters<typeof toCatalogAlbum>[0][]).map(toCatalogAlbum).filter((a) => !isFunctionalAudio(a.title, a.artist));
+}

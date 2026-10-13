@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { useApp } from '@/lib/AppContext';
+import { userAvatarStyle } from '@/lib/format';
 import type { ScreenName } from '@/lib/types';
 import type { TranslationKey } from '@/lib/i18n';
 import { HomeIcon, PeopleIcon, BarsIcon, CompassSearchIcon } from '../ui/Icons';
@@ -121,7 +122,7 @@ export function RedesignShell({ children }: { children: ReactNode }) {
       <main className="fade" id="main" tabIndex={-1}>{children}</main>
       </div>
 
-      {/* Mobile tab bar: 5 tabs + round quick-rate + (spec 3.9) */}
+      {/* Mobile tab bar: 5 tabs and your profile photo */}
       <nav className="tabbar" aria-label={t('nav.main')}>
         {TAB_SCREENS.map((screen) => (
           <button key={screen} className={activeGroup === screen ? 'on' : ''} onClick={() => showScreen(screen)}>
@@ -129,15 +130,12 @@ export function RedesignShell({ children }: { children: ReactNode }) {
             <span>{t(TAB_LABEL[screen]!)}</span>
           </button>
         ))}
-        {/* Quick rate: the playing album, else the album last looked at
-            (prototype: data-go="rate" data-a=S.playing). */}
-        <button
-          className="fab"
-          onClick={() => openAlbum(me?.nowPlaying?.albumId || currentTrack?.albumId || state.currentAlbumId)}
-          aria-label={t('nav.quickRate')}
-        >
-          +
-        </button>
+        {/* Your profile, as your photo, at the end of the bar. */}
+        {me && (
+          <button className={`tbp${state.activeScreen === 'profile' ? ' on' : ''}`} onClick={() => showScreen('profile')} aria-label={t('nav.profile')}>
+            <span className="avt" style={{ ...userAvatarStyle(me), backgroundSize: 'cover' }}>{!me.avatarUrl && me.name[0]?.toUpperCase()}</span>
+          </button>
+        )}
       </nav>
 
       {/* The preview mini-player takes priority over the now-playing bar

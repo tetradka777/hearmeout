@@ -35,7 +35,8 @@ async function photoFor({ name, id }: Item): Promise<string | null> {
 }
 
 // Artist photos for the small avatars next to artist names (ArtistName):
-// many in one request instead of one each. Answered by name.
+// many in one request instead of one each. Each answer is keyed by the
+// Spotify id when one was sent, else by the name.
 export async function POST(request: NextRequest) {
   if (!(await getCurrentUserId())) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
   const body = await request.json().catch(() => null) as { items?: unknown; names?: unknown } | null;
@@ -45,8 +46,9 @@ export async function POST(request: NextRequest) {
   for (const it of raw) {
     const name = typeof it === 'object' && it && typeof (it as Item).name === 'string' ? (it as Item).name.trim() : '';
     const id = typeof it === 'object' && it && typeof (it as Item).id === 'string' ? (it as Item).id : null;
-    if (!name || name.length > 200 || seen.has(name)) continue;
-    seen.add(name);
+    const key = id || name;
+    if (!name || name.length > 200 || seen.has(key)) continue;
+    seen.add(key);
     items.push({ name, id });
     if (items.length >= MAX_NAMES) break;
   }
@@ -57,7 +59,7 @@ export async function POST(request: NextRequest) {
   // (over it, every Spotify call in the app fails fast until it resets).
   let next = 0;
   await Promise.all(Array.from({ length: Math.min(4, items.length) }, async () => {
-    while (next < items.length) { const it = items[next++]; photos[it.name] = await photoFor(it); }
+    while (next < items.length) { const it = items[next++]; photos[it.id || it.name] = await photoFor(it); }
   }));
   return NextResponse.json({ photos });
 }

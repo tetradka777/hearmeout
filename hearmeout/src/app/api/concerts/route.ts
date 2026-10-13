@@ -5,11 +5,11 @@ import { fetchAllRows } from '@/lib/supabasePaginate';
 import { concertsConfigured, cachedArtistConcerts, regionFirst, type Concert } from '@/lib/concerts';
 import { ALBUMS } from '@/lib/data';
 
-export type ConcertFeedItem = Concert & { artist: string; group: 'yours' | 'popular' };
+export type ConcertFeedItem = Concert & { artist: string; artistId: string | null; group: 'yours' | 'popular' };
 
 const YOURS = 8;        // most-listened artists, last 6 months
 const POPULAR = 10;     // most-streamed artists from the catalog's kworb ranking
-const PER_ARTIST = 3;   // concerts shown per artist
+const PER_ARTIST = 30;  // concerts per artist (all of them, near enough: the card lists every date)
 
 // Discover → "Concerts": your most-listened artists first (by time played
 // over the last six months), then the most popular artists (the catalog's
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
   for (const [artist, group] of lists) {
     try {
       const concerts = regionFirst(await cachedArtistConcerts(artist, idOf.get(artist) ?? null), country);
-      for (const c of concerts.slice(0, PER_ARTIST)) items.push({ ...c, artist, group });
+      for (const c of concerts.slice(0, PER_ARTIST)) items.push({ ...c, artist, artistId: idOf.get(artist) ?? null, group });
     } catch {
       // One artist failing (rate limit, odd name) shouldn't hide the rest.
     }
