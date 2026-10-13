@@ -70,11 +70,11 @@ function HeroTile({ wide }: { wide: boolean }) {
 
 // ----- Recap card (rev 8): new → one line once opened; too little → says so -----
 
-function recapCovers(r: RecapData): string[] {
+function recapCovers(r: RecapData, n = 2): string[] {
   const out: string[] = [];
   for (const s of r.topSongs) if (s.cover && !out.includes(s.cover)) out.push(s.cover);
   for (const a of r.topArtists) if (a.cover && !out.includes(a.cover)) out.push(a.cover);
-  return out.slice(0, 2);
+  return out.slice(0, n);
 }
 
 function RecapCard({ r, week }: { r: RecapData | undefined; week: number }) {
@@ -123,12 +123,13 @@ function RecapStrip({ r, week }: { r: RecapData; week: number }) {
   const award = r.awards[0];
   return (
     <button className="tile rcstrip" onClick={() => openRecap('me', 'week')}>
-      <span className="mini">{recapCovers(r).map((c) => <CoverArt key={c} url={c} fallbackLetter="?" className="cov" px={34} style={{ width: 34, aspectRatio: '1' }} />)}</span>
+      <span className="mini">{recapCovers(r, 3).map((c) => <CoverArt key={c} url={c} fallbackLetter="?" className="cov" px={34} style={{ width: 34, aspectRatio: '1' }} />)}</span>
       <span className="tt">{t('home.rcStripTitle', { n: week })}</span>
       <span className="mt">
         {award ? `${t(`groups.${award}` as never)} · ` : ''}{fmtHours(Math.round(r.minutes / 60))}{t('unit.h')} · <span className="x">{r.newArtists} {t('recap.newArtists')} · </span>{r.avgScore != null ? `${fmt1(r.avgScore)} ${t('recap.avgScore')}` : ''}
       </span>
       <span className="go">{t('home.rcOpenAgain')}</span>
+      <i className="ic ic-chev go13" aria-hidden="true" />
     </button>
   );
 }
