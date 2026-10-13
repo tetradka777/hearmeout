@@ -335,3 +335,22 @@ export async function searchSpotifyTracks(artist: string, title: string): Promis
     id: t.id, title: t.name, artists: (t.artists || []).map((a) => a.name),
   }));
 }
+
+// An artist's photo for the small avatars next to names. By Spotify id when
+// it's known (exact); otherwise the Spotify artist whose name is exactly
+// this one — never a merely similar name, so a small artist doesn't get a
+// famous one's face. null when there's no such artist or no picture.
+export async function fetchSpotifyArtistPhoto(id: string): Promise<string | null> {
+  const token = await getSpotifyAppToken();
+  const res = await spotifyFetch(`https://api.spotify.com/v1/artists/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+  if (res.status === 404 || res.status === 400) return null;
+  if (!res.ok) throw new Error(`Spotify request failed (/artists/${id}): ${res.status}`);
+  return (await res.json()).images?.[0]?.url ?? null;
+}
+
+export async function searchSpotifyArtistPhotoExact(name: string): Promise<{ found: boolean; photo: string | null }> {
+  const data = await spotifyGet('/search', { q: `artist:${name}`, type: 'artist', limit: '10' });
+  const want = name.trim().toLowerCase();
+  const hit = (data.artists?.items || []).find((a: { name: string }) => a.name.toLowerCase() === want) as { images?: { url: string }[] } | undefined;
+  return { found: !!hit, photo: hit?.images?.[0]?.url ?? null };
+}

@@ -45,19 +45,20 @@ export function normalizeTitle(s: string): string {
 }
 
 type DzArtist = { id: number; name: string; nb_fan?: number; picture_medium?: string; picture_big?: string };
-export type DeezerArtist = { id: number; name: string; fans: number | null; photo: string | null };
+// exact: the name matched exactly (else the best known artist for the search).
+export type DeezerArtist = { id: number; name: string; fans: number | null; photo: string | null; exact?: boolean };
 
 // The artist with exactly this name if there is one, else the best known
 // (Deezer orders artist search by relevance and popularity). 30 days.
 export function deezerArtistByName(name: string): Promise<DeezerArtist | null> {
-  return withSpotifyCache(`dz-artist:v2:${name.toLowerCase()}`, 30 * 86400, async () => {
+  return withSpotifyCache(`dz-artist:v3:${name.toLowerCase()}`, 30 * 86400, async () => {
     const data = await deezerGet<{ data?: DzArtist[] }>(`/search/artist?q=${encodeURIComponent(name)}&limit=5`);
     const list = data.data || [];
     const want = normalizeTitle(name);
     // Several artists can share a name: the best known of them.
     const same = list.filter((x) => normalizeTitle(x.name) === want).sort((x, y) => (y.nb_fan ?? 0) - (x.nb_fan ?? 0));
     const a = same[0] || list[0];
-    return a ? { id: a.id, name: a.name, fans: a.nb_fan ?? null, photo: a.picture_medium ?? null } : null;
+    return a ? { id: a.id, name: a.name, fans: a.nb_fan ?? null, photo: a.picture_medium ?? null, exact: !!same[0] } : null;
   });
 }
 

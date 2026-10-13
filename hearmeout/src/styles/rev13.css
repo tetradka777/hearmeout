@@ -5,10 +5,13 @@
 
 /* ----- Covers: no outline or frame, just the picture with soft corners ----- */
 .rd .cov{outline:0!important;border:0!important}
+/* No fill under a loaded picture: at the rounded corners it showed as a thin
+   coloured rim, like a frame. */
+.rd .cov[style*="background-image"]{background-color:transparent}
 .rd .rc-stage .c1,.rd .rc-stage .c2,.rd .hcs9 span,.rd .ta9 .cov,.rd .gr9 .gcv .cov,.rd .hshelf9 .cov,.rd .pf10 .cov,.rd .cv9 .cov{border:0!important}
-.rd .rc-stage .c1,.rd .rc-stage .c2,.rd .hcs9 span{box-shadow:0 6px 16px rgba(0,0,0,.22)}
-/* The one-line recap: three covers overlapping, each ringed so they read apart. */
-.rd .rcstrip .mini .cov{border:2px solid var(--ink)!important;box-sizing:border-box}
+.rd .rc-stage .c1,.rd .rc-stage .c2,.rd .hcs9 span{box-shadow:none}
+/* The one-line recap: three covers overlapping, no frames. */
+.rd .rcstrip .mini .cov{border:0!important}
 .rd .rcstrip .mini .cov+.cov{margin-left:-12px}
 .rd .rcstrip .go13{display:none}
 @media (max-width:520px){.rd .rcstrip .go{display:none}.rd .rcstrip .go13{display:inline-block;opacity:.8}.rd .rcstrip .tt{overflow:visible}}
@@ -100,7 +103,7 @@
 .rd .rp13c .acts13 .ib{width:32px;height:32px}
 
 /* ----- Group page ----- */
-.rd .hcs9 button{display:block;position:relative;width:96px;flex:none;border-radius:16px;overflow:hidden;box-shadow:0 6px 16px rgba(0,0,0,.22);color:inherit}
+.rd .hcs9 button{display:block;position:relative;width:96px;flex:none;border-radius:16px;overflow:hidden;color:inherit}
 .rd .hcs9 button .sc9{position:absolute;top:6px;right:6px;left:auto;width:auto;border:0;box-shadow:none;overflow:visible;padding:2px 8px;border-radius:99px;background:var(--acc);color:var(--onacc);font:800 12px/1.3 var(--font-display)}
 .rd .hcs9 button.first{width:112px}
 .rd .hcs9{align-items:flex-end}
@@ -174,3 +177,13 @@
 /* Inside dark tiles the accent text colour is the light one: the red accent
    numbers (a friend's match %, profile counts) sat at 2:1 on navy. */
 .rd .t-ink{--acct:var(--pop)}
+
+/* Recap genres: each share its own rounded piece, none outlined (the
+   outlined third piece was cut off by the bar's rounded end). */
+.rd .gbar10{overflow:visible;gap:4px}
+.rd .gbar10 i{border-radius:99px}
+.rd .gx2{outline:0;background:color-mix(in srgb,var(--acct) 45%,var(--pop))}
+/* The recap card on screen is as tall as its content (the 4:5 shape is for
+   the shared picture, which is drawn separately). */
+.rd .story{aspect-ratio:auto;justify-content:flex-start;gap:22px;padding:24px}
+.rd .story q{margin:6px 0 4px}

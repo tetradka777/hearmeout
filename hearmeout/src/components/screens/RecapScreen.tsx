@@ -326,7 +326,7 @@ export function RecapScreen(_props: { device: Device }) {
               {r.topArtists.length ? r.topArtists.map((a, i) => (
                 <button className="row" key={`${a.id ?? a.name}-${i}`} onClick={() => a.id && openSpotifyArtist(a.id, a.name)} style={{ cursor: a.id ? 'pointer' : 'default' }}>
                   <span className="rk11">{i + 1}</span>
-                  <ArtistAvatar name={a.name} size={44} />
+                  <ArtistAvatar name={a.name} id={a.id} size={44} />
                   <span className="g"><b>{a.name}</b><span className="meter" style={{ display: 'block', marginTop: 5 }}><i style={{ width: `${Math.round((a.plays / r.topArtists[0].plays) * 100)}%` }} /></span></span>
                   <b>{a.plays}</b>
                 </button>

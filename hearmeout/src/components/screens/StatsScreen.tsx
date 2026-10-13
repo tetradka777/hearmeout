@@ -360,7 +360,7 @@ export function StatsScreen(_props: { device: Device }) {
                 return (
                   <>
                     <button className="lead" onClick={() => openArtist(lead.name, lead.id)}>
-                      <ArtistAvatar name={lead.name} size={96} />
+                      <ArtistAvatar name={lead.name} id={lead.id} size={96} />
                       <span className="g">
                         <span className="rk">{t('stats.topArtistNo1')}</span>
                         <b>{lead.name}</b>
@@ -371,7 +371,7 @@ export function StatsScreen(_props: { device: Device }) {
                       <div className="rest">
                         {rest.map((a, i) => (
                           <button key={a.id || a.name} onClick={() => openArtist(a.name, a.id)}>
-                            <ArtistAvatar name={a.name} size={56} />
+                            <ArtistAvatar name={a.name} id={a.id} size={56} />
                             <span className="rkb" aria-hidden="true">{i + 2}</span>
                             <b>{a.name}</b>
                             <small>{t('stats.playsN', { n: a.plays })}</small>
