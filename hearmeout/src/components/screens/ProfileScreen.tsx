@@ -650,7 +650,7 @@ function ProfileOnRepeat() {
   const r = me ? recapCache[`${me.id}:week`] : undefined;
   if (!r || !r.topSongs.length) return null;
   const start = new Date(r.range.start);
-  const end = new Date((r.range.end ? new Date(r.range.end).getTime() : Date.now()) - 86400000);
+  const end = new Date((r.range.end ? new Date(r.range.end).getTime() : start.getTime() + 7 * 86400000) - 86400000);
   const fmt = (d: Date) => d.toLocaleDateString(toLocale(language), { day: 'numeric', month: 'short', timeZone: 'UTC' });
   return (
     <section className="sh14 orp14">

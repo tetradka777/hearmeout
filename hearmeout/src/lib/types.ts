@@ -143,9 +143,9 @@ export type FriendRequest = { id: number; user: ApiUser; createdAt: string };
 // sharing their recap for a period (payload.period / payload.offset).
 export type AppNotification = {
   id: number;
-  kind: 'hi' | 'recap' | 'release';
+  kind: 'hi' | 'recap' | 'release' | 'comment' | 'reaction';
   // release (migration 028): albumId is a Spotify album id.
-  payload: { period?: RecapPeriod; offset?: number; albumId?: string; artist?: string; title?: string; date?: string; cover?: string | null; popular?: boolean };
+  payload: { period?: RecapPeriod; offset?: number; albumId?: string; artist?: string; title?: string; date?: string; cover?: string | null; popular?: boolean; target?: string; preview?: string; reaction?: string };
   createdAt: string;
   read: boolean;
   // null for a release: it comes from the site, not a person.

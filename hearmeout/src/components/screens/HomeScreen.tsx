@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { ArtistName } from '../ui/ArtistName';
 import { CardWho, DarkCard } from '../ui/SuperCards';
+import { SocialBar } from '../ui/Social';
+import { socialKey } from '@/lib/socialClient';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { ApiUser, Device, FeedEvent, FeedResponse, PublicProfile, RecapData } from '@/lib/types';
@@ -180,8 +182,13 @@ function FeedRow({ event }: { event: FeedEvent }) {
     right = <b className="sc13">★ {fmt1(event.stars)}</b>;
   }
   const openWho = 'id' in who && who.id && who.id !== me?.id ? () => viewFriend(who.id!) : undefined;
+  // What comments and reactions on this card attach to (lib/social).
+  const ownerId = event.type === 'session' ? me?.id : event.user.id;
+  const target = !ownerId || !event.albumId ? null
+    : event.type === 'rating_review' ? socialKey.review(ownerId, event.albumId)
+    : socialKey.play(ownerId, event.albumId, event.at);
   return (
-    <DarkCard cover={cover} head={<CardWho user={who} when={when} onClick={openWho} />} right={right} onOpen={open}>
+    <DarkCard cover={cover} head={<CardWho user={who} when={when} onClick={openWho} />} right={right} onOpen={open} footLeft={<SocialBar target={target} title={title} />}>
       <div className="fd13">
         <div className="tx">
           <h3>{title}</h3>

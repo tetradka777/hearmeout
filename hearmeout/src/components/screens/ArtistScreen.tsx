@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
+import { cachedJson } from '@/lib/cachedJson';
 import { usePlayer, type QueueTrack } from '@/lib/PlayerContext';
 import type { ApiUser, Device, SpotifyArtistAlbum } from '@/lib/types';
 import type { ArtistTopTrack } from '@/lib/spotifyCatalog';
@@ -184,6 +185,7 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
         : { method: 'DELETE' });
       if (!res.ok) { setFollowing(!next); showToast(t('artist.followFailed')); return; }
       showToast(t(next ? 'artist.followedToast' : 'artist.unfollowedToast', { name: art.name }));
+      cachedJson('/api/fandoms', { force: true });
     };
 
     let body;

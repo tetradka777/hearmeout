@@ -10,6 +10,8 @@ import { isReviewTagId, REVIEW_TAG_LABEL_KEY } from '@/lib/reviewTags';
 import { sizedImage } from '@/lib/imageSize';
 import { CoverArt } from './CoverArt';
 import { ArtistAvatar, ArtistName } from './ArtistName';
+import { SocialBar } from './Social';
+import { socialKey } from '@/lib/socialClient';
 
 type Person = { id?: string; name: string; avatarUrl: string | null };
 
@@ -69,6 +71,7 @@ export function ReviewCard({ user, createdAt, stars, review, tags, albumId, show
       head={<CardWho user={user} when={formatRelative(createdAt, language)} onClick={openWho} />}
       right={<b className="sc13">★ {fmt1(stars)}</b>}
       onOpen={() => openAlbum(albumId)}
+      footLeft={user.id ? <SocialBar target={socialKey.review(user.id, albumId)} title={a?.title} /> : null}
     >
       {showAlbum && a && (
         <div className="alb13">

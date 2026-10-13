@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { Podium } from '../ui/Podium';
+import { SocialBar } from '../ui/Social';
+import { socialKey } from '@/lib/socialClient';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import { invitePath } from '@/lib/pendingInvite';
@@ -291,6 +293,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
                   <b>{t(AWARD_LABEL_KEY[a.label] as never)}</b>
                   {a.winner && <span className="who9"><Av u={a.winner} />{a.winner.name}</span>}
                   <small>{awardDetail(a.label, a.detail)}</small>
+                  <SocialBar target={groupId ? socialKey.award(groupId, detail.vote.monthKey, a.label) : null} title={t(AWARD_LABEL_KEY[a.label] as never)} />
                 </div>
               ))}
             </div>
