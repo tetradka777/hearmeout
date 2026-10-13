@@ -42,16 +42,24 @@ export function ConcertsFeed() {
             title={`${t('concerts.title')} · ${label}`}
             sub={region ? t('concerts.subRegion', { region: regionDisplayName(region, language) }) : t('concerts.subWorld')}
           >
-            {rows.map((c) => {
-              const d = new Date(`${c.date}T00:00:00Z`);
-              const place = [c.city, c.country && c.country !== region ? regionDisplayName(c.country, language) : null].filter(Boolean).join(', ');
-              return (
-                <div className="cc14" key={`${c.artist}-${c.id}`}>
-                  <ArtistShelfCard name={c.artist} sub={`${d.toLocaleDateString(loc, { day: 'numeric', month: 'short', timeZone: 'UTC' })} · ${place || c.venue || ''}`} onClick={() => openArtist(c.artist)} />
-                  {c.url && <a className="tk" href={c.url} target="_blank" rel="noreferrer">{t('artist.tickets')}</a>}
-                </div>
-              );
-            })}
+            {[...new Map(rows.map((c) => [c.artist, rows.filter((x) => x.artist === c.artist)])).entries()].map(([artist, shows]) => (
+              // One card per artist, every date under it.
+              <div className="cc14" key={artist}>
+                <ArtistShelfCard name={artist} id={shows[0].artistId} sub={t('concerts.datesN', { n: shows.length })} onClick={() => openArtist(artist, shows[0].artistId)} />
+                <ul className="cdl15">
+                  {shows.map((c) => {
+                    const d = new Date(`${c.date}T00:00:00Z`);
+                    const place = [c.city, c.country && c.country !== region ? regionDisplayName(c.country, language) : null].filter(Boolean).join(', ') || c.venue || '';
+                    const label = `${d.toLocaleDateString(loc, { day: 'numeric', month: 'short', timeZone: 'UTC' })} · ${place}`;
+                    return (
+                      <li key={c.id}>
+                        {c.url ? <a href={c.url} target="_blank" rel="noreferrer">{label}</a> : <span>{label}</span>}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
           </Shelf>
         );
       })}

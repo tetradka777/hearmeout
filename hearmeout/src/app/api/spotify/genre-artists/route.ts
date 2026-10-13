@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserId } from '@/lib/identity';
 import { upstreamErrorResponse } from '@/lib/upstreamError';
-import { fetchGenreTopArtists } from '@/lib/spotifyCatalog';
+import { fetchGenreTopArtists, genreArtistsPage } from '@/lib/spotifyCatalog';
 import { withSpotifyCache } from '@/lib/spotifyCache';
 
 export async function GET(request: NextRequest) {
@@ -12,7 +12,12 @@ export async function GET(request: NextRequest) {
   const genre = params.get('genre');
   const market = params.get('market');
   if (!genre) return NextResponse.json({ error: 'genre_required' }, { status: 400 });
+  const offset = Number(params.get('offset'));
   try {
+    // ?offset=: one page of 10 for Discover's endless shelf (6 hours).
+    if (params.has('offset') && Number.isInteger(offset) && offset >= 0 && offset < 1000) {
+      return NextResponse.json(await withSpotifyCache(`genre-artists-page:${genre}:${market || 'global'}:${offset}`, 6 * 3600, () => genreArtistsPage(genre, offset, market)));
+    }
     const artists = await withSpotifyCache(
       `genre-artists:${genre}:${market || 'global'}`,
       3600,

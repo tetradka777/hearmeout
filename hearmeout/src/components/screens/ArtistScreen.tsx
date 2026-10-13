@@ -185,7 +185,7 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
         : { method: 'DELETE' });
       if (!res.ok) { setFollowing(!next); showToast(t('artist.followFailed')); return; }
       showToast(t(next ? 'artist.followedToast' : 'artist.unfollowedToast', { name: art.name }));
-      cachedJson('/api/fandoms', { force: true });
+      cachedJson('/api/fanclubs', { force: true });
     };
 
     let body;

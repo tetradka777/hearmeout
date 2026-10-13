@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserId } from '@/lib/identity';
 import { upstreamErrorResponse } from '@/lib/upstreamError';
-import { fetchObscureAlbums } from '@/lib/spotifyCatalog';
+import { fetchObscureAlbums, obscureAlbumsPage } from '@/lib/spotifyCatalog';
 import { withSpotifyCache } from '@/lib/spotifyCache';
 
 export async function GET(request: NextRequest) {
@@ -11,7 +11,12 @@ export async function GET(request: NextRequest) {
   const params = new URL(request.url).searchParams;
   const genre = params.get('genre') || 'electronic';
   const market = params.get('market');
+  const offset = Number(params.get('offset'));
   try {
+    // ?offset=: one page of 10 for Discover's endless shelf (6 hours).
+    if (params.has('offset') && Number.isInteger(offset) && offset >= 0 && offset < 1000) {
+      return NextResponse.json(await withSpotifyCache(`obscure-page:${genre}:${market || 'global'}:${offset}`, 6 * 3600, () => obscureAlbumsPage(genre, offset, market)));
+    }
     const albums = await withSpotifyCache(
       `obscure:v2:${genre}:${market || 'global'}`,
       3600,

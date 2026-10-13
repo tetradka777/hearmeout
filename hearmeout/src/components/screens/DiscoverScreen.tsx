@@ -8,7 +8,7 @@ import type { Album, Device, DiscoverMatchPerson } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
 import { CoverArt } from '../ui/CoverArt';
 import { AlbumShelfCard, ReviewCard, Shelf } from '../ui/SuperCards';
-import { FandomsForYou } from '../Fandoms';
+import { FanClubsForYou } from '../FanClubs';
 import { regionDisplayName } from '@/lib/i18n';
 import { LiveLibrarySearch } from '../LiveLibrarySearch';
 import { PopularNowSection } from '../PopularNowSection';
@@ -17,6 +17,7 @@ import { ObscureAlbums } from '../ObscureAlbums';
 import { GenreTopArtists } from '../GenreTopArtists';
 import { MascotIcon } from '../redesign/icons';
 import { cachedJson, peekJson } from '@/lib/cachedJson';
+import { usePaged } from '@/lib/usePaged';
 
 // Discover: this is where the old Home/catalog-browser content lives now
 // (redesign spec 13.3 — "Discover is where the old catalog lives"). Empty
@@ -108,38 +109,100 @@ function AlbumRow({ album: a }: { album: Album }) {
 
 type SiteReview = { stars: number; review: string; tags?: string[]; createdAt: string; albumId: string; user: { id?: string; name: string; handle: string; avatarUrl: string | null } };
 
-function SiteReviewsBlock() {
-  const { t, albums, liveAlbums } = useApp();
-  const [reviews, setReviews] = useState<SiteReview[] | null>(() => peekJson<{ reviews: SiteReview[] }>('/api/reviews/recent')?.reviews ?? null);
-
+// Albums outside the static catalog are looked up as they near the screen.
+function useEnsureAlbums(ids: string[]) {
+  const { albums, liveAlbums, failedAlbumIds, ensureLiveAlbum } = useApp();
+  const key = ids.join(',');
   useEffect(() => {
-    let cancelled = false;
-    // Server-side: no private ratings, respects "Public reviews".
-    cachedJson<{ reviews: SiteReview[] }>('/api/reviews/recent').then((d) => { if (!cancelled) setReviews(d?.reviews ?? []); });
-    return () => { cancelled = true; };
-  }, []);
+    for (const id of ids) {
+      if (liveAlbums[id] || failedAlbumIds[id] || albums.some((a) => a.id === id || a.spotifyId === id)) continue;
+      ensureLiveAlbum(id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+}
 
-  if (reviews === null) return <p className="muted" style={{ fontWeight: 600 }}>{t('reviews.loading')}</p>;
-  const resolved = reviews
-    .map((r) => ({ r, a: liveAlbums[r.albumId] || albums.find((x) => x.id === r.albumId) }))
-    .filter((x): x is { r: SiteReview; a: NonNullable<typeof x.a> } => !!x.a)
-    .slice(0, 5);
-  if (!resolved.length) return <p className="muted" style={{ fontWeight: 600 }}>{t('reviews.empty')}</p>;
-
+// "Reviews worth reading": the site's latest public reviews, an endless
+// shelf of review cards (/api/reviews/recent, a page at a time).
+function SiteReviewsShelf() {
+  const { t, albums, liveAlbums, failedAlbumIds } = useApp();
+  const { items, done, failed, more } = usePaged<SiteReview, number>(async (from) => {
+    const res = await fetch(`/api/reviews/recent?from=${from ?? 0}`);
+    if (!res.ok) throw new Error(String(res.status));
+    const d = await res.json() as { reviews: SiteReview[]; next: number | null };
+    return { items: d.reviews, next: d.next };
+  }, (r) => `${r.user.id || r.user.handle}|${r.albumId}`, [], 50);
+  useEnsureAlbums(items.map((r) => r.albumId));
+  const known = (id: string) => !!liveAlbums[id] || albums.some((a) => a.id === id || a.spotifyId === id);
+  const shown = items.filter((r) => known(r.albumId));
+  if (!shown.length) {
+    const waiting = !failed && (!done || items.some((r) => !failedAlbumIds[r.albumId]));
+    return (
+      <section className="sh14">
+        <div className="hd"><h2>{t('discover.reviewsWorthReading')}</h2></div>
+        <p className="muted" style={{ fontWeight: 600 }}>{waiting ? t('reviews.loading') : t('reviews.empty')}</p>
+      </section>
+    );
+  }
   return (
-    <div className="stack">
-      {resolved.slice(0, 3).map(({ r, a }, i) => (
-        <ReviewCard key={i} user={r.user} createdAt={r.createdAt} stars={r.stars} review={r.review} tags={r.tags} albumId={a.id} />
+    <Shelf title={t('discover.reviewsWorthReading')} onMore={more} done={done} className="rvs15">
+      {shown.map((r) => (
+        <ReviewCard key={`${r.user.id || r.user.handle}|${r.albumId}`} user={r.user} createdAt={r.createdAt} stars={r.stars} review={r.review} tags={r.tags} albumId={r.albumId} />
       ))}
-    </div>
+    </Shelf>
+  );
+}
+
+const MIN_RATINGS_FOR_TOP = 3;
+const TOP_STEP = 25;
+
+// "Top rated": every album rated on the site, the ones with 3+ ratings
+// first (by average), then the rest; 50 at first, more as the shelf
+// scrolls. Albums outside the catalog are fetched as they come into range.
+function TopRatedShelf({ genre }: { genre: string }) {
+  const { t, albums, liveAlbums, failedAlbumIds, albumRatings, spotifyCovers, openAlbum } = useApp();
+  const [limit, setLimit] = useState(50);
+  const ranked = useMemo(() => Object.entries(albumRatings)
+    .sort(([, a], [, b]) => Number(b.count >= MIN_RATINGS_FOR_TOP) - Number(a.count >= MIN_RATINGS_FOR_TOP) || b.avg - a.avg || b.count - a.count)
+    .map(([id]) => id), [albumRatings]);
+  const albumOf = (id: string) => liveAlbums[id] || albums.find((a) => a.id === id || a.spotifyId === id);
+  const usable = ranked.filter((id) => !failedAlbumIds[id]);
+  const range = usable.slice(0, (limit + 10) * (genre === 'Всё' ? 1 : 4));
+  useEnsureAlbums(range);
+  const list = range
+    .map((id) => ({ id, a: albumOf(id) }))
+    .filter((x): x is { id: string; a: Album } => !!x.a && (genre === 'Всё' || x.a.genreBucket === genre))
+    .slice(0, limit);
+  const done = limit >= usable.length;
+  if (!list.length) {
+    return (
+      <section className="sh14">
+        <div className="hd"><h2>{t('catalog.topRated')}</h2></div>
+        <div className="tile t-soft2 empty"><MascotIcon /><p className="muted" style={{ fontWeight: 600 }}>{t('catalog.topRatedEmpty', { n: MIN_RATINGS_FOR_TOP })}</p></div>
+      </section>
+    );
+  }
+  return (
+    <Shelf title={t('catalog.topRated')} onMore={() => setLimit((n) => n + TOP_STEP)} done={done}>
+      {list.map(({ id, a }, i) => (
+        <AlbumShelfCard
+          key={id}
+          cover={spotifyCovers[a.id] || a.cover}
+          title={a.title}
+          artist={a.artist}
+          artistId={a.artistId}
+          badge={`#${i + 1}`}
+          meta={`★ ${fmt1(albumRatings[id].avg)} · ${t('groups.ratingsN', { n: albumRatings[id].count })}`}
+          onClick={() => openAlbum(a.id)}
+        />
+      ))}
+    </Shelf>
   );
 }
 
 export function DiscoverScreen(_props: { device: Device }) {
-  const { t, language, me, state, albums, albumRatings, spotifyCovers, openAlbum, setSearchQuery, setActiveGenre, setSortBy, showScreen, myRatings } = useApp();
+  const { t, language, me, state, albums, albumRatings, setSearchQuery, setActiveGenre, showScreen } = useApp();
   const [filter, setFilter] = useState<Filter>('all');
-  // Full catalog in pages (it used to render every album at once, ~10,000px).
-  const [catalogAll, setCatalogAll] = useState(false);
   const [people, setPeople] = useState<PersonResult[] | null>(null);
   const [mbFound, setMbFound] = useState<boolean | null>(null);
   const [discoverPeople, setDiscoverPeople] = useState<DiscoverMatchPerson[] | null>(() => peekJson<{ people: DiscoverMatchPerson[] }>('/api/match/discover')?.people ?? null);
@@ -148,12 +211,6 @@ export function DiscoverScreen(_props: { device: Device }) {
   const q = query.trim().toLowerCase();
   const genreFilter = state.activeGenre;
   const showLive = q.length >= 2;
-
-  const SORT_OPTIONS: { key: 'year' | 'genre' | 'artist'; label: string }[] = [
-    { key: 'year', label: t('catalog.sortYear') },
-    { key: 'genre', label: t('catalog.sortGenre') },
-    { key: 'artist', label: t('catalog.sortArtist') },
-  ];
 
   useEffect(() => {
     setMbFound(null);
@@ -207,22 +264,6 @@ export function DiscoverScreen(_props: { device: Device }) {
     { key: 'artists', label: t('discover.filterArtists') },
     { key: 'people', label: t('discover.filterPeople') },
   ];
-
-  // Real data, small real userbase: the prototype's demo data gates "top
-  // rated" at 30+ ratings (meaningless here), so this uses a minimum that's
-  // still reachable while filtering out albums with just one or two scores.
-  const MIN_RATINGS_FOR_TOP = 3;
-  const topRatedFiltered = albums
-    .filter((a) => albumRatings[a.id] && albumRatings[a.id].count >= MIN_RATINGS_FOR_TOP && (genreFilter === 'Всё' || a.genreBucket === genreFilter))
-    .sort((a, b) => albumRatings[b.id].avg - albumRatings[a.id].avg)
-    .slice(0, 4);
-
-  const catalogFiltered = genreFilter === 'Всё' ? albums : albums.filter((a) => a.genreBucket === genreFilter);
-  const sorted = [...catalogFiltered].sort((a, b) => {
-    if (state.sortBy === 'year') return b.year - a.year || a.title.localeCompare(b.title);
-    if (state.sortBy === 'genre') return a.genreBucket.localeCompare(b.genreBucket) || a.title.localeCompare(b.title);
-    return a.artist.localeCompare(b.artist) || a.title.localeCompare(b.title);
-  });
 
   const regionLabel = me.region ? regionDisplayName(me.region, language) : t('discover.globalRegion');
 
@@ -313,93 +354,18 @@ export function DiscoverScreen(_props: { device: Device }) {
           {/* Shelves of big cards (after Superfan's search page). */}
           {filter !== 'artists' && <PopularNowSection genre={genreFilter} />}
 
-          {filter !== 'albums' && <FandomsForYou />}
+          {filter !== 'albums' && <FanClubsForYou />}
 
           {filter !== 'albums' && <ConcertsFeed />}
 
-          {filter !== 'artists' && (
-            topRatedFiltered.length ? (
-              <Shelf title={t('catalog.topRated')}>
-                {topRatedFiltered.map((a, i) => (
-                  <AlbumShelfCard
-                    key={a.id}
-                    cover={spotifyCovers[a.id] || a.cover}
-                    title={a.title}
-                    artist={a.artist}
-                    artistId={a.artistId}
-                    badge={`#${i + 1}`}
-                    meta={`★ ${fmt1(albumRatings[a.id].avg)} · ${t('groups.ratingsN', { n: albumRatings[a.id].count })}`}
-                    onClick={() => openAlbum(a.id)}
-                  />
-                ))}
-              </Shelf>
-            ) : (
-              <section className="sh14">
-                <div className="hd"><h2>{t('catalog.topRated')}</h2></div>
-                <div className="tile t-soft2 empty"><MascotIcon /><p className="muted" style={{ fontWeight: 600 }}>{t('catalog.topRatedEmpty', { n: MIN_RATINGS_FOR_TOP })}</p></div>
-              </section>
-            )
-          )}
+          {filter !== 'artists' && <TopRatedShelf genre={genreFilter} />}
 
-          {filter !== 'artists' && (
-            <section className="sh14">
-              <div className="hd"><h2>{t('discover.reviewsWorthReading')}</h2></div>
-              <SiteReviewsBlock />
-            </section>
-          )}
+          {filter !== 'artists' && <SiteReviewsShelf />}
 
-          {filter !== 'albums' && (
-            <section className="sh14">
-              <div className="hd"><h2>{t('catalog.genreTops')}</h2></div>
-              <p className="muted sb">{regionLabel}</p>
-              <GenreTopArtists onlyGenre={genreFilter} />
-            </section>
-          )}
+          {filter !== 'albums' && <GenreTopArtists onlyGenre={genreFilter} sub={regionLabel} />}
 
-          {filter !== 'albums' && (genreFilter === 'Всё' || genreFilter === 'Electronic') && (
-            <section className="sh14">
-              <div className="hd"><h2>{t('catalog.obscureArtists')}</h2></div>
-              <p className="muted sb">Electronic · {t('discover.obscureSubtitle', { region: regionLabel })}</p>
-              <ObscureAlbums genre="Electronic" />
-            </section>
-          )}
+          {filter !== 'albums' && <ObscureAlbums genre={genreFilter === 'Всё' ? 'Electronic' : genreFilter} sub={`${genreFilter === 'Всё' ? 'Electronic' : genreFilter} · ${t('discover.obscureSubtitle', { region: regionLabel })}`} />}
 
-          {/* Full catalog as a table: eight rows, then "show all". */}
-          {/* Full catalog as a table: eight rows, then "show all". */}
-          {filter !== 'artists' && (
-            <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginTop: 34 }}>
-                <h2 style={{ margin: 0 }}>{t('catalog.fullCatalog')} <span className="cnt">{sorted.length}</span></h2>
-                <div className="chips" style={{ margin: 0 }} role="group" aria-label={t('catalog.sortAria')}>
-                  {SORT_OPTIONS.map((s) => (
-                    <button key={s.key} className={`chip ${state.sortBy === s.key ? 'on' : ''}`} onClick={() => setSortBy(s.key)}>{s.label}</button>
-                  ))}
-                </div>
-              </div>
-              <div className="tile cat10" style={{ marginTop: 14 }}>
-                <div className="ch"><span /><span>{t('match.colAlbum')}</span><span>{t('catalog.colGenre')}</span><span>{t('catalog.colYear')}</span><span>{t('catalog.colScore')}</span><span>{t('catalog.colYou')}</span></div>
-                {(catalogAll ? sorted : sorted.slice(0, 8)).map((a) => {
-                  const mine = myRatings.find((r) => r.albumId === a.id)?.stars;
-                  const score = albumRatings[a.id]?.avg;
-                  return (
-                    <button className="row" key={a.id} onClick={() => openAlbum(a.id)}>
-                      <CoverArt url={spotifyCovers[a.id] || a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" px={40} style={{ width: 40, height: 40 }} />
-                      <span className="g"><b>{a.title}</b><small className="muted" style={{ fontWeight: 600 }}><ArtistName name={a.artist} id={a.artistId} size={16} /></small></span>
-                      <span className="tag gn">{a.genreBucket}</span>
-                      <span className="yy">{a.year}</span>
-                      <b className="num sc">{score != null ? fmt1(score) : '–'}</b>
-                      <span className="yu">{mine != null ? <span className="tag on9">{fmt1(mine)}</span> : <span className="muted">–</span>}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              {sorted.length > 8 && (
-                <button className="btn ghost" style={{ marginTop: 12 }} onClick={() => setCatalogAll((v) => !v)}>
-                  {catalogAll ? t('catalog.showFewer') : t('catalog.showAll', { n: sorted.length })}
-                </button>
-              )}
-            </>
-          )}
         </>
       )}
     </>

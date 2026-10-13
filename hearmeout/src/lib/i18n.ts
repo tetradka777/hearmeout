@@ -1301,14 +1301,15 @@ const ru = {
   'social.failed': 'Не получилось. Попробуй ещё раз.',
   'notify.comment': '{name} оставил(а) комментарий: «{text}»',
   'notify.reaction': '{name} отреагировал(а): {reaction}',
-  'fandoms.title': 'Фандомы',
-  'fandoms.forYou': 'Фандомы для тебя',
-  'fandoms.find': 'найти фандомы',
+  'fandoms.title': 'Фан-клубы',
+  'fandoms.forYou': 'Фан-клубы для тебя',
+  'fandoms.find': 'найти фан-клубы',
   'fandoms.members': '{n} {n|участник|участника|участников}',
   'fandoms.join': 'вступить',
-  'fandoms.joined': 'ты в фандоме',
-  'fandoms.empty': 'Подпишись на артиста на его странице — его фандом появится здесь.',
+  'fandoms.joined': 'ты в клубе',
+  'fandoms.empty': 'Подпишись на артиста на его странице — его фан-клуб появится здесь.',
   'fandoms.beFirst': 'стань первым',
+  'concerts.datesN': '{n} {n|концерт|концерта|концертов}',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2606,14 +2607,15 @@ const en: Dict = {
   'social.failed': "That didn't work. Try again.",
   'notify.comment': '{name} commented: “{text}”',
   'notify.reaction': '{name} reacted: {reaction}',
-  'fandoms.title': 'Fandoms',
-  'fandoms.forYou': 'Fandoms for you',
-  'fandoms.find': 'join fandoms',
+  'fandoms.title': 'Fan clubs',
+  'fandoms.forYou': 'Fan clubs for you',
+  'fandoms.find': 'find fan clubs',
   'fandoms.members': '{n} {n|member|members}',
   'fandoms.join': 'join',
   'fandoms.joined': "you're in",
-  'fandoms.empty': 'Follow an artist on their page and their fandom shows up here.',
+  'fandoms.empty': 'Follow an artist on their page and their fan club shows up here.',
   'fandoms.beFirst': 'be the first',
+  'concerts.datesN': '{n} {n|show|shows}',
 };
 
 const fr: Dict = {
@@ -3908,14 +3910,15 @@ const fr: Dict = {
   'social.failed': "Ça n'a pas marché. Réessaie.",
   'notify.comment': '{name} a commenté : « {text} »',
   'notify.reaction': '{name} a réagi : {reaction}',
-  'fandoms.title': 'Fandoms',
-  'fandoms.forYou': 'Fandoms pour toi',
-  'fandoms.find': 'trouver des fandoms',
+  'fandoms.title': 'Fan-clubs',
+  'fandoms.forYou': 'Fan-clubs pour toi',
+  'fandoms.find': 'trouver des fan-clubs',
   'fandoms.members': '{n} {n|membre|membres}',
   'fandoms.join': 'rejoindre',
   'fandoms.joined': 'tu en fais partie',
-  'fandoms.empty': 'Abonne-toi à un artiste sur sa page : son fandom apparaîtra ici.',
+  'fandoms.empty': 'Abonne-toi à un artiste sur sa page : son fan-club apparaîtra ici.',
   'fandoms.beFirst': 'sois le premier',
+  'concerts.datesN': '{n} {n|concert|concerts}',
 };
 
 const es: Dict = {
@@ -5210,14 +5213,15 @@ const es: Dict = {
   'social.failed': 'No ha funcionado. Inténtalo de nuevo.',
   'notify.comment': '{name} comentó: «{text}»',
   'notify.reaction': '{name} reaccionó: {reaction}',
-  'fandoms.title': 'Fandoms',
-  'fandoms.forYou': 'Fandoms para ti',
-  'fandoms.find': 'buscar fandoms',
+  'fandoms.title': 'Clubes de fans',
+  'fandoms.forYou': 'Clubes de fans para ti',
+  'fandoms.find': 'buscar clubes',
   'fandoms.members': '{n} {n|miembro|miembros}',
   'fandoms.join': 'unirse',
-  'fandoms.joined': 'ya estás',
-  'fandoms.empty': 'Sigue a un artista en su página y su fandom aparecerá aquí.',
+  'fandoms.joined': 'ya estás dentro',
+  'fandoms.empty': 'Sigue a un artista en su página y su club de fans aparecerá aquí.',
   'fandoms.beFirst': 'sé el primero',
+  'concerts.datesN': '{n} {n|concierto|conciertos}',
 };
 
 const de: Dict = {
@@ -6512,14 +6516,15 @@ const de: Dict = {
   'social.failed': 'Das hat nicht geklappt. Versuch es noch mal.',
   'notify.comment': '{name} hat kommentiert: „{text}“',
   'notify.reaction': '{name} hat reagiert: {reaction}',
-  'fandoms.title': 'Fandoms',
-  'fandoms.forYou': 'Fandoms für dich',
-  'fandoms.find': 'Fandoms finden',
+  'fandoms.title': 'Fanclubs',
+  'fandoms.forYou': 'Fanclubs für dich',
+  'fandoms.find': 'Fanclubs finden',
   'fandoms.members': '{n} {n|Mitglied|Mitglieder}',
   'fandoms.join': 'beitreten',
   'fandoms.joined': 'du bist dabei',
-  'fandoms.empty': 'Folge einem Künstler auf seiner Seite – sein Fandom erscheint dann hier.',
+  'fandoms.empty': 'Folge einem Künstler auf seiner Seite – sein Fanclub erscheint dann hier.',
   'fandoms.beFirst': 'sei der Erste',
+  'concerts.datesN': '{n} {n|Konzert|Konzerte}',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };

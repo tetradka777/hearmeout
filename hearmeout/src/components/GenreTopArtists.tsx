@@ -2,36 +2,49 @@
 
 import { useState } from 'react';
 import { useApp } from '@/lib/AppContext';
-import { ArtistShelfCard } from './ui/SuperCards';
+import { usePaged } from '@/lib/usePaged';
+import type { CatalogArtist } from '@/lib/spotifyCatalog';
+import { ArtistShelfCard, Shelf } from './ui/SuperCards';
 
 const GENRES = ['Rock', 'Hip-Hop', 'Electronic', 'R&B', 'Pop', 'Latin'];
+const STEP = 10;
 
 // "Top artists by genre": the genres as chips, the chosen genre's artists
-// as a shelf of photo cards (after Superfan's fandoms).
-export function GenreTopArtists({ onlyGenre }: { onlyGenre?: string }) {
-  const { t, spotifyGenreArtists, openSpotifyArtist } = useApp();
+// as an endless shelf of photo cards (Spotify's genre search, 10 a page).
+export function GenreTopArtists({ onlyGenre, sub }: { onlyGenre?: string; sub?: string }) {
+  const { t, me, openSpotifyArtist } = useApp();
   const list = onlyGenre && onlyGenre !== 'Всё' ? GENRES.filter((g) => g === onlyGenre) : GENRES;
   const [picked, setPicked] = useState(list[0]);
   const genre = list.includes(picked) ? picked : list[0];
-  const artists = spotifyGenreArtists[genre];
+  const market = me?.region ? `&market=${encodeURIComponent(me.region)}` : '';
+  const { items, done, failed, more } = usePaged<CatalogArtist, number>(async (offset) => {
+    const from = offset ?? 0;
+    const res = await fetch(`/api/spotify/genre-artists?genre=${encodeURIComponent(genre)}&offset=${from}${market}`);
+    if (!res.ok) throw new Error(String(res.status));
+    const page = await res.json() as CatalogArtist[];
+    return { items: page, next: !page.length || from + STEP >= 1000 ? null : from + STEP };
+  }, (a) => a.id, [genre, market], 50);
 
+  const chips = list.length > 1 && (
+    <div className="chips" style={{ margin: '0 0 10px' }} role="group" aria-label={t('catalog.genreTops')}>
+      {list.map((g) => <button key={g} className={`chip${g === genre ? ' on' : ''}`} aria-pressed={g === genre} onClick={() => setPicked(g)}>{g}</button>)}
+    </div>
+  );
+  if (!items.length) {
+    return (
+      <section className="sh14">
+        <div className="hd"><h2>{t('catalog.genreTops')}</h2></div>
+        {sub && <p className="muted sb">{sub}</p>}
+        {chips}
+        <p className="muted">{failed ? t('generic.loadError') : done ? t('genreTop.empty') : t('genreTop.loading')}</p>
+      </section>
+    );
+  }
   return (
-    <>
-      {list.length > 1 && (
-        <div className="chips" style={{ margin: '0 0 10px' }} role="group" aria-label={t('catalog.genreTops')}>
-          {list.map((g) => <button key={g} className={`chip${g === genre ? ' on' : ''}`} aria-pressed={g === genre} onClick={() => setPicked(g)}>{g}</button>)}
-        </div>
-      )}
-      {artists === 'error' ? <p className="muted">{t('generic.loadError')}</p>
-        : !artists ? <p className="muted">{t('genreTop.loading')}</p>
-        : !artists.length ? <p className="muted">{t('genreTop.empty')}</p>
-        : (
-          <div className="hrow sr14">
-            {artists.slice(0, 10).map((ar, i) => (
-              <ArtistShelfCard key={ar.id} name={ar.name} id={ar.id} photo={ar.photo} sub={`#${i + 1} · ${genre}`} onClick={() => openSpotifyArtist(ar.id, ar.name)} />
-            ))}
-          </div>
-        )}
-    </>
+    <Shelf title={t('catalog.genreTops')} sub={sub} top={chips} onMore={more} done={done}>
+      {items.map((ar, i) => (
+        <ArtistShelfCard key={ar.id} name={ar.name} id={ar.id} photo={ar.photo} sub={`#${i + 1} · ${genre}`} onClick={() => openSpotifyArtist(ar.id, ar.name)} />
+      ))}
+    </Shelf>
   );
 }
