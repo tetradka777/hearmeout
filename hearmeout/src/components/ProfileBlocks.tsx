@@ -2,6 +2,7 @@
 
 import { useApp } from '@/lib/AppContext';
 import { CoverArt } from './ui/CoverArt';
+import { ArtistName } from './ui/ArtistName';
 import { fmt1 } from '@/lib/numberFormat';
 import { HeartIcon } from './ui/Icons';
 import { sizedImage } from '@/lib/imageSize';
@@ -18,7 +19,7 @@ export function LovedTracksColumn() {
       {items.map((li) => (
         <div className="row" key={li.id}>
           <CoverArt url={li.cover ?? undefined} fallbackLetter={(li.artist || li.title)[0] || '?'} className="cov" px={44} style={{ width: 44, height: 44 }} />
-          <span className="g"><b>{li.title}</b>{li.artist && <small className="muted" style={{ fontWeight: 600 }}>{li.artist}</small>}</span>
+          <span className="g"><b>{li.title}</b>{li.artist && <small className="muted" style={{ fontWeight: 600 }}><ArtistName name={li.artist} size={16} /></small>}</span>
           <button className="ib love on" onClick={() => toggleLoved(li.type, li.title, li.artist, li.itemId, li.cover)} aria-pressed="true" aria-label={t('album.removeFromLoved')}><HeartIcon /></button>
         </div>
       ))}
@@ -38,7 +39,11 @@ export function LovedAlbumsColumn() {
           <div className="row" key={li.id}>
             <button className="rowlink" onClick={() => a && openAlbum(a.id)} style={{ cursor: a ? 'pointer' : 'default' }}>
               <CoverArt url={li.cover ?? undefined} fallbackLetter={(li.artist || li.title)[0] || '?'} className="cov" style={{ width: 44, height: 44 }} />
-              <span className="g"><b>{li.title}</b><small className="muted" style={{ fontWeight: 600 }}>{[li.artist, a?.year || null, (() => { const mine = a ? myRatings.find((r) => r.albumId === a.id)?.stars : undefined; return mine != null ? t('stats.youRated', { score: fmt1(mine) }) : null; })()].filter(Boolean).join(' · ')}</small></span>
+              <span className="g"><b>{li.title}</b><small className="muted" style={{ fontWeight: 600 }}>{(() => {
+                const mine = a ? myRatings.find((r) => r.albumId === a.id)?.stars : undefined;
+                const rest = [a?.year || null, mine != null ? t('stats.youRated', { score: fmt1(mine) }) : null].filter(Boolean).join(' · ');
+                return <>{li.artist && <ArtistName name={li.artist} id={a?.artistId} size={16} />}{rest ? `${li.artist ? ' · ' : ''}${rest}` : null}</>;
+              })()}</small></span>
             </button>
             <button className="ib love on" onClick={() => toggleLoved(li.type, li.title, li.artist, li.itemId, li.cover)} aria-pressed="true" aria-label={t('album.removeFromLoved')}><HeartIcon /></button>
           </div>

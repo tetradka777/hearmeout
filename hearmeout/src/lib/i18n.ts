@@ -102,10 +102,7 @@ const ru = {
   'match.notEnoughForGaps': 'Вы пока не оценивали одни и те же альбомы.',
   'match.sharedArtistsTitle': 'Общие артисты',
   'match.noSharedArtists': 'Общих артистов пока нет',
-  'match.yourBlend': 'Ваш общий Blend',
-  'match.yourBlendSubtitle': 'Постер из любимых треков вас обоих за этот месяц: ты и {name}',
   'match.weeklyLeaderboard': 'Рейтинг недели',
-  'match.yourFriendsByMatch': 'Друзья по совпадению вкусов',
   'match.sharedArtistsCount': 'общих артистов: {count}',
   'match.discoverTitle': 'С кем у тебя может совпасть',
   'match.discoverRowSubtitle': 'совпадение {score}% · общих альбомов: {count}',
@@ -1266,6 +1263,7 @@ const ru = {
   'artist.mbAlbums': 'альбомов',
   'artist.mbActive': 'годы',
   'artist.mbNoRatings': 'оценок пока нет',
+  'artist.openNamed': 'Открыть артиста {name}',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -1363,10 +1361,7 @@ const en: Dict = {
   'match.notEnoughForGaps': 'You have not rated the same albums yet.',
   'match.sharedArtistsTitle': 'Shared artists',
   'match.noSharedArtists': 'No shared artists yet',
-  'match.yourBlend': 'Your blend',
-  'match.yourBlendSubtitle': "A poster mixing your and {name}'s favorite tracks this month",
   'match.weeklyLeaderboard': 'Weekly leaderboard',
-  'match.yourFriendsByMatch': 'Your friends by match',
   'match.sharedArtistsCount': '{count} shared artists',
   'match.discoverTitle': 'People you might match with',
   'match.discoverRowSubtitle': '{score}% match · {count} shared albums',
@@ -2528,6 +2523,7 @@ const en: Dict = {
   'artist.mbAlbums': 'albums',
   'artist.mbActive': 'active',
   'artist.mbNoRatings': 'no ratings yet',
+  'artist.openNamed': 'Open artist {name}',
 };
 
 const fr: Dict = {
@@ -2622,10 +2618,7 @@ const fr: Dict = {
   'match.notEnoughForGaps': 'Vous n’avez pas encore noté les mêmes albums.',
   'match.sharedArtistsTitle': 'Artistes en commun',
   'match.noSharedArtists': 'Aucun artiste en commun pour l’instant',
-  'match.yourBlend': 'Votre Blend',
-  'match.yourBlendSubtitle': 'Une affiche qui mélange tes titres préférés et ceux de {name} ce mois-ci',
   'match.weeklyLeaderboard': 'Classement de la semaine',
-  'match.yourFriendsByMatch': 'Tes amis par affinité',
   'match.sharedArtistsCount': '{count} {count|artiste|artistes} en commun',
   'match.discoverTitle': 'Des affinités à découvrir',
   'match.discoverRowSubtitle': '{score} % d’affinité · {count} {count|album|albums} en commun',
@@ -3787,6 +3780,7 @@ const fr: Dict = {
   'artist.mbAlbums': 'albums',
   'artist.mbActive': 'actif',
   'artist.mbNoRatings': 'pas encore de notes',
+  'artist.openNamed': "Ouvrir l'artiste {name}",
 };
 
 const es: Dict = {
@@ -3881,10 +3875,7 @@ const es: Dict = {
   'match.notEnoughForGaps': 'Aún no hay álbumes que los dos hayan valorado.',
   'match.sharedArtistsTitle': 'Artistas en común',
   'match.noSharedArtists': 'Aún no hay artistas en común',
-  'match.yourBlend': 'El Blend de los dos',
-  'match.yourBlendSubtitle': 'Un póster que mezcla tus canciones favoritas y las de {name} este mes',
   'match.weeklyLeaderboard': 'Clasificación semanal',
-  'match.yourFriendsByMatch': 'Tus amigos por afinidad',
   'match.sharedArtistsCount': '{count} {count|artista|artistas} en común',
   'match.discoverTitle': 'Gente con quien podrías conectar',
   'match.discoverRowSubtitle': '{score} % de afinidad · {count} {count|álbum|álbumes} en común',
@@ -5046,6 +5037,7 @@ const es: Dict = {
   'artist.mbAlbums': 'álbumes',
   'artist.mbActive': 'activo',
   'artist.mbNoRatings': 'sin valoraciones aún',
+  'artist.openNamed': 'Abrir artista {name}',
 };
 
 const de: Dict = {
@@ -5140,10 +5132,7 @@ const de: Dict = {
   'match.notEnoughForGaps': 'Ihr habt noch keine gemeinsamen Alben bewertet.',
   'match.sharedArtistsTitle': 'Gemeinsame Artists',
   'match.noSharedArtists': 'Noch keine gemeinsamen Artists',
-  'match.yourBlend': 'Euer Blend',
-  'match.yourBlendSubtitle': 'Ein Poster aus euren Lieblingstracks diesen Monat: deine und die von {name}',
   'match.weeklyLeaderboard': 'Wochen-Rangliste',
-  'match.yourFriendsByMatch': 'Deine Freunde nach Match',
   'match.sharedArtistsCount': '{count} gemeinsame Artists',
   'match.discoverTitle': 'Mit diesen Leuten könntest du matchen',
   'match.discoverRowSubtitle': '{score} % Match · {count} {count|gemeinsames Album|gemeinsame Alben}',
@@ -6305,6 +6294,7 @@ const de: Dict = {
   'artist.mbAlbums': 'Alben',
   'artist.mbActive': 'aktiv',
   'artist.mbNoRatings': 'noch keine Bewertungen',
+  'artist.openNamed': 'Künstler {name} öffnen',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };

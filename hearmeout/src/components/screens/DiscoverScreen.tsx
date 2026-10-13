@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { ArtistAvatar, ArtistName } from '../ui/ArtistName';
 import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { Album, Device, DiscoverMatchPerson } from '@/lib/types';
@@ -80,7 +81,7 @@ function ArtistChip({ name, avg }: { name: string; avg: number | null }) {
         }
       }}
     >
-      <span className="dot" style={{ width: 44, height: 44, fontSize: 18 }}>{name[0]}</span>
+      <ArtistAvatar name={name} size={44} />
       <span className="g"><b>{name}</b></span>
       {avg != null && <b className="num" style={{ fontSize: 22, color: 'var(--acct)' }}>{fmt1(avg)}</b>}
     </button>
@@ -96,7 +97,7 @@ function AlbumRow({ album: a }: { album: Album }) {
   return (
     <button className="row alr10" onClick={() => openAlbum(a.id)}>
       <CoverArt url={spotifyCovers[a.id] || a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" px={48} style={{ width: 48, height: 48 }} />
-      <span className="g"><b>{a.title}</b><small className="muted">{a.artist} · {a.year}</small></span>
+      <span className="g"><b>{a.title}</b><small className="muted"><ArtistName name={a.artist} id={a.artistId} size={16} /> · {a.year}</small></span>
       {score != null && <b className="num" style={{ fontSize: 22, color: 'var(--acct)' }}>{fmt1(score)}</b>}
       {mine != null && <span className="tag on9">{t('stats.youRated', { score: fmt1(mine) })}</span>}
     </button>
@@ -335,7 +336,7 @@ export function DiscoverScreen(_props: { device: Device }) {
                       <button className="row" key={a.id} onClick={() => openAlbum(a.id)}>
                         <span className="rk11" style={i === 0 ? { color: 'var(--acct)' } : undefined}>{i + 1}</span>
                         <CoverArt url={spotifyCovers[a.id] || a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" px={50} style={{ width: 50, height: 50 }} />
-                        <span className="g"><b>{a.title}</b><small className="muted" style={{ fontWeight: 600 }}>{a.artist} · {t('groups.ratingsN', { n: albumRatings[a.id].count })}</small></span>
+                        <span className="g"><b>{a.title}</b><small className="muted" style={{ fontWeight: 600 }}><ArtistName name={a.artist} id={a.artistId} size={16} /> · {t('groups.ratingsN', { n: albumRatings[a.id].count })}</small></span>
                         <b className="num" style={{ fontSize: 26, color: 'var(--acct)' }}>{fmt1(albumRatings[a.id].avg)}</b>
                       </button>
                     ))}
@@ -386,7 +387,7 @@ export function DiscoverScreen(_props: { device: Device }) {
                   return (
                     <button className="row" key={a.id} onClick={() => openAlbum(a.id)}>
                       <CoverArt url={spotifyCovers[a.id] || a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" px={40} style={{ width: 40, height: 40 }} />
-                      <span className="g"><b>{a.title}</b><small className="muted" style={{ fontWeight: 600 }}>{a.artist}</small></span>
+                      <span className="g"><b>{a.title}</b><small className="muted" style={{ fontWeight: 600 }}><ArtistName name={a.artist} id={a.artistId} size={16} /></small></span>
                       <span className="tag gn">{a.genreBucket}</span>
                       <span className="yy">{a.year}</span>
                       <b className="num sc">{score != null ? fmt1(score) : '–'}</b>

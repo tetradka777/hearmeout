@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { ArtistAvatar } from './ui/ArtistName';
 import { useApp } from '@/lib/AppContext';
 import { searchLibrary, type LibraryArtist, type LibraryReleaseGroup } from '@/lib/musicbrainz';
 
@@ -70,7 +71,7 @@ export function LiveLibrarySearch({ query, onResult }: { query: string; onResult
     <div className="tile t-soft2">
       {result.artists.map((ar) => (
         <button className="row" key={ar.id} onClick={() => openArtist(ar.id, ar.name)}>
-          <span className="dot">{ar.name[0]}</span>
+          <ArtistAvatar name={ar.name} size={44} />
           <span className="g"><b>{ar.name}</b><small className="muted" style={{ fontWeight: 600 }}>{t('liveSearch.artistType')}{ar.type ? ` · ${ar.type}` : ''}</small></span>
           <span className="tag">{t('liveSearch.openLibraryTag')}</span>
         </button>

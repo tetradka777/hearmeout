@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { ArtistName } from '../ui/ArtistName';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { PROFILE_TAB_EVENT, takeRecentEvent } from '@/lib/uiEvents';
 import { useApp } from '@/lib/AppContext';
@@ -46,7 +47,7 @@ function RatingRow({ r }: { r: RatingRecord }) {
       <CoverArt url={a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: 48, height: 48 }} />
       <span className="g">
         <b>{a.title}</b>
-        <small className="muted" style={{ fontWeight: 600 }}>{a.artist}{a.artist ? ' · ' : ''}{new Date(r.createdAt).toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short' })}</small>
+        <small className="muted" style={{ fontWeight: 600 }}>{a.artist && <><ArtistName name={a.artist} size={16} /> · </>}{new Date(r.createdAt).toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short' })}</small>
       </span>
       <span className="stars"><Stars value={r.stars} size={14} /></span>
       <span className="num" style={{ fontSize: 26, width: 44, textAlign: 'right' }}>{fmt1(r.stars)}</span>
@@ -333,7 +334,7 @@ function ListeningTab() {
       {plays === null ? <p className="muted">{t('stats.loading')}</p> : plays.length ? plays.slice(0, 8).map((p, i) => (
         <button className="row" key={i} onClick={() => p.albumId && openAlbum(p.albumId)} style={{ cursor: p.albumId ? 'pointer' : 'default' }}>
           <CoverArt url={p.cover ?? undefined} fallbackLetter={p.artist[0] || '?'} className="cov" style={{ width: 48, height: 48 }} />
-          <span className="g"><b>{p.title}</b><small className="muted" style={{ fontWeight: 600 }}>{p.artist}</small></span>
+          <span className="g"><b>{p.title}</b><small className="muted" style={{ fontWeight: 600 }}><ArtistName name={p.artist} size={16} /></small></span>
           <small className="muted" style={{ fontWeight: 700 }}>{formatRelative(p.playedAt, language)}</small>
         </button>
       )) : (

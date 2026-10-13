@@ -4,6 +4,7 @@ import { useApp } from '@/lib/AppContext';
 import { fmt1 } from '@/lib/numberFormat';
 import type { Album } from '@/lib/types';
 import { CoverArt } from './CoverArt';
+import { ArtistName } from './ArtistName';
 
 // albCard() in reference/app.js: cover with your score as a badge (when you
 // rated it), title, then "artist · genre".
@@ -19,7 +20,7 @@ export function AlbumCard({ album, sub }: { album: Album; sub?: string }) {
         {mine && <span className="bdg">{fmt1(mine.stars)}</span>}
       </div>
       <b style={{ display: 'block', marginTop: 10 }}>{album.title}</b>
-      <small className="muted" style={{ fontWeight: 600 }}>{sub ?? `${album.artist}${genre ? ` · ${genre}` : ''}`}</small>
+      <small className="muted" style={{ fontWeight: 600, display: 'flex', alignItems: 'center', minWidth: 0 }}>{sub ?? <><ArtistName name={album.artist} id={album.artistId} size={16} />{genre ? <span style={{ whiteSpace: 'nowrap' }}>&nbsp;· {genre}</span> : null}</>}</small>
     </button>
   );
 }

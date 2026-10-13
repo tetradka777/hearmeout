@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { ArtistAvatar } from './ui/ArtistName';
 import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import { invitePath } from '@/lib/pendingInvite';
@@ -94,7 +95,8 @@ function CalibrateStep() {
             <CoverArt url={spotifyCovers[a.id] || a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: 54, height: 54 }} />
             <div className="g">
               <b>{a.title}</b><br />
-              <small className="muted" style={{ fontWeight: 600 }}>{a.artist}</small>
+              {/* Photo but no link: leaving mid-onboarding would lose the step. */}
+              <small className="muted arl" style={{ fontWeight: 600, cursor: 'default' }}><ArtistAvatar name={a.artist} size={16} /><span className="arn">{a.artist}</span></small>
               <div style={{ marginTop: 6 }}><StarSlider value={val} onChange={(v) => rate(a.id, v)} size={26} /></div>
             </div>
             <span className="num" style={{ fontSize: 26, width: 44, textAlign: 'right' }}>{val > 0 ? fmt1(val) : '–'}</span>

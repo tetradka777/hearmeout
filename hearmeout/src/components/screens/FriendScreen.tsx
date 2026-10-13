@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { ArtistName } from '../ui/ArtistName';
 import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { ApiUser, Device, PublicProfile, StatsData } from '@/lib/types';
@@ -59,7 +60,7 @@ function LatestRow({ albumId, mine, theirs, name }: { albumId: string; mine: num
   return (
     <button className={`row${big ? ' gapbig' : ''}`} onClick={() => openAlbum(albumId)}>
       <CoverArt url={a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: 44, height: 44 }} />
-      <span className="g"><b>{a.title}</b><small className="muted" style={{ fontWeight: 600 }}>{a.artist}</small></span>
+      <span className="g"><b>{a.title}</b><small className="muted" style={{ fontWeight: 600 }}><ArtistName name={a.artist} size={16} /></small></span>
       {big && <span className="tag" style={{ background: 'var(--acc)', color: 'var(--onacc)' }}>{t('friend.bigGapTag')}</span>}
       <ScoreCell value={theirs} label={name} size={24} accent />
       <ScoreCell value={mine} label={t('friend.you')} size={24} />
@@ -403,7 +404,7 @@ export function FriendScreen({ device: _device }: { device: Device }) {
           <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 10px' }}>{t('friend.topArtistsSubtitle', { name: firstName })}</p>
           {artistRows.length ? artistRows.map((r) => (
             <button className="cmp" key={r.name} onClick={() => r.id && openSpotifyArtist(r.id, r.name)} style={{ textAlign: 'left', width: '100%' }}>
-              <small style={{ fontWeight: 800 }}>{r.name}</small>
+              <small style={{ fontWeight: 800, display: 'block' }}><ArtistName name={r.name} id={r.id} size={22} /></small>
               <div className="cmpb"><i className="a" style={{ width: `${Math.round((r.me / maxHours) * 100)}%` }} /><b>{r.me}{t('unit.h')}</b></div>
               <div className="cmpb"><i className="b" style={{ width: `${Math.round((r.them / maxHours) * 100)}%` }} /><b>{r.them}{t('unit.h')}</b></div>
             </button>
@@ -419,7 +420,7 @@ export function FriendScreen({ device: _device }: { device: Device }) {
               <div>
                 <small style={{ fontWeight: 800 }}>{f.nowPlaying ? t('friend.listeningNow') : t('friend.lastPlayedAgo', { time: formatRelative(lp.startedAt, language) })}</small>
                 <h3>{a?.title ?? lp.title}</h3>
-                <p className="muted" style={{ fontWeight: 600 }}>{lp.artist}</p>
+                <p className="muted" style={{ fontWeight: 600 }}><ArtistName name={lp.artist} size={18} /></p>
               </div>
             </button>
           );

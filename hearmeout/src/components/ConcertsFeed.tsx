@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { ArtistName } from './ui/ArtistName';
 import { useApp } from '@/lib/AppContext';
 import { toLocale, regionDisplayName } from '@/lib/i18n';
 import type { ConcertFeedItem } from '@/app/api/concerts/route';
@@ -9,7 +10,7 @@ import type { ConcertFeedItem } from '@/app/api/concerts/route';
 // popular ones; your country's shows lead within each artist. Hidden when
 // the server has no TICKETMASTER_API_KEY or nothing is announced.
 export function ConcertsFeed() {
-  const { t, language, me, openSpotifyArtist, showToast } = useApp();
+  const { t, language, me } = useApp();
   const [data, setData] = useState<{ configured: boolean; items: ConcertFeedItem[] } | null>(null);
   const region = me?.region ?? null;
 
@@ -23,18 +24,6 @@ export function ConcertsFeed() {
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [me?.id, region]);
-
-  // Feed rows carry only the artist name; resolve the Spotify id on click,
-  // same as the artist chips in Discover.
-  const openByName = async (name: string) => {
-    try {
-      const res = await fetch(`/api/spotify/resolve-artist?name=${encodeURIComponent(name)}`);
-      if (!res.ok) { showToast(t('toast.artistOpenFailed')); return; }
-      openSpotifyArtist((await res.json()).id, name);
-    } catch {
-      showToast(t('toast.artistOpenFailed'));
-    }
-  };
 
   if (!data || !data.configured || !data.items.length) return null;
   const loc = toLocale(language);
@@ -59,7 +48,7 @@ export function ConcertsFeed() {
                 <div className="row" key={`${c.artist}-${c.id}`}>
                   <span className="num" style={{ fontSize: 22, width: 72 }}>{d.toLocaleDateString(loc, { day: 'numeric', month: 'short', timeZone: 'UTC' })}</span>
                   <span className="g">
-                    <button className="link" style={{ fontWeight: 800, display: 'block', textAlign: 'left' }} onClick={() => openByName(c.artist)}>{c.artist}</button>
+                    <b style={{ display: 'block' }}><ArtistName name={c.artist} size={22} /></b>
                     <small className="muted" style={{ fontWeight: 600 }}>{place}{c.time ? ` · ${c.time.slice(0, 5)}` : ''}</small>
                   </span>
                   {c.url && <a className="btn ghost" href={c.url} target="_blank" rel="noreferrer">{t('artist.tickets')}</a>}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { ArtistName } from '../ui/ArtistName';
 import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
@@ -68,7 +69,7 @@ function FriendsWhoRated({ albumId }: { albumId: string }) {
 export function RateScreen({ device: _device }: { device: Device }) {
   const {
     state, t, language, albums, liveAlbums, failedAlbumIds, albumRatings, myRatings, spotifyCovers,
-    reviewsVersion, openSpotifyArtist, ensureLiveAlbum, lovedItems, toggleLoved, laterItems, toggleLaterAlbum, toggleLaterTrack, me,
+    reviewsVersion, ensureLiveAlbum, lovedItems, toggleLoved, laterItems, toggleLaterAlbum, toggleLaterTrack, me,
     setRatingValue, publishRating, showToast, viewHistory,
   } = useApp();
   const { playQueue, currentTrack, playing, progress } = usePlayer();
@@ -200,7 +201,7 @@ export function RateScreen({ device: _device }: { device: Device }) {
         </div>
         <div className="stack">
           <p className="eyebrow muted">
-            {a.artistId ? <span className="link" style={{ cursor: 'pointer' }} onClick={() => openSpotifyArtist(a.artistId!, a.artist)}>{a.artist}</span> : a.artist}
+            <ArtistName name={a.artist} id={a.artistId} size={22} />
             {a.genre && <> · <span className="tag">{a.genre}</span></>}
             {a.year ? ` · ${a.year}` : ''}
             {a.tracklist.length ? ` · ${a.tracklist.length} ${t('album.tracksCount')}` : ''}

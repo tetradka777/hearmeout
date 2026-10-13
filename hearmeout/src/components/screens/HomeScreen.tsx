@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { ArtistName } from '../ui/ArtistName';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { ApiUser, Device, FeedEvent, FeedResponse, PublicProfile, RecapData } from '@/lib/types';
@@ -100,9 +101,11 @@ function RecapCard({ r, week }: { r: RecapData | undefined; week: number }) {
     <button className="tile t-ac rc" onClick={() => openRecap('me', 'week')}>
       <span className="rc-top"><span>{eyebrow}</span>{r && <span className="rc-new"><i aria-hidden="true" />{t('home.rcNew')}</span>}</span>
       <span className="rc-stage" aria-hidden="true">
-        {covers.map((c, i) => (
-          <span key={c} className={i === 0 ? 'c1' : 'c2'}><CoverArt url={c} fallbackLetter="?" className="cov" px={116} style={{ width: '100%', aspectRatio: '1' }} /></span>
-        ))}
+        <span className="rc-covs">
+          {covers.map((c, i) => (
+            <span key={c} className={i === 0 ? 'c1' : 'c2'}><CoverArt url={c} fallbackLetter="?" className="cov" px={116} style={{ width: '100%', aspectRatio: '1' }} /></span>
+          ))}
+        </span>
         {award && <span className="rc-stat"><small>{t('home.rcStatus')}</small><b>{t(`groups.${award}` as never)}</b></span>}
       </span>
       <span className="rc-nums">
@@ -306,7 +309,7 @@ function RateRow({ albumId }: { albumId: string }) {
   return (
     <button className="row" onClick={() => openAlbum(album.id)}>
       <CoverArt url={spotifyCovers[album.id] || album.cover} fallbackLetter={album.artist[0] || '?'} className="cov" style={{ width: 44, height: 44 }} />
-      <span className="g"><b>{album.title}</b><small className="muted">{album.artist}</small></span>
+      <span className="g"><b>{album.title}</b><small className="muted"><ArtistName name={album.artist} id={album.artistId} size={16} /></small></span>
       <Stars value={0} size={13} />
     </button>
   );
@@ -334,7 +337,7 @@ function TrendingRow({ rank, albumId, count, avg }: { rank: number; albumId: str
     <button className="row tr11" onClick={() => openAlbum(album.id)}>
       <span className="rk11">{rank}</span>
       <CoverArt url={spotifyCovers[album.id] || album.cover} fallbackLetter={album.artist[0] || '?'} className="cov" style={{ width: 44, height: 44 }} />
-      <span className="g"><b>{album.title}</b><small className="muted">{album.artist} · {t('home.trendingFriends', { n: count })}</small></span>
+      <span className="g"><b>{album.title}</b><small className="muted"><ArtistName name={album.artist} id={album.artistId} size={16} /> · {t('home.trendingFriends', { n: count })}</small></span>
       <b className="num" style={{ fontSize: 24, color: 'var(--acct)' }}>{fmt1(avg)}</b>
     </button>
   );
