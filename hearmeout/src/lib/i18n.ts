@@ -1308,7 +1308,7 @@ const ru = {
   'fandoms.join': 'вступить',
   'fandoms.joined': 'ты в фандоме',
   'fandoms.empty': 'Подпишись на артиста на его странице — его фандом появится здесь.',
-  'fandoms.beFirst': 'стань первым участником',
+  'fandoms.beFirst': 'стань первым',
 };
 
 export type TranslationKey = keyof typeof ru;

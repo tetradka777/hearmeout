@@ -15,9 +15,9 @@ import { socialKey } from '@/lib/socialClient';
 
 type Person = { id?: string; name: string; avatarUrl: string | null };
 
-// The dark card the feed, reviews and album of the day share (after
-// Superfan's): the cover, blurred, as the background; who and when on top;
-// the content; a footer line with "open →".
+// The card the feed and reviews share: the palette's ink with a glow of
+// the cover in one corner, who and when on top, the content, and at the
+// foot comments / reactions and a round "open" button.
 export function DarkCard({ cover, head, right, children, onOpen, footLeft, className = '' }: {
   cover?: string | null; head: ReactNode; right?: ReactNode; children: ReactNode; onOpen?: () => void; footLeft?: ReactNode; className?: string;
 }) {
@@ -30,7 +30,7 @@ export function DarkCard({ cover, head, right, children, onOpen, footLeft, class
       {onOpen && (
         <div className="ft">
           <span className="fl">{footLeft}</span>
-          <button className="op" onClick={onOpen}>{t('recap.friendOpen')} →</button>
+          <button className="op" onClick={onOpen} aria-label={t('recap.friendOpen')}><i className="ic ic-chev" aria-hidden="true" /></button>
         </div>
       )}
     </article>
@@ -47,14 +47,14 @@ export function CardWho({ user, when, onClick }: { user: Person | Person[]; when
           <span key={p.id ?? i} className="dot" style={{ ...userAvatarStyle(p), backgroundSize: 'cover' }}>{!p.avatarUrl && p.name[0]?.toUpperCase()}</span>
         ))}
       </span>
-      <span className="g"><b>{people.map((p) => p.name).join(' · ')}</b><small>{when}</small></span>
+      <span className="g"><b>{people.map((p) => p.name).join(' · ')}</b><small className="wp">{when}</small></span>
     </>
   );
   return onClick ? <button className="who13" onClick={onClick}>{inner}</button> : <span className="who13">{inner}</span>;
 }
 
-// A written review as a card: who and when, the score, the album (cover,
-// title, artist and a play button), the quote, the review's tags.
+// A written review as a card: who and when, the album (the cover carries
+// the score and a play button), the quote, the review's tags.
 export function ReviewCard({ user, createdAt, stars, review, tags, albumId, showAlbum = true, clamp = true }: {
   user: Person; createdAt: string; stars: number; review: string | null; tags?: string[]; albumId: string; showAlbum?: boolean; clamp?: boolean;
 }) {
@@ -69,33 +69,36 @@ export function ReviewCard({ user, createdAt, stars, review, tags, albumId, show
     <DarkCard
       cover={cover}
       head={<CardWho user={user} when={formatRelative(createdAt, language)} onClick={openWho} />}
-      right={<b className="sc13">★ {fmt1(stars)}</b>}
       onOpen={() => openAlbum(albumId)}
       footLeft={user.id ? <SocialBar target={socialKey.review(user.id, albumId)} title={a?.title} /> : null}
     >
       {showAlbum && a && (
         <div className="alb13">
-          <button className="cvb" onClick={() => openAlbum(albumId)} aria-label={a.title}>
-            <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="cov" px={72} style={{ width: 72, height: 72 }} />
-          </button>
+          <span className="cvb">
+            <button onClick={() => openAlbum(albumId)} aria-label={a.title}>
+              <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="cov" px={84} style={{ width: 84, height: 84 }} />
+            </button>
+            {firstTrack && (
+              <button className="pl13" onClick={() => playQueue([{ title: firstTrack, artist: a.artist, cover: cover ?? null, albumId: a.id }], 0)} aria-label={t('album.playPreviewOf', { title: firstTrack })}>
+                <i className="ic ic-play" />
+              </button>
+            )}
+          </span>
           <span className="g">
             <button className="tt" onClick={() => openAlbum(albumId)}>{a.title}</button>
             <small><ArtistName name={a.artist} id={a.artistId} size={16} /></small>
           </span>
-          {firstTrack && (
-            <button className="pl13" onClick={() => playQueue([{ title: firstTrack, artist: a.artist, cover: cover ?? null, albumId: a.id }], 0)} aria-label={t('album.playPreviewOf', { title: firstTrack })}>
-              <i className="ic ic-play" />
-            </button>
-          )}
+          <span className="scb14" aria-label={`★ ${fmt1(stars)}`}><b>{fmt1(stars)}</b><i className="ic ic-star" aria-hidden="true" /></span>
         </div>
       )}
+      {!(showAlbum && a) && <span className="scl14"><i className="ic ic-star" aria-hidden="true" /> {fmt1(stars)}</span>}
       {review && <p className={`q13${clamp ? ' clamp' : ''}`}>{quoted(language, review)}</p>}
       {shownTags.length > 0 && <div className="tg13">{shownTags.map((id) => <span key={id}>{t(REVIEW_TAG_LABEL_KEY[id])}</span>)}</div>}
     </DarkCard>
   );
 }
 
-// A titled shelf of big cards you swipe through (after Superfan's search page).
+// A titled shelf of big cards you swipe through.
 export function Shelf({ title, sub, right, children }: { title: string; sub?: ReactNode; right?: ReactNode; children: ReactNode }) {
   return (
     <section className="sh14">
@@ -106,7 +109,8 @@ export function Shelf({ title, sub, right, children }: { title: string; sub?: Re
   );
 }
 
-// An album on a shelf: the cover, then title, artist and one more line.
+// An album on a shelf: the cover (a rank in a circle on its corner), then
+// title, artist and one more line, straight on the page.
 export function AlbumShelfCard({ cover, title, artist, artistId, meta, badge, onClick }: {
   cover?: string | null; title: string; artist: string; artistId?: string | null; meta?: ReactNode; badge?: ReactNode; onClick: () => void;
 }) {
@@ -125,11 +129,12 @@ export function AlbumShelfCard({ cover, title, artist, artistId, meta, badge, on
   );
 }
 
-// An artist on a shelf: the photo filling the card, the name over it.
+// An artist on a shelf: a tinted card with the round photo, the name and
+// one line under it.
 export function ArtistShelfCard({ name, id, photo, sub, onClick }: { name: string; id?: string | null; photo?: string | null; sub?: ReactNode; onClick: () => void }) {
   return (
     <button className="arc14" onClick={onClick}>
-      <ArtistAvatar name={name} id={id} photo={photo} size={200} style={{ width: '100%', height: '100%', borderRadius: 0, fontSize: 64 }} />
+      <ArtistAvatar name={name} id={id} photo={photo} size={120} />
       <span className="tx"><b>{name}</b>{sub && <small>{sub}</small>}</span>
     </button>
   );

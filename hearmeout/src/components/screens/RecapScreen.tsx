@@ -233,11 +233,11 @@ export function RecapScreen(_props: { device: Device }) {
   const songQueue = song ? [{ title: song.title, artist: song.artist, cover: song.cover, albumId: song.albumId }] : [];
   const onSong = !!song && playing && currentTrack?.title === song.title && currentTrack?.albumId === song.albumId;
   const num = (n: number) => new Intl.NumberFormat(toLocale(language)).format(n);
-  // Genres as a word cloud: the bigger the share, the bigger the word.
-  const cloud = (genres: RecapData['topGenres'], max = 8) => (
-    <div className="gcl13" aria-label={t('recap.topGenres')}>
-      {genres.slice(0, max).map((g, i) => (
-        <span key={g.genre} style={{ fontSize: Math.round(15 + Math.min(1, g.pct / 45) * 21), opacity: Math.max(0.55, 1 - i * 0.08) }}>{g.genre}</span>
+  // Genres as chips that fill with their share.
+  const cloud = (genres: RecapData['topGenres'], max = 6) => (
+    <div className="gch14" aria-label={t('recap.topGenres')}>
+      {genres.slice(0, max).map((g) => (
+        <span key={g.genre} style={{ ['--w' as string]: `${Math.max(6, g.pct)}%` }}><b>{g.genre}</b><small>{g.pct}%</small></span>
       ))}
     </div>
   );
@@ -281,7 +281,7 @@ export function RecapScreen(_props: { device: Device }) {
             </header>
 
             <div className="vb">
-              <small className="k">≋ {t('recap.vibe')}</small>
+              <span className="vp">{t('recap.vibe')}</span>
               <h2>{line.lead}{line.em && <> <em>{line.em}</em></>}</h2>
             </div>
 
@@ -299,9 +299,10 @@ export function RecapScreen(_props: { device: Device }) {
                 <h3 className="k">{t('recap.topArtists')}</h3>
                 {r.topArtists.map((a, i) => (
                   <button className="ln" key={`${a.id ?? a.name}-${i}`} onClick={() => a.id && openSpotifyArtist(a.id, a.name)} style={{ cursor: a.id ? 'pointer' : 'default' }}>
-                    <ArtistAvatar name={a.name} id={a.id} size={52} />
-                    <span className="g"><b>{a.name}</b></span>
-                    <span className="x">{a.plays}<i>×</i></span>
+                    <span className="rk">{i + 1}</span>
+                    <ArtistAvatar name={a.name} id={a.id} size={48} />
+                    <span className="g"><b>{a.name}</b><span className="br"><i style={{ width: `${Math.round((a.plays / r.topArtists[0].plays) * 100)}%` }} /></span></span>
+                    <span className="x">{a.plays}</span>
                   </button>
                 ))}
               </div>
@@ -314,9 +315,10 @@ export function RecapScreen(_props: { device: Device }) {
                   const album = s.albumId ? (liveAlbums[s.albumId] || albums.find((x) => x.id === s.albumId)) : undefined;
                   return (
                     <button className="ln" key={`${s.albumId ?? s.title}-${i}`} onClick={() => s.albumId && openAlbum(s.albumId)} style={{ cursor: s.albumId ? 'pointer' : 'default' }}>
-                      <CoverArt url={s.cover ?? undefined} fallbackLetter={s.artist[0] || '?'} className="cov" px={52} style={{ width: 52, height: 52 }} />
+                      <span className="rk">{i + 1}</span>
+                      <CoverArt url={s.cover ?? undefined} fallbackLetter={s.artist[0] || '?'} className="cov" px={48} style={{ width: 48, height: 48 }} />
                       <span className="g"><b>{s.title}</b><small><ArtistName name={s.artist} id={album?.artistId} size={16} /></small></span>
-                      <span className="x">{s.plays}<i>×</i></span>
+                      <span className="x">{s.plays}</span>
                     </button>
                   );
                 })}
@@ -371,19 +373,18 @@ export function RecapScreen(_props: { device: Device }) {
                         <span className="g"><b>{f.name}</b><small>{range}</small></span>
                         {fr && fr.minutes > 0 && <span className="mp">{num(fr.minutes)} <small>{t('recap.minShort')}</small></span>}
                       </button>
-                      {text ? <span className="sm">{text}</span> : fr && (
-                        <>
-                          {fr.topGenres.length > 0 && cloud(fr.topGenres, 5)}
-                          <span className="k">{t('recap.topArtists')}</span>
-                          {fr.topArtists.slice(0, 3).map((a, i) => (
-                            <span className="ln" key={`${a.name}-${i}`}>
-                              <ArtistAvatar name={a.name} id={a.id} size={40} />
-                              <span className="g"><b>{a.name}</b></span>
-                              <span className="x">{a.plays}<i>×</i></span>
+                      {text ? <span className="sm">{text}</span> : fr && (() => {
+                        const fl = recapLine(fr, language, t);
+                        return (
+                          <>
+                            <span className="fv">{fl.lead}{fl.em && <> <em>{fl.em}</em></>}</span>
+                            <span className="fa">
+                              <span className="stk">{fr.topArtists.slice(0, 3).map((a, i) => <ArtistAvatar key={`${a.name}-${i}`} name={a.name} id={a.id} size={44} />)}</span>
+                              <small>{fr.topArtists.slice(0, 3).map((a) => a.name).join(', ')}</small>
                             </span>
-                          ))}
-                        </>
-                      )}
+                          </>
+                        );
+                      })()}
                       <span className="ft">
                         {fr && <SocialBar target={socialKey.recap(f.id, period, fr.range.start)} title={f.name} />}
                         <button className="op" onClick={() => openRecap(f.id)}>{t('recap.friendOpen')} →</button>
