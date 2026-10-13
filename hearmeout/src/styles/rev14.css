@@ -204,3 +204,102 @@
 @media (min-width:760px){.rd .fg14{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}}
 .rd .jn14{position:absolute;right:10px;top:10px;padding:7px 14px;border-radius:99px;background:var(--cream);color:var(--ink);font-weight:800;font-size:14px}
 .rd .jn14.on{background:var(--acc);color:var(--onacc)}
+
+/* ===== Our own take (2026-10-14): the Superfan screens were a reference,
+   not a template — each element here is drawn our way. ===== */
+
+/* Card: the palette's ink, a tile outline, the cover as a glow in one
+   corner (not the whole background), time as a pill, round "open". */
+.rd .dkc13{background:var(--ink);color:var(--cream);outline:var(--bw) solid var(--tb);outline-offset:calc(var(--bw) * -1);border-radius:calc(var(--r) + 2px);padding:18px 18px 0}
+[data-design="toxic"][data-mode="dark"] .rd .dkc13{background:color-mix(in srgb,var(--ink) 45%,#121210)}
+.rd .dkc13::before{inset:auto -60px -80px auto;width:70%;height:90%;border-radius:50%;filter:blur(48px) saturate(1.4);opacity:.55}
+.rd .dkc13::after{display:none}
+.rd .who13 .dot{box-shadow:none;outline:2px solid color-mix(in srgb,var(--cream) 60%,transparent);outline-offset:1px}
+.rd .who13 .wp{display:inline-block;align-self:flex-start;margin-top:3px;padding:2px 9px;border-radius:99px;background:color-mix(in srgb,var(--cream) 14%,transparent);color:var(--cream);font-size:12px}
+.rd .dkc13 .sc13{padding:6px 12px;border-radius:99px;background:var(--acc);color:var(--onacc);font-size:16px;margin-top:0}
+.rd .dkc13 .ft{border-top:0;padding:4px 0 16px}
+.rd .dkc13 .op{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--cream);color:var(--ink);font-size:18px;flex:none}
+.rd .dkc13 .op .ic-chev{opacity:1}
+/* review: score badge and play on the cover, quote with an accent bar */
+.rd .alb13{position:relative}
+.rd .alb13 .cvb{position:relative;line-height:0;flex:none}
+.rd .alb13 .cvb>button{border-radius:16px;overflow:hidden;line-height:0;display:block}
+.rd .alb13 .pl13{position:absolute;right:-6px;bottom:-6px;width:34px;height:34px;font-size:13px;background:var(--acc);color:var(--onacc);box-shadow:0 0 0 3px var(--ink)}
+.rd .scb14{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;width:62px;height:62px;border-radius:50%;background:var(--pop);color:var(--ink);line-height:1}
+.rd .scb14 b{font:800 22px/1 var(--font-display);letter-spacing:-.03em}
+.rd .scb14 i{font-size:12px;margin-top:3px}
+.rd .scl14{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:99px;background:var(--pop);color:var(--ink);font:800 16px/1 var(--font-display);margin-bottom:10px}
+.rd .q13{border-left:3px solid var(--acc);padding-left:12px}
+.rd .tg13 span{background:transparent;outline:1.5px solid color-mix(in srgb,var(--cream) 40%,transparent);outline-offset:-1.5px}
+/* feed: the cover sits inside the card */
+.rd .fd13{margin-right:0;align-items:flex-start}
+.rd .fd13 .bigcv{width:clamp(96px,30%,150px);border-radius:18px;margin-top:4px}
+.rd .fd13 .bigcv .cov{border-radius:18px}
+.rd .fd13 .sub{display:inline-block;align-self:flex-start;padding:3px 10px;border-radius:99px;background:var(--pop);color:var(--ink);font-size:14px}
+
+/* Recap sheet: the vibe in a pill, the numbers as one strip, genres as
+   filling chips, ranked lists with bars. */
+.rd .rsh13 .vp{display:inline-block;padding:4px 12px;border-radius:99px;background:var(--pop);color:var(--ink);font-weight:800;font-size:13px}
+.rd .rsh13 .st{display:flex;gap:0;border-radius:20px;background:color-mix(in srgb,var(--cream) 10%,transparent);padding:4px 0}
+.rd .rsh13 .st>div{flex:1;background:none;border:0;border-radius:0;text-align:left;padding:12px 16px}
+.rd .rsh13 .st>div+div{border-left:1px solid color-mix(in srgb,var(--cream) 22%,transparent)}
+.rd .rsh13 .st small{letter-spacing:.02em;text-transform:none;font-size:13px}
+.rd .gch14{display:flex;flex-wrap:wrap;gap:8px}
+.rd .gch14 span{position:relative;overflow:hidden;display:inline-flex;align-items:baseline;gap:6px;padding:7px 14px;border-radius:99px;background:color-mix(in srgb,currentColor 10%,transparent)}
+.rd .gch14 span::before{content:"";position:absolute;inset:0 auto 0 0;width:var(--w);background:color-mix(in srgb,var(--pop) 40%,transparent);z-index:0}
+.rd .gch14 b,.rd .gch14 small{position:relative;z-index:1}
+.rd .gch14 b{font-weight:800}
+.rd .gch14 small{font-weight:700;opacity:.8}
+.rd .rsh13 .ln .rk{flex:none;width:22px;font:800 18px/1 var(--font-display);opacity:.7;text-align:center}
+.rd .rsh13 .ln .br{display:block;height:6px;border-radius:99px;background:color-mix(in srgb,var(--cream) 14%,transparent);margin-top:6px;overflow:hidden}
+.rd .rsh13 .ln .br i{display:block;height:100%;border-radius:99px;background:var(--pop)}
+.rd .rsh13 .x,.rd .rcf13 .x{font-size:16px;opacity:.85}
+/* friends' recaps: the vibe and three artist photos stacked */
+.rd .rcf13 .fv{font:800 20px/1.15 var(--font-display);letter-spacing:-.02em}
+.rd .rcf13 .fv em{font-style:normal;text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:3px}
+.rd .rcf13 .fa{display:flex;align-items:center;gap:10px;min-width:0}
+.rd .rcf13 .stk{display:flex;flex:none}
+.rd .rcf13 .stk .aav{box-shadow:0 0 0 3px var(--paper)}
+.rd .rcf13 .stk .aav+.aav{margin-left:-14px}
+.rd .rcf13 .fa small{font-weight:700;opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .rcf13 .mp{border-radius:14px}
+
+/* Shelves: albums straight on the page, the rank as a circle */
+.rd .shc14{background:none;border-radius:0;overflow:visible}
+.rd .shc14 .im{border-radius:calc(var(--r) - 2px);overflow:visible}
+.rd .shc14 .im .cov{border-radius:calc(var(--r) - 2px)}
+.rd .shc14 .bg{top:auto;left:auto;right:-6px;bottom:-8px;min-width:38px;height:38px;padding:0 8px;display:grid;place-items:center;border-radius:99px;background:var(--acc);color:var(--onacc);font-size:14px;box-shadow:0 0 0 3px var(--bg)}
+.rd .shc14 .tx{padding:12px 2px 0}
+/* artists: a tinted card, the round photo, the name under it */
+.rd .arc14{aspect-ratio:auto;display:flex;flex-direction:column;align-items:center;gap:10px;padding:18px 12px 16px;background:color-mix(in srgb,var(--fg) 7%,var(--paper));color:var(--fg);text-align:center}
+.rd .arc14 .aav{position:static;box-shadow:0 0 0 4px var(--paper)}
+.rd .arc14 .tx{position:static;padding:0;background:none;align-items:center;max-width:100%}
+.rd .arc14 b{font-size:17px;max-width:100%}
+.rd .arc14 small{opacity:.75;max-width:100%}
+.rd .cc14 .tk,.rd .jn14{top:auto;right:auto;position:static;margin:8px auto 0;display:block}
+.rd .cc14{display:flex;flex-direction:column}
+.rd .srch14{border-radius:calc(var(--r) - 4px)!important;background:var(--paper)!important}
+.rd .sh14 .hd h2::after{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--acc);margin-left:8px;vertical-align:middle}
+
+/* Profile: round photo, our buttons, ranked "on repeat", pill tabs */
+.rd .phd14 .lgA{border-radius:50%}
+.rd .phd14 .phandle{margin-top:4px}
+.rd .phd14 .pbt14 .btn{flex:0 1 auto}
+.rd .phd14 .btn.ghost{color:var(--cream);outline-color:var(--cream);border-color:var(--cream)}
+.rd .sst14{border-radius:calc(var(--r) + 2px);color:var(--ink)}
+.rd .sst14 .ic{color:inherit}
+.rd .tal14 .aav{border-radius:30%!important;box-shadow:none}
+.rd .tal14 .nm{margin-top:8px;background:none;padding:0}
+.rd .orp14 .g3 button{position:relative}
+.rd .orp14 .rn{position:absolute;top:-6px;left:-6px;z-index:1;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--fg);color:var(--bg);font:800 14px/1 var(--font-display)}
+.rd .full14{width:auto;display:inline-flex;margin-top:16px;padding:12px 20px}
+.rd .btab14{gap:8px;padding:4px;border-radius:99px;background:color-mix(in srgb,var(--fg) 7%,transparent);width:max-content;max-width:100%}
+.rd .btab14 button{font-size:clamp(16px,3.6vw,20px);padding:8px 16px;border-radius:99px}
+.rd .btab14 button.on{background:var(--fg);color:var(--bg)}
+.rd .btab14 button.on::after{display:none}
+.rd .jn14{background:var(--fg);color:var(--bg);padding:8px 18px}
+.rd .jn14.on{background:var(--acc);color:var(--onacc)}
+.rd .cc14 .tk{background:var(--fg);color:var(--bg)}
+/* Profile header buttons in light on the dark header; the stats bar keeps its tile colour. */
+.rd .phd14{--bb:var(--cream);--bf:var(--ink)}
+.rd .tile.sst14{background:var(--pop);color:var(--ink)}

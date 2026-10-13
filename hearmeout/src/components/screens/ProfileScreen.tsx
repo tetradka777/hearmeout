@@ -497,8 +497,8 @@ export function ProfileScreen(_props: { device: Device }) {
       {/* The visible name is an editable field, so the page heading for
           screen readers is this hidden one. */}
       <h1 className="sr">{me.name}</h1>
-      {/* Header (after Superfan): a coloured block with a big photo, handle,
-          name and region, then friends / edit profile / share. */}
+      {/* Header: a coloured block with the photo, name, handle and region,
+          then friends / edit profile / share. */}
       <div className="phd14">
         <label className="avwrap" aria-label={t('profile.uploadPhoto')}>
           <span className="avt lgA" style={{ ...userAvatarStyle(me), backgroundSize: 'cover' }}>{!me.avatarUrl && me.name[0].toUpperCase()}</span>
@@ -517,6 +517,16 @@ export function ProfileScreen(_props: { device: Device }) {
           <span className="avhint">{t('profile.changePhoto')}</span>
         </label>
         <div className="pinfo">
+          <label className="sr" htmlFor="pname">{t('profile.displayName')}</label>
+          <input
+            className="pname"
+            id="pname"
+            maxLength={24}
+            defaultValue={me.name}
+            key={`n-${me.name}`}
+            onBlur={async (e) => { if (e.target.value.trim() !== me.name && !(await updateProfileName(e.target.value))) e.target.value = me.name; }}
+            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+          />
           <div className="phandle">
             <span>@</span>
             <label className="sr" htmlFor="phandle">{t('friends.handleLabel')}</label>
@@ -529,16 +539,6 @@ export function ProfileScreen(_props: { device: Device }) {
               onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
             />
           </div>
-          <label className="sr" htmlFor="pname">{t('profile.displayName')}</label>
-          <input
-            className="pname"
-            id="pname"
-            maxLength={24}
-            defaultValue={me.name}
-            key={`n-${me.name}`}
-            onBlur={async (e) => { if (e.target.value.trim() !== me.name && !(await updateProfileName(e.target.value))) e.target.value = me.name; }}
-            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-          />
           <p className="ploc">{me.region ? `${regionDisplayName(me.region, language)} · ` : ''}{t('profile.joined')} {formatJoinDate(me.joinedAt, language)}</p>
         </div>
         <div className="pbt14">
@@ -552,8 +552,8 @@ export function ProfileScreen(_props: { device: Device }) {
             {incomingRequests > 0 && <span className="badge" aria-label={t('friends.newRequestsAria', { count: incomingRequests })}>{incomingRequests}</span>}
             <span className="ar">›</span>
           </button>
-          <button className="pb" onClick={() => showScreen('settings')}><span className="l">{t('profile.editBtn')}</span></button>
-          <button className="pb" onClick={shareProfile}><span className="l">{t('profile.shareProfile')}</span></button>
+          <button className="btn" onClick={() => showScreen('settings')}>{t('profile.editBtn')}</button>
+          <button className="btn ghost" onClick={shareProfile}>{t('profile.shareProfile')}</button>
         </div>
         <div className="pcnt">
           {[[String(list.length), t('profile.ratingsL')], [fmt1(avg), t('profile.avgScoreL')], [String(reviews), t('profile.reviewsL')], [String(me.friends.length), t('profile.friendsL')]].map(([v, l]) => (
@@ -563,10 +563,10 @@ export function ProfileScreen(_props: { device: Device }) {
         </div>
       </div>
 
-      <button className="sst14" onClick={() => showScreen('stats')}>
+      <button className="tile t-pop sst14" onClick={() => showScreen('stats')}>
         <i className="ic ic-bolt" aria-hidden="true" />
         <span className="g"><b>{t('profile.quickStats')}</b>{weekStats && weekStats.hours > 0 && <small>{t('profile.hoursWeek', { h: fmtHours(weekStats.hours) })}</small>}</span>
-        <span className="op">{t('recap.friendOpen')} ›</span>
+        <i className="ic ic-chev" aria-hidden="true" />
       </button>
 
       <ProfileTopArtists />
@@ -659,13 +659,14 @@ function ProfileOnRepeat() {
       <div className="g3">
         {r.topSongs.slice(0, 3).map((s, i) => (
           <button key={`${s.title}-${i}`} onClick={() => s.albumId && openAlbum(s.albumId)}>
+            <span className="rn">{i + 1}</span>
             <CoverArt url={s.cover ?? undefined} fallbackLetter={s.artist[0] || '?'} className="cov" px={160} style={{ width: '100%', aspectRatio: '1' }} />
             <b>{s.title}</b>
             <small>{s.artist}</small>
           </button>
         ))}
       </div>
-      <button className="full14" onClick={() => openRecap('me', 'week')}><i className="ic ic-disc" aria-hidden="true" /> {t('profile.seeFullRecap')} ›</button>
+      <button className="btn ghost full14" onClick={() => openRecap('me', 'week')}>{t('profile.seeFullRecap')} →</button>
     </section>
   );
 }
