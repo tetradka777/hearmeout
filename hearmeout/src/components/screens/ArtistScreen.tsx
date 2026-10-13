@@ -8,8 +8,9 @@ import type { ApiUser, Device, SpotifyArtistAlbum } from '@/lib/types';
 import type { ArtistTopTrack } from '@/lib/spotifyCatalog';
 import type { Concert } from '@/lib/concerts';
 import { coverArtUrl } from '@/lib/musicbrainz';
-import { regionDisplayName, toLocale, quoted } from '@/lib/i18n';
+import { regionDisplayName, toLocale } from '@/lib/i18n';
 import { CoverArt } from '../ui/CoverArt';
+import { ReviewCard } from '../ui/SuperCards';
 import { BookmarkIcon, HeartIcon, PlayIcon } from '../ui/Icons';
 import { Stars } from '../redesign/Stars';
 import { MascotIcon } from '../redesign/icons';
@@ -287,19 +288,9 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
           )}
           {reviews === null ? <p className="muted">{t('artist.loadingAlbums')}</p>
             : !reviews.length ? <div className="tile t-soft2"><p className="muted" style={{ fontWeight: 600 }}>{t('artist.reviewsEmpty')}</p></div>
-            : reviews.map((rv, i) => {
-              const album = art.releasedAlbums?.find((al) => al.id === rv.albumId);
-              return (
-                <div className={`tile${i % 2 === 0 ? ' t-soft2' : ''}`} key={`${rv.user.id}-${rv.albumId}`}>
-                  <button className="who" onClick={() => viewFriend(rv.user.id)} style={{ display: 'flex', gap: 8, alignItems: 'center', fontWeight: 800, marginBottom: 8 }}>
-                    <span className="dot" style={{ ...userAvatarStyle(rv.user), width: 28, height: 28, fontSize: 12 }}>{rv.user.name[0]}</span>
-                    {rv.user.name} <Stars value={rv.stars} size={14} />
-                  </button>
-                  <p className="quote" style={{ fontSize: 19 }}>{quoted(language, rv.review)}</p>
-                  {album && <button className="link" onClick={() => openAlbum(album.id)} style={{ marginTop: 8 }}>{album.title}</button>}
-                </div>
-              );
-            })}
+            : reviews.map((rv) => (
+              <ReviewCard key={`${rv.user.id}-${rv.albumId}`} user={rv.user} createdAt={rv.createdAt} stars={rv.stars} review={rv.review} albumId={rv.albumId} />
+            ))}
         </div>
       );
     } else {

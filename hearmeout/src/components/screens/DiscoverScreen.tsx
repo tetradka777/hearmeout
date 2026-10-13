@@ -5,9 +5,10 @@ import { ArtistAvatar, ArtistName } from '../ui/ArtistName';
 import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { Album, Device, DiscoverMatchPerson } from '@/lib/types';
-import { userAvatarStyle, formatRelative } from '@/lib/format';
+import { userAvatarStyle } from '@/lib/format';
 import { CoverArt } from '../ui/CoverArt';
-import { regionDisplayName, quoted } from '@/lib/i18n';
+import { AlbumShelfCard, ReviewCard, Shelf } from '../ui/SuperCards';
+import { regionDisplayName } from '@/lib/i18n';
 import { LiveLibrarySearch } from '../LiveLibrarySearch';
 import { PopularNowSection } from '../PopularNowSection';
 import { ConcertsFeed } from '../ConcertsFeed';
@@ -104,10 +105,10 @@ function AlbumRow({ album: a }: { album: Album }) {
   );
 }
 
-type SiteReview = { stars: number; review: string; createdAt: string; albumId: string; user: { name: string; handle: string; avatarUrl: string | null } };
+type SiteReview = { stars: number; review: string; tags?: string[]; createdAt: string; albumId: string; user: { id?: string; name: string; handle: string; avatarUrl: string | null } };
 
 function SiteReviewsBlock() {
-  const { t, language, albums, liveAlbums, openAlbum } = useApp();
+  const { t, albums, liveAlbums } = useApp();
   const [reviews, setReviews] = useState<SiteReview[] | null>(() => peekJson<{ reviews: SiteReview[] }>('/api/reviews/recent')?.reviews ?? null);
 
   useEffect(() => {
@@ -125,16 +126,9 @@ function SiteReviewsBlock() {
   if (!resolved.length) return <p className="muted" style={{ fontWeight: 600 }}>{t('reviews.empty')}</p>;
 
   return (
-    <div className="tile t-soft2">
+    <div className="stack">
       {resolved.slice(0, 3).map(({ r, a }, i) => (
-        <button className="row rv10" key={i} onClick={() => openAlbum(a.id)}>
-          <span className="dot" style={userAvatarStyle(r.user)}>{!r.user.avatarUrl && r.user.name[0]}</span>
-          <span className="g">
-            <small className="muted" style={{ fontWeight: 700 }}>{t('reviews.onAlbum', { name: r.user.name, album: a.title, when: formatRelative(r.createdAt, language) })}</small>
-            <span className="quote" style={{ fontSize: 17, display: 'block', marginTop: 2 }}>{quoted(language, r.review)}</span>
-          </span>
-          <b className="num" style={{ fontSize: 26, color: 'var(--acct)' }}>{fmt1(r.stars)}</b>
-        </button>
+        <ReviewCard key={i} user={r.user} createdAt={r.createdAt} stars={r.stars} review={r.review} tags={r.tags} albumId={a.id} />
       ))}
     </div>
   );
@@ -249,9 +243,9 @@ export function DiscoverScreen(_props: { device: Device }) {
 
   return (
     <>
-      <p className="eyebrow muted">{t('discover.eyebrow')}</p>
-      <h1 className="big">{t('discover.title')}</h1>
-      <input className="field" type="search" style={{ maxWidth: 520, marginBottom: 16 }} placeholder={t('discover.searchPlaceholder')} aria-label={t('discover.searchAria')} value={query} onChange={(e) => setSearchQuery(e.target.value)} />
+      {/* Search first (after Superfan); the page title stays for screen readers. */}
+      <h1 className="sr">{t('discover.title')}</h1>
+      <input className="field srch14" type="search" placeholder={t('discover.searchPlaceholder')} aria-label={t('discover.searchAria')} value={query} onChange={(e) => setSearchQuery(e.target.value)} />
       <div className="chips" role="group" aria-label={t('discover.whatToShow')}>
         {FILTERS.map((f) => (
           <button key={f.key} className={`chip ${filter === f.key ? 'on' : ''}`} onClick={() => setFilter(f.key)}>{f.label}</button>
@@ -315,59 +309,59 @@ export function DiscoverScreen(_props: { device: Device }) {
         </>
       ) : (
         <>
-          {filter !== 'artists' && (
-            <>
-              <h2>{t('catalog.popularNow')}</h2>
-              <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 12px' }}>{t('catalog.popularNowSubtitle')}</p>
-              <PopularNowSection genre={genreFilter} />
-            </>
-          )}
+          {/* Shelves of big cards (after Superfan's search page). */}
+          {filter !== 'artists' && <PopularNowSection genre={genreFilter} />}
 
           {filter !== 'albums' && <ConcertsFeed />}
 
-          {/* Top rated beside reviews worth reading (rev 10c/11): rows, not tiles. */}
           {filter !== 'artists' && (
-            <div className="sec two" style={{ marginTop: 34 }}>
-              <div>
-                <h2>{t('catalog.topRated')}</h2>
-                {topRatedFiltered.length ? (
-                  <div className="tile">
-                    {topRatedFiltered.map((a, i) => (
-                      <button className="row" key={a.id} onClick={() => openAlbum(a.id)}>
-                        <span className="rk11" style={i === 0 ? { color: 'var(--acct)' } : undefined}>{i + 1}</span>
-                        <CoverArt url={spotifyCovers[a.id] || a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" px={50} style={{ width: 50, height: 50 }} />
-                        <span className="g"><b>{a.title}</b><small className="muted" style={{ fontWeight: 600 }}><ArtistName name={a.artist} id={a.artistId} size={16} /> · {t('groups.ratingsN', { n: albumRatings[a.id].count })}</small></span>
-                        <b className="num" style={{ fontSize: 26, color: 'var(--acct)' }}>{fmt1(albumRatings[a.id].avg)}</b>
-                      </button>
-                    ))}
-                  </div>
-                ) : <div className="tile t-soft2 empty"><MascotIcon /><p className="muted" style={{ fontWeight: 600 }}>{t('catalog.topRatedEmpty', { n: MIN_RATINGS_FOR_TOP })}</p></div>}
-              </div>
-              <div>
-                <h2>{t('discover.reviewsWorthReading')}</h2>
-                <SiteReviewsBlock />
-              </div>
-            </div>
+            topRatedFiltered.length ? (
+              <Shelf title={t('catalog.topRated')}>
+                {topRatedFiltered.map((a, i) => (
+                  <AlbumShelfCard
+                    key={a.id}
+                    cover={spotifyCovers[a.id] || a.cover}
+                    title={a.title}
+                    artist={a.artist}
+                    artistId={a.artistId}
+                    badge={`#${i + 1}`}
+                    meta={`★ ${fmt1(albumRatings[a.id].avg)} · ${t('groups.ratingsN', { n: albumRatings[a.id].count })}`}
+                    onClick={() => openAlbum(a.id)}
+                  />
+                ))}
+              </Shelf>
+            ) : (
+              <section className="sh14">
+                <div className="hd"><h2>{t('catalog.topRated')}</h2></div>
+                <div className="tile t-soft2 empty"><MascotIcon /><p className="muted" style={{ fontWeight: 600 }}>{t('catalog.topRatedEmpty', { n: MIN_RATINGS_FOR_TOP })}</p></div>
+              </section>
+            )
           )}
 
-          {/* Top artists by genre beside lesser-known artists. */}
+          {filter !== 'artists' && (
+            <section className="sh14">
+              <div className="hd"><h2>{t('discover.reviewsWorthReading')}</h2></div>
+              <SiteReviewsBlock />
+            </section>
+          )}
+
           {filter !== 'albums' && (
-            <div className="sec two" style={{ marginTop: 34 }}>
-              <div>
-                <h2>{t('catalog.genreTops')}</h2>
-                <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 12px' }}>{regionLabel}</p>
-                <GenreTopArtists onlyGenre={genreFilter} />
-              </div>
-              {(genreFilter === 'Всё' || genreFilter === 'Electronic') && (
-                <div>
-                  <h2>{t('catalog.obscureArtists')}</h2>
-                  <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 12px' }}>Electronic · {t('discover.obscureSubtitle', { region: regionLabel })}</p>
-                  <ObscureAlbums genre="Electronic" />
-                </div>
-              )}
-            </div>
+            <section className="sh14">
+              <div className="hd"><h2>{t('catalog.genreTops')}</h2></div>
+              <p className="muted sb">{regionLabel}</p>
+              <GenreTopArtists onlyGenre={genreFilter} />
+            </section>
           )}
 
+          {filter !== 'albums' && (genreFilter === 'Всё' || genreFilter === 'Electronic') && (
+            <section className="sh14">
+              <div className="hd"><h2>{t('catalog.obscureArtists')}</h2></div>
+              <p className="muted sb">Electronic · {t('discover.obscureSubtitle', { region: regionLabel })}</p>
+              <ObscureAlbums genre="Electronic" />
+            </section>
+          )}
+
+          {/* Full catalog as a table: eight rows, then "show all". */}
           {/* Full catalog as a table: eight rows, then "show all". */}
           {filter !== 'artists' && (
             <>

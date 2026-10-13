@@ -9,7 +9,7 @@ export async function GET() {
   const admin = supabaseAdmin();
   const { data, error } = await admin
     .from('ratings')
-    .select('user_id, stars, review, created_at, album_id, is_private, users(name, handle, avatar_url)')
+    .select('user_id, stars, review, tags, created_at, album_id, is_private, users(name, handle, avatar_url)')
     .not('review', 'is', null)
     .order('created_at', { ascending: false })
     .limit(40);
@@ -21,7 +21,7 @@ export async function GET() {
     .slice(0, 8)
     .map((r) => {
       const u = r.users as unknown as { name: string; handle: string; avatar_url: string | null } | null;
-      return { stars: Number(r.stars), review: r.review as string, createdAt: r.created_at as string, albumId: r.album_id as string, user: { name: u?.name ?? '', handle: u?.handle ?? '', avatarUrl: u?.avatar_url ?? null } };
+      return { stars: Number(r.stars), review: r.review as string, tags: Array.isArray(r.tags) ? (r.tags as string[]) : [], createdAt: r.created_at as string, albumId: r.album_id as string, user: { id: r.user_id as string, name: u?.name ?? '', handle: u?.handle ?? '', avatarUrl: u?.avatar_url ?? null } };
     });
   return NextResponse.json({ reviews });
 }

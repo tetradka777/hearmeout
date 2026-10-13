@@ -1,13 +1,11 @@
 'use client';
 
 import { useApp } from '@/lib/AppContext';
-import { CoverArt } from './ui/CoverArt';
-import { ArtistAvatar } from './ui/ArtistName';
+import { ArtistShelfCard } from './ui/SuperCards';
 
-// "Lesser-known artists" (prototype rev 11, lighter rows): real
-// low-popularity Spotify albums, one row per artist (the album cover, the
-// artist, the album that put them here); a row opens the artist page (or
-// the album without an artist id).
+// "Lesser-known artists": real low-popularity Spotify albums, one card per
+// artist (their photo, the album that put them here); a card opens the
+// artist page (or the album without an artist id).
 export function ObscureAlbums({ genre }: { genre: string }) {
   const { t, spotifyObscure, openAlbum, openSpotifyArtist } = useApp();
   const albums = spotifyObscure[genre];
@@ -18,15 +16,11 @@ export function ObscureAlbums({ genre }: { genre: string }) {
 
   const seen = new Set<string>();
   // Compilations ("Various Artists") aren't an artist to discover.
-  const artists = albums.filter((a) => !/^various artists$/i.test(a.artist) && (seen.has(a.artist) ? false : (seen.add(a.artist), true))).slice(0, 6);
+  const artists = albums.filter((a) => !/^various artists$/i.test(a.artist) && (seen.has(a.artist) ? false : (seen.add(a.artist), true))).slice(0, 8);
   return (
-    <div className="tile t-soft2">
+    <div className="hrow sr14">
       {artists.map((a) => (
-        <button className="row" key={a.id} onClick={() => (a.artistId ? openSpotifyArtist(a.artistId, a.artist) : openAlbum(a.id))}>
-          <ArtistAvatar name={a.artist} id={a.artistId} size={44} />
-          <span className="g"><b>{a.artist}</b><small className="muted">{a.title}</small></span>
-          <CoverArt url={a.cover ?? undefined} fallbackLetter={a.artist[0] || '?'} className="cov" px={36} style={{ width: 36, height: 36 }} />
-        </button>
+        <ArtistShelfCard key={a.id} name={a.artist} id={a.artistId} sub={a.title} onClick={() => (a.artistId ? openSpotifyArtist(a.artistId, a.artist) : openAlbum(a.id))} />
       ))}
     </div>
   );

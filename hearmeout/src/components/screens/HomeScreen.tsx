@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { ArtistName } from '../ui/ArtistName';
+import { CardWho, DarkCard } from '../ui/SuperCards';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { ApiUser, Device, FeedEvent, FeedResponse, PublicProfile, RecapData } from '@/lib/types';
@@ -11,7 +12,7 @@ import { Stars } from '../redesign/Stars';
 import { MascotIcon } from '../redesign/icons';
 import { MATCH_FRIEND_EVENT } from '@/lib/uiEvents';
 import { useFriendScores } from '@/lib/useFriendScores';
-import { toLocale, quoted } from '@/lib/i18n';
+import { toLocale, quoted, type Language, type TranslationKey } from '@/lib/i18n';
 import { completedWeekRange, isoWeekNumber } from '@/lib/weeks';
 import { cachedJson, peekJson, useCachedJson } from '@/lib/cachedJson';
 import { computeMatch } from '@/lib/matchScore';
@@ -31,10 +32,6 @@ import { useAlbum } from '@/lib/useAlbum';
 const RECAP_MIN_TRACKS = 10;
 // Feed rows shown (the account owner asked for at most two).
 const FEED_ROWS = 2;
-
-function Dot({ user, label }: { user?: ApiUser; label?: string }) {
-  return <span className="dot" style={user ? userAvatarStyle(user) : undefined}>{user ? (!user.avatarUrl && user.name[0]?.toUpperCase()) : label}</span>;
-}
 
 function HeroTile({ wide }: { wide: boolean }) {
   const { t, feed, showScreen } = useApp();
@@ -140,46 +137,65 @@ function minutesLabel(min: number, t: (k: 'unit.h' | 'unit.m') => string): strin
   return min >= 60 ? `${Math.floor(min / 60)}${t('unit.h')}${String(min % 60).padStart(2, '0')}` : `${min}${t('unit.m')}`;
 }
 
+// When something happened, the way a friend would say it: "this evening"
+// for today, "yesterday" and so on after that.
+function whenLabel(at: string, language: Language, t: (k: TranslationKey) => string): string {
+  const d = new Date(at);
+  const now = new Date();
+  if (d.toDateString() !== now.toDateString()) return formatRelative(at, language);
+  const h = d.getHours();
+  return t(h < 5 ? 'feed.whenNight' : h < 12 ? 'feed.whenMorning' : h < 18 ? 'feed.whenDay' : 'feed.whenEvening');
+}
+
+// One event as a dark card (after Superfan): who and when, the track or
+// album large, a line about it, the details, and the cover on the right.
 function FeedRow({ event }: { event: FeedEvent }) {
-  const { t, language, myRatings, openAlbum, spotifyCovers } = useApp();
+  const { t, language, myRatings, openAlbum, spotifyCovers, me, viewFriend } = useApp();
   const album = useAlbum(event.albumId);
-  const time = formatRelative(event.at, language);
   const cover = (album && (spotifyCovers[album.id] || album.cover)) || (event.type !== 'rating_review' ? event.cover : null) || undefined;
-  const open = () => { if (event.albumId) openAlbum(event.albumId); };
+  const open = event.albumId ? () => openAlbum(event.albumId!) : undefined;
+  const when = whenLabel(event.at, language, t);
 
+  let who: { id?: string; name: string; avatarUrl: string | null } = { name: t('friend.you'), avatarUrl: me?.avatarUrl ?? null };
+  let title = '';
+  let sub = '';
+  let meta: ReactNode = null;
+  let right: ReactNode = null;
   if (event.type === 'session') {
-    return (
-      <button className="row fd11" onClick={open}>
-        <Dot label={t('friend.you')[0]} />
-        <span className="g"><b>{t('home.sessionTitle', { time: minutesLabel(event.minutes, t) })}</b><small className="muted">{t('home.sessionSub', { artists: event.artists, tracks: event.plays })} · {time}</small></span>
-        <CoverArt url={cover} fallbackLetter="?" className="cov" style={{ width: 44, height: 44 }} />
-      </button>
-    );
+    title = t('home.sessionTitle', { time: minutesLabel(event.minutes, t) });
+    meta = t('home.sessionSub', { artists: event.artists, tracks: event.plays });
+  } else if (event.type === 'first_play') {
+    who = event.user;
+    title = event.trackTitle;
+    sub = t('home.firstPlayTag');
+    meta = <><ArtistName name={event.artist} id={album?.artistId} size={16} />{album ? <span>&nbsp;· {album.title}</span> : null}</>;
+  } else {
+    if (!album) return null;
+    who = event.user;
+    title = album.title;
+    const mine = myRatings.find((r) => r.albumId === event.albumId)?.stars;
+    const diff = mine != null ? Math.abs(mine - event.stars) : null;
+    sub = diff != null && diff >= 2 ? t('home.hotTake') : diff != null && diff <= 0.5 ? t('home.sameAsYou') : '';
+    meta = <ArtistName name={album.artist} id={album.artistId} size={16} />;
+    right = <b className="sc13">★ {fmt1(event.stars)}</b>;
   }
-
-  if (event.type === 'first_play') {
-    return (
-      <button className="row fd11" onClick={open}>
-        <Dot user={event.user} />
-        <span className="g"><b>{t('home.feedPlayed', { name: event.user.name, album: album?.title || event.trackTitle })}</b><small className="muted">{t('home.firstPlayTag')} · {quoted(language, event.trackTitle)} · {time}</small></span>
-        <CoverArt url={cover} fallbackLetter={event.artist[0] || '?'} className="cov" style={{ width: 44, height: 44 }} />
-      </button>
-    );
-  }
-
-  if (!album) return null;
-  const mine = myRatings.find((r) => r.albumId === event.albumId)?.stars;
-  const diff = mine != null ? Math.abs(mine - event.stars) : null;
+  const openWho = 'id' in who && who.id && who.id !== me?.id ? () => viewFriend(who.id!) : undefined;
   return (
-    <button className="row fd11" onClick={open}>
-      <Dot user={event.user} />
-      <span className="g"><b>{t('home.feedRated', { name: event.user.name, album: album.title })}</b><small className="muted">{quoted(language, event.review)} · {time}</small></span>
-      <span className="sc11">
-        <b className="num">{fmt1(event.stars)}</b>
-        {diff != null && diff >= 2 ? <small className="hot">{t('home.hotTake')}</small> : diff != null && diff <= 0.5 ? <small>{t('home.sameAsYou')}</small> : null}
-      </span>
-      <CoverArt url={cover} fallbackLetter={album.artist[0] || '?'} className="cov" style={{ width: 44, height: 44 }} />
-    </button>
+    <DarkCard cover={cover} head={<CardWho user={who} when={when} onClick={openWho} />} right={right} onOpen={open}>
+      <div className="fd13">
+        <div className="tx">
+          <h3>{title}</h3>
+          {sub && <p className="sub">{sub}</p>}
+          {event.type === 'rating_review' && event.review && <p className="q13 clamp">{quoted(language, event.review)}</p>}
+          {meta && <p className="meta">{meta}</p>}
+        </div>
+        {cover && (
+          <button className="bigcv" onClick={open} aria-label={title} tabIndex={-1}>
+            <CoverArt url={cover} fallbackLetter={title[0] || '?'} className="cov" px={150} style={{ width: '100%', aspectRatio: '1' }} />
+          </button>
+        )}
+      </div>
+    </DarkCard>
   );
 }
 
@@ -203,11 +219,9 @@ function FeedSection() {
         {chip('rating_review', t('home.filterRated'))}
         {chip('session', t('home.filterSession'))}
       </div>
-      <div className="tile">
-        {filtered.length ? filtered.slice(0, FEED_ROWS).map((e, i) => <FeedRow key={i} event={e} />) : (
-          <div className="empty"><MascotIcon /><p className="muted">{t('home.feedEmpty')}</p></div>
-        )}
-      </div>
+      {filtered.length ? <div className="stack fd13s">{filtered.slice(0, FEED_ROWS).map((e, i) => <FeedRow key={i} event={e} />)}</div> : (
+        <div className="tile empty"><MascotIcon /><p className="muted">{t('home.feedEmpty')}</p></div>
+      )}
     </div>
   );
 }
