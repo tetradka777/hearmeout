@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { ArtistName } from '../ui/ArtistName';
 import { useApp } from '@/lib/AppContext';
 import type { Device, LaterItem } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
@@ -25,7 +26,6 @@ function useAlbumTitle(albumId: string) {
 export function LaterRow({ item, onPlay }: { item: LaterItem; onPlay: (item: LaterItem) => void }) {
   const { t, language, openAlbum, removeLaterItem, showToast } = useApp();
   const albumTitle = useAlbumTitle(item.albumId);
-  const subtitle = item.type === 'track' && albumTitle ? `${item.artist} · ${albumTitle}` : item.artist;
 
   return (
     <div className="row later-row">
@@ -34,7 +34,7 @@ export function LaterRow({ item, onPlay }: { item: LaterItem; onPlay: (item: Lat
         <span className="g">
           <b>{item.title}</b>
           <small className="muted" style={{ fontWeight: 600 }}>
-            {subtitle} · {t('later.addedAgo', { time: formatRelative(item.createdAt, language) })}
+            {item.artist && <><ArtistName name={item.artist} size={16} /> · </>}{item.type === 'track' && albumTitle ? `${albumTitle} · ` : ''}{t('later.addedAgo', { time: formatRelative(item.createdAt, language) })}
           </small>
         </span>
         <span className="tag">{item.type === 'album' ? t('later.tagAlbum') : t('later.tagTrack')}</span>

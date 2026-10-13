@@ -11,7 +11,7 @@ import { sharedArtists } from '@/lib/sharedArtists';
 import { toLocale } from '@/lib/i18n';
 import { CoverArt } from '../ui/CoverArt';
 import { MascotIcon } from '../redesign/icons';
-import { BlendButton } from '../BlendButton';
+import { ArtistName } from '../ui/ArtistName';
 import { MATCH_FRIEND_EVENT, takeRecentEvent } from '@/lib/uiEvents';
 import { PROFILE_TAB_EVENT } from '../redesign/AvatarMenu';
 
@@ -20,6 +20,7 @@ type FriendInfo = RawInfo & { score: number | null };
 const EMPTY_INFO: RawInfo = { profile: null, stats6m: null, weekHours: null };
 
 const sharedArtistNames = sharedArtists;
+const SHARED_SHOWN = 6;
 
 // countUp() in reference/app.js: the hero percentage counts up to its value
 // over 450ms (ease-out cubic), replayed whenever the value changes or the
@@ -48,8 +49,8 @@ function useCountUp(target: number | null, replayKey: unknown): number | null {
 
 // vMatch() in reference/app.js: a friend picker (pills) drives one
 // continuous "You and {friend}" comparison — hero taste-match card with a
-// dot-meter, a disagreement/gap list, shared artists, a weekly leaderboard,
-// the full friends-by-match ranking, and a discover-more-people list. All
+// dot-meter, a disagreement/gap list, shared artists, a weekly leaderboard
+// (top three) and a discover-more-people list. All
 // numbers here are real (computeMatch, shared ratings, /api/stats), unlike
 // the prototype's own hardcoded demo data.
 export function MatchScreen(_props: { device: Device }) {
@@ -228,27 +229,20 @@ export function MatchScreen(_props: { device: Device }) {
           </div>
         </div>
         <div className="stack">
+          {/* The most played shared artists only, the rest as a count. */}
           <div className="tile">
             <h2>{t('match.sharedArtistsTitle')}</h2>
             {sharedArt.length ? (
               <div className="chips" style={{ margin: 0 }}>
-                {sharedArt.slice(0, 12).map((n) => <span className="chip" key={n}>{n}</span>)}
+                {sharedArt.slice(0, SHARED_SHOWN).map((n) => <ArtistName key={n} name={n} size={22} className="chip" />)}
+                {sharedArt.length > SHARED_SHOWN && <span className="chip" style={{ cursor: 'default' }}>+{sharedArt.length - SHARED_SHOWN}</span>}
               </div>
             ) : <p className="muted" style={{ fontWeight: 600 }}>{t('match.noSharedArtists')}</p>}
           </div>
-          {active && (
-            <div className="tile t-ac" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-              <div>
-                <h2 style={{ marginBottom: 4 }}>{t('match.yourBlend')}</h2>
-                <p style={{ fontWeight: 700 }}>{t('match.yourBlendSubtitle', { name: active.name })}</p>
-              </div>
-              <BlendButton me={me.id} friend={active.id} friendName={active.name.split(' ')[0]} matchPct={pct} />
-            </div>
-          )}
-          {/* Weekly leaderboard (rev 11): rank, who, a bar, hours, and how far you are from first. */}
+          {/* Weekly leaderboard (rev 11): the top three, and how far you are from first. */}
           <div className="tile lb10">
             <div className="hd10"><div><h2 style={{ margin: 0 }}>{t('match.weeklyLeaderboard')}</h2><small className="muted" style={{ fontWeight: 700 }}>{t('match.leaderboardSub')}</small></div></div>
-            {leaderboard.map((l, i) => (
+            {leaderboard.slice(0, 3).map((l, i) => (
               <div className="row" key={l.id}>
                 <span className="rk11">{i + 1}</span>
                 <span className="dot" style={l.user ? userAvatarStyle(l.user) : undefined}>{l.user ? !l.user.avatarUrl && l.user.name[0] : t('friend.you')[0]}</span>
@@ -261,18 +255,7 @@ export function MatchScreen(_props: { device: Device }) {
         </div>
       </div>
 
-      <div className="sec two">
-        <div className="tile">
-          <div className="hd10"><h2 style={{ margin: 0 }}>{t('match.yourFriendsByMatch')}</h2></div>
-          {ranked.map((f, i) => (
-            <button className="row" key={f.id} onClick={() => { setSelectedId(f.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-              <span className="rk11">{i + 1}</span>
-              <span className="dot" style={userAvatarStyle(f)}>{!f.avatarUrl && f.name[0]}</span>
-              <span className="g"><b>{f.name}</b><span className="meter" style={{ display: 'block', marginTop: 5 }}><i style={{ width: `${info[f.id]?.score ?? 0}%` }} /></span></span>
-              <b className="num" style={{ fontSize: 26, color: 'var(--acct)' }}>{info[f.id]?.score != null ? `${info[f.id]!.score}%` : '–'}</b>
-            </button>
-          ))}
-        </div>
+      <div className="sec">
         <div className="tile t-soft2">
           <div className="hd10"><h2 style={{ margin: 0 }}>{t('match.discoverTitle')}</h2></div>
           {discover !== null && discover.length ? discover.slice(0, 3).map((p) => (

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { ArtistAvatar, ArtistName } from '../ui/ArtistName';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { Device, PublicProfile, RecapData, RecapPeriod } from '@/lib/types';
@@ -308,7 +309,7 @@ export function RecapScreen(_props: { device: Device }) {
                 <button style={{ flex: 1, minWidth: 0, textAlign: 'left' }} onClick={() => r.topSongs[0].albumId && openAlbum(r.topSongs[0].albumId)}>
                   <small style={{ fontWeight: 800 }}>{t(`recap.songOf.${period}` as TranslationKey)}</small>
                   <h3>{r.topSongs[0].title}</h3>
-                  <p style={{ fontWeight: 600 }}>{r.topSongs[0].artist}</p>
+                  <p style={{ fontWeight: 600 }}><ArtistName name={r.topSongs[0].artist} size={18} /></p>
                 </button>
                 <button
                   className="play"
@@ -325,7 +326,7 @@ export function RecapScreen(_props: { device: Device }) {
               {r.topArtists.length ? r.topArtists.map((a, i) => (
                 <button className="row" key={`${a.id ?? a.name}-${i}`} onClick={() => a.id && openSpotifyArtist(a.id, a.name)} style={{ cursor: a.id ? 'pointer' : 'default' }}>
                   <span className="rk11">{i + 1}</span>
-                  <CoverArt url={a.cover ?? undefined} fallbackLetter={a.name[0] || '?'} className="cov" style={{ width: 44, height: 44 }} />
+                  <ArtistAvatar name={a.name} size={44} />
                   <span className="g"><b>{a.name}</b><span className="meter" style={{ display: 'block', marginTop: 5 }}><i style={{ width: `${Math.round((a.plays / r.topArtists[0].plays) * 100)}%` }} /></span></span>
                   <b>{a.plays}</b>
                 </button>
@@ -340,7 +341,7 @@ export function RecapScreen(_props: { device: Device }) {
                   <button className="row" key={`${s.albumId ?? s.title}-${i}`} onClick={() => s.albumId && openAlbum(s.albumId)} style={{ cursor: s.albumId ? 'pointer' : 'default' }}>
                     <span className="rk11">{i + 1}</span>
                     <CoverArt url={s.cover ?? undefined} fallbackLetter={s.artist[0] || '?'} className="cov" style={{ width: 44, height: 44 }} />
-                    <span className="g"><b>{s.title}</b><small className="muted" style={{ fontWeight: 600 }}>{s.artist}{album ? ` · ${album.title}` : ''}</small><span className="meter" style={{ display: 'block', marginTop: 4 }}><i style={{ width: `${Math.round((s.plays / r.topSongs[0].plays) * 100)}%` }} /></span></span>
+                    <span className="g"><b>{s.title}</b><small className="muted" style={{ fontWeight: 600, display: 'block' }}><ArtistName name={s.artist} id={album?.artistId} size={16} />{album ? ` · ${album.title}` : ''}</small><span className="meter" style={{ display: 'block', marginTop: 4 }}><i style={{ width: `${Math.round((s.plays / r.topSongs[0].plays) * 100)}%` }} /></span></span>
                     <b>{s.plays}</b>
                   </button>
                 );

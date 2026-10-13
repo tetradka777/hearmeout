@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { ArtistName } from '../ui/ArtistName';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { Device, StatsCalendarDay, StatsData, StatsPeriodType, StatsSeasonKey } from '@/lib/types';
@@ -356,7 +357,7 @@ export function StatsScreen(_props: { device: Device }) {
               {data.topArtists.length ? data.topArtists.slice(0, 4).map((a, i) => (
                 <div className="row" key={a.id || a.name}>
                   <span className="rk11">{i + 1}</span>
-                  <b className="g">{a.name}</b>
+                  <b className="g"><ArtistName name={a.name} id={a.id} size={32} /></b>
                   <div className="meter" style={{ flex: 'none', width: 80 }}><i style={{ width: `${Math.round((a.plays / maxArtistPlays) * 100)}%` }} /></div>
                   <b style={{ width: 36, textAlign: 'right' }}>{a.plays}</b>
                 </div>
@@ -371,7 +372,7 @@ export function StatsScreen(_props: { device: Device }) {
                   <button className="row" key={a.albumId} onClick={() => openAlbum(a.albumId)}>
                     <span className="rk11">{i + 1}</span>
                     <CoverArt url={a.cover ?? undefined} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: 44, height: 44 }} />
-                    <span className="g"><b>{a.title}</b><small className="muted">{a.artist}</small></span>
+                    <span className="g"><b>{a.title}</b><small className="muted"><ArtistName name={a.artist} size={16} /></small></span>
                     <span className={`tag${mine != null ? ' on9' : ''}`}>{mine != null ? t('stats.youRated', { score: fmt1(mine) }) : t('stats.notRated')}</span>
                     <b className="num" style={{ fontSize: 22, minWidth: 40, textAlign: 'right' }}>{fmtHours(a.hours)}{t('unit.h')}</b>
                   </button>
@@ -413,7 +414,7 @@ export function StatsScreen(_props: { device: Device }) {
                   <div className="row" key={i}>
                     <button className="rowlink" onClick={() => playQueue([{ title: p.title, artist: p.artist, cover: p.cover, albumId: p.albumId }], 0)} aria-label={t('album.playPreviewOf', { title: p.title })}>
                       <CoverArt url={p.cover ?? undefined} fallbackLetter={p.artist[0] || '?'} className="cov" style={{ width: 44, height: 44 }} />
-                      <span className="g"><b>{p.title}</b><small className="muted" style={{ fontWeight: 600 }}>{p.artist} · {formatRelative(p.playedAt, language)}</small></span>
+                      <span className="g"><b>{p.title}</b><small className="muted" style={{ fontWeight: 600 }}><ArtistName name={p.artist} size={16} /> · {formatRelative(p.playedAt, language)}</small></span>
                     </button>
                     <button className={`ib love${loved ? ' on' : ''}`} aria-pressed={loved} onClick={() => toggleLoved('track', p.title, p.artist, p.trackId, p.cover)} aria-label={loved ? t('album.removeFromLoved') : t('album.addToLoved')}>
                       <HeartIcon />

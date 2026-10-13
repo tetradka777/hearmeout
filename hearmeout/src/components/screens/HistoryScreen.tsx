@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { ArtistName } from '../ui/ArtistName';
 import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { Device, RatingRecord } from '@/lib/types';
@@ -37,7 +38,7 @@ function HistoryRow({ rating }: { rating: RatingRecord }) {
       <CoverArt url={cover} fallbackLetter={artist[0] || '?'} className="cov" style={{ width: 48, height: 48 }} />
       <span className="g">
         <b>{title}</b>
-        <small className="muted" style={{ fontWeight: 600 }}>{artist}{artist ? ' · ' : ''}{date}{rating.isPrivate ? ` · ${t('history.privateBadge')}` : ''}</small>
+        <small className="muted" style={{ fontWeight: 600 }}>{artist && <><ArtistName name={artist} id={a?.artistId} size={16} /> · </>}{date}{rating.isPrivate ? ` · ${t('history.privateBadge')}` : ''}</small>
       </span>
       {rating.review && <span className="tag">{t('history.reviewBadge')}</span>}
       {rating.previousStars != null && <span className="rev">{fmt1(rating.previousStars)} → {fmt1(rating.stars)}</span>}

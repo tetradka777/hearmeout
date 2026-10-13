@@ -1,6 +1,7 @@
 'use client';
 
 import { usePlayer } from '@/lib/PlayerContext';
+import { ArtistName } from './ui/ArtistName';
 import { useApp } from '@/lib/AppContext';
 import { PreviewButton } from './redesign/PreviewButton';
 import { NextIcon, CloseIcon } from './ui/Icons';
@@ -31,7 +32,7 @@ export function GlobalPlayer() {
           <div className="cov" style={{ width: 40, height: 40, flex: 'none', ...(currentTrack.cover ? { backgroundImage: `url('${sizedImage(currentTrack.cover, 40)}')`, backgroundSize: 'cover' } : {}) }} />
           <div className="mp-tt">
             <b>{currentTrack.title}</b>
-            <small>{currentTrack.artist}</small>
+            <small><ArtistName name={currentTrack.artist} size={16} /></small>
           </div>
         </div>
         <div className="mp-ctl">

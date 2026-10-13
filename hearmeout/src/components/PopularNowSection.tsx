@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { ArtistName } from './ui/ArtistName';
 import { useApp } from '@/lib/AppContext';
 import { useCachedJson } from '@/lib/cachedJson';
 import { fmt1 } from '@/lib/numberFormat';
@@ -35,7 +36,7 @@ export function PopularNowSection({ genre }: { genre?: string }) {
         <CoverArt url={first.cover ?? undefined} fallbackLetter={first.artist[0] || '?'} className="cov" px={200} style={{ width: 200, maxWidth: '100%', aspectRatio: '1' }} />
         <span className="pill">{t('discover.numberOneNow')}</span>
         <b className="disp">{first.title}</b>
-        <small>{first.artist} · {t('discover.rankN', { n: first.rank })}</small>
+        <small><ArtistName name={first.artist} size={18} /> · {t('discover.rankN', { n: first.rank })}</small>
         <span className="ln10 sm" style={{ marginTop: 6 }}>
           {community && <span><i className="ic ic-star" /><b>{t('discover.communityScore', { score: fmt1(community.avg), n: community.count })}</b></span>}
           <span><i className="ic ic-heart" /><b>{mine != null ? t('discover.youRatedIt', { score: fmt1(mine) }) : t('discover.notRatedYet')}</b></span>
@@ -47,7 +48,7 @@ export function PopularNowSection({ genre }: { genre?: string }) {
             <button className="row" key={a.spotifyId} onClick={() => openAlbum(a.spotifyId)}>
               <span className="rk11">{i + 2}</span>
               <CoverArt url={a.cover ?? undefined} fallbackLetter={a.artist[0] || '?'} className="cov" px={44} style={{ width: 44, height: 44 }} />
-              <span className="g"><b>{a.title}</b><small className="muted" style={{ fontWeight: 600 }}>{a.artist}{a.genreBucket ? ` · ${a.genreBucket}` : ''}</small></span>
+              <span className="g"><b>{a.title}</b><small className="muted" style={{ fontWeight: 600 }}><ArtistName name={a.artist} size={16} />{a.genreBucket ? ` · ${a.genreBucket}` : ''}</small></span>
             </button>
           ))}
         </div>

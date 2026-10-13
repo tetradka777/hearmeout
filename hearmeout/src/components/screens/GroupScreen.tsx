@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { ArtistName } from '../ui/ArtistName';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import { invitePath } from '@/lib/pendingInvite';
@@ -285,7 +286,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
                     <CoverArt url={a?.cover} fallbackLetter={a?.artist[0] || '?'} className="cov" px={220} style={{ width: '100%', aspectRatio: '1' }} />
                     <span className="sc9">{fmt1(row.avgScore)}</span>
                     <b>{a ? a.title : '…'}</b>
-                    <small className="muted" style={{ fontWeight: 600 }}>{a?.artist}{a?.artist ? ' · ' : ''}{t('groups.ratingsN', { n: row.count })}</small>
+                    <small className="muted" style={{ fontWeight: 600 }}>{a?.artist && <><ArtistName name={a.artist} id={a.artistId} size={16} /> · </>}{t('groups.ratingsN', { n: row.count })}</small>
                   </button>
                 );
               })}

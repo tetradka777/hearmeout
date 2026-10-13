@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { ArtistName } from '../ui/ArtistName';
 import { useApp } from '@/lib/AppContext';
 import { StarSlider } from './Stars';
 import { sizedImage } from '@/lib/imageSize';
@@ -41,7 +42,7 @@ export function NowPlayingBar() {
         <div className="cov" style={{ width: 40, height: 40, flex: 'none', borderRadius: 10, ...(np.cover ? { backgroundImage: `url('${sizedImage(np.cover, 40)}')`, backgroundSize: 'cover' } : {}) }} />
         <div>
           <b>{np.title}</b>
-          <small>{np.artist}</small>
+          <small><ArtistName name={np.artist} size={16} /></small>
         </div>
       </div>
       {np.albumId && (

@@ -385,3 +385,31 @@
 .rd .aw9 b{overflow-wrap:normal;word-break:normal;hyphens:auto}/* The one-line recap strip fits a phone: the title gives way, not the button. */
 .rd .rcstrip .tt{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .rd .rcstrip{max-width:100%}
+
+/* Artist names with their photo (ArtistName): a round avatar before the name,
+   the whole thing opens the artist. Inline so it fits subtitle lines too. */
+.rd .arl{display:inline-flex;align-items:center;gap:6px;max-width:100%;min-width:0;vertical-align:middle;cursor:pointer}
+.rd .arl .arn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .arl:hover .arn,.rd .arl:focus-visible .arn{text-decoration:underline;text-underline-offset:2px}
+.rd .arl.chip{padding:5px 14px 5px 5px}
+.rd .aav{flex:none;display:inline-grid;place-items:center;border-radius:50%;background:var(--pop) center/cover no-repeat;color:var(--ink);font-family:var(--font-display);font-weight:800;line-height:1;overflow:hidden}
+
+/* Covers sit straight (the prototype tilted them, which read as crooked):
+   the recap card's two covers side by side with the status badge under
+   them, the group header's top three in a row, and the group card's covers
+   as a tidy offset stack. */
+.rd .rc-stage{display:flex;flex-direction:column;gap:10px;height:auto;min-height:0}
+.rd .rc-stage .c1,.rd .rc-stage .c2,.rd .rc-covs .c1,.rd .rc-covs .c2{position:relative;left:auto;top:auto;transform:none;width:96px;flex:none}
+.rd .rc-covs{display:flex;gap:10px}
+.rd .rc-covs .c1,.rd .rc-covs .c2{width:96px}
+.rd .rc .rc-stat{position:static;transform:none;align-self:flex-start;max-width:100%}
+.rd .hcs9{display:flex;justify-content:center;gap:12px;height:auto;max-width:none}
+.rd .hcs9 span,.rd .hcs9 .hc1,.rd .hcs9 .hc2,.rd .hcs9 .hc3{position:static;transform:none;width:96px;flex:none}
+.rd .gcv11{width:124px;height:108px}
+.rd .gcv11 .c,.rd .gcv11 .c .cov{width:80px!important;height:80px!important}
+.rd .gcv11 .c{transform:none;opacity:1}
+.rd .gcv11 .c0{left:0;top:28px;z-index:3}
+.rd .gcv11 .c1{left:22px;top:14px;z-index:2}
+.rd .gcv11 .c2{left:44px;top:0;z-index:1}
+@media(max-width:520px){.rd .gcv11{width:112px;height:100px}
+.rd .gcv11 .c,.rd .gcv11 .c .cov{width:72px!important;height:72px!important}}
