@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { setNumberLanguage } from './numberFormat';
 import { ALBUMS } from './data';
-import { translate, type Language, type TranslationKey } from './i18n';
+import { pickLanguage, translate, type Language, type TranslationKey } from './i18n';
 import { clearStatsCache } from './statsClientCache';
 import { peekJson, setJsonCacheOwner, storeJson } from './cachedJson';
 import { completedWeekRange } from './weeks';
@@ -314,6 +314,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [failedAlbumIds, setFailedAlbumIds] = useState<Record<string, true>>({});
   const requestedAlbumIds = useRef<Set<string>>(new Set());
   const requestedRecapKeys = useRef<Set<string>>(new Set());
+  // <html lang> as the server set it from Accept-Language, read before the
+  // effect below starts mirroring the interface language into it.
+  const serverLang = useRef<string | null>(typeof document !== 'undefined' ? document.documentElement.lang : null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastRegionFetched = useRef<string | null | undefined>(undefined);
   // Mirrors `state` so callbacks that build a history snapshot right after
@@ -338,7 +341,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (res.status === 401 || res.status === 404) {
       setJsonCacheOwner(null);
       setMe(null);
-      patch({ authStatus: 'anonymous', language: 'en' });
+      // Signed out: the language the server picked from the browser (<html lang>),
+      // not always English.
+      patch({ authStatus: 'anonymous', language: pickLanguage([serverLang.current || navigator.language]) });
       return;
     }
     if (!res.ok) return;

@@ -583,7 +583,7 @@ export function ProfileScreen(_props: { device: Device }) {
         </div>
         <div className="pcnt">
           {[[String(list.length), t('profile.ratingsL')], [fmt1(avg), t('profile.avgScoreL')], [String(reviews), t('profile.reviewsL')], [String(me.friends.length), t('profile.friendsL')]].map(([v, l]) => (
-            <div key={l}><span className="num" style={{ fontSize: 34, color: 'var(--acct)' }}>{v}</span><br /><small style={{ fontWeight: 700 }}>{l}</small></div>
+            <div key={l}><span className="num" style={{ fontSize: 34 }}>{v}</span><br /><small style={{ fontWeight: 700 }}>{l}</small></div>
           ))}
         </div>
       </div>

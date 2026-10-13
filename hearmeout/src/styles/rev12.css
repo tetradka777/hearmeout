@@ -5,9 +5,6 @@
 /* ===== rev 7 ===== */
 
 /* ===== rev 7: new features ===== */
-.rd .seg{display:flex;gap:6px;padding:5px;border-radius:999px;background:color-mix(in srgb,currentColor 9%,transparent);width:max-content;max-width:100%;margin-bottom:18px;overflow-x:auto}
-.rd .seg button{padding:8px 18px;border-radius:999px;font-weight:800;font-size:14px;white-space:nowrap;display:inline-flex;gap:8px;align-items:center}
-.rd .seg button.on{background:var(--fg);color:var(--bg)}
 .rd .seg .cnt{min-width:20px;height:20px;border-radius:99px;display:inline-grid;place-items:center;font:800 11px var(--font-display);background:var(--acc);color:var(--onacc);padding:0 6px}
 .rd .cnt{min-width:20px;height:20px;border-radius:99px;display:inline-grid;place-items:center;font:800 11px var(--font-display);background:var(--acc);color:var(--onacc);padding:0 6px}
 .rd .hd{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}

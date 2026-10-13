@@ -109,7 +109,7 @@
 .rd .mem13 .dot{width:40px;height:40px;font-size:16px}
 .rd .mem13 b{font-size:12px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rd .mem13 small{font-size:11px;font-weight:800;opacity:.8}
-.rd .mem13 .fl13{color:var(--acct)}
+.rd .mem13 .fl13{color:var(--acct);opacity:1}
 .rd .tst13 .big13{font:800 64px/1 var(--font-display);letter-spacing:-.04em;color:var(--acct)}
 .rd .tst13 .pr13{display:flex;align-items:center;gap:10px;margin-top:14px}
 .rd .tst13 .pr13 .avs{display:flex}
@@ -152,3 +152,25 @@
   .rd .two:has(> div > h2:first-child + p + .tile:last-child) > *{grid-row:span 3}
   .rd .two > div:has(> h2:first-child + p + .tile:last-child){display:grid;grid-template-rows:subgrid}
 }
+/* Settings rows on a phone: the control goes under its label instead of
+   squeezing the label into a column one word wide. */
+@media (max-width:520px){.rd .setrow:has(.seg,.field,select,.btn){grid-template-columns:minmax(0,1fr)}.rd .setrow:has(.seg,.field,select,.btn)>:last-child{justify-self:start}}
+.rd .cv9 small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+/* Rating rows on a phone: the number is enough, the stars beside it left
+   the album title a column a few letters wide. */
+@media (max-width:520px){.rd .row>.stars{display:none}}
+/* Small labels on coloured tiles at full strength (faded, they fell under
+   4.5:1 on the red and yellow tiles). */
+.rd .rc-nums small,.rd .t-ac .kv11 small,.rd .t-pop .kv11 small,.rd .t-ink .kv11 small{opacity:1}
+/* Profile header counts: light on the dark header in every palette (the
+   accent red sat at 2:1 on navy). */
+.rd .prof .pcnt .num{color:var(--pop)}
+/* Filled tags keep their light text in every theme: the light Cream Pop rule
+   for tags ([data-design][data-mode] .rd .tag) outranked it and put navy
+   text on the red fill. */
+[data-design][data-mode] .rd .tag.on9{color:var(--onacc,#fff)}
+.rd .t-ac .k9,.rd .t-pop .k9,.rd .t-ink .k9{opacity:1}
+.rd .d9 small{opacity:.9}
+/* Inside dark tiles the accent text colour is the light one: the red accent
+   numbers (a friend's match %, profile counts) sat at 2:1 on navy. */
+.rd .t-ink{--acct:var(--pop)}
