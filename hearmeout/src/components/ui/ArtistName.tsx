@@ -40,9 +40,9 @@ function useSeen<T extends Element>() {
 }
 
 // A round artist photo, or the first letter until (or unless) there is one.
-export function ArtistAvatar({ name, size = 18, photo: known, style }: { name: string; size?: number; photo?: string | null; style?: CSSProperties }) {
+export function ArtistAvatar({ name, id, size = 18, photo: known, style }: { name: string; id?: string | null; size?: number; photo?: string | null; style?: CSSProperties }) {
   const [ref, seen] = useSeen<HTMLSpanElement>();
-  const looked = useArtistPhoto(name, seen && !known);
+  const looked = useArtistPhoto(name, seen && !known, id);
   const photo = known || looked || null;
   const url = photo ? sizedImage(photo, size) : null;
   return (
@@ -79,7 +79,7 @@ export function ArtistName({ name, id, size = 18, className = '', style, noAvata
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') go(e); }}
       style={style}
     >
-      {!noAvatar && <ArtistAvatar name={name} size={size} />}
+      {!noAvatar && <ArtistAvatar name={name} id={id} size={size} />}
       <span className="arn">{name}</span>
     </span>
   );

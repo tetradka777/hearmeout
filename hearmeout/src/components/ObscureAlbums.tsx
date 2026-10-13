@@ -23,7 +23,7 @@ export function ObscureAlbums({ genre }: { genre: string }) {
     <div className="tile t-soft2">
       {artists.map((a) => (
         <button className="row" key={a.id} onClick={() => (a.artistId ? openSpotifyArtist(a.artistId, a.artist) : openAlbum(a.id))}>
-          <ArtistAvatar name={a.artist} size={44} />
+          <ArtistAvatar name={a.artist} id={a.artistId} size={44} />
           <span className="g"><b>{a.artist}</b><small className="muted">{a.title}</small></span>
           <CoverArt url={a.cover ?? undefined} fallbackLetter={a.artist[0] || '?'} className="cov" px={36} style={{ width: 36, height: 36 }} />
         </button>

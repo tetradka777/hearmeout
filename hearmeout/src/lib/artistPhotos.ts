@@ -7,14 +7,14 @@ import { useEffect, useState } from 'react';
 // (/api/deezer/artist-photos), and answers are kept in this browser for two
 // weeks — artist photos are public, so not per account. A failed request
 // isn't remembered: the next view asks again.
-const STORE_KEY = 'hmo-artist-photos-v2';
+const STORE_KEY = 'hmo-artist-photos-v3';
 const TTL_MS = 14 * 86400 * 1000;
 const MAX_KEPT = 1500;
 const BATCH = 40;
 
 type Entry = [photo: string | null, at: number];
 let store: Record<string, Entry> | null = null;
-const pending = new Set<string>();
+const pending = new Map<string, string | null>(); // name -> Spotify artist id, if known
 const inFlight = new Set<string>();
 const listeners = new Map<string, Set<() => void>>();
 let timer: ReturnType<typeof setTimeout> | null = null;
@@ -26,7 +26,9 @@ function load(): Record<string, Entry> {
   if (store) return store;
   try {
     store = JSON.parse(localStorage.getItem(STORE_KEY) || '{}') as Record<string, Entry>;
-    localStorage.removeItem('hmo-artist-photos-v1'); // picked the wrong same-named artist at times
+    // Older stores picked similarly named artists' photos at times.
+    localStorage.removeItem('hmo-artist-photos-v1');
+    localStorage.removeItem('hmo-artist-photos-v2');
   } catch { store = {}; }
   return store!;
 }
@@ -54,13 +56,14 @@ export function peekArtistPhoto(name: string): string | null | undefined {
 
 async function flush() {
   timer = null;
-  const names = [...pending];
+  const queued = [...pending].map(([name, id]) => ({ name, id }));
   pending.clear();
-  for (let i = 0; i < names.length; i += BATCH) {
-    const chunk = names.slice(i, i + BATCH);
+  for (let i = 0; i < queued.length; i += BATCH) {
+    const items = queued.slice(i, i + BATCH);
+    const chunk = items.map((it) => it.name);
     chunk.forEach((n) => inFlight.add(keyOf(n)));
     try {
-      const res = await fetch('/api/deezer/artist-photos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ names: chunk }) });
+      const res = await fetch('/api/deezer/artist-photos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items }) });
       if (res.ok) {
         const { photos } = await res.json() as { photos: Record<string, string | null> };
         const s = load();
@@ -78,16 +81,16 @@ async function flush() {
   }
 }
 
-function request(name: string) {
+function request(name: string, id?: string | null) {
   const k = keyOf(name);
   if (!k || peekArtistPhoto(name) !== undefined || inFlight.has(k)) return;
-  pending.add(name.trim());
+  pending.set(name.trim(), id ?? pending.get(name.trim()) ?? null);
   if (!timer) timer = setTimeout(flush, 40);
 }
 
 // The photo for `name`, asked for only once `enabled` (the avatar is on
 // screen), so hidden screens and long lists don't fetch everything at once.
-export function useArtistPhoto(name: string, enabled: boolean): string | null | undefined {
+export function useArtistPhoto(name: string, enabled: boolean, id?: string | null): string | null | undefined {
   const [photo, setPhoto] = useState<string | null | undefined>(() => peekArtistPhoto(name));
   useEffect(() => {
     const k = keyOf(name);
@@ -96,8 +99,8 @@ export function useArtistPhoto(name: string, enabled: boolean): string | null | 
     const set = listeners.get(k) || new Set();
     set.add(fn);
     listeners.set(k, set);
-    if (enabled) request(name);
+    if (enabled) request(name, id);
     return () => { set.delete(fn); };
-  }, [name, enabled]);
+  }, [name, enabled, id]);
   return photo;
 }
