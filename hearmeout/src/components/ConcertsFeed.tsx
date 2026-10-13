@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ArtistName } from './ui/ArtistName';
+import { useOpenArtist } from './ui/ArtistName';
+import { ArtistShelfCard, Shelf } from './ui/SuperCards';
 import { useApp } from '@/lib/AppContext';
 import { toLocale, regionDisplayName } from '@/lib/i18n';
 import type { ConcertFeedItem } from '@/app/api/concerts/route';
@@ -11,6 +12,7 @@ import type { ConcertFeedItem } from '@/app/api/concerts/route';
 // the server has no TICKETMASTER_API_KEY or nothing is announced.
 export function ConcertsFeed() {
   const { t, language, me } = useApp();
+  const openArtist = useOpenArtist();
   const [data, setData] = useState<{ configured: boolean; items: ConcertFeedItem[] } | null>(null);
   const region = me?.region ?? null;
 
@@ -31,31 +33,26 @@ export function ConcertsFeed() {
 
   return (
     <>
-      <h2 style={{ marginTop: 34 }}>{t('concerts.title')}</h2>
-      <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 12px' }}>
-        {region ? t('concerts.subRegion', { region: regionDisplayName(region, language) }) : t('concerts.subWorld')}
-      </p>
       {groups.map(([g, label]) => {
         const rows = data.items.filter((c) => c.group === g);
         if (!rows.length) return null;
         return (
-          <div className={`tile${g === 'yours' ? ' t-soft2' : ''}`} key={g} style={{ marginBottom: 14 }}>
-            <h3 style={{ marginBottom: 6 }}>{label}</h3>
+          <Shelf
+            key={g}
+            title={`${t('concerts.title')} · ${label}`}
+            sub={region ? t('concerts.subRegion', { region: regionDisplayName(region, language) }) : t('concerts.subWorld')}
+          >
             {rows.map((c) => {
               const d = new Date(`${c.date}T00:00:00Z`);
-              const place = [c.venue, c.city, c.country && c.country !== region ? regionDisplayName(c.country, language) : null].filter(Boolean).join(' · ');
+              const place = [c.city, c.country && c.country !== region ? regionDisplayName(c.country, language) : null].filter(Boolean).join(', ');
               return (
-                <div className="row" key={`${c.artist}-${c.id}`}>
-                  <span className="num" style={{ fontSize: 22, width: 72 }}>{d.toLocaleDateString(loc, { day: 'numeric', month: 'short', timeZone: 'UTC' })}</span>
-                  <span className="g">
-                    <b style={{ display: 'block' }}><ArtistName name={c.artist} size={22} /></b>
-                    <small className="muted" style={{ fontWeight: 600 }}>{place}{c.time ? ` · ${c.time.slice(0, 5)}` : ''}</small>
-                  </span>
-                  {c.url && <a className="btn ghost" href={c.url} target="_blank" rel="noreferrer">{t('artist.tickets')}</a>}
+                <div className="cc14" key={`${c.artist}-${c.id}`}>
+                  <ArtistShelfCard name={c.artist} sub={`${d.toLocaleDateString(loc, { day: 'numeric', month: 'short', timeZone: 'UTC' })} · ${place || c.venue || ''}`} onClick={() => openArtist(c.artist)} />
+                  {c.url && <a className="tk" href={c.url} target="_blank" rel="noreferrer">{t('artist.tickets')}</a>}
                 </div>
               );
             })}
-          </div>
+          </Shelf>
         );
       })}
     </>

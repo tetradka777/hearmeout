@@ -320,7 +320,7 @@ export function RateScreen({ device: _device }: { device: Device }) {
           <div style={{ marginTop: 14 }}><AlbumRatingDistribution albumId={a.id} refreshToken={reviewsVersion} you={val > 0 ? val : null} /></div>
           <AlbumTagsSummary albumId={a.id} refreshToken={reviewsVersion} />
         </div>
-        <div className="tile s3">
+        <div className="s3">
           <h2>{t('album.reviews')}</h2>
           <AlbumReviews albumId={a.id} refreshToken={reviewsVersion} />
         </div>
