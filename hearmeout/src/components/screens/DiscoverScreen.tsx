@@ -8,6 +8,7 @@ import type { Album, Device, DiscoverMatchPerson } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
 import { CoverArt } from '../ui/CoverArt';
 import { AlbumShelfCard, ReviewCard, Shelf } from '../ui/SuperCards';
+import { FandomsForYou } from '../Fandoms';
 import { regionDisplayName } from '@/lib/i18n';
 import { LiveLibrarySearch } from '../LiveLibrarySearch';
 import { PopularNowSection } from '../PopularNowSection';
@@ -311,6 +312,8 @@ export function DiscoverScreen(_props: { device: Device }) {
         <>
           {/* Shelves of big cards (after Superfan's search page). */}
           {filter !== 'artists' && <PopularNowSection genre={genreFilter} />}
+
+          {filter !== 'albums' && <FandomsForYou />}
 
           {filter !== 'albums' && <ConcertsFeed />}
 

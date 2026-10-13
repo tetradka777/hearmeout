@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp } from '@/lib/AppContext';
+import { FandomGrid } from '../Fandoms';
 import type { ApiUser, Device, GroupSummary } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
 import { useAlbum } from '@/lib/useAlbum';
@@ -179,6 +180,7 @@ export function GroupsScreen(_props: { device: Device }) {
             <span className="avt" style={{ width: 40, height: 40, fontSize: 22 }}>+</span>
             <span className="g"><b>{t('groups.newGroup')}</b><small className="muted" style={{ fontWeight: 600 }}>{t('groups.newGroupHint')}</small></span>
           </button>
+          <FandomGrid />
           <LatestInGroups groups={groups} />
         </>
       )}

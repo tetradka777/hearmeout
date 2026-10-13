@@ -10,6 +10,7 @@ import { CloseIcon } from '../ui/Icons';
 import { CoverArt } from '../ui/CoverArt';
 
 const PERIOD_KEY: Record<RecapPeriod, TranslationKey> = { day: 'recap.day', week: 'recap.week', month: 'recap.month', season: 'recap.season' };
+const REACTION_KEY: Record<string, TranslationKey> = { heart: 'social.rHeart', flame: 'social.rFlame', spark: 'social.rSpark', repeat: 'social.rRepeat', star: 'social.rStar' };
 
 // In-app notifications list (migration 021), opened from the avatar menu.
 // Opening it marks everything read. A "hi" opens the friend's profile, a
@@ -18,7 +19,7 @@ const PERIOD_KEY: Record<RecapPeriod, TranslationKey> = { day: 'recap.day', week
 // Portaled into .rd for the same reason as the New group modal: screens
 // animate a transform, which would trap position:fixed.
 export function NotificationsModal({ onClose }: { onClose: () => void }) {
-  const { t, language, notifications, markNotificationsRead, viewFriend, openRecap, setRecapOffset, openAlbum } = useApp();
+  const { t, language, me, notifications, markNotificationsRead, viewFriend, openRecap, setRecapOffset, openAlbum, viewGroup } = useApp();
 
   useEffect(() => {
     markNotificationsRead();
@@ -37,6 +38,12 @@ export function NotificationsModal({ onClose }: { onClose: () => void }) {
       if (n.payload.albumId) openAlbum(n.payload.albumId);
     } else if (!n.actor) {
       return;
+    } else if ((n.kind === 'comment' || n.kind === 'reaction') && n.payload.target) {
+      // What was commented on or reacted to (lib/social targets).
+      const [type, a, b] = n.payload.target.split(':');
+      if (type === 'review' || type === 'play') openAlbum(b);
+      else if (type === 'recap') openRecap(a === me?.id ? 'me' : a, b as RecapPeriod);
+      else if (type === 'award') viewGroup(a);
     } else if (n.kind === 'recap') {
       openRecap(n.actor.id, n.payload.period ?? 'week');
       if (n.payload.offset) setRecapOffset(n.payload.offset);
@@ -60,12 +67,16 @@ export function NotificationsModal({ onClose }: { onClose: () => void }) {
             <span className="g">
               <b>{n.kind === 'release' || !n.actor
                 ? t('notify.newRelease', { artist: n.payload.artist ?? '', title: n.payload.title ?? '' })
+                : n.kind === 'comment'
+                  ? t('notify.comment', { name: n.actor.name, text: n.payload.preview ?? '' })
+                : n.kind === 'reaction'
+                  ? t('notify.reaction', { name: n.actor.name, reaction: t(REACTION_KEY[n.payload.reaction ?? ''] ?? 'social.rHeart').toLowerCase() })
                 : n.kind === 'hi'
                   ? t('notify.hiFrom', { name: n.actor.name })
                   : t('notify.recapFrom', { name: n.actor.name, period: t(PERIOD_KEY[n.payload.period ?? 'week']).toLowerCase() })}</b>
               <small className="muted" style={{ fontWeight: 600 }}>{formatRelative(n.createdAt, language)}</small>
             </span>
-            {(n.kind === 'recap' || n.kind === 'release') && <span className="tag">{t('notify.open')}</span>}
+            {(n.kind === 'recap' || n.kind === 'release' || n.kind === 'comment' || n.kind === 'reaction') && <span className="tag">{t('notify.open')}</span>}
           </button>
         )) : <p className="muted" style={{ fontWeight: 600 }}>{t('notify.empty')}</p>}
       </div>

@@ -15,6 +15,8 @@ import { drawStoryCard } from '@/lib/posterCanvas';
 import { CoverArt } from '../ui/CoverArt';
 import { CloseIcon } from '../ui/Icons';
 import { prefetchQueueTrack, usePlayer } from '@/lib/PlayerContext';
+import { SocialBar } from '../ui/Social';
+import { socialKey } from '@/lib/socialClient';
 
 // Award glyphs on the recap's pills (SVG masks, no emoji).
 const RECAP_AWARD_ICON: Record<string, string> = {
@@ -245,6 +247,7 @@ export function RecapScreen(_props: { device: Device }) {
     return me.friends[(i + 1) % me.friends.length];
   })() : null;
   const TILE_TONES = ['t-ac', 't-ink', 't-pop'];
+  const vibeTitle = line ? `${line.lead}${line.em ? ` ${line.em}` : ''}` : undefined;
 
   return (
     <>
@@ -350,6 +353,7 @@ export function RecapScreen(_props: { device: Device }) {
                 </div>
               </div>
             )}
+            <div className="sft"><SocialBar target={socialKey.recap(targetId, period, r.range.start)} title={vibeTitle} /></div>
           </section>
 
           <div className="stack">
@@ -361,12 +365,12 @@ export function RecapScreen(_props: { device: Device }) {
                   const fr = recapCache[fk];
                   const text = recapLocked[fk] ? t('recap.friendPrivate') : !fr ? t('recap.loading') : !fr.trackCount ? t('recap.friendQuiet') : null;
                   return (
-                    <button className={`tile rcf13 ${TILE_TONES[idx % TILE_TONES.length]}`} key={f.id} onClick={() => openRecap(f.id)}>
-                      <span className="rh">
+                    <div className={`tile rcf13 ${TILE_TONES[idx % TILE_TONES.length]}`} key={f.id}>
+                      <button className="rh" onClick={() => openRecap(f.id)}>
                         <span className="avt" style={{ ...userAvatarStyle(f), backgroundSize: 'cover' }}>{!f.avatarUrl && f.name[0]?.toUpperCase()}</span>
                         <span className="g"><b>{f.name}</b><small>{range}</small></span>
                         {fr && fr.minutes > 0 && <span className="mp">{num(fr.minutes)} <small>{t('recap.minShort')}</small></span>}
-                      </span>
+                      </button>
                       {text ? <span className="sm">{text}</span> : fr && (
                         <>
                           {fr.topGenres.length > 0 && cloud(fr.topGenres, 5)}
@@ -380,8 +384,11 @@ export function RecapScreen(_props: { device: Device }) {
                           ))}
                         </>
                       )}
-                      <span className="ft">{t('recap.friendOpen')} →</span>
-                    </button>
+                      <span className="ft">
+                        {fr && <SocialBar target={socialKey.recap(f.id, period, fr.range.start)} title={f.name} />}
+                        <button className="op" onClick={() => openRecap(f.id)}>{t('recap.friendOpen')} →</button>
+                      </span>
+                    </div>
                   );
                 })}
               </>
