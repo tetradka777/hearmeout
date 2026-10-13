@@ -11,7 +11,8 @@ import { sharedArtists } from '@/lib/sharedArtists';
 import { toLocale } from '@/lib/i18n';
 import { CoverArt } from '../ui/CoverArt';
 import { MascotIcon } from '../redesign/icons';
-import { ArtistName } from '../ui/ArtistName';
+import { ArtistAvatar, useOpenArtist } from '../ui/ArtistName';
+import { Podium } from '../ui/Podium';
 import { MATCH_FRIEND_EVENT, takeRecentEvent } from '@/lib/uiEvents';
 import { PROFILE_TAB_EVENT } from '../redesign/AvatarMenu';
 
@@ -20,7 +21,7 @@ type FriendInfo = RawInfo & { score: number | null };
 const EMPTY_INFO: RawInfo = { profile: null, stats6m: null, weekHours: null };
 
 const sharedArtistNames = sharedArtists;
-const SHARED_SHOWN = 6;
+const SHARED_SHOWN = 8;
 
 // countUp() in reference/app.js: the hero percentage counts up to its value
 // over 450ms (ease-out cubic), replayed whenever the value changes or the
@@ -119,6 +120,7 @@ export function MatchScreen(_props: { device: Device }) {
   // visible too — otherwise it would only ever animate off-screen at load.
   const shownPct = useCountUp(activeInfo?.score ?? null, isActiveScreen ? activeId : null);
 
+  const openArtist = useOpenArtist();
   const history = useCachedJson<{ history: { pct: number; date: string }[] }>(activeId ? `/api/match/${activeId}/history` : null).data?.history ?? null;
 
   if (!me) return null;
@@ -159,7 +161,6 @@ export function MatchScreen(_props: { device: Device }) {
     { id: 'me', name: t('friend.you'), hours: myWeekHours ?? 0, user: me },
     ...ranked.map((f) => ({ id: f.id, name: f.name, hours: info[f.id]?.weekHours ?? 0, user: f })),
   ].sort((a, b) => b.hours - a.hours);
-  const maxHours = Math.max(1, ...leaderboard.map((l) => l.hours));
   // How far you are from first, and the minutes a day that would close it
   // by the end of the week (days left counted from today).
   const myRank = leaderboard.findIndex((l) => l.id === 'me');
@@ -233,23 +234,32 @@ export function MatchScreen(_props: { device: Device }) {
           <div className="tile">
             <h2>{t('match.sharedArtistsTitle')}</h2>
             {sharedArt.length ? (
-              <div className="chips" style={{ margin: 0 }}>
-                {sharedArt.slice(0, SHARED_SHOWN).map((n) => <ArtistName key={n} name={n} size={22} className="chip" />)}
-                {sharedArt.length > SHARED_SHOWN && <span className="chip" style={{ cursor: 'default' }}>+{sharedArt.length - SHARED_SHOWN}</span>}
+              <div className="sha13">
+                {sharedArt.slice(0, SHARED_SHOWN).map((n) => (
+                  <button key={n} onClick={() => openArtist(n)} aria-label={t('artist.openNamed', { name: n })}>
+                    <ArtistAvatar name={n} size={64} />
+                    <small>{n}</small>
+                  </button>
+                ))}
+                {sharedArt.length > SHARED_SHOWN && <span className="more13"><span>+{sharedArt.length - SHARED_SHOWN}</span></span>}
               </div>
             ) : <p className="muted" style={{ fontWeight: 600 }}>{t('match.noSharedArtists')}</p>}
           </div>
           {/* Weekly leaderboard (rev 11): the top three, and how far you are from first. */}
           <div className="tile lb10">
             <div className="hd10"><div><h2 style={{ margin: 0 }}>{t('match.weeklyLeaderboard')}</h2><small className="muted" style={{ fontWeight: 700 }}>{t('match.leaderboardSub')}</small></div></div>
-            {leaderboard.slice(0, 3).map((l, i) => (
-              <div className="row" key={l.id}>
-                <span className="rk11">{i + 1}</span>
-                <span className="dot" style={l.user ? userAvatarStyle(l.user) : undefined}>{l.user ? !l.user.avatarUrl && l.user.name[0] : t('friend.you')[0]}</span>
-                <span className="g"><b>{l.name}</b><span className="meter" style={{ display: 'block', marginTop: 5 }}><i style={{ width: `${(l.hours / maxHours) * 100}%` }} /></span></span>
-                <b style={{ fontSize: 20, minWidth: 48, textAlign: 'right' }}>{fmtHours(l.hours)}{t('unit.h')}</b>
-              </div>
-            ))}
+            <Podium
+              label={t('match.weeklyLeaderboard')}
+              entries={leaderboard.map((l) => ({
+                key: l.id,
+                name: l.name,
+                value: `${fmtHours(l.hours)}${t('unit.h')}`,
+                you: l.id === 'me',
+                avatar: { style: l.user ? { ...userAvatarStyle(l.user), backgroundSize: 'cover' } : undefined, letter: l.user ? !l.user.avatarUrl && l.user.name[0]?.toUpperCase() : t('friend.you')[0] },
+                onClick: l.id === 'me' ? undefined : () => viewFriend(l.id),
+              }))}
+            />
+            {myRank >= 3 && <p className="gap10"><i className="ic ic-medal" /><span>{t('match.yourPlace', { n: myRank + 1, h: fmtHours(leaderboard[myRank].hours) })}</span></p>}
             {gapHint && <p className="gap10"><i className="ic ic-trend" /><span>{gapHint}</span></p>}
           </div>
         </div>

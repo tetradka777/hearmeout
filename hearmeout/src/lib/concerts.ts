@@ -35,13 +35,13 @@ async function tm(path: string, params: Record<string, string>): Promise<Record<
   return res.json();
 }
 
-type TmAttraction = { id: string; name: string };
+type TmAttraction = { id: string; name: string; externalLinks?: { spotify?: { url?: string }[] } };
 type TmEvent = {
   id: string;
   name: string;
   url?: string;
   dates?: { start?: { localDate?: string; localTime?: string } };
-  _embedded?: { venues?: { name?: string; city?: { name?: string }; country?: { countryCode?: string } }[] };
+  _embedded?: { venues?: { name?: string; city?: { name?: string }; country?: { countryCode?: string } }[]; attractions?: TmAttraction[] };
 };
 
 // Upcoming events for the artist worldwide, sorted by date. The viewer's
@@ -49,16 +49,34 @@ type TmEvent = {
 // The artist's Ticketmaster attraction id barely ever changes, so it's cached
 // for 30 days on its own: refreshing an artist's concerts then costs one
 // request instead of two (Ticketmaster allows 5000 a day per key).
-function attractionId(artistName: string): Promise<string | null> {
-  return withSpotifyCache(`tm-attraction:v1:${artistName.toLowerCase()}`, 30 * 86400, async () => {
+//
+// Same name isn't always the same artist ("miley" isn't Miley Cyrus): when
+// the Spotify artist is known, an attraction linked to a different Spotify
+// artist is skipped and one linked to this one wins.
+const spotifyIdOf = (a: TmAttraction) => a.externalLinks?.spotify?.[0]?.url?.match(/artist\/([A-Za-z0-9]{22})/)?.[1] ?? null;
+function attractionId(artistName: string, spotifyArtistId?: string | null): Promise<string | null> {
+  return withSpotifyCache(`tm-attraction:v2:${artistName.toLowerCase()}:${spotifyArtistId ?? ''}`, 30 * 86400, async () => {
     const attractions = await tm('/attractions.json', { keyword: artistName, classificationName: 'music', size: '10' });
     const list = ((attractions._embedded as { attractions?: TmAttraction[] } | undefined)?.attractions) || [];
-    return list.find((a) => a.name.toLowerCase() === artistName.toLowerCase())?.id ?? null;
+    const same = list.filter((a) => a.name.toLowerCase() === artistName.toLowerCase());
+    if (!spotifyArtistId) return same[0]?.id ?? null;
+    return (same.find((a) => spotifyIdOf(a) === spotifyArtistId) || same.find((a) => !spotifyIdOf(a)))?.id ?? null;
   });
 }
 
-export async function fetchArtistConcerts(artistName: string): Promise<Concert[]> {
-  const id = await attractionId(artistName);
+// An event belongs to the artist when they headline it, and no act on the
+// bill has a longer name starting with theirs (a "Miley Cyrus" show tagged
+// with an attraction called "Miley").
+function isArtistsEvent(e: TmEvent, id: string, artistName: string): boolean {
+  const acts = e._embedded?.attractions;
+  if (!acts?.length) return true;
+  if (acts[0].id !== id) return false;
+  const prefix = `${artistName.toLowerCase()} `;
+  return !acts.some((a) => a.id !== id && a.name.toLowerCase().startsWith(prefix));
+}
+
+export async function fetchArtistConcerts(artistName: string, spotifyArtistId?: string | null): Promise<Concert[]> {
+  const id = await attractionId(artistName, spotifyArtistId);
   if (!id) return [];
 
   // Music events only (an attraction can also have sports or add-on events),
@@ -67,7 +85,7 @@ export async function fetchArtistConcerts(artistName: string): Promise<Concert[]
   const events = await tm('/events.json', params);
   const items = ((events._embedded as { events?: TmEvent[] } | undefined)?.events) || [];
   return items
-    .filter((e) => e.dates?.start?.localDate && !/parking|shuttle|upgrade|voucher|add-on|hotel package/i.test(e.name))
+    .filter((e) => e.dates?.start?.localDate && !/parking|shuttle|upgrade|voucher|add-on|hotel package/i.test(e.name) && isArtistsEvent(e, id, artistName))
     .map((e) => {
       const v = e._embedded?.venues?.[0];
       return {
@@ -95,6 +113,6 @@ export function regionFirst(list: Concert[], countryCode: string | null): Concer
 // are announced weeks ahead), so the artist tab, the Discover concerts list
 // and the activity strip cost Ticketmaster one lookup per artist per twelve
 // hours, whoever asks.
-export function cachedArtistConcerts(artistName: string): Promise<Concert[]> {
-  return withSpotifyCache(`concerts:v3:${artistName.toLowerCase()}`, 12 * 3600, () => fetchArtistConcerts(artistName));
+export function cachedArtistConcerts(artistName: string, spotifyArtistId?: string | null): Promise<Concert[]> {
+  return withSpotifyCache(`concerts:v4:${artistName.toLowerCase()}:${spotifyArtistId ?? ''}`, 12 * 3600, () => fetchArtistConcerts(artistName, spotifyArtistId));
 }

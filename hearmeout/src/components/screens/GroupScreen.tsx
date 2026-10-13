@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ArtistName } from '../ui/ArtistName';
+import { Podium } from '../ui/Podium';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import { invitePath } from '@/lib/pendingInvite';
@@ -135,11 +135,9 @@ export function GroupScreen({ device: _device }: { device: Device }) {
   const groupAvgScore = detail.memberStats.length ? detail.memberStats.reduce((s, m) => s + m.avgScore, 0) / detail.memberStats.length : 0;
   const statsByUser = new Map(detail.memberStats.map((s) => [s.userId, s]));
   const albumMeta = (id: string) => liveAlbums[id] || albums.find((x) => x.id === id);
-  const maxLeader = Math.max(1, ...detail.leaderboard.map((r) => r.hours));
   const totalVotes = detail.vote.candidates.reduce((s, x) => s + x.count, 0);
   const voteMonth = new Date(`${detail.vote.monthKey}-01T12:00:00`);
   const voteEnd = new Date(voteMonth.getFullYear(), voteMonth.getMonth() + 1, 0);
-  const youTag = (id: string) => (id === me.id ? ` (${t('friend.youLower')})` : '');
   const openMember = (id: string) => { if (id !== me.id) viewFriend(id); };
   const Av = ({ u }: { u: { name: string; avatarUrl: string | null } }) => <span className="dot" style={userAvatarStyle(u)}>{!u.avatarUrl && u.name[0]}</span>;
 
@@ -149,14 +147,13 @@ export function GroupScreen({ device: _device }: { device: Device }) {
     const mx = Math.max(1, ...vals);
     return <span className={`b9${inv ? ' inv' : ''}`} aria-hidden="true">{vals.map((v, i) => <i key={i} style={{ height: `${Math.round((v / mx) * 100)}%` }} />)}</span>;
   };
-  const pairPct = new Map((detail.taste?.pairs || []).flatMap((p) => [[`${p.a}|${p.b}`, p.pct], [`${p.b}|${p.a}`, p.pct]] as [string, number][]));
   const heroCovers = detail.topAlbums.slice(0, 3);
 
   return (
     <>
       <button className="crumb" onClick={() => goBack('groups')}>‹ {t('groups.allGroups')}</button>
 
-      {/* Hero (rev 9b): the group on the left, the club's top albums tilted on the right. */}
+      {/* Hero: the group on the left, its three best-rated albums on the right. */}
       <div className="tile t-ink glow ghero9">
         <div className="gh-l">
           <span className="pill">{t('groups.privateGroup')}</span>
@@ -173,11 +170,16 @@ export function GroupScreen({ device: _device }: { device: Device }) {
           </div>
         </div>
         {heroCovers.length > 0 && (
-          <div className="gh-r" aria-hidden="true">
+          <div className="gh-r">
             <div className="hcs9">
               {heroCovers.map((row, i) => {
                 const a = albumMeta(row.albumId);
-                return <span key={row.albumId} className={`hc${i + 1}`}><CoverArt url={a?.cover} fallbackLetter={a?.artist[0] || '?'} className="cov" px={110} style={{ width: '100%', aspectRatio: '1' }} /></span>;
+                return (
+                  <button key={row.albumId} className={i === 0 ? 'first' : ''} onClick={() => openAlbum(row.albumId)} aria-label={a?.title ?? row.albumId} title={a ? `${a.title} — ${a.artist}` : undefined}>
+                    <CoverArt url={a?.cover} fallbackLetter={a?.artist[0] || '?'} className="cov" px={112} style={{ width: '100%', aspectRatio: '1' }} />
+                    <span className="sc9">{fmt1(row.avgScore)}</span>
+                  </button>
+                );
               })}
             </div>
             <small>{t('groups.heroTopAlbums')}</small>
@@ -193,57 +195,61 @@ export function GroupScreen({ device: _device }: { device: Device }) {
       </div>
 
       <div className="bento b3">
-        <div className="tile s3">
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
+        {/* Who listened most: the top three on a podium, everyone under it. */}
+        <div className="tile s2">
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
             <h2 style={{ margin: 0 }}>{t('groups.leaderboard')}</h2>
             <div className="chips" style={{ margin: 0 }} role="group" aria-label={t('recap.periodLabel')}>
               <button className={`chip${period === 'week' ? ' on' : ''}`} onClick={() => changePeriod('week')}>{t('stats.thisWeek')}</button>
               <button className={`chip${period === 'month' ? ' on' : ''}`} onClick={() => changePeriod('month')}>{t('stats.thisMonth')}</button>
             </div>
           </div>
-          {detail.leaderboard.map((row, i) => (
-            <button className="row" key={row.user.id} onClick={() => openMember(row.user.id)}>
-              <span className={`md9${i < 3 ? ` g${i + 1}` : ''}`}>{i + 1}</span>
-              <Av u={row.user} />
-              {/* On a phone the bar gives way, not the name. */}
-              <span className="g" style={{ minWidth: 84 }}>
-                <b>{row.user.name}{youTag(row.user.id)}</b>
-                {i === 0 && row.hours > 0 && <span className="tag" style={{ background: 'var(--acc)', color: 'var(--onacc)' }}>{t('groups.listenedMostTag')}</span>}
-              </span>
-              <div className="meter" style={{ flex: '0 1 30%', minWidth: 32 }}><i style={{ width: `${Math.round((row.hours / maxLeader) * 100)}%` }} /></div>
-              <b style={{ width: 52, textAlign: 'right' }}>{fmtHours(row.hours)}{t('unit.h')}</b>
-            </button>
-          ))}
+          <Podium
+            label={t('groups.leaderboard')}
+            entries={detail.leaderboard.map((row) => ({
+              key: row.user.id,
+              name: row.user.name,
+              value: `${fmtHours(row.hours)}${t('unit.h')}`,
+              you: row.user.id === me.id,
+              avatar: { style: { ...userAvatarStyle(row.user), backgroundSize: 'cover' }, letter: !row.user.avatarUrl && row.user.name[0]?.toUpperCase() },
+              onClick: row.user.id === me.id ? undefined : () => openMember(row.user.id),
+            }))}
+          />
+          <div className="mem13">
+            {detail.leaderboard.map((row, i) => {
+              const s = statOf(row.user.id);
+              return (
+                <button key={row.user.id} onClick={() => openMember(row.user.id)}>
+                  <Av u={row.user} />
+                  <b>{i + 1}. {row.user.name}</b>
+                  <small>{fmtHours(row.hours)}{t('unit.h')}{row.user.id === detail.createdBy ? ` · ${t('groups.owner')}` : ''}</small>
+                  {s && s.streakDays > 0 && <small className="fl13"><i className="ic ic-flame" /> {t('groups.streakChip', { n: s.streakDays })}</small>}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Awards as cards: glyph, award, winner, value (full width: eight of them). */}
-        <div className="tile t-soft2 s3">
-          <h2>{t('groups.awards')}</h2>
-          {detail.awards.length ? (
-            <div className="awg9" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))' }}>
-              {detail.awards.map((a, i) => (
-                <div className="aw9" key={i}>
-                  <span className="gl9" aria-hidden="true"><i className={`ic-${AWARD_ICON[a.label] ?? 'star'}`} /></span>
-                  <b>{t(AWARD_LABEL_KEY[a.label] as never)}</b>
-                  {a.winner && <span className="who9"><Av u={a.winner} />{a.winner.name}</span>}
-                  <small>{awardDetail(a.label, a.detail)}</small>
-                </div>
-              ))}
-            </div>
-          ) : <p className="muted" style={{ fontWeight: 600 }}>{t('groups.noAwardsYet')}</p>}
-          {detail.pastAwards.length > 0 && (
-            <>
-              <p className="muted" style={{ fontWeight: 800, margin: '14px 0 4px', fontSize: 13 }}>{t('groups.pastMonths')}</p>
-              {detail.pastAwards.map((pm) => (
-                <div className="row" key={pm.monthKey}>
-                  <b style={{ width: 56 }}>{new Date(`${pm.monthKey}-01T12:00:00`).toLocaleDateString(toLocale(language), { month: 'short' })}</b>
-                  <span className="g" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    {pm.awards.map((a, i) => <span className="chip" key={i}>{a.winner && <Av u={a.winner} />}{t(AWARD_LABEL_KEY[a.label] as never)}</span>)}
-                  </span>
-                </div>
-              ))}
-            </>
-          )}
+        {/* Group taste: the average match, the closest and the furthest pair. */}
+        <div className="tile tst13">
+          <h2>{t('groups.tasteTitle')}</h2>
+          <span className="big13">{detail.taste?.avgMatch != null ? `${detail.taste.avgMatch}%` : '–'}</span>
+          <p className="muted" style={{ fontWeight: 700 }}>{t('groups.tasteAvg')}</p>
+          {([['closest', t('groups.tasteClosestLabel')], ['furthest', t('groups.tasteFurthestLabel')]] as const).map(([k, label]) => {
+            const pair = detail.taste?.[k];
+            if (!pair) return null;
+            return (
+              <div className="pr13" key={k}>
+                <span className="avs"><Av u={pair.a} /><Av u={pair.b} /></span>
+                <span className="g">
+                  <small className="muted" style={{ fontWeight: 800 }}>{label}</small>
+                  <b>{t('groups.pairNames', { a: pair.a.name, b: pair.b.name })}</b>
+                  <span className="meter"><i style={{ width: `${pair.pct}%` }} /></span>
+                </span>
+                <span className="num">{pair.pct}%</span>
+              </div>
+            );
+          })}
         </div>
 
         <div className="tile t-ink glow s3">
@@ -274,134 +280,101 @@ export function GroupScreen({ device: _device }: { device: Device }) {
           ) : <p className="muted" style={{ fontWeight: 600 }}>{t('groups.noCandidates')}</p>}
         </div>
 
-        {/* Top albums as a shelf of covers with the group score; the best in gold. */}
+        {/* Awards and records together, as cards; past months as small chips. */}
+        <div className="tile t-soft2 s3">
+          <h2>{t('groups.awards')}</h2>
+          {detail.awards.length ? (
+            <div className="awg9" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))' }}>
+              {detail.awards.map((a, i) => (
+                <div className="aw9" key={i}>
+                  <span className="gl9" aria-hidden="true"><i className={`ic-${AWARD_ICON[a.label] ?? 'star'}`} /></span>
+                  <b>{t(AWARD_LABEL_KEY[a.label] as never)}</b>
+                  {a.winner && <span className="who9"><Av u={a.winner} />{a.winner.name}</span>}
+                  <small>{awardDetail(a.label, a.detail)}</small>
+                </div>
+              ))}
+            </div>
+          ) : <p className="muted" style={{ fontWeight: 600 }}>{t('groups.noAwardsYet')}</p>}
+          {detail.records.length > 0 && (
+            <>
+              <h3 style={{ marginTop: 22 }}>{t('groups.records')}</h3>
+              <div className="rec13">
+                {detail.records.map((r, i) => (
+                  <div key={i}>
+                    <span className="gl9 sm" aria-hidden="true"><i className={`ic-${RECORD_ICON[r.label] ?? 'star'}`} /></span>
+                    <span className="v13">{recordValue(r.label, r.value)}</span>
+                    <b>{t(`groups.${r.label}` as never)}</b>
+                    {r.holder && <span className="who9"><Av u={r.holder} />{r.holder.name}</span>}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+          {detail.pastAwards.length > 0 && (
+            <>
+              <p className="muted" style={{ fontWeight: 800, margin: '18px 0 0', fontSize: 13 }}>{t('groups.pastMonths')}</p>
+              {detail.pastAwards.slice(0, 2).map((pm) => (
+                <div className="past13" key={pm.monthKey}>
+                  <span className="chip on" style={{ cursor: 'default' }}>{new Date(`${pm.monthKey}-01T12:00:00`).toLocaleDateString(toLocale(language), { month: 'long' })}</span>
+                  {pm.awards.map((a, i) => (
+                    <span className="chip" key={i} title={a.winner?.name}>
+                      {a.winner ? <Av u={a.winner} /> : <i className={`ic ic-${AWARD_ICON[a.label] ?? 'star'}`} />}
+                      {t(AWARD_LABEL_KEY[a.label] as never)}
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+
+        {/* Latest ratings as covers you swipe through. */}
         <div className="tile s3">
-          <h2>{t('groups.topAlbumsTitle')}</h2>
-          {detail.topAlbums.length ? (
-            <div className="tag9">
-              {detail.topAlbums.map((row, i) => {
-                const a = albumMeta(row.albumId);
+          <h2>{t('groups.activity')}</h2>
+          {detail.activity.length ? (
+            <div className="hrow act13">
+              {detail.activity.map((ev, i) => {
+                const a = albumMeta(ev.albumId);
                 return (
-                  <button className={`ta9${i === 0 ? ' first' : ''}`} key={row.albumId} onClick={() => openAlbum(row.albumId)}>
-                    <CoverArt url={a?.cover} fallbackLetter={a?.artist[0] || '?'} className="cov" px={220} style={{ width: '100%', aspectRatio: '1' }} />
-                    <span className="sc9">{fmt1(row.avgScore)}</span>
-                    <b>{a ? a.title : '…'}</b>
-                    <small className="muted" style={{ fontWeight: 600 }}>{a?.artist && <><ArtistName name={a.artist} id={a.artistId} size={16} /> · </>}{t('groups.ratingsN', { n: row.count })}</small>
+                  <button className="act13c" key={i} onClick={() => openAlbum(ev.albumId)}>
+                    <div className="cvw">
+                      <CoverArt url={a?.cover ?? ev.cover ?? undefined} fallbackLetter={(a?.artist ?? ev.albumArtist)[0] || '?'} className="cov" px={150} style={{ width: '100%', aspectRatio: '1' }} />
+                      <Av u={ev.user} />
+                      <span className="sc13">{fmt1(ev.stars)}</span>
+                    </div>
+                    <b>{a?.title ?? ev.albumTitle}</b>
+                    <small className="muted">{ev.user.name} {ev.type === 'review' ? t('groups.wroteAbout') : t('groups.rated')}</small>
+                    <small className="muted">{formatRelative(ev.createdAt, language)}</small>
                   </button>
                 );
               })}
             </div>
-          ) : <p className="muted" style={{ fontWeight: 600 }}>{t('stats.notEnough')}</p>}
+          ) : <p className="muted" style={{ fontWeight: 600 }}>{t('groups.noActivity')}</p>}
         </div>
 
-        {/* Group taste: every pair's match as a heat matrix, the closest and furthest pair. */}
-        <div className="tile s3">
-          <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-            <div><h2 style={{ margin: 0 }}>{t('groups.tasteTitle')}</h2><p className="muted" style={{ fontWeight: 600 }}>{t('groups.tasteDesc')}</p></div>
-            <div style={{ textAlign: 'right' }}>
-              <span className="num" style={{ fontSize: 54, lineHeight: 1, color: 'var(--acct)' }}>{detail.taste?.avgMatch != null ? `${detail.taste.avgMatch}%` : '–'}</span><br />
-              <small style={{ fontWeight: 800 }}>{t('groups.tasteAvg')}</small>
-            </div>
-          </div>
-          <div className="tm9">
-            <div className="mx9" style={{ gridTemplateColumns: `auto repeat(${memberOrder.length},minmax(0,1fr))` }} role="img" aria-label={t('groups.tasteDesc')}>
-              <span />
-              {memberOrder.map((m) => <span className="mh9" key={`h${m.id}`}><Av u={m} /></span>)}
-              {memberOrder.map((a) => [
-                <span className="mh9" key={`r${a.id}`}><Av u={a} /></span>,
-                ...memberOrder.map((b) => {
-                  if (a.id === b.id) return <span className="mc9 self" key={`${a.id}${b.id}`} />;
-                  const v = pairPct.get(`${a.id}|${b.id}`);
-                  return v == null
-                    ? <span className="mc9 self" key={`${a.id}${b.id}`} />
-                    : <span className="mc9" key={`${a.id}${b.id}`} style={{ ['--v' as string]: v }} title={`${a.name} · ${b.name}: ${v}%`}>{v}</span>;
-                }),
-              ])}
-            </div>
-            <div className="pairs9">
-              {detail.taste?.closest && (
-                <div className="pr9"><small className="k9 muted">{t('groups.tasteClosestLabel')}</small>
-                  <div className="pp9"><Av u={detail.taste.closest.a} /><Av u={detail.taste.closest.b} /><b>{t('groups.pairNames', { a: detail.taste.closest.a.name, b: detail.taste.closest.b.name })}</b><span className="num">{detail.taste.closest.pct}%</span></div>
-                </div>
-              )}
-              {detail.taste?.furthest && (
-                <div className="pr9"><small className="k9 muted">{t('groups.tasteFurthestLabel')}</small>
-                  <div className="pp9"><Av u={detail.taste.furthest.a} /><Av u={detail.taste.furthest.b} /><b>{t('groups.pairNames', { a: detail.taste.furthest.a.name, b: detail.taste.furthest.b.name })}</b><span className="num">{detail.taste.furthest.pct}%</span></div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="tile s2">
-          <h2>{t('groups.members')}</h2>
-          <div className="mgrid">
-            {detail.members.map((m) => {
-              const s = statsByUser.get(m.id);
-              return (
-                <button className="mcard" key={m.id} onClick={() => openMember(m.id)}>
-                  <div className="top">
-                    <Av u={m} />
-                    <b>{m.name}{youTag(m.id)}</b>
-                    <span className="tag">{m.id === detail.createdBy ? t('groups.owner') : t('groups.member')}</span>
-                  </div>
-                  <div className="kv"><span className="muted">{t('groups.figHours')}</span><span>{s ? `${fmtHours(s.hoursMonth)}${t('unit.h')}` : '–'}</span></div>
-                  <div className="kv"><span className="muted">{t('groups.figRatings')}</span><span>{s ? s.ratingsMonth : '–'}</span></div>
-                  <div className="kv"><span className="muted">{t('groups.figAvg')}</span><span>{s && s.avgScore ? fmt1(s.avgScore) : '–'}</span></div>
-                  {s && s.streakDays > 0 && <div className="stk9x"><span className="fl9"><i className="ic-flame" /> {t('groups.streakChip', { n: s.streakDays })}</span></div>}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="tile t-pop">
-          <h2>{t('groups.records')}</h2>
-          {detail.records.length ? detail.records.map((r, i) => (
-            <div className="row" key={i}>
-              <span className="gl9 sm" aria-hidden="true"><i className={`ic-${RECORD_ICON[r.label] ?? 'star'}`} /></span>
-              <span className="g"><b>{t(`groups.${r.label}` as never)}</b><small className="muted" style={{ fontWeight: 600 }}>{r.holder?.name ?? '–'}</small></span>
-              <b>{recordValue(r.label, r.value)}</b>
-            </div>
-          )) : <p className="muted" style={{ fontWeight: 600 }}>{t('stats.notEnough')}</p>}
-        </div>
-
-        <div className="tile s2">
-          <h2>{t('groups.inviteByHandle')}</h2>
-          <label htmlFor="ginv">{t('groups.handleLabel')}</label>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <input className="field" id="ginv" style={{ flex: 1, minWidth: 150 }} placeholder={t('friends.handlePlaceholder')} value={inviteHandle} aria-invalid={!!inviteErr} aria-describedby="ginverr" onChange={(e) => setInviteHandle(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') invite(); }} />
-            <button className="btn" onClick={invite}>{t('groups.invite')}</button>
-          </div>
-          <p className="ferr" id="ginverr" role="alert">{inviteErr}</p>
-        </div>
-
-        <div className="tile">
-          <h2>{t('groups.activity')}</h2>
-          {detail.activity.length ? detail.activity.map((ev, i) => {
-            const a = albumMeta(ev.albumId);
-            return (
-              <button className="row" key={i} onClick={() => openAlbum(ev.albumId)}>
-                <Av u={ev.user} />
-                <span className="g">{ev.user.name} {ev.type === 'review' ? t('groups.wroteAbout') : t('groups.rated')} {a?.title ?? ev.albumTitle} · {fmt1(ev.stars)}<small className="muted" style={{ fontWeight: 700, display: 'block' }}>{formatRelative(ev.createdAt, language)}</small></span>
-                <span className="acv9"><CoverArt url={a?.cover ?? ev.cover ?? undefined} fallbackLetter={(a?.artist ?? ev.albumArtist)[0] || '?'} className="cov" style={{ width: 40, height: 40 }} /></span>
-              </button>
-            );
-          }) : <p className="muted" style={{ fontWeight: 600 }}>{t('groups.noActivity')}</p>}
-        </div>
-
+        {/* Managing the group: invite by handle, leave. */}
         <div className="tile t-soft2 s3">
-          {leavingConfirm ? (
-            <>
-              <p className="muted" style={{ fontWeight: 600, marginBottom: 10 }}>{t('groups.leaveConfirmTitle', { name: detail.name })} {t('groups.leaveConfirmBody')}</p>
-              <div className="acts" style={{ marginTop: 0 }}>
-                <button className="btn danger" onClick={leaveGroup}>{t('groups.leaveConfirmBtn')}</button>
-                <button className="btn ghost" onClick={() => setLeavingConfirm(false)}>{t('groups.leaveCancel')}</button>
+          <div className="mng13">
+            <div className="inv">
+              <label htmlFor="ginv" style={{ fontWeight: 800 }}>{t('groups.inviteByHandle')}</label>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
+                <input className="field" id="ginv" style={{ flex: 1, minWidth: 150 }} placeholder={t('friends.handlePlaceholder')} value={inviteHandle} aria-invalid={!!inviteErr} aria-describedby="ginverr" onChange={(e) => setInviteHandle(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') invite(); }} />
+                <button className="btn" onClick={invite}>{t('groups.invite')}</button>
               </div>
-            </>
-          ) : (
-            <button className="btn ghost" onClick={() => setLeavingConfirm(true)}>{t('groups.leaveGroup')}</button>
-          )}
+              <p className="ferr" id="ginverr" role="alert">{inviteErr}</p>
+            </div>
+            {leavingConfirm ? (
+              <div>
+                <p className="muted" style={{ fontWeight: 600, marginBottom: 10 }}>{t('groups.leaveConfirmTitle', { name: detail.name })} {t('groups.leaveConfirmBody')}</p>
+                <div className="acts" style={{ marginTop: 0 }}>
+                  <button className="btn danger" onClick={leaveGroup}>{t('groups.leaveConfirmBtn')}</button>
+                  <button className="btn ghost" onClick={() => setLeavingConfirm(false)}>{t('groups.leaveCancel')}</button>
+                </div>
+              </div>
+            ) : (
+              <button className="btn ghost" onClick={() => setLeavingConfirm(true)}>{t('groups.leaveGroup')}</button>
+            )}
+          </div>
         </div>
       </div>
     </>
