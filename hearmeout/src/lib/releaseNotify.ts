@@ -54,7 +54,7 @@ function releaseLookup() {
     if (hit) return hit;
     if (++lookups > MAX_LOOKUPS) throw new OutOfBudget();
     const p = (async () => {
-      const id = knownId || await withSpotifyCache(`artistid:v1:${artist.toLowerCase()}`, 30 * 86400, () => resolveSpotifyArtistId(artist));
+      const id = knownId || await withSpotifyCache(`artistid:v2:${artist.toLowerCase()}`, 30 * 86400, () => resolveSpotifyArtistId(artist));
       if (!id) return null;
       const { released } = await withSpotifyCache(`artistalbums:v1:${id}`, 12 * 3600, () => fetchArtistAlbumsSplit(id));
       const fresh = released.find((a) => a.releaseDate && a.releaseDate.length === 10 && a.releaseDate >= fromDay && a.releaseDate <= today);

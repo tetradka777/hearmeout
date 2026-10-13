@@ -25,21 +25,25 @@ export async function GET(request: NextRequest) {
   const since = new Date(Date.now() - 182 * 86400000).toISOString();
   const { rows: plays } = await fetchAllRows((f, t) => supabaseAdmin()
     .from('listening_events')
-    .select('artist, duration_ms')
+    .select('artist, artist_id, duration_ms')
     .eq('user_id', userId)
     .gte('played_at', since)
     .order('id')
     .range(f, t));
-  const msByArtist = new Map<string, { name: string; ms: number }>();
+  const msByArtist = new Map<string, { name: string; ms: number; id: string | null }>();
   for (const p of plays || []) {
     const name = (p.artist as string | null)?.split(',')[0]?.trim();
     if (!name) continue;
     const key = name.toLowerCase();
-    const cur = msByArtist.get(key) || { name, ms: 0 };
+    const cur = msByArtist.get(key) || { name, ms: 0, id: null };
+    // The Spotify id of the main artist, for telling same-named artists apart.
+    if (!cur.id && p.artist_id && !(p.artist as string).includes(',')) cur.id = p.artist_id as string;
     cur.ms += (p.duration_ms as number | null) || 0;
     msByArtist.set(key, cur);
   }
-  const yours = [...msByArtist.values()].sort((a, b) => b.ms - a.ms).slice(0, YOURS).map((a) => a.name);
+  const yoursRanked = [...msByArtist.values()].sort((a, b) => b.ms - a.ms).slice(0, YOURS);
+  const yours = yoursRanked.map((a) => a.name);
+  const idOf = new Map(yoursRanked.map((a) => [a.name, a.id]));
   const taken = new Set(yours.map((n) => n.toLowerCase()));
 
   const popular: string[] = [];
@@ -56,7 +60,7 @@ export async function GET(request: NextRequest) {
   const lists: [string, 'yours' | 'popular'][] = [...yours.map((n) => [n, 'yours'] as [string, 'yours']), ...popular.map((n) => [n, 'popular'] as [string, 'popular'])];
   for (const [artist, group] of lists) {
     try {
-      const concerts = regionFirst(await cachedArtistConcerts(artist), country);
+      const concerts = regionFirst(await cachedArtistConcerts(artist, idOf.get(artist) ?? null), country);
       for (const c of concerts.slice(0, PER_ARTIST)) items.push({ ...c, artist, group });
     } catch {
       // One artist failing (rate limit, odd name) shouldn't hide the rest.

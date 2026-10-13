@@ -211,25 +211,31 @@ function FeedSection() {
   );
 }
 
-// ----- Friends (rev 11): a list with what they play and the match -----
+// ----- Friends: a row of cards you swipe through -----
 
-function FriendRow({ user, demo, pct }: { user: ApiUser; demo: boolean; pct: number | null }) {
+// One friend: photo, name, the match and what they play now (or last),
+// with that album's cover.
+function FriendCard({ user, demo, pct }: { user: ApiUser; demo: boolean; pct: number | null }) {
   const { t, language, viewFriend } = useApp();
   const { data: profile, failed } = useCachedJson<PublicProfile>(`/api/users/${user.id}`);
   if (demo && failed) return null; // a demo profile missing from this database
-  const now = profile?.nowPlaying;
-  const last = profile?.lastPlayed;
-  const sub = now ? t('home.listeningTo', { title: now.title })
-    : last ? t('home.lastPlayedRow', { title: last.title, when: formatRelative(last.startedAt, language) })
-    : null;
+  const play = profile?.nowPlaying || profile?.lastPlayed || null;
+  const live = !!profile?.nowPlaying;
   return (
-    <button className="row fr11" onClick={() => viewFriend(user.id)}>
-      <Dot user={user} />
-      <span className="g">
-        <b>{user.name}{demo && <> <span className="tag">{t('friends.demoTag')}</span></>}</b>
-        {sub && <small className="muted">{sub}</small>}
-      </span>
-      <span className="pc11"><b className="num">{pct != null ? `${pct}%` : '—'}</b><small>{t('home.matchWord')}</small></span>
+    <button className="tile fr13" onClick={() => viewFriend(user.id)}>
+      {demo && <span className="tag dm13">{t('friends.demoTag')}</span>}
+      <span className="avt" style={{ ...userAvatarStyle(user), backgroundSize: 'cover' }}>{!user.avatarUrl && user.name[0]?.toUpperCase()}</span>
+      <b className="nm13">{user.name}</b>
+      <span className="pc13"><b className="num">{pct != null ? `${pct}%` : '—'}</b><small>{t('home.matchWord')}</small></span>
+      {play && (
+        <span className="np13">
+          <CoverArt url={play.cover ?? undefined} fallbackLetter={play.artist[0] || '?'} className="cov" px={36} style={{ width: 36, height: 36 }} />
+          <span className="g">
+            <small className={live ? 'live13' : 'muted'}>{live ? t('friend.listeningNow') : formatRelative(play.startedAt, language)}</small>
+            <b>{play.title}</b>
+          </span>
+        </span>
+      )}
     </button>
   );
 }
@@ -256,48 +262,67 @@ function FriendsList() {
           <button className="btn" onClick={openFriendsTab}>{t('friends.inviteBannerBtn')}</button>
         </div>
       )}
-      <div className="tile" style={{ marginTop: 12 }}>
-        {people.map((f) => <DemoAwareRow key={f.id} user={f} demo={demo} pct={scores[f.id]?.pct ?? null} myGenres={me.genres} />)}
+      <div className="hrow fr13row" style={{ marginTop: 12 }}>
+        {people.map((f) => <DemoAwareCard key={f.id} user={f} demo={demo} pct={scores[f.id]?.pct ?? null} myGenres={me.genres} />)}
+        <button className="tile t-soft2 fr13 add13" onClick={openFriendsTab}>
+          <span className="avt">+</span>
+          <b className="nm13">{t('friends.addFriendsTile')}</b>
+          <small className="muted" style={{ fontWeight: 700 }}>{t('friends.byHandleOrLink')}</small>
+        </button>
       </div>
     </div>
   );
 }
 
 // Demo profiles aren't friends, so their match comes from their profile.
-function DemoAwareRow({ user, demo, pct, myGenres }: { user: ApiUser; demo: boolean; pct: number | null; myGenres: Parameters<typeof computeMatch>[0] }) {
+function DemoAwareCard({ user, demo, pct, myGenres }: { user: ApiUser; demo: boolean; pct: number | null; myGenres: Parameters<typeof computeMatch>[0] }) {
   const profile = useCachedJson<PublicProfile>(demo ? `/api/users/${user.id}` : null).data;
   const shown = demo ? (profile ? computeMatch(myGenres, profile.genres) : null) : pct;
-  return <FriendRow user={user} demo={demo} pct={shown} />;
+  return <FriendCard user={user} demo={demo} pct={shown} />;
 }
 
-// ----- Your day so far + rate what you played (rev 11, two columns) -----
+// ----- Your day so far + rate what you played (two columns) -----
 
+// Today's plays as three figures and the covers of what you played most,
+// with the busiest hour and the track on repeat under them.
 function DayTile() {
-  const { me, t, language, feed, ensureRecap, recapCache } = useApp();
+  const { me, t, language, feed, ensureRecap, recapCache, openAlbum } = useApp();
   useEffect(() => { if (me) ensureRecap('me', 'day'); }, [me, ensureRecap]);
   const r = me ? recapCache[`${me.id}:day`] : undefined;
-  const hourly = useMemo(() => {
+  const peak = useMemo(() => {
     const h = new Array(24).fill(0) as number[];
     for (const at of feed?.todayPlays || []) h[new Date(at).getHours()]++;
-    return h;
+    const max = Math.max(...h);
+    return max > 0 ? h.indexOf(max) : null;
   }, [feed?.todayPlays]);
-  const max = Math.max(...hourly);
-  const peak = max > 0 ? hourly.indexOf(max) : null;
   const peakLabel = peak != null ? new Date(2000, 0, 1, peak).toLocaleTimeString(toLocale(language), { hour: '2-digit', minute: '2-digit', hour12: me?.timeFormat === '12' }) : null;
   const rep = feed?.onRepeat;
   const foot = [peakLabel && t('home.dayPeak', { time: peakLabel }), rep && t('home.onRepeat', { title: rep.title, n: rep.plays })].filter(Boolean).join(' · ');
+  // The day's songs by plays, one cover per album.
+  const covers: { key: string; cover: string | null; albumId: string | null; title: string; artist: string }[] = [];
+  for (const s of r?.topSongs || []) {
+    const key = s.albumId || s.cover || s.title;
+    if (!covers.some((c) => c.key === key)) covers.push({ key, cover: s.cover, albumId: s.albumId, title: s.title, artist: s.artist });
+  }
   return (
-    <div className="tile">
+    <div className="tile day13">
       <div className="hd10"><h2 style={{ margin: 0 }}>{t('home.daySoFar')}</h2></div>
       <div className="kv11">
         <span><b className="num">{r?.trackCount ?? 0}</b><small>{t('home.cornerTracks')}</small></span>
         <span><b className="num">{minutesLabel(r?.minutes ?? 0, t)}</b><small>{t('home.listened')}</small></span>
         <span><b className="num">{r?.uniqueArtists ?? 0}</b><small>{t('home.cornerArtists')}</small></span>
       </div>
-      <div className="hrs10">
-        <span className="b9" aria-hidden="true">{hourly.map((v, i) => <i key={i} style={{ height: `${max ? Math.round((v / max) * 100) : 0}%` }} />)}</span>
-      </div>
-      {foot && <small className="muted" style={{ fontWeight: 700, display: 'block', marginTop: 8 }}>{foot}</small>}
+      {covers.length > 0 && (
+        <div className="dcv13">
+          {covers.slice(0, 4).map((c) => (
+            <button key={c.key} onClick={() => c.albumId && openAlbum(c.albumId)} style={{ cursor: c.albumId ? 'pointer' : 'default' }} title={`${c.title} — ${c.artist}`}>
+              <CoverArt url={c.cover ?? undefined} fallbackLetter={c.artist[0] || '?'} className="cov" px={120} style={{ width: '100%', aspectRatio: '1' }} />
+              <small>{c.title}</small>
+            </button>
+          ))}
+        </div>
+      )}
+      {foot && <small className="muted" style={{ fontWeight: 700, display: 'block', marginTop: 10 }}>{foot}</small>}
     </div>
   );
 }

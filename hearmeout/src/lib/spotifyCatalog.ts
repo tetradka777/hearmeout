@@ -165,9 +165,13 @@ export async function resolveArtistAlbumId(title: string, artistName: string, ar
 // name, not their Spotify id) to a real Spotify artist id, so Discover's
 // artist search results can open a real artist page instead of a dead click.
 export async function resolveSpotifyArtistId(name: string): Promise<string | null> {
-  const params: Record<string, string> = { q: `artist:${name}`, type: 'artist', limit: '1' };
+  // The artist with exactly this name wins over a better known one whose
+  // name merely contains it ("miley" isn't Miley Cyrus).
+  const params: Record<string, string> = { q: `artist:${name}`, type: 'artist', limit: '10' };
   const data = await spotifyGet('/search', params);
-  return data.artists?.items?.[0]?.id ?? null;
+  const items: { id: string; name: string }[] = data.artists?.items ?? [];
+  const want = name.trim().toLowerCase();
+  return (items.find((a) => a.name.toLowerCase() === want) ?? items[0])?.id ?? null;
 }
 
 // durationMs is optional: details cached before it was added lack it.

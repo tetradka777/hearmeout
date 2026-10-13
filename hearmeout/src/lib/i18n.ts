@@ -1264,6 +1264,9 @@ const ru = {
   'artist.mbActive': 'годы',
   'artist.mbNoRatings': 'оценок пока нет',
   'artist.openNamed': 'Открыть артиста {name}',
+  'match.yourPlace': 'Ты на {n}-м месте · {h} ч',
+  'stats.topArtistNo1': 'Артист №1',
+  'stats.playsN': '{n} {n|прослушивание|прослушивания|прослушиваний}',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2524,6 +2527,9 @@ const en: Dict = {
   'artist.mbActive': 'active',
   'artist.mbNoRatings': 'no ratings yet',
   'artist.openNamed': 'Open artist {name}',
+  'match.yourPlace': "You're #{n} · {h} h",
+  'stats.topArtistNo1': 'No. 1 artist',
+  'stats.playsN': '{n} {n|play|plays}',
 };
 
 const fr: Dict = {
@@ -3781,6 +3787,9 @@ const fr: Dict = {
   'artist.mbActive': 'actif',
   'artist.mbNoRatings': 'pas encore de notes',
   'artist.openNamed': "Ouvrir l'artiste {name}",
+  'match.yourPlace': 'Tu es {n}e · {h} h',
+  'stats.topArtistNo1': 'Artiste n° 1',
+  'stats.playsN': '{n} {n|écoute|écoutes}',
 };
 
 const es: Dict = {
@@ -5038,6 +5047,9 @@ const es: Dict = {
   'artist.mbActive': 'activo',
   'artist.mbNoRatings': 'sin valoraciones aún',
   'artist.openNamed': 'Abrir artista {name}',
+  'match.yourPlace': 'Estás en el puesto {n} · {h} h',
+  'stats.topArtistNo1': 'Artista n.º 1',
+  'stats.playsN': '{n} {n|escucha|escuchas}',
 };
 
 const de: Dict = {
@@ -6295,6 +6307,9 @@ const de: Dict = {
   'artist.mbActive': 'aktiv',
   'artist.mbNoRatings': 'noch keine Bewertungen',
   'artist.openNamed': 'Künstler {name} öffnen',
+  'match.yourPlace': 'Du bist auf Platz {n} · {h} Std.',
+  'stats.topArtistNo1': 'Künstler Nr. 1',
+  'stats.playsN': '{n} {n|Wiedergabe|Wiedergaben}',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };

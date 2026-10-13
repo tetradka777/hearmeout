@@ -72,7 +72,7 @@ export async function releasesFor(artists: string[], mine: boolean): Promise<Tic
   const upcomingTo = isoDay(now + UPCOMING_DAYS * dayMs);
   for (const artist of artists) {
     try {
-      const id = await withSpotifyCache(`artistid:v1:${artist.toLowerCase()}`, 30 * 86400, () => resolveSpotifyArtistId(artist));
+      const id = await withSpotifyCache(`artistid:v2:${artist.toLowerCase()}`, 30 * 86400, () => resolveSpotifyArtistId(artist));
       if (!id) continue;
       const { released, upcoming } = await withSpotifyCache(`artistalbums:v1:${id}`, 12 * 3600, () => fetchArtistAlbumsSplit(id));
       const fresh = released.find((a) => a.releaseDate && a.releaseDate.length === 10 && a.releaseDate >= recentFrom && a.releaseDate <= today);

@@ -8,6 +8,7 @@ import "@/styles/fonts.css";
 import "@/styles/tokens.css";
 import "@/styles/components.css";
 import "@/styles/rev12.css";
+import "@/styles/rev13.css";
 
 // Title, description and link preview (lib/siteMeta.ts): Russian unless the
 // request asks for another language first.

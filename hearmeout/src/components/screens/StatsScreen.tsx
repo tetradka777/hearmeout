@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArtistName } from '../ui/ArtistName';
+import { ArtistAvatar, ArtistName, useOpenArtist } from '../ui/ArtistName';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { Device, StatsCalendarDay, StatsData, StatsPeriodType, StatsSeasonKey } from '@/lib/types';
@@ -172,6 +172,7 @@ function ListeningCalendar({ data, t, language, weekStart }: { data: StatsData; 
 export function StatsScreen(_props: { device: Device }) {
   const { t, language, me, lovedItems, toggleLoved, openRecap, ensureRecap, recapCache, laterItems, toggleLaterTrack, showToast, myRatings, openAlbum } = useApp();
   const { playQueue } = usePlayer();
+  const openArtist = useOpenArtist();
   const [savingRow, setSavingRow] = useState<number | null>(null);
 
   // Listen later from Recently played (spec 13.20): a track bookmark needs
@@ -247,7 +248,6 @@ export function StatsScreen(_props: { device: Device }) {
 
   if (!me) return null;
 
-  const maxArtistPlays = Math.max(1, ...(data?.topArtists.map((a) => a.plays) ?? [1]));
   const maxHeat = Math.max(1, ...(data?.heatmap ?? [1]));
   const maxBar = Math.max(1, ...(data?.bars.map((b) => b.hours) ?? [1]));
 
@@ -352,32 +352,59 @@ export function StatsScreen(_props: { device: Device }) {
 
             <ListeningCalendar data={data} t={t} language={language} weekStart={me.weekStart ?? 'mon'} />
 
-            <div className="tile t-soft2">
+            {/* Top artists as photos: the first big, the next four in a row. */}
+            <div className="tile t-soft2 tar13">
               <h2>{t('stats.topArtists')}</h2>
-              {data.topArtists.length ? data.topArtists.slice(0, 4).map((a, i) => (
-                <div className="row" key={a.id || a.name}>
-                  <span className="rk11">{i + 1}</span>
-                  <b className="g"><ArtistName name={a.name} id={a.id} size={32} /></b>
-                  <div className="meter" style={{ flex: 'none', width: 80 }}><i style={{ width: `${Math.round((a.plays / maxArtistPlays) * 100)}%` }} /></div>
-                  <b style={{ width: 36, textAlign: 'right' }}>{a.plays}</b>
-                </div>
-              )) : <p className="muted" style={{ fontWeight: 600 }}>{t('stats.notEnough')}</p>}
+              {data.topArtists.length ? (() => {
+                const [lead, ...rest] = data.topArtists.slice(0, 5);
+                return (
+                  <>
+                    <button className="lead" onClick={() => openArtist(lead.name, lead.id)}>
+                      <ArtistAvatar name={lead.name} size={96} />
+                      <span className="g">
+                        <span className="rk">{t('stats.topArtistNo1')}</span>
+                        <b>{lead.name}</b>
+                        <small className="muted" style={{ fontWeight: 700 }}>{fmtHours(lead.hours)}{t('unit.h')} · {t('stats.playsN', { n: lead.plays })}</small>
+                      </span>
+                    </button>
+                    {rest.length > 0 && (
+                      <div className="rest">
+                        {rest.map((a, i) => (
+                          <button key={a.id || a.name} onClick={() => openArtist(a.name, a.id)}>
+                            <ArtistAvatar name={a.name} size={56} />
+                            <span className="rkb" aria-hidden="true">{i + 2}</span>
+                            <b>{a.name}</b>
+                            <small>{t('stats.playsN', { n: a.plays })}</small>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                );
+              })() : <p className="muted" style={{ fontWeight: 600 }}>{t('stats.notEnough')}</p>}
             </div>
 
             <div className="tile s2">
               <div className="hd10"><div><h2 style={{ margin: 0 }}>{t('stats.topAlbums')}</h2><small className="muted" style={{ fontWeight: 700 }}>{t('stats.topAlbumsSub')}</small></div></div>
-              {data.topAlbums?.length ? data.topAlbums.map((a, i) => {
-                const mine = myRatings.find((r) => r.albumId === a.albumId)?.stars;
-                return (
-                  <button className="row" key={a.albumId} onClick={() => openAlbum(a.albumId)}>
-                    <span className="rk11">{i + 1}</span>
-                    <CoverArt url={a.cover ?? undefined} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: 44, height: 44 }} />
-                    <span className="g"><b>{a.title}</b><small className="muted"><ArtistName name={a.artist} size={16} /></small></span>
-                    <span className={`tag${mine != null ? ' on9' : ''}`}>{mine != null ? t('stats.youRated', { score: fmt1(mine) }) : t('stats.notRated')}</span>
-                    <b className="num" style={{ fontSize: 22, minWidth: 40, textAlign: 'right' }}>{fmtHours(a.hours)}{t('unit.h')}</b>
-                  </button>
-                );
-              }) : <p className="muted" style={{ fontWeight: 600 }}>{t('stats.notEnough')}</p>}
+              {data.topAlbums?.length ? (
+                <div className="alg13">
+                  {data.topAlbums.map((a, i) => {
+                    const mine = myRatings.find((r) => r.albumId === a.albumId)?.stars;
+                    return (
+                      <button key={a.albumId} onClick={() => openAlbum(a.albumId)}>
+                        <div className="cvw">
+                          <CoverArt url={a.cover ?? undefined} fallbackLetter={a.artist[0] || '?'} className="cov" px={160} style={{ width: '100%', aspectRatio: '1' }} />
+                          <span className="rkb13">{i + 1}</span>
+                          <span className="hr13">{fmtHours(a.hours)}{t('unit.h')}</span>
+                          {mine != null && <span className="sc13">{fmt1(mine)}</span>}
+                        </div>
+                        <b>{a.title}</b>
+                        <small className="muted"><ArtistName name={a.artist} size={16} /></small>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : <p className="muted" style={{ fontWeight: 600 }}>{t('stats.notEnough')}</p>}
             </div>
 
             {/* Time of day and genres in one tile. */}
@@ -407,24 +434,33 @@ export function StatsScreen(_props: { device: Device }) {
 
             <div className="tile s2">
               <h2>{t('stats.recentPlays')}</h2>
-              {data.recentPlays.length ? data.recentPlays.slice(0, 4).map((p, i) => {
-                const loved = lovedItems.some((li) => li.type === 'track' && li.title === p.title && li.artist === p.artist);
-                const later = laterItems.some((li) => li.type === 'track' && li.title === p.title && li.artist === p.artist);
-                return (
-                  <div className="row" key={i}>
-                    <button className="rowlink" onClick={() => playQueue([{ title: p.title, artist: p.artist, cover: p.cover, albumId: p.albumId }], 0)} aria-label={t('album.playPreviewOf', { title: p.title })}>
-                      <CoverArt url={p.cover ?? undefined} fallbackLetter={p.artist[0] || '?'} className="cov" style={{ width: 44, height: 44 }} />
-                      <span className="g"><b>{p.title}</b><small className="muted" style={{ fontWeight: 600 }}><ArtistName name={p.artist} size={16} /> · {formatRelative(p.playedAt, language)}</small></span>
-                    </button>
-                    <button className={`ib love${loved ? ' on' : ''}`} aria-pressed={loved} onClick={() => toggleLoved('track', p.title, p.artist, p.trackId, p.cover)} aria-label={loved ? t('album.removeFromLoved') : t('album.addToLoved')}>
-                      <HeartIcon />
-                    </button>
-                    <button className={`ib love later${later ? ' on' : ''}`} aria-pressed={later} disabled={savingRow === i} onClick={() => toggleRecentLater(p, i)} aria-label={later ? t('track.removeLater') : t('track.saveLater')}>
-                      <BookmarkIcon />
-                    </button>
-                  </div>
-                );
-              }) : <p className="muted" style={{ fontWeight: 600 }}>{t('stats.notEnough')}</p>}
+              {data.recentPlays.length ? (
+                <div className="hrow rp13">
+                  {data.recentPlays.slice(0, 8).map((p, i) => {
+                    const loved = lovedItems.some((li) => li.type === 'track' && li.title === p.title && li.artist === p.artist);
+                    const later = laterItems.some((li) => li.type === 'track' && li.title === p.title && li.artist === p.artist);
+                    return (
+                      <div className="rp13c" key={i}>
+                        <button className="play13" onClick={() => playQueue([{ title: p.title, artist: p.artist, cover: p.cover, albumId: p.albumId }], 0)} aria-label={t('album.playPreviewOf', { title: p.title })}>
+                          <CoverArt url={p.cover ?? undefined} fallbackLetter={p.artist[0] || '?'} className="cov" px={150} style={{ width: '100%', aspectRatio: '1' }} />
+                          <span className="pi13" aria-hidden="true"><i className="ic ic-play" /></span>
+                        </button>
+                        <b>{p.title}</b>
+                        <small className="muted" style={{ fontWeight: 600 }}><ArtistName name={p.artist} size={16} /></small>
+                        <small className="muted" style={{ fontWeight: 700, fontSize: 12 }}>{formatRelative(p.playedAt, language)}</small>
+                        <span className="acts13">
+                          <button className={`ib love${loved ? ' on' : ''}`} aria-pressed={loved} onClick={() => toggleLoved('track', p.title, p.artist, p.trackId, p.cover)} aria-label={loved ? t('album.removeFromLoved') : t('album.addToLoved')}>
+                            <HeartIcon />
+                          </button>
+                          <button className={`ib love later${later ? ' on' : ''}`} aria-pressed={later} disabled={savingRow === i} onClick={() => toggleRecentLater(p, i)} aria-label={later ? t('track.removeLater') : t('track.saveLater')}>
+                            <BookmarkIcon />
+                          </button>
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : <p className="muted" style={{ fontWeight: 600 }}>{t('stats.notEnough')}</p>}
             </div>
           </div>
 

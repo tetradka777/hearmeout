@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   if (!name) return NextResponse.json({ error: 'missing_params' }, { status: 400 });
 
   try {
-    const id = await withSpotifyCache(`resolve-artist:${name}`, 86400, () => resolveSpotifyArtistId(name));
+    const id = await withSpotifyCache(`resolve-artist:v2:${name}`, 86400, () => resolveSpotifyArtistId(name));
     if (!id) return NextResponse.json({ error: 'not_found' }, { status: 404 });
     return NextResponse.json({ id }, { headers: { 'Cache-Control': 's-maxage=3600, stale-while-revalidate=86400' } });
   } catch (err) {

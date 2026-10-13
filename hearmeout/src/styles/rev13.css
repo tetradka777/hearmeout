@@ -1,0 +1,133 @@
+/* Visual pass after rev 12 (2026-10-13): covers without frames, swipeable
+   friend cards, a podium instead of leaderboard tables, artist photos
+   instead of name chips, and pictures instead of plain lists on Stats and
+   the group page. Scoped under .rd like the rest. */
+
+/* ----- Covers: no outline or frame, just the picture with soft corners ----- */
+.rd .cov{outline:0!important;border:0!important}
+.rd .rc-stage .c1,.rd .rc-stage .c2,.rd .hcs9 span,.rd .ta9 .cov,.rd .gr9 .gcv .cov,.rd .hshelf9 .cov,.rd .pf10 .cov,.rd .rcstrip .mini .cov,.rd .cv9 .cov{border:0!important}
+.rd .rc-stage .c1,.rd .rc-stage .c2,.rd .hcs9 span{box-shadow:0 6px 16px rgba(0,0,0,.22)}
+.rd .rcstrip .mini .cov+.cov{margin-left:4px}
+
+/* ----- Artist names in subtitle lines sit on one line with their text ----- */
+.rd small:has(> .arl),.rd p:has(> .arl){display:flex;align-items:center;flex-wrap:wrap;column-gap:4px;min-width:0}
+.rd .arl{vertical-align:middle;line-height:1.2}
+
+/* ----- Home: friends as cards in a swipeable row ----- */
+.rd .hrow.fr13row{align-items:stretch}
+.rd .fr13row{gap:12px;padding:2px 2px 10px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+.rd .hrow>.fr13{width:178px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;position:relative;padding:16px}
+.rd .fr13 .avt{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font:800 22px/1 var(--font-display);background-size:cover;background-position:center;margin-bottom:6px}
+.rd .fr13 .nm13{font-size:16px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .fr13 .pc13{display:flex;align-items:baseline;gap:6px}
+.rd .fr13 .pc13 .num{font-size:24px;color:var(--acct)}
+.rd .fr13 .pc13 small{font-weight:700;font-size:12px;opacity:.75}
+.rd .fr13 .np13{display:flex;align-items:center;gap:8px;margin-top:6px;width:100%;min-width:0}
+.rd .fr13 .np13 .g{min-width:0;display:flex;flex-direction:column}
+.rd .fr13 .np13 b{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .fr13 .np13 small{font-size:11px;font-weight:700}
+.rd .fr13 .live13{color:var(--acct);font-weight:800}
+.rd .fr13 .dm13{position:absolute;top:12px;right:12px}
+.rd .fr13.add13 .avt{background:var(--paper);color:var(--fg);font-size:28px}
+
+/* ----- Home: your day with the covers of what you played ----- */
+.rd .dcv13{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
+.rd .dcv13 button{display:flex;flex-direction:column;gap:6px;text-align:left;min-width:0;color:inherit}
+.rd .dcv13 .cov{border-radius:12px}
+.rd .dcv13 small{font-weight:700;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ----- Podium (Match weekly leaderboard, group leaderboard) ----- */
+.rd .pod13{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:10px;margin:18px 0 6px}
+.rd .pd13{display:flex;flex-direction:column;align-items:center;text-align:center;gap:3px;min-width:0;color:inherit}
+.rd .pd13 .av13{position:relative;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;font:800 22px/1 var(--font-display);background:var(--pop) center/cover no-repeat;color:var(--ink);box-shadow:0 0 0 3px var(--paper),0 0 0 5px var(--fg)}
+.rd .pd13.p1 .av13{width:74px;height:74px;font-size:28px;box-shadow:0 0 0 3px var(--paper),0 0 0 5px var(--acc)}
+.rd .pd13 .cr13{position:absolute;top:-14px;right:-8px;width:26px;height:26px;border-radius:50%;background:var(--acc);color:var(--onacc);display:grid;place-items:center}
+.rd .pd13 .nm13{margin-top:8px;font-size:15px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .pd13.you .nm13{color:var(--acct)}
+.rd .pd13 .vl13{font-weight:800;font-size:13px;opacity:.8}
+.rd .pd13 .st13{display:grid;place-items:start center;width:100%;margin-top:8px;border-radius:14px 14px 4px 4px;background:color-mix(in srgb,var(--fg) 12%,transparent);padding-top:10px}
+.rd .pd13.p1 .st13{height:96px;background:var(--acc);color:var(--onacc)}
+.rd .pd13.p2 .st13{height:70px}
+.rd .pd13.p3 .st13{height:50px}
+.rd .pd13 .rk13{font:800 26px/1 var(--font-display)}
+.rd .pd13.empty .st13{opacity:.45}
+
+/* ----- Match: shared artists as photos ----- */
+.rd .sha13{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:14px 10px}
+.rd .sha13 button,.rd .sha13 .more13{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;color:inherit;text-align:center}
+.rd .sha13 small{font-weight:700;font-size:12px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .sha13 .more13 span{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;font:800 20px/1 var(--font-display);background:color-mix(in srgb,var(--fg) 10%,transparent)}
+.rd .sha13 button:hover small{text-decoration:underline}
+
+/* ----- Artist page: albums as a grid of covers, two across on a phone ----- */
+.rd .hshelf9{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+@media (max-width:520px){.rd .hshelf9{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 12px}}
+.rd .hshelf9 b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* ----- Stats: top artists as photos ----- */
+.rd .tar13 .lead{display:flex;align-items:center;gap:16px;margin:6px 0 16px;text-align:left;color:inherit;width:100%}
+.rd .tar13 .lead .g{min-width:0;display:flex;flex-direction:column;gap:2px}
+.rd .tar13 .lead b{font:800 24px/1.1 var(--font-display);letter-spacing:-.02em}
+.rd .tar13 .lead .rk{font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.06em;opacity:.7}
+.rd .tar13 .rest{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.rd .tar13 .rest button{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;text-align:center;color:inherit}
+.rd .tar13 .rest b{font-size:13px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .tar13 .rest small{font-size:11px;font-weight:700;opacity:.75}
+.rd .tar13 .rest button{position:relative}
+.rd .tar13 .rkb{position:absolute;top:-4px;left:calc(50% + 14px);width:22px;height:22px;border-radius:50%;background:var(--fg);color:var(--bg);font:800 12px/22px var(--font-display);text-align:center}
+
+/* ----- Stats: top albums as a cover grid ----- */
+.rd .alg13{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:16px 12px;margin-top:12px}
+@media (max-width:520px){.rd .alg13{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.rd .alg13>button{display:flex;flex-direction:column;gap:3px;text-align:left;min-width:0;color:inherit}
+.rd .alg13 .cvw{margin-bottom:5px}
+.rd .alg13 .rkb13{position:absolute;top:8px;left:8px;min-width:26px;height:26px;padding:0 6px;border-radius:99px;background:var(--fg);color:var(--bg);font:800 13px/26px var(--font-display);text-align:center}
+.rd .alg13 .hr13{position:absolute;bottom:8px;left:8px;padding:3px 9px;border-radius:99px;background:rgba(0,0,0,.62);color:#fff;font:800 12px/1.3 var(--font-display)}
+.rd .alg13 .sc13{position:absolute;bottom:8px;right:8px;padding:3px 9px;border-radius:99px;background:var(--acc);color:var(--onacc);font:800 12px/1.3 var(--font-display)}
+.rd .alg13 b{font-size:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* ----- Stats: recent plays as cards you swipe through ----- */
+.rd .rp13{gap:12px}
+.rd .hrow>.rp13c{width:150px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.rd .rp13c .play13{position:relative;display:block;width:100%;color:inherit}
+.rd .rp13c .play13 .pi13{position:absolute;right:8px;bottom:8px;width:34px;height:34px;border-radius:50%;background:var(--acc);color:var(--onacc);display:grid;place-items:center;box-shadow:0 3px 10px rgba(0,0,0,.25)}
+.rd .rp13c b{font-size:14px;margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .rp13c .acts13{display:flex;gap:6px;margin-top:2px}
+.rd .rp13c .acts13 .ib{width:32px;height:32px}
+
+/* ----- Group page ----- */
+.rd .hcs9 button{display:block;position:relative;width:96px;flex:none;border-radius:16px;overflow:hidden;box-shadow:0 6px 16px rgba(0,0,0,.22);color:inherit}
+.rd .hcs9 button .sc9{position:absolute;top:6px;right:6px;left:auto;width:auto;border:0;box-shadow:none;overflow:visible;padding:2px 8px;border-radius:99px;background:var(--acc);color:var(--onacc);font:800 12px/1.3 var(--font-display)}
+.rd .hcs9 button.first{width:112px}
+.rd .hcs9{align-items:flex-end}
+.rd .mem13{display:flex;gap:14px;overflow-x:auto;padding:14px 2px 4px;border-top:1px solid color-mix(in srgb,var(--fg) 12%,transparent);margin-top:12px}
+.rd .mem13 button{flex:none;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:64px;color:inherit;text-align:center}
+.rd .mem13 .dot{width:40px;height:40px;font-size:16px}
+.rd .mem13 b{font-size:12px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .mem13 small{font-size:11px;font-weight:800;opacity:.8}
+.rd .mem13 .fl13{color:var(--acct)}
+.rd .tst13 .big13{font:800 64px/1 var(--font-display);letter-spacing:-.04em;color:var(--acct)}
+.rd .tst13 .pr13{display:flex;align-items:center;gap:10px;margin-top:14px}
+.rd .tst13 .pr13 .avs{display:flex}
+.rd .tst13 .pr13 .avs .dot+.dot{margin-left:-10px;box-shadow:0 0 0 2px var(--paper)}
+.rd .tst13 .pr13 .g{flex:1;min-width:0}
+.rd .tst13 .pr13 .g b{display:block;font-size:14px}
+.rd .tst13 .pr13 .meter{display:block;margin-top:5px}
+.rd .tst13 .pr13 .num{font-size:22px}
+.rd .rec13{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:12px}
+.rd .rec13>div{border-radius:18px;padding:14px;background:color-mix(in srgb,var(--fg) 6%,transparent);display:flex;flex-direction:column;gap:4px;min-width:0}
+.rd .rec13 .v13{font:800 26px/1 var(--font-display);letter-spacing:-.03em;margin-top:6px}
+.rd .rec13 b{font-size:13px}
+.rd .rec13 .who9{display:flex;align-items:center;gap:6px;font-weight:700;font-size:12px}
+.rd .rec13 .who9 .dot{width:22px;height:22px;font-size:11px}
+.rd .past13{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.rd .past13 .chip{padding:5px 12px 5px 6px}
+.rd .past13 .chip .dot{width:22px;height:22px;font-size:11px}
+.rd .act13{gap:12px}
+.rd .hrow>.act13c{width:150px;display:flex;flex-direction:column;gap:4px;text-align:left;min-width:0;color:inherit}
+.rd .act13c .cvw .dot{position:absolute;left:8px;bottom:8px;width:32px;height:32px;font-size:13px;box-shadow:0 0 0 2px var(--paper)}
+.rd .act13c .cvw .sc13{position:absolute;right:8px;bottom:8px;padding:3px 9px;border-radius:99px;background:var(--acc);color:var(--onacc);font:800 12px/1.3 var(--font-display)}
+.rd .act13c b{font-size:14px;margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .act13c small{font-size:12px;font-weight:700}
+.rd .mng13{display:flex;flex-wrap:wrap;gap:16px 28px;align-items:flex-end;justify-content:space-between}
+.rd .mng13 .inv{flex:1 1 280px;min-width:0}
