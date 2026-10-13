@@ -203,8 +203,8 @@ export function MatchScreen(_props: { device: Device }) {
 
       <div className="sec two">
         <div>
-          <h2>{t('match.whereYouDisagree')}</h2>
           <div className="tile t-soft2">
+            <h2>{t('match.whereYouDisagree')}</h2>
             {gaps.length ? gaps.map((g) => {
               const a = liveAlbums[g.albumId] || albums.find((x) => x.id === g.albumId);
               const lo = Math.min(g.mine, g.theirs), hi = Math.max(g.mine, g.theirs);

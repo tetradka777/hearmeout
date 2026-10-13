@@ -121,7 +121,7 @@ html { background: var(--bg); -webkit-text-size-adjust: 100%; text-size-adjust: 
 [data-design="toxic"] .rd .chip { background: var(--paper2); }
 [data-design="toxic"] .rd .chip.on { background: var(--hi); color: #0E0E0C; }
 .rd .tag { display: inline-block; border-radius: 999px; padding: 2px 11px; font-weight: 700; font-size: 12px; background: color-mix(in srgb, currentColor 14%, transparent); }
-.rd .pill { display: inline-block; transform: rotate(-3deg); border-radius: 999px; padding: 6px 15px; font-weight: 800; font-size: 13px; background: var(--pop); color: var(--ink); }
+.rd .pill { display: inline-block; border-radius: 999px; padding: 6px 15px; font-weight: 800; font-size: 13px; background: var(--pop); color: var(--ink); }
 [data-design="toxic"] .rd .pill { background: var(--hi); color: #0E0E0C; }
 .rd .dot { width: 28px; height: 28px; border-radius: 50%; display: inline-grid; place-items: center; font: 800 12px var(--font-display); flex: none; background: color-mix(in srgb, currentColor 15%, transparent); }
 .rd .chip .dot { width: 22px; height: 22px; font-size: 11px; }
@@ -356,12 +356,12 @@ html { background: var(--bg); -webkit-text-size-adjust: 100%; text-size-adjust: 
 .rd .ib svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .rd .pvw { display: flex; align-items: center; gap: 14px; margin: 0 0 16px; }
 .rd .pvbtn { position: relative; width: 60px; height: 60px; border-radius: 50%; flex: none; color: var(--fg); }
-/* Direct child only: the play triangle inside .ic is an svg too and must not rotate. */
+/* Direct child only: the play triangle inside .pvi is an svg too and must not rotate. */
 .rd .pvbtn > svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
 .rd .pvbtn .trk { fill: none; stroke: color-mix(in srgb, currentColor 18%, transparent); stroke-width: 4; }
 .rd .pvbtn .prg { fill: none; stroke: var(--acct); stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset .25s linear; }
-.rd .pvbtn .ic { position: absolute; inset: 8px; border-radius: 50%; background: var(--fg); color: var(--bg); display: grid; place-items: center; font-size: 15px; padding-left: 2px; }
-.rd .pvbtn.playing .ic { padding-left: 0; }
+.rd .pvbtn .pvi { position: absolute; inset: 8px; border-radius: 50%; background: var(--fg); color: var(--bg); display: grid; place-items: center; font-size: 15px; padding-left: 2px; }
+.rd .pvbtn.playing .pvi { padding-left: 0; }
 .rd .eq { display: flex; gap: 3px; align-items: flex-end; height: 16px; }
 .rd .eq b { width: 4px; height: 100%; background: currentColor; border-radius: 2px; transform-origin: bottom; animation: rd-eq .9s ease-in-out infinite; }
 .rd .eq b:nth-child(2) { animation-delay: -.3s; } .rd .eq b:nth-child(3) { animation-delay: -.6s; }
@@ -482,7 +482,7 @@ html { background: var(--bg); -webkit-text-size-adjust: 100%; text-size-adjust: 
 .rd .mp-act { display: flex; align-items: center; gap: 8px; }
 .rd .mplay .pvbtn { width: 46px; height: 46px; color: var(--chr-fg); }
 .rd .mplay .pvbtn .prg { stroke: var(--chr-hi); }
-.rd .mplay .pvbtn .ic { inset: 7px; background: var(--chr-fg); color: var(--chr-bg); font-size: 12px; }
+.rd .mplay .pvbtn .pvi { inset: 7px; background: var(--chr-fg); color: var(--chr-bg); font-size: 12px; }
 .rd .mplay .ib { color: var(--chr-fg); outline-color: transparent; background: color-mix(in srgb, var(--chr-fg) 12%, transparent); }
 .rd .mplay .btn.sp { display: none; --bb: var(--chr-fg); --bf: var(--chr-bg); }
 .rd.hasmp .wrap { padding-bottom: 210px; }
@@ -581,9 +581,9 @@ html::-webkit-scrollbar, .rd ::-webkit-scrollbar { display: none; }
 .rd .hrow { align-items: flex-start; }
 /* Cards only: list rows (.row, .rowlink) keep their cover beside the text. */
 .rd .hrow > button, .rd button:not(.row):not(.rowlink):has(> .cov, > .cvw) { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; }
-/* A word longer than its box breaks instead of running out of it (narrow
-   tiles, long German compounds, long album titles). */
-.rd { overflow-wrap: anywhere; }
+/* A word longer than its box is hyphenated at a syllable (page language),
+   and broken only if it still does not fit: "anywhere" split words mid-letter. */
+.rd { overflow-wrap: break-word; -webkit-hyphens: auto; hyphens: auto; }
 .rd .stats3 > * { min-width: 0; }
 @media (max-width: 480px) { .rd .stats3 .tile { padding: 14px 12px; } }
 /* A settings row puts its control under the label when both don't fit. */

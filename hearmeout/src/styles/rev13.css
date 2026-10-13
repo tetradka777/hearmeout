@@ -5,9 +5,13 @@
 
 /* ----- Covers: no outline or frame, just the picture with soft corners ----- */
 .rd .cov{outline:0!important;border:0!important}
-.rd .rc-stage .c1,.rd .rc-stage .c2,.rd .hcs9 span,.rd .ta9 .cov,.rd .gr9 .gcv .cov,.rd .hshelf9 .cov,.rd .pf10 .cov,.rd .rcstrip .mini .cov,.rd .cv9 .cov{border:0!important}
+.rd .rc-stage .c1,.rd .rc-stage .c2,.rd .hcs9 span,.rd .ta9 .cov,.rd .gr9 .gcv .cov,.rd .hshelf9 .cov,.rd .pf10 .cov,.rd .cv9 .cov{border:0!important}
 .rd .rc-stage .c1,.rd .rc-stage .c2,.rd .hcs9 span{box-shadow:0 6px 16px rgba(0,0,0,.22)}
-.rd .rcstrip .mini .cov+.cov{margin-left:4px}
+/* The one-line recap: three covers overlapping, each ringed so they read apart. */
+.rd .rcstrip .mini .cov{border:2px solid var(--ink)!important;box-sizing:border-box}
+.rd .rcstrip .mini .cov+.cov{margin-left:-12px}
+.rd .rcstrip .go13{display:none}
+@media (max-width:520px){.rd .rcstrip .go{display:none}.rd .rcstrip .go13{display:inline-block;opacity:.8}.rd .rcstrip .tt{overflow:visible}}
 
 /* ----- Artist names in subtitle lines sit on one line with their text ----- */
 .rd small:has(> .arl),.rd p:has(> .arl){display:flex;align-items:center;flex-wrap:wrap;column-gap:4px;min-width:0}
@@ -131,3 +135,20 @@
 .rd .act13c small{font-size:12px;font-weight:700}
 .rd .mng13{display:flex;flex-wrap:wrap;gap:16px 28px;align-items:flex-end;justify-content:space-between}
 .rd .mng13 .inv{flex:1 1 280px;min-width:0}
+
+/* ----- Alignment ----- */
+/* Tiles that are buttons start their content at the top like the other
+   tiles (a button centres it vertically by default). */
+.rd .bento>button.tile:not([style*="display"]),.rd .stats3>button.tile{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;text-align:left}
+/* Two columns with a heading over each tile: the headings share one row,
+   so a heading that wraps doesn't push its tile below the other one. */
+@media (min-width:1000px){
+  .rd .two:has(> div > h2:first-child + .tile:last-child){grid-template-rows:auto 1fr;row-gap:0}
+  .rd .two:has(> div > h2:first-child + .tile:last-child) > *{grid-row:span 2}
+  .rd .two > div:has(> h2:first-child + .tile:last-child){display:grid;grid-template-rows:subgrid}
+  .rd .two > div > h2:first-child{align-self:end}
+  /* The same with a line of text between heading and tile. */
+  .rd .two:has(> div > h2:first-child + p + .tile:last-child){grid-template-rows:auto auto 1fr;row-gap:0}
+  .rd .two:has(> div > h2:first-child + p + .tile:last-child) > *{grid-row:span 3}
+  .rd .two > div:has(> h2:first-child + p + .tile:last-child){display:grid;grid-template-rows:subgrid}
+}

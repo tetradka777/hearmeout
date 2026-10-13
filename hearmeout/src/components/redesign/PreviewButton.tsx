@@ -52,7 +52,7 @@ export function PreviewButton({ tracks, index = 0, size = 60 }: { tracks: QueueT
         <circle className="trk" cx="30" cy="30" r={RADIUS} />
         <circle ref={ring} className="prg" cx="30" cy="30" r={RADIUS} strokeDasharray={CIRCUMFERENCE} strokeDashoffset={offset} />
       </svg>
-      <span className="ic">
+      <span className="pvi">
         {isPlaying ? (
           <span className="eq"><b /><b /><b /></span>
         ) : (
