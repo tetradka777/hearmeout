@@ -179,7 +179,7 @@ function FeedRow({ event }: { event: FeedEvent }) {
     const diff = mine != null ? Math.abs(mine - event.stars) : null;
     sub = diff != null && diff >= 2 ? t('home.hotTake') : diff != null && diff <= 0.5 ? t('home.sameAsYou') : '';
     meta = <ArtistName name={album.artist} id={album.artistId} size={16} />;
-    right = <b className="sc13">★ {fmt1(event.stars)}</b>;
+    right = <>★ {fmt1(event.stars)}</>;
   }
   const openWho = 'id' in who && who.id && who.id !== me?.id ? () => viewFriend(who.id!) : undefined;
   // What comments and reactions on this card attach to (lib/social).
@@ -188,22 +188,25 @@ function FeedRow({ event }: { event: FeedEvent }) {
     : event.type === 'rating_review' ? socialKey.review(ownerId, event.albumId)
     : socialKey.play(ownerId, event.albumId, event.at);
   return (
-    <DarkCard cover={cover} head={<CardWho user={who} when={when} onClick={openWho} />} right={right} onOpen={open} openText className="rvc15" footLeft={<SocialBar target={target} title={title} />}>
-      {/* The same layout as a review card: the album (whole cover, whole
-          title), then the take or the quote. */}
-      <div className="alb13">
-        {cover && (
-          <button className="cvb" onClick={open} aria-label={title} tabIndex={-1}>
-            <CoverArt url={cover} fallbackLetter={title[0] || '?'} className="cov" px={96} style={{ width: 96, height: 96 }} />
-          </button>
-        )}
-        <span className="g">
-          {open ? <button className="tt" onClick={open}>{title}</button> : <b className="tt">{title}</b>}
-          {meta && <small>{meta}</small>}
-        </span>
-      </div>
-      {sub && <p className="sub15">{sub}</p>}
-      {event.type === 'rating_review' && event.review && <p className="q13 clamp">{quoted(language, event.review)}</p>}
+    <DarkCard
+      cover={cover}
+      head={<CardWho user={who} when={when} onClick={openWho} />}
+      onOpen={open}
+      openText
+      className="rvc15 fdc15"
+      footLeft={<SocialBar target={target} title={title} />}
+      aside={cover ? (
+        <button className="cvb" onClick={open} aria-label={title} tabIndex={-1}>
+          <CoverArt url={cover} fallbackLetter={title[0] || '?'} className="cov" px={300} style={{ width: '100%', aspectRatio: '1' }} />
+        </button>
+      ) : undefined}
+      extra={event.type === 'rating_review' && event.review ? <p className="q13 clamp">{quoted(language, event.review)}</p> : undefined}
+    >
+      {/* After Superfan's listening cards: big title, a white line, a grey
+          line, the framed cover on the right. */}
+      {open ? <button className="ft15" onClick={open}>{title}</button> : <h3 className="ft15">{title}</h3>}
+      {(right || sub) && <p className="s15">{right}{right && sub ? ' · ' : ''}{sub}</p>}
+      {meta && <p className="m15">{meta}</p>}
     </DarkCard>
   );
 }
