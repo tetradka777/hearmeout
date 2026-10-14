@@ -37,16 +37,20 @@ export function unlockAudio(): void {
   } catch { /* fine */ }
 }
 
-// Unlock on the first touch anywhere, so a preview that starts a moment
-// later (the recap's song, after its data loads) can still be heard.
+// Unlock on any touch, click or key anywhere, so a preview that starts a
+// moment later (the recap's song, after its data loads) can be heard.
+// Safari on an iPhone only lets sound start when the finger lifts
+// (touchend / click), not on pointerdown, and it may suspend the audio
+// again after the phone was locked or another app played — so this keeps
+// listening, and does the work only while the sound isn't running.
 if (typeof window !== 'undefined') {
-  const once = () => {
+  const onGesture = () => {
+    if (ctx && ctx.state === 'running') return;
     unlockAudio();
-    window.removeEventListener('pointerdown', once, true);
-    window.removeEventListener('keydown', once, true);
   };
-  window.addEventListener('pointerdown', once, true);
-  window.addEventListener('keydown', once, true);
+  for (const type of ['pointerdown', 'touchend', 'click', 'keydown']) {
+    window.addEventListener(type, onGesture, { capture: true, passive: true });
+  }
 }
 
 // The file's bytes, fetched once (also ahead of time, to start instantly).
