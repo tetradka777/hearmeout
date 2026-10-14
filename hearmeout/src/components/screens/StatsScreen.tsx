@@ -14,6 +14,7 @@ import type { WeekStart } from '@/lib/palettes';
 import { formatHour, formatRelative } from '@/lib/format';
 import { recapLine } from '@/lib/recapLine';
 import { completedWeekRange, isoWeekNumber } from '@/lib/weeks';
+import { Phrase } from '../ui/Visual';
 import { cachedStats, storeStats } from '@/lib/statsClientCache';
 
 type T = ReturnType<typeof useApp>['t'];
@@ -143,11 +144,11 @@ function ListeningCalendar({ data, t, language, weekStart }: { data: StatsData; 
       <h2>{t('stats.calendarTitle')}</h2>
       <p className="muted" style={{ margin: '-6px 0 18px', fontWeight: 600 }}>{t('stats.calendarHelp')}</p>
       <div className="cal" ref={calRef}>
-        <div className="calstats">
-          <div><span className="num">{calendar.activeDays}<small className="muted" style={{ fontSize: 15, fontWeight: 700 }}> / {calendar.totalDays}</small></span><small>{t('stats.calDaysListened')}</small></div>
-          <div><span className="num">{calendar.longestStreak}</span><small>{t('stats.calLongestStreak')}</small></div>
-          <div><span className="num">{calendar.bestDay ? durLong(calendar.bestDay.minutes, t) : '–'}</span><small>{calendar.bestDay ? `${t('stats.calBestDay')} · ${dayLabel(parseDay(calendar.bestDay.date))}` : t('stats.calBestDay')}</small></div>
-        </div>
+        <Phrase parts={[
+          [`${calendar.activeDays} / ${calendar.totalDays}`, t('stats.calDaysListened')],
+          [calendar.longestStreak, t('stats.calLongestStreak')],
+          ...(calendar.bestDay ? [[durLong(calendar.bestDay.minutes, t), `${t('stats.calBestDay')} · ${dayLabel(parseDay(calendar.bestDay.date))}`]] as [string, string][] : []),
+        ]} />
         <div className="calscroll" ref={scrollRef} data-w={gridW} data-max={gridMax}>{gridEl}</div>
         <div className="calread" aria-live="polite">
           {readoutDay ? (
@@ -335,12 +336,12 @@ export function StatsScreen(_props: { device: Device }) {
               <div className="l">
                 <span className="num">{fmtHours(data.hours)}</span>
                 <p>{t('stats.hoursOfMusic')}{deltaTxt ? ` · ${deltaTxt}` : ''}</p>
-                <div className="kv11">
-                  <span><b className="num">{data.trackCount.toLocaleString(toLocale(language))}</b><small>{t('stats.tracks')}</small></span>
-                  <span><b className="num">{data.artistCount}</b><small>{t('stats.artistsNew', { count: data.newArtistCount })}</small></span>
-                  {data.peakHour != null && <span><b className="num">{peak}</b><small>{t('stats.peakHour')}</small></span>}
-                  {data.avgRating ? <span><b className="num">{fmt1(Number(data.avgRating))}</b><small>{t('stats.avgRatingIn', { word })}</small></span> : null}
-                </div>
+                <Phrase parts={[
+                  [data.trackCount.toLocaleString(toLocale(language)), t('stats.tracks')],
+                  [data.artistCount, t('stats.artistsNew', { count: data.newArtistCount })],
+                  ...(data.peakHour != null ? [[peak, t('stats.peakHour')]] as [string, string][] : []),
+                  ...(data.avgRating ? [[`★ ${fmt1(Number(data.avgRating))}`, t('stats.avgRatingIn', { word })]] as [string, string][] : []),
+                ]} />
               </div>
               <div className="r">
                 <div className="bars" role="img" aria-label={periodType === 'season' ? t('stats.hoursPerWeek') : t('stats.hoursPerDay')}>

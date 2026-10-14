@@ -75,7 +75,7 @@
 .rd .tar13 .lead{display:flex;align-items:center;gap:16px;margin:6px 0 16px;text-align:left;color:inherit;width:100%}
 .rd .tar13 .lead .g{min-width:0;display:flex;flex-direction:column;gap:2px}
 .rd .tar13 .lead b{font:800 24px/1.1 var(--font-display);letter-spacing:-.02em}
-.rd .tar13 .lead .rk{font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.06em;opacity:.7}
+.rd .tar13 .lead .rk{font-weight:800;font-size:12px;text-transform:none;letter-spacing:.06em;opacity:.7}
 .rd .tar13 .rest{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .rd .tar13 .rest button{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;text-align:center;color:inherit}
 .rd .tar13 .rest b{font-size:13px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

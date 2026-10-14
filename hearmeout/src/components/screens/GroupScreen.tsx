@@ -12,6 +12,7 @@ import { userAvatarStyle, formatRelative } from '@/lib/format';
 import { toLocale, pluralForKey } from '@/lib/i18n';
 import { CoverArt } from '../ui/CoverArt';
 import { useCachedJson } from '@/lib/cachedJson';
+import { Phrase } from '../ui/Visual';
 import { sinceLabel } from './GroupsScreen';
 
 const AWARD_LABEL_KEY: Record<string, string> = {
@@ -143,12 +144,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
   const openMember = (id: string) => { if (id !== me.id) viewFriend(id); };
   const Av = ({ u }: { u: { name: string; avatarUrl: string | null } }) => <span className="dot" style={userAvatarStyle(u)}>{!u.avatarUrl && u.name[0]}</span>;
 
-  const memberOrder = detail.members;
   const statOf = (id: string) => statsByUser.get(id);
-  const bars = (vals: number[], inv?: boolean) => {
-    const mx = Math.max(1, ...vals);
-    return <span className={`b9${inv ? ' inv' : ''}`} aria-hidden="true">{vals.map((v, i) => <i key={i} style={{ height: `${Math.round((v / mx) * 100)}%` }} />)}</span>;
-  };
   const heroCovers = detail.topAlbums.slice(0, 3);
 
   return (
@@ -189,11 +185,13 @@ export function GroupScreen({ device: _device }: { device: Device }) {
         )}
       </div>
 
-      {/* Three figures, each with the members' values as small bars. */}
-      <div className="stats3" style={{ margin: '14px 0' }}>
-        <div className="tile t-pop"><span className="num">{Math.round(totalHours)}{t('unit.h')}</span><small>{t(period === 'week' ? 'groups.listenedWeek' : 'groups.listenedMonth')}</small>{bars(detail.leaderboard.map((r) => r.hours))}</div>
-        <div className="tile t-ac"><span className="num">{totalRatingsThisMonth}</span><small>{t('groups.ratingsThisMonth')}</small>{bars(memberOrder.map((m) => statOf(m.id)?.ratingsMonth ?? 0), true)}</div>
-        <div className="tile t-ink"><span className="num">{groupAvgScore ? fmt1(groupAvgScore) : '–'}</span><small>{t('groups.figAvg')}</small>{bars(memberOrder.map((m) => statOf(m.id)?.avgScore ?? 0), true)}</div>
+      {/* The group's numbers as one phrase. */}
+      <div style={{ margin: '14px 0 4px' }}>
+        <Phrase parts={[
+          [`${Math.round(totalHours)} ${t('unit.h')}`, t(period === 'week' ? 'groups.listenedWeek' : 'groups.listenedMonth')],
+          [totalRatingsThisMonth, t('groups.ratingsThisMonth')],
+          [groupAvgScore ? `★ ${fmt1(groupAvgScore)}` : '–', t('groups.figAvg')],
+        ]} />
       </div>
 
       <div className="bento b3">

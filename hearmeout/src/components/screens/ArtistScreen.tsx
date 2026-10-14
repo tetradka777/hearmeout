@@ -15,7 +15,7 @@ import { ReviewCard } from '../ui/SuperCards';
 import { BookmarkIcon, HeartIcon, PlayIcon } from '../ui/Icons';
 import { Stars } from '../redesign/Stars';
 import { MascotIcon } from '../redesign/icons';
-import { userAvatarStyle } from '@/lib/format';
+import { PersonCards, Phrase } from '../ui/Visual';
 
 type ArtistTab = 'popular' | 'albums' | 'reviews' | 'concerts';
 type FriendReview = { user: ApiUser; albumId: string; stars: number; review: string; createdAt: string };
@@ -282,12 +282,6 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
     } else if (tab === 'reviews') {
       body = (
         <div className="stack">
-          {communityScore && (
-            <div className="tile t-pop">
-              <span className="num" style={{ fontSize: 64 }}>{fmt1(communityScore.avg)}</span>
-              <p style={{ fontWeight: 800, marginTop: 6 }}>{t('artist.communityTile', { count: communityScore.count })}</p>
-            </div>
-          )}
           {reviews === null ? <p className="muted">{t('artist.loadingAlbums')}</p>
             : !reviews.length ? <div className="tile t-soft2"><p className="muted" style={{ fontWeight: 600 }}>{t('artist.reviewsEmpty')}</p></div>
             : reviews.map((rv) => (
@@ -312,19 +306,25 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
           </p>
           {concerts === null ? (
             <p className="muted">{t('artist.concertsLoading')}</p>
-          ) : list && list.length ? list.map((c) => {
-            const d = new Date(`${c.date}T00:00:00Z`);
-            return (
-              <div className="row" key={c.id}>
-                <span className="num" style={{ fontSize: 22, width: 72 }}>{d.toLocaleDateString(toLocale(language), { day: 'numeric', month: 'short', timeZone: 'UTC' })}</span>
-                <span className="g">
-                  <b>{c.name}</b>
-                  <small className="muted" style={{ fontWeight: 600 }}>{[c.venue, c.city, c.country && c.country !== me?.region ? regionDisplayName(c.country, language) : null].filter(Boolean).join(' · ')}{c.time ? ` · ${c.time.slice(0, 5)}` : ''}</small>
-                </span>
-                {c.url && <a className="btn ghost" href={c.url} target="_blank" rel="noreferrer">{t('artist.tickets')}</a>}
-              </div>
-            );
-          }) : (
+          ) : list && list.length ? (
+            <div className="cdc15">
+              {list.map((c) => {
+                const d = new Date(`${c.date}T00:00:00Z`);
+                const inner = (
+                  <>
+                    <span className="dt"><b>{d.toLocaleDateString(toLocale(language), { day: 'numeric', timeZone: 'UTC' })}</b><small>{d.toLocaleDateString(toLocale(language), { month: 'short', timeZone: 'UTC' })}</small></span>
+                    <span className="g">
+                      <b>{[c.city, c.country && c.country !== me?.region ? regionDisplayName(c.country, language) : null].filter(Boolean).join(', ') || c.name}</b>
+                      <small>{[c.venue, c.time ? c.time.slice(0, 5) : null].filter(Boolean).join(' · ')}</small>
+                    </span>
+                  </>
+                );
+                return c.url
+                  ? <a className="cd" key={c.id} href={c.url} target="_blank" rel="noreferrer">{inner}</a>
+                  : <div className="cd" key={c.id}>{inner}</div>;
+              })}
+            </div>
+          ) : (
             <div className="row">
               <span className="g">
                 <b>{art.name}</b>
@@ -381,33 +381,15 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
           </div>
         </div>
 
-        <div className="bento" style={{ margin: '14px 0' }}>
-          <div className="tile t-soft2">
-            <h3 style={{ marginBottom: 8 }}>{t('artist.yourAndArtist', { name: art.name })}</h3>
-            {yourStats ? (
-              <>
-                <div className="vsline">
-                  <div><span className="num" style={{ fontSize: 40 }}>{yourStats.count}</span><br /><small style={{ fontWeight: 700 }}>{t('artist.yourRatedCount')}</small></div>
-                  <div><span className="num" style={{ fontSize: 40 }}>{fmt1(yourStats.avg)}</span><br /><small style={{ fontWeight: 700 }}>{t('artist.yourAverage')}</small></div>
-                </div>
-                {yourStats.best && (
-                  <button className="row" onClick={() => openAlbum(yourStats.best!.id)} style={{ marginTop: 8 }}>
-                    <CoverArt url={yourStats.best.cover ?? undefined} fallbackLetter={art.name[0] || '?'} className="cov" style={{ width: 44, height: 44 }} />
-                    <span className="g"><b>{t('artist.yourBest')}</b><small className="muted" style={{ fontWeight: 600 }}>{yourStats.best.title}</small></span>
-                    <span className="num" style={{ fontSize: 26, color: 'var(--acct)' }}>{fmt1(yourStats.bestScore)}</span>
-                  </button>
-                )}
-              </>
-            ) : <p className="muted" style={{ fontWeight: 600 }}>{t('artist.noneRated')}</p>}
+        {/* You and the artist, and everyone, as one phrase (no number tiles). */}
+        {(yourStats || communityScore) && (
+          <div style={{ margin: '14px 0 0' }}>
+            <Phrase parts={[
+              ...(yourStats ? [[yourStats.count, t('artist.yourRatedCount')], [`★ ${fmt1(yourStats.avg)}`, t('artist.yourAverage')]] as [string | number, string][] : []),
+              ...(communityScore ? [[`★ ${fmt1(communityScore.avg)}`, t('artist.communityTile', { count: communityScore.count })]] as [string, string][] : []),
+            ]} />
           </div>
-          {communityScore && (
-            <div className="tile t-pop">
-              <h3 style={{ marginBottom: 6 }}>{t('artist.community')}</h3>
-              <span className="num" style={{ fontSize: 48 }}>{fmt1(communityScore.avg)}</span>
-              <p style={{ fontWeight: 700 }}>{t('artist.communityAcrossAlbums', { count: communityScore.count, albums: communityScore.albumsWithRatings })}</p>
-            </div>
-          )}
-        </div>
+        )}
 
         {/* Rev 9c: the albums shelf with scores, and friends who listen. */}
         {(art.releasedAlbums?.length || fans.length) ? (
@@ -440,15 +422,7 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
             {fans.length > 0 && (
               <div className="tile t-soft2 s3">
                 <h2>{t('artist.friendsWhoListen', { name: art.name })}</h2>
-                {fans.map((f, i) => (
-                  <button className="row" key={f.id} onClick={() => viewFriend(f.id)}>
-                    <span className={`md9${i < 3 ? ` g${i + 1}` : ''}`}>{i + 1}</span>
-                    <span className="dot" style={userAvatarStyle(f)}>{!f.avatarUrl && f.name[0]}</span>
-                    <span className="g"><b>{f.name}</b></span>
-                    <div className="meter" style={{ flex: 'none', width: '34%' }}><i style={{ width: `${Math.round((f.hours / fans[0].hours) * 100)}%` }} /></div>
-                    <b style={{ width: 60, textAlign: 'right' }}>{fmtHours(f.hours)}{t('unit.h')}</b>
-                  </button>
-                ))}
+                <PersonCards people={fans.map((f) => ({ id: f.id, name: f.name, avatarUrl: f.avatarUrl, value: `${fmtHours(f.hours)} ${t('unit.h')}`, onClick: () => viewFriend(f.id) }))} />
               </div>
             )}
           </div>

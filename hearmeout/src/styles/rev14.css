@@ -51,16 +51,16 @@
 .rd .rsh13 .avt{width:64px;height:64px;font-size:26px;flex:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--cream) 70%,transparent)}
 .rd .rsh13 .rh .g,.rd .rcf13 .rh .g{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .rd .rsh13 .rh b{font:800 26px/1.05 var(--font-display);letter-spacing:-.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rd .rsh13 .rh small,.rd .rsh13 .k,.rd .rcf13 .k{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;opacity:.75}
+.rd .rsh13 .rh small,.rd .rsh13 .k,.rd .rcf13 .k{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:none;opacity:.75}
 .rd .pp13{flex:none;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;border:2px solid color-mix(in srgb,var(--cream) 55%,transparent);color:var(--cream);font-size:18px}
 .rd .rsh13 .vb h2{font:800 clamp(26px,4.4vw,38px)/1.08 var(--font-display);letter-spacing:-.03em;margin:6px 0 0}
 .rd .rsh13 .vb em{font-style:normal;color:var(--pop)}
 .rd .rsh13 .st{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .rd .rsh13 .st>div{border-radius:20px;padding:16px 8px;text-align:center;background:color-mix(in srgb,var(--cream) 9%,transparent);border:1px solid color-mix(in srgb,var(--cream) 18%,transparent);min-width:0}
 .rd .rsh13 .st b{display:block;font:800 clamp(24px,5vw,34px)/1 var(--font-display);letter-spacing:-.03em}
-.rd .rsh13 .st small{display:block;margin-top:6px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;opacity:.75}
+.rd .rsh13 .st small{display:block;margin-top:6px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:none;opacity:.75}
 .rd .rsh13 .sm{margin:-10px 0 0;font-weight:700;opacity:.8}
-.rd .gcl13{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;font-family:var(--font-display);font-weight:800;text-transform:uppercase;letter-spacing:-.02em;line-height:1.05}
+.rd .gcl13{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;font-family:var(--font-display);font-weight:800;text-transform:none;letter-spacing:-.02em;line-height:1.05}
 .rd .rsh13 .sc{display:flex;flex-direction:column;gap:4px;border-top:1px solid color-mix(in srgb,var(--cream) 16%,transparent);padding-top:18px}
 .rd .rsh13 .sc .k{margin:0 0 8px}
 .rd .rsh13 .ln,.rd .rcf13 .ln{display:flex;align-items:center;gap:14px;padding:6px 0;color:inherit;text-align:left;width:100%;min-width:0}
@@ -84,7 +84,7 @@
 .rd .rcf13 .ft{border-top:1px solid color-mix(in srgb,currentColor 18%,transparent);padding-top:12px;text-align:right;font-weight:800;opacity:.8}
 .rd .rcf13 .sm{font-weight:700;opacity:.8}
 .rd .nx13{display:flex;flex-direction:column;gap:10px;text-align:left}
-.rd .nx13 .k{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;opacity:.7}
+.rd .nx13 .k{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:none;opacity:.7}
 .rd .nx13 .rh{display:flex;align-items:center;gap:12px}
 .rd .nx13 .rh b{flex:1;font:800 22px/1 var(--font-display)}
 .rd .nx13 .ar{font-size:24px;font-weight:800}

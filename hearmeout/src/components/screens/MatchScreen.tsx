@@ -14,6 +14,7 @@ import { MascotIcon } from '../redesign/icons';
 import { ArtistAvatar, useOpenArtist } from '../ui/ArtistName';
 import { Podium } from '../ui/Podium';
 import { MATCH_FRIEND_EVENT, takeRecentEvent } from '@/lib/uiEvents';
+import { CoverWall, PersonCards } from '../ui/Visual';
 import { PROFILE_TAB_EVENT } from '../redesign/AvatarMenu';
 
 type RawInfo = { profile: PublicProfile | null; stats6m: StatsData | null; weekHours: number | null };
@@ -268,17 +269,14 @@ export function MatchScreen(_props: { device: Device }) {
       <div className="sec">
         <div className="tile t-soft2">
           <div className="hd10"><h2 style={{ margin: 0 }}>{t('match.discoverTitle')}</h2></div>
-          {discover !== null && discover.length ? discover.slice(0, 3).map((p) => (
-            <div className="row" key={p.id}>
-              <button className="rowlink" onClick={() => viewFriend(p.id)}>
-                <span className="dot" style={userAvatarStyle(p)}>{!p.avatarUrl && p.name[0]}</span>
-                <span className="g"><b>{p.name}</b><small className="muted" style={{ fontWeight: 600 }}>{t('match.discoverRowSubtitle', { score: p.score, count: p.sharedAlbums })}</small></span>
-              </button>
-              {friendRequests.outgoing.some((r) => r.user.id === p.id)
-                ? <span className="tag">{t('friend.requestSent')}</span>
-                : <button className="btn" style={{ padding: '8px 16px' }} onClick={() => addFriend(p.handle)}>{t('friend.addFriend')}</button>}
-            </div>
-          )) : <p className="muted" style={{ fontWeight: 600 }}>{t('match.allFriendsMatched')}</p>}
+          {discover !== null && discover.length ? (
+            <PersonCards people={discover.slice(0, 6).map((p) => ({
+              id: p.id, name: p.name, avatarUrl: p.avatarUrl, value: `${p.score}%`, onClick: () => viewFriend(p.id),
+              action: friendRequests.outgoing.some((r) => r.user.id === p.id)
+                ? <span className="tag" style={{ alignSelf: 'center' }}>{t('friend.requestSent')}</span>
+                : <button className="btn" onClick={() => addFriend(p.handle)}>{t('friend.addFriend')}</button>,
+            }))} />
+          ) : <p className="muted" style={{ fontWeight: 600 }}>{t('match.allFriendsMatched')}</p>}
         </div>
       </div>
 
@@ -287,20 +285,16 @@ export function MatchScreen(_props: { device: Device }) {
         <div className="sec">
           <div className="tile sh10">
             <div className="hd10"><h2 style={{ margin: 0 }}>{t('match.bothRatedTitle')}</h2></div>
-            <div className="shh"><span>{t('match.colAlbum')}</span><span>{t('friend.youLower')}</span><span>{active.name}</span><span>{t('match.colGap')}</span></div>
-            {gaps.slice(0, 5).map((g) => {
+            <CoverWall items={gaps.slice(0, 6).map((g) => {
               const a = liveAlbums[g.albumId] || albums.find((x) => x.id === g.albumId);
               const d = Math.abs(g.mine - g.theirs);
-              return (
-                <button className="row" key={g.albumId} onClick={() => openAlbum(g.albumId)}>
-                  <CoverArt url={a ? spotifyCovers[a.id] || a.cover : undefined} fallbackLetter={a?.artist[0] || '?'} className="cov" style={{ width: 40, height: 40 }} />
-                  <span className="g"><b>{a?.title ?? '…'}</b></span>
-                  <b className="n">{fmt1(g.mine)}</b>
-                  <b className="n">{fmt1(g.theirs)}</b>
-                  <span className={`tag${d >= 2 ? ' hot' : d <= 0.5 ? ' same' : ''}`}>{d <= 0.5 ? t('match.same') : fmt1(d)}</span>
-                </button>
-              );
-            })}
+              return {
+                key: g.albumId, cover: a ? spotifyCovers[a.id] || a.cover : undefined, title: a?.title ?? '…', artist: a?.artist, artistId: a?.artistId,
+                badge: d <= 0.5 ? '=' : `±${fmt1(d)}`,
+                sub: `${t('friend.you')} ${fmt1(g.mine)} · ${active.name} ${fmt1(g.theirs)}`,
+                onClick: () => openAlbum(g.albumId),
+              };
+            })} />
           </div>
         </div>
       )}
