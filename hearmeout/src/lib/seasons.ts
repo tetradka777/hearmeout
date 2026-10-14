@@ -38,3 +38,16 @@ export function seasonsInRange(from: Date, to: Date): SeasonOption[] {
   }
   return options.sort((a, b) => seasonBounds(b.year, b.season).start.getTime() - seasonBounds(a.year, a.season).start.getTime());
 }
+
+// The last `n` finished seasons before `now`, most recent first (recaps
+// are made only for those: the last season and the one before).
+export function lastSeasons(now: Date = new Date(), n = 2): SeasonOption[] {
+  const out: SeasonOption[] = [];
+  for (let year = now.getUTCFullYear() + 1; year >= now.getUTCFullYear() - 2 && out.length < n; year--) {
+    for (const season of [...SEASONS].reverse()) {
+      if (seasonBounds(year, season).end <= now) out.push({ key: seasonKey(year, season), year, season });
+      if (out.length >= n) break;
+    }
+  }
+  return out.sort((a, b) => seasonBounds(b.year, b.season).start.getTime() - seasonBounds(a.year, a.season).start.getTime()).slice(0, n);
+}

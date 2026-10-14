@@ -10,6 +10,7 @@ import { isReviewTagId, REVIEW_TAG_LABEL_KEY } from '@/lib/reviewTags';
 import { sizedImage } from '@/lib/imageSize';
 import { CoverArt } from './CoverArt';
 import { ArtistAvatar, ArtistName } from './ArtistName';
+import { toneClass } from './Visual';
 import { SocialBar } from './Social';
 import { socialKey } from '@/lib/socialClient';
 
@@ -179,7 +180,7 @@ export function AlbumShelfCard({ cover, title, artist, artistId, meta, badge, on
 // one line under it.
 export function ArtistShelfCard({ name, id, photo, sub, onClick }: { name: string; id?: string | null; photo?: string | null; sub?: ReactNode; onClick: () => void }) {
   return (
-    <button className="arc14" onClick={onClick}>
+    <button className={`arc14 ${toneClass(name)}`} onClick={onClick}>
       <ArtistAvatar name={name} id={id} photo={photo} size={120} />
       <span className="tx"><b>{name}</b>{sub && <small>{sub}</small>}</span>
     </button>

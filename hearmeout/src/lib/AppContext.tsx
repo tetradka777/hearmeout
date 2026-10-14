@@ -65,7 +65,7 @@ type AuthStatus = 'loading' | 'anonymous' | 'ready';
 // history entry and URL, so the browser's own back/forward buttons work
 // everywhere on the site, not just on "content" pages.
 const ALL_SCREENS = new Set<ScreenName>([
-  'catalog', 'rate', 'history', 'recap', 'profile', 'artist', 'friend', 'match', 'stats', 'groups', 'group', 'discover', 'settings', 'later',
+  'catalog', 'rate', 'history', 'recap', 'profile', 'artist', 'friend', 'match', 'stats', 'groups', 'group', 'fanclub', 'discover', 'settings', 'later',
 ]);
 
 // What's stored as `history.state` for one entry — enough to restore that
@@ -79,6 +79,8 @@ type ScreenSnapshot = {
   currentAlbumId?: string;
   viewingUserId?: string;
   viewingGroupId?: string;
+  fanClubId?: string;
+  fanClubName?: string;
   recapViewUserId?: string;
   recapOrigin?: ScreenName;
   artistId?: string;
@@ -97,6 +99,7 @@ function urlForSnapshot(snap: Omit<ScreenSnapshot, 'hmoDepth'>): string {
     case 'rate': return `/?screen=rate&id=${encodeURIComponent(snap.currentAlbumId || '')}`;
     case 'friend': return `/?screen=friend&id=${encodeURIComponent(snap.viewingUserId || '')}`;
     case 'group': return `/?screen=group&id=${encodeURIComponent(snap.viewingGroupId || '')}`;
+    case 'fanclub': return `/?screen=fanclub&id=${encodeURIComponent(snap.fanClubId || '')}&name=${encodeURIComponent(snap.fanClubName || '')}`;
     case 'recap': return `/?screen=recap&id=${encodeURIComponent(snap.recapViewUserId || '')}`;
     case 'artist': return `/?screen=artist&id=${encodeURIComponent(snap.artistId || '')}&source=${snap.artistSource}&name=${encodeURIComponent(snap.artistName || '')}`;
     default: return `/?screen=${snap.activeScreen}`;
@@ -134,6 +137,8 @@ type AppState = {
   currentAlbumId: string;
   viewingUserId: string;
   viewingGroupId: string;
+  // The fan club page: the artist's Spotify id and name.
+  viewingFanClub: { id: string; name: string } | null;
   recapPeriod: RecapPeriod;
   recapSeasonKey: string | null;
   recapOffset: number;
@@ -190,6 +195,7 @@ type AppContextValue = {
   openAlbum: (id: string) => void;
   viewFriend: (id: string) => void;
   viewGroup: (id: string) => void;
+  openFanClub: (id: string, name: string) => void;
   // `period` switches the recap to that period's latest window (the Home
   // and Stats recap tiles open the weekly recap, spec 6.12); omitted, the
   // screen keeps whatever period it was last on.
@@ -260,7 +266,8 @@ const initialState: AppState = {
   currentAlbumId: ALBUMS[0]?.id ?? '',
   viewingUserId: '',
   viewingGroupId: '',
-  recapPeriod: 'day',
+  viewingFanClub: null,
+  recapPeriod: 'week',
   recapSeasonKey: null,
   recapOffset: 0,
   recapViewUserId: 'me',
@@ -292,6 +299,16 @@ function restyleAfterThemeChange(): void {
   void el.offsetHeight;
   el.style.display = prev;
   window.scrollTo(0, y);
+}
+
+// Recaps exist only for finished periods — the last week and the one
+// before, the last month and the one before, the last two seasons — so a
+// period opens on its latest finished window (a month on last month; a
+// season is picked on the recap screen). "day" isn't offered any more and
+// falls back to the week.
+function recapWindow(p: RecapPeriod): { recapPeriod: RecapPeriod; recapSeasonKey: null; recapOffset: number } {
+  const period = p === 'day' ? 'week' : p;
+  return { recapPeriod: period, recapSeasonKey: null, recapOffset: period === 'month' ? -1 : 0 };
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -734,13 +751,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     patch({ viewingUserId: id, activeScreen: 'friend', navAction: 'push' });
     pushScreenHistory({ activeScreen: 'friend', viewingUserId: id });
   }, [patch]);
+  const openFanClub = useCallback((id: string, name: string) => {
+    patch({ viewingFanClub: { id, name }, activeScreen: 'fanclub', navAction: 'push' });
+    pushScreenHistory({ activeScreen: 'fanclub', fanClubId: id, fanClubName: name });
+  }, [patch]);
   const viewGroup = useCallback((id: string) => {
     patch({ viewingGroupId: id, activeScreen: 'group', navAction: 'push' });
     pushScreenHistory({ activeScreen: 'group', viewingGroupId: id });
   }, [patch]);
   const openRecap = useCallback((userId: string, period?: RecapPeriod) => {
     const origin = stateRef.current.activeScreen;
-    const periodPatch = period ? { recapPeriod: period, recapSeasonKey: null, recapOffset: 0 } : {};
+    const periodPatch = period ? recapWindow(period) : {};
     setState((s) => ({ ...s, ...periodPatch, recapViewUserId: userId, recapOrigin: origin, activeScreen: 'recap', navAction: 'push' }));
     pushScreenHistory({ activeScreen: 'recap', recapViewUserId: userId, recapOrigin: origin });
   }, []);
@@ -753,7 +774,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const setActiveGenre = useCallback((g: string) => patch({ activeGenre: g }), [patch]);
   const setSortBy = useCallback((sVal: SortBy) => patch({ sortBy: sVal }), [patch]);
   const setHistoryQuery = useCallback((q: string) => patch({ historyQuery: q }), [patch]);
-  const setRecapPeriod = useCallback((p: RecapPeriod) => patch({ recapPeriod: p, recapSeasonKey: null, recapOffset: 0 }), [patch]);
+  const setRecapPeriod = useCallback((p: RecapPeriod) => patch(recapWindow(p)), [patch]);
   const setRecapSeasonKey = useCallback((key: string | null) => patch({ recapSeasonKey: key }), [patch]);
   const setRecapOffset = useCallback((o: number) => patch({ recapOffset: o }), [patch]);
   const setRatingValue = useCallback((v: number) => patch({ ratingValue: v }), [patch]);
@@ -1152,6 +1173,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         currentAlbumId: snap.currentAlbumId ?? s.currentAlbumId,
         viewingUserId: snap.viewingUserId ?? s.viewingUserId,
         viewingGroupId: snap.viewingGroupId ?? s.viewingGroupId,
+        viewingFanClub: snap.fanClubId ? { id: snap.fanClubId, name: snap.fanClubName || '' } : s.viewingFanClub,
         recapViewUserId: snap.recapViewUserId ?? s.recapViewUserId,
         recapOrigin: snap.recapOrigin ?? s.recapOrigin,
         navAction: 'pop',
@@ -1181,6 +1203,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           currentAlbumId: only('rate'),
           viewingUserId: only('friend'),
           viewingGroupId: only('group'),
+          fanClubId: only('fanclub'),
+          fanClubName: screen === 'fanclub' ? params.get('name') ?? undefined : undefined,
           recapViewUserId: only('recap'),
           artistId: only('artist'),
           artistName: params.get('name') ?? undefined,
@@ -1189,7 +1213,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // A recap link may name its period (the weekly recap push does).
         const period = params.get('period');
         if (screen === 'recap' && (period === 'day' || period === 'week' || period === 'month' || period === 'season')) {
-          setState((s) => ({ ...s, recapPeriod: period, recapSeasonKey: null, recapOffset: 0 }));
+          setState((s) => ({ ...s, ...recapWindow(period) }));
         }
       } else {
         // No deep link — seed this very first entry with a real snapshot
@@ -1214,7 +1238,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AppContextValue>(() => ({
     state, language: state.language, t, albums: ALBUMS, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds,
     spotifyObscure, spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, laterItems, toggleLaterAlbum, toggleLaterTrack, removeLaterItem, removeAllLater, friendRequests, recapCache, recapLocked, reviewsVersion,
-    showScreen, viewHistory, goBack, openAlbum, viewFriend, viewGroup, openRecap, closeRecap,
+    showScreen, viewHistory, goBack, openAlbum, viewFriend, viewGroup, openFanClub, openRecap, closeRecap,
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, setRecapOffset, recapSeasons,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, logoutEverywhere, deleteAccount,
@@ -1223,7 +1247,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyObscure,
     spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, laterItems, toggleLaterAlbum, toggleLaterTrack, removeLaterItem, removeAllLater, friendRequests, recapCache, recapLocked, reviewsVersion, showScreen, viewHistory, goBack, openAlbum,
     setRecapSeasonKey, setRecapOffset, recapSeasons,
-    viewFriend, viewGroup, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
+    viewFriend, viewGroup, openFanClub, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, logoutEverywhere, deleteAccount,
     updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateLanguage, updateRegion, updateRegionAuto, updateOpenProfile, updateAppearance, updatePrivacy,

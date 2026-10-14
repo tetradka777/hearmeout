@@ -22,7 +22,7 @@ import { DEMO_PROFILES } from '@/lib/demoAccounts';
 import { RECAP_SEEN_EVENT, recapSeenWeek } from '@/lib/recapSeen';
 import { ImportNudge } from '../ConnectionBlocks';
 import { PROFILE_TAB_EVENT } from '@/lib/uiEvents';
-import { CoverWall, Phrase } from '../ui/Visual';
+import { CoverWall } from '../ui/Visual';
 import { useAlbum, useAlbums } from '@/lib/useAlbum';
 
 // Home (prototype rev 8–11, redesign/v7): the hot take and the week's recap
@@ -318,6 +318,7 @@ function DayTile() {
   }, [feed?.todayPlays]);
   const peakLabel = peak != null ? new Date(2000, 0, 1, peak).toLocaleTimeString(toLocale(language), { hour: '2-digit', minute: '2-digit', hour12: me?.timeFormat === '12' }) : null;
   const rep = feed?.onRepeat;
+  const num = (n: number) => new Intl.NumberFormat(toLocale(language)).format(n);
   const foot = [peakLabel && t('home.dayPeak', { time: peakLabel }), rep && t('home.onRepeat', { title: rep.title, n: rep.plays })].filter(Boolean).join(' · ');
   // The day's songs by plays, one cover per album.
   const covers: { key: string; cover: string | null; albumId: string | null; title: string; artist: string }[] = [];
@@ -328,14 +329,15 @@ function DayTile() {
   return (
     <div className="tile day13">
       <div className="hd10"><h2 style={{ margin: 0 }}>{t('home.daySoFar')}</h2></div>
-      <Phrase parts={[
-        [r?.trackCount ?? 0, t('home.cornerTracks')],
-        [minutesLabel(r?.minutes ?? 0, t), t('home.listened')],
-        [r?.uniqueArtists ?? 0, t('home.cornerArtists')],
-      ]} />
+      {/* The same three numbers as the recap's strip. */}
+      <div className="st15">
+        <div><b>{num(r?.minutes ?? 0)}</b><small>{t('recap.minutesL')}</small></div>
+        <div><b>{num(r?.uniqueArtists ?? 0)}</b><small>{t('recap.artistsL')}</small></div>
+        <div><b>{num(r?.trackCount ?? 0)}</b><small>{t('recap.tracksL')}</small></div>
+      </div>
       {covers.length > 0 && (
-        <div className="dcv13">
-          {covers.slice(0, 4).map((c) => (
+        <div className="hrow dcv15">
+          {covers.map((c) => (
             <button key={c.key} onClick={() => c.albumId && openAlbum(c.albumId)} style={{ cursor: c.albumId ? 'pointer' : 'default' }} title={`${c.title} — ${c.artist}`}>
               <CoverArt url={c.cover ?? undefined} fallbackLetter={c.artist[0] || '?'} className="cov" px={120} style={{ width: '100%', aspectRatio: '1' }} />
               <small>{c.title}</small>
@@ -351,12 +353,12 @@ function DayTile() {
 function RateTile() {
   const { t, myRatings, feed, openAlbum, spotifyCovers } = useApp();
   const rated = useMemo(() => new Set(myRatings.map((r) => r.albumId)), [myRatings]);
-  const unrated = useAlbums((feed?.recentAlbumIds || []).filter((id) => !rated.has(id)).slice(0, 3));
+  const unrated = useAlbums((feed?.recentAlbumIds || []).filter((id) => !rated.has(id)).slice(0, 12));
   return (
     <div className="tile">
       <div className="hd10"><h2 style={{ margin: 0 }}>{t('home.rateWhatPlayed')}</h2></div>
       {unrated.length ? (
-        <CoverWall items={unrated.map(({ id, album }) => ({ key: id, cover: spotifyCovers[album.id] || album.cover, title: album.title, artist: album.artist, artistId: album.artistId, onClick: () => openAlbum(album.id) }))} />
+        <CoverWall row items={unrated.map(({ id, album }) => ({ key: id, cover: spotifyCovers[album.id] || album.cover, title: album.title, artist: album.artist, artistId: album.artistId, onClick: () => openAlbum(album.id) }))} />
       ) : <p className="muted">{t('home.rateWhatPlayedEmpty')}</p>}
     </div>
   );

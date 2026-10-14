@@ -194,6 +194,7 @@ export type ScreenName =
   | 'stats'
   | 'groups'
   | 'group'
+  | 'fanclub'
   | 'discover'
   | 'settings'
   | 'states'

@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { lastSeasons } from '@/lib/seasons';
 import { PlayRing } from '../redesign/PreviewButton';
 import { recapColors, recapToneStyle } from '@/lib/recapTone';
 import { ArtistAvatar, ArtistName } from '../ui/ArtistName';
@@ -26,9 +27,9 @@ const RECAP_AWARD_ICON: Record<string, string> = {
   awardStreak: 'flame', awardScout: 'target', awardStuck: 'repeat', awardTimeTraveler: 'clock',
 };
 
-const PERIODS: RecapPeriod[] = ['day', 'week', 'month', 'season'];
+const PERIODS: RecapPeriod[] = ['week', 'month', 'season'];
 const PERIOD_KEY: Record<RecapPeriod, TranslationKey> = { day: 'recap.day', week: 'recap.week', month: 'recap.month', season: 'recap.season' };
-const WEEK_OFFSETS = [0, -1, -2, -3, -4];
+
 
 function recapKey(targetId: string, period: RecapPeriod, seasonKey: string | null, offset: number): string {
   return `${targetId}:${period}${seasonKey ? ':' + seasonKey : offset ? ':' + offset : ''}`;
@@ -57,7 +58,7 @@ function rangeLabel(r: RecapData | undefined, period: RecapPeriod, seasonKey: st
 export function RecapScreen(_props: { device: Device }) {
   const {
     state, t, language, me, albums, liveAlbums, ensureRecap, recapCache, recapLocked, closeRecap,
-    setRecapPeriod, setRecapSeasonKey, setRecapOffset, recapSeasons, openAlbum, openSpotifyArtist,
+    setRecapPeriod, setRecapSeasonKey, setRecapOffset, openAlbum, openSpotifyArtist,
     viewFriend, openRecap, showScreen, showToast, shareRecapWithFriends,
   } = useApp();
   const { currentTrack, playing, quiet, toggle, playQueue, close } = usePlayer();
@@ -68,6 +69,11 @@ export function RecapScreen(_props: { device: Device }) {
   const isSeason = period === 'season';
   const seasonKey = isSeason ? state.recapSeasonKey : null;
   const offset = isSeason ? 0 : state.recapOffset;
+  // Only the last two finished seasons; opening Season picks the latest.
+  const finishedSeasons = useMemo(() => lastSeasons(), []);
+  useEffect(() => {
+    if (isSeason && !seasonKey) setRecapSeasonKey(finishedSeasons[0].key);
+  }, [isSeason, seasonKey, finishedSeasons, setRecapSeasonKey]);
   const friends = isMe && me ? me.friends.slice(0, 6) : [];
 
   useEffect(() => {
@@ -81,10 +87,6 @@ export function RecapScreen(_props: { device: Device }) {
     if (state.activeScreen !== 'recap' || (isSeason && !seasonKey)) return;
     for (const id of friendIdsKey ? friendIdsKey.split(',') : []) ensureRecap(id, period, seasonKey, offset);
   }, [state.activeScreen, friendIdsKey, period, seasonKey, offset, isSeason, ensureRecap]);
-
-  useEffect(() => {
-    if (isSeason && !state.recapSeasonKey && recapSeasons?.length) setRecapSeasonKey(recapSeasons[0].key);
-  }, [isSeason, state.recapSeasonKey, recapSeasons, setRecapSeasonKey]);
 
   useEffect(() => {
     if (isMe || !targetId) { setProfile(null); return; }
@@ -186,29 +188,25 @@ export function RecapScreen(_props: { device: Device }) {
   if (period === 'week') {
     subChips = (
       <div className="chips" role="group" aria-label={t('recap.week')}>
-        {WEEK_OFFSETS.map((o) => (
-          <button key={o} className={`chip${offset === o ? ' on' : ''}`} onClick={() => setRecapOffset(o)}>
-            {t(o === 0 ? 'recap.weekChipLatest' : 'recap.weekChip', { n: weekNumber(o) })}
-          </button>
-        ))}
+        <button className={`chip${offset === 0 ? ' on' : ''}`} onClick={() => setRecapOffset(0)}>{t('recap.lastWeek')}</button>
+        <button className={`chip${offset === -1 ? ' on' : ''}`} onClick={() => setRecapOffset(-1)}>{t('recap.weekBeforeLast')}</button>
       </div>
     );
   } else if (isSeason) {
-    subChips = recapSeasons === null ? <p className="muted">{t('recap.loading')}</p>
-      : recapSeasons.length ? (
+    subChips = (
         <div className="chips" role="group" aria-label={t('recap.season')}>
-          {recapSeasons.map((s) => (
+          {finishedSeasons.map((s) => (
             <button key={s.key} className={`chip${state.recapSeasonKey === s.key ? ' on' : ''}`} onClick={() => setRecapSeasonKey(s.key)}>
               {t(`season.${s.season}` as TranslationKey)} {s.year}
             </button>
           ))}
         </div>
-      ) : <p className="muted">{t('recap.noData')}</p>;
+      );
   } else {
     subChips = (
       <div className="chips">
-        <button className={`chip${offset === 0 ? ' on' : ''}`} onClick={() => setRecapOffset(0)}>{t(period === 'day' ? 'recap.today' : 'recap.thisMonth')}</button>
-        <button className={`chip${offset === -1 ? ' on' : ''}`} onClick={() => setRecapOffset(-1)}>{t(period === 'day' ? 'recap.yesterday' : 'recap.lastMonth')}</button>
+        <button className={`chip${offset === -1 ? ' on' : ''}`} onClick={() => setRecapOffset(-1)}>{t('recap.lastMonth')}</button>
+        <button className={`chip${offset === -2 ? ' on' : ''}`} onClick={() => setRecapOffset(-2)}>{t('recap.monthBeforeLast')}</button>
       </div>
     );
   }

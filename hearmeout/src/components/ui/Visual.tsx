@@ -20,9 +20,10 @@ export type WallItem = {
 
 // Albums or tracks as a grid of covers: 3 across on a phone, more on a
 // computer; a score sits on the cover's corner.
-export function CoverWall({ items, small }: { items: WallItem[]; small?: boolean }) {
+// `row`: one line you swipe through instead of a grid.
+export function CoverWall({ items, small, row }: { items: WallItem[]; small?: boolean; row?: boolean }) {
   return (
-    <div className={`cw15${small ? ' sm' : ''}`}>
+    <div className={`cw15${small ? ' sm' : ''}${row ? ' hrow row' : ''}`}>
       {items.map((it) => (
         <div className="it" key={it.key}>
           <button className="im" onClick={it.onClick} aria-label={it.title} disabled={!it.onClick}>
@@ -84,4 +85,12 @@ export function GenreFill({ items }: { items: { name: string; share: number; lab
       ))}
     </div>
   );
+}
+
+// One of six soft card colours, always the same for the same name (artist
+// cards, fan clubs).
+export function toneClass(key: string): string {
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) | 0;
+  return `t-c${(Math.abs(h) % 6) + 1}`;
 }

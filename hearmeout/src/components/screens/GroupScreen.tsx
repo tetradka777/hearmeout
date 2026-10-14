@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { Podium } from '../ui/Podium';
-import { SocialBar } from '../ui/Social';
-import { socialKey } from '@/lib/socialClient';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import { invitePath } from '@/lib/pendingInvite';
@@ -14,27 +12,6 @@ import { CoverArt } from '../ui/CoverArt';
 import { useCachedJson } from '@/lib/cachedJson';
 import { Phrase } from '../ui/Visual';
 import { sinceLabel } from './GroupsScreen';
-
-const AWARD_LABEL_KEY: Record<string, string> = {
-  awardMostActive: 'groups.awardMostActive',
-  awardNightOwl: 'groups.awardNightOwl',
-  awardHarshestCritic: 'groups.awardHarshestCritic',
-  awardGenreExplorer: 'groups.awardGenreExplorer',
-  awardStreak: 'groups.awardStreak',
-  awardScout: 'groups.awardScout',
-  awardStuck: 'groups.awardStuck',
-  awardTimeTraveler: 'groups.awardTimeTraveler',
-};
-
-// Glyphs for the award and record cards (rev 9b; monochrome SVG masks, no emoji).
-const AWARD_ICON: Record<string, string> = {
-  awardMostActive: 'bolt', awardNightOwl: 'moon', awardHarshestCritic: 'lens', awardGenreExplorer: 'compass',
-  awardStreak: 'flame', awardScout: 'target', awardStuck: 'repeat', awardTimeTraveler: 'clock',
-};
-const RECORD_ICON: Record<string, string> = {
-  recordLongestStreak: 'flame', recordMostRatings: 'star', recordHighestAverage: 'heart',
-  recordMostFinished: 'flag', recordLatestListener: 'moon', recordHotTake: 'spark',
-};
 
 // Group page (spec 6.6): a real full-screen route reached via viewGroup,
 // with its own back crumb — not a locally-selected panel any more.
@@ -109,31 +86,6 @@ export function GroupScreen({ device: _device }: { device: Device }) {
   };
 
   const totalHours = detail.leaderboard.reduce((s, r) => s + r.hours, 0);
-  // Award details come from the server as plain numbers ("73.6h", "4d",
-  // "3.6", "9"): shown here with the interface's decimal comma and words.
-  const awardDetail = (label: string, detail: string): string => {
-    const n = parseFloat(detail);
-    switch (label) {
-      case 'awardScout': return t('groups.awardScoutDetail', { n });
-      case 'awardTimeTraveler': return t('groups.awardTimeTravelerDetail', { year: detail });
-      case 'awardMostActive': return `${fmtHours(n)}${t('unit.h')}`;
-      case 'awardHarshestCritic': return fmt1(n);
-      case 'awardStreak': return t('groups.daysN', { n });
-      case 'awardGenreExplorer': return t('groups.genresN', { n });
-      default: return detail;
-    }
-  };
-  // Record values come as plain strings ("4d", "4.1", a timestamp, "±1.5").
-  const recordValue = (label: string, value: string): string => {
-    if (label === 'recordLongestStreak') return t('groups.daysN', { n: parseInt(value, 10) || 0 });
-    if (label === 'recordHighestAverage') return fmt1(parseFloat(value));
-    if (label === 'recordHotTake') return `±${fmt1(parseFloat(value.replace('±', '')))}`;
-    if (label === 'recordLatestListener') {
-      const d = new Date(value);
-      return Number.isNaN(d.getTime()) ? value : d.toLocaleDateString(toLocale(language), { day: 'numeric', month: 'short' });
-    }
-    return value;
-  };
   const totalRatingsThisMonth = detail.memberStats.reduce((s, m) => s + m.ratingsMonth, 0);
   const groupAvgScore = detail.memberStats.length ? detail.memberStats.reduce((s, m) => s + m.avgScore, 0) / detail.memberStats.length : 0;
   const statsByUser = new Map(detail.memberStats.map((s) => [s.userId, s]));
@@ -196,7 +148,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
 
       <div className="bento b3">
         {/* Who listened most: the top three on a podium, everyone under it. */}
-        <div className="tile s2">
+        <div className="tile t-c1 s2">
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
             <h2 style={{ margin: 0 }}>{t('groups.leaderboard')}</h2>
             <div className="chips" style={{ margin: 0 }} role="group" aria-label={t('recap.periodLabel')}>
@@ -231,7 +183,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
         </div>
 
         {/* Group taste: the average match, the closest and the furthest pair. */}
-        <div className="tile tst13">
+        <div className="tile t-c3 tst13">
           <h2>{t('groups.tasteTitle')}</h2>
           <span className="big13">{detail.taste?.avgMatch != null ? `${detail.taste.avgMatch}%` : '–'}</span>
           <p className="muted" style={{ fontWeight: 700 }}>{t('groups.tasteAvg')}</p>
@@ -259,18 +211,18 @@ export function GroupScreen({ device: _device }: { device: Device }) {
             {t('groups.voteQuestion')} {t('groups.voteEnds', { date: voteEnd.toLocaleDateString(toLocale(language), { day: 'numeric', month: 'long' }) })}
           </p>
           {detail.vote.candidates.length ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 12, maxWidth: 640 }}>
+            <div className="vt15">
               {detail.vote.candidates.map((c) => {
                 const a = albumMeta(c.albumId);
                 const pct = totalVotes ? Math.round((c.count / totalVotes) * 100) : 0;
                 const mine = detail.vote.myVote === c.albumId;
                 return (
-                  <div key={c.albumId}>
+                  <div key={c.albumId} className="vc">
                     <CoverArt url={a?.cover} fallbackLetter={a?.artist[0] || '?'} className="cov" px={170} style={{ width: '100%', aspectRatio: '1' }} />
-                    <b style={{ display: 'block', margin: '8px 0 2px', fontSize: 14 }}>{a ? a.title : '…'}</b>
+                    <b className="vt">{a ? a.title : '…'}</b>
                     <div className="meter" style={{ height: 10 }}><i style={{ width: `${pct}%` }} /></div>
                     <small style={{ fontWeight: 700 }}>{t('groups.voteCount', { count: c.count, word: pluralForKey(language, c.count, 'groups.voteOne', 'groups.voteFew', 'groups.voteMany') })} · {pct}%</small>
-                    <button className={`btn${mine ? '' : ' ghost'}`} style={{ width: '100%', marginTop: 8, padding: 8 }} onClick={() => castVote(c.albumId)} aria-pressed={mine}>
+                    <button className={`btn${mine ? '' : ' ghost'}`} style={{ width: '100%', padding: 8 }} onClick={() => castVote(c.albumId)} aria-pressed={mine}>
                       {mine ? t('groups.yourVote') : t('groups.voteBtn')}
                     </button>
                   </div>
@@ -280,57 +232,8 @@ export function GroupScreen({ device: _device }: { device: Device }) {
           ) : <p className="muted" style={{ fontWeight: 600 }}>{t('groups.noCandidates')}</p>}
         </div>
 
-        {/* Awards and records together, as cards; past months as small chips. */}
-        <div className="tile t-soft2 s3">
-          <h2>{t('groups.awards')}</h2>
-          {detail.awards.length ? (
-            <div className="awg9" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))' }}>
-              {detail.awards.map((a, i) => (
-                <div className="aw9" key={i}>
-                  <span className="gl9" aria-hidden="true"><i className={`ic-${AWARD_ICON[a.label] ?? 'star'}`} /></span>
-                  <b>{t(AWARD_LABEL_KEY[a.label] as never)}</b>
-                  {a.winner && <span className="who9"><Av u={a.winner} />{a.winner.name}</span>}
-                  <small>{awardDetail(a.label, a.detail)}</small>
-                  <SocialBar target={groupId ? socialKey.award(groupId, detail.vote.monthKey, a.label) : null} title={t(AWARD_LABEL_KEY[a.label] as never)} />
-                </div>
-              ))}
-            </div>
-          ) : <p className="muted" style={{ fontWeight: 600 }}>{t('groups.noAwardsYet')}</p>}
-          {detail.records.length > 0 && (
-            <>
-              <h3 style={{ marginTop: 22 }}>{t('groups.records')}</h3>
-              <div className="rec13">
-                {detail.records.map((r, i) => (
-                  <div key={i}>
-                    <span className="gl9 sm" aria-hidden="true"><i className={`ic-${RECORD_ICON[r.label] ?? 'star'}`} /></span>
-                    <span className="v13">{recordValue(r.label, r.value)}</span>
-                    <b>{t(`groups.${r.label}` as never)}</b>
-                    {r.holder && <span className="who9"><Av u={r.holder} />{r.holder.name}</span>}
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-          {detail.pastAwards.length > 0 && (
-            <>
-              <p className="muted" style={{ fontWeight: 800, margin: '18px 0 0', fontSize: 13 }}>{t('groups.pastMonths')}</p>
-              {detail.pastAwards.slice(0, 2).map((pm) => (
-                <div className="past13" key={pm.monthKey}>
-                  <span className="chip on" style={{ cursor: 'default' }}>{new Date(`${pm.monthKey}-01T12:00:00`).toLocaleDateString(toLocale(language), { month: 'long' })}</span>
-                  {pm.awards.map((a, i) => (
-                    <span className="chip" key={i} title={a.winner?.name}>
-                      {a.winner ? <Av u={a.winner} /> : <i className={`ic ic-${AWARD_ICON[a.label] ?? 'star'}`} />}
-                      {t(AWARD_LABEL_KEY[a.label] as never)}
-                    </span>
-                  ))}
-                </div>
-              ))}
-            </>
-          )}
-        </div>
-
         {/* Latest ratings as covers you swipe through. */}
-        <div className="tile s3">
+        <div className="tile t-c4 s3">
           <h2>{t('groups.activity')}</h2>
           {detail.activity.length ? (
             <div className="hrow act13">
