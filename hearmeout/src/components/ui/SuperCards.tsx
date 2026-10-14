@@ -29,7 +29,17 @@ export function DarkCard({ cover, head, right, children, onOpen, footLeft, class
   const { t } = useApp();
   const bg = cover ? sizedImage(cover, 300) : null;
   return (
-    <article className={`dkc13 ${aside ? 'has-asd ' : ''}${className}`.trim()} style={bg ? ({ ['--cvbg' as string]: `url('${bg}')` } as CSSProperties) : undefined}>
+    <article
+      className={`dkc13 ${aside ? 'has-asd ' : ''}${onOpen ? 'tap ' : ''}${className}`.trim()}
+      style={bg ? ({ ['--cvbg' as string]: `url('${bg}')` } as CSSProperties) : undefined}
+      // The whole card opens it; its own buttons and links (and windows
+      // opened from it, which aren't inside it on the page) do their own thing.
+      onClick={onOpen ? (e) => {
+        const el = e.target as HTMLElement;
+        if (!e.currentTarget.contains(el) || el.closest('button, a, input, textarea, [role=link], [role=button]')) return;
+        onOpen();
+      } : undefined}
+    >
       <div className="hd">{head}{right && <span className="rt">{right}</span>}</div>
       <div className="bd">{children}</div>
       {aside && <div className="asd">{aside}</div>}
@@ -82,7 +92,7 @@ export function ReviewCard({ user, createdAt, stars, review, tags, albumId, show
       right={<b className="sc13">★ {fmt1(stars)}</b>}
       onOpen={() => openAlbum(albumId)}
       openText
-      className="rvc15"
+      className={clamp ? 'rvc15' : 'rvc15 full'}
       footLeft={user.id ? <SocialBar target={socialKey.review(user.id, albumId)} title={a?.title} /> : null}
     >
       {showAlbum && a && (

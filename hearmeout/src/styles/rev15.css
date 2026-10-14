@@ -13,7 +13,7 @@
    and "open →". */
 .rd .dkc13.rvc15{background:#1e1d1c;color:#fff;outline:0;border-radius:26px;padding:18px 20px 0;overflow:hidden;isolation:isolate;font-family:var(--font-body)}
 .rd .dkc13.rvc15::before{inset:-24px;width:auto;height:auto;border-radius:0;background:var(--cvbg,none) center/cover no-repeat;filter:blur(12px) saturate(1.15);opacity:.95;transform:none}
-.rd .dkc13.rvc15::after{display:block;content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(160deg,rgba(18,18,18,.18),rgba(18,18,18,.55))}
+.rd .dkc13.rvc15::after{display:block;content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(160deg,rgba(18,18,18,.3),rgba(18,18,18,.62))}
 .rd .dkc13.rvc15 .hd,.rd .dkc13.rvc15 .bd,.rd .dkc13.rvc15 .ex{text-shadow:0 1px 10px rgba(0,0,0,.35)}
 .rd .rvc15 .who13{gap:10px}
 .rd .rvc15 .who13 .dot{width:34px;height:34px;font-size:14px;box-shadow:0 0 0 2px #fff}
@@ -69,3 +69,27 @@
 .rd .cdl15 a,.rd .cdl15 span{display:block;padding:7px 10px;border-radius:10px;background:var(--soft2);color:var(--fg);text-decoration:none}
 .rd .cdl15 a:hover{background:color-mix(in srgb,var(--acc) 22%,var(--soft2))}
 .rd .cdl15 small{display:block;font-weight:600;opacity:.7;margin-top:1px}
+
+/* Every review / listening card the same height; long text is cut short
+   (the card opens the album, where all of it is). The whole card is the
+   way in. */
+.rd .dkc13.rvc15{height:340px}
+.rd .dkc13.rvc15.tap{cursor:pointer}
+.rd .dkc13.rvc15:not(.has-asd)>.bd{flex:1;min-height:0;overflow:hidden}
+.rd .dkc13.rvc15.has-asd{grid-template-rows:auto minmax(0,1fr) auto auto}
+.rd .dkc13.rvc15.has-asd>.bd{align-self:start;overflow:hidden;min-height:0;padding-bottom:10px}
+.rd .dkc13.rvc15>.ft{flex:none}
+.rd .rvc15 .q13,.rd .rvc15 .q13.clamp{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+.rd .rvc15 .ex .q13,.rd .rvc15 .ex .q13.clamp{-webkit-line-clamp:2;font-size:18px}
+.rd .rvc15 .alb13 .tt{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.rd .fdc15 .ft15{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+.rd .fdc15 .s15,.rd .fdc15 .m15{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-wrap:nowrap}
+.rd .rvc15 .tg13{flex-wrap:nowrap;overflow:hidden}
+/* On the album page a review is shown whole. */
+.rd .dkc13.rvc15.full{height:auto}
+.rd .rvc15.full .q13,.rd .rvc15.full .q13.clamp{display:block;-webkit-line-clamp:unset;overflow:visible}
+/* The grey line: one line, cut with an ellipsis (the artist link kept
+   whole-word, never one word per line). */
+.rd .fdc15 .m15{display:block}
+.rd .fdc15 .m15 .arl{max-width:none}
+.rd .fdc15 .m15 .arn{white-space:nowrap}
