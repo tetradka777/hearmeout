@@ -1,5 +1,3 @@
-import { prefetchAudio } from './webAudio';
-
 // Deezer lookups go through our own server routes (see src/app/api/deezer/*)
 // instead of a public CORS proxy — that proxy was flaky enough for real
 // visitors (rate limits, outages) to leave the preview player stuck loading
@@ -39,14 +37,16 @@ export function fetchTrackPreview(artistName: string, trackTitle: string, albumS
 }
 
 // Look a track's preview up now so pressing play doesn't wait for it, and
-// fetch the audio file too (lib/webAudio plays it).
+// let the browser start downloading the audio too.
 const warmedAudio = new Set<string>();
 export function prefetchTrackPreview(artistName: string, trackTitle: string, albumSpotifyId?: string | null): void {
   fetchTrackPreview(artistName, trackTitle, albumSpotifyId)
     .then((tr) => {
       if (tr?.preview && typeof window !== 'undefined' && !warmedAudio.has(tr.preview)) {
         warmedAudio.add(tr.preview);
-        prefetchAudio(tr.preview).catch(() => {});
+        const a = new Audio();
+        a.preload = 'auto';
+        a.src = tr.preview;
       }
     })
     .catch(() => {});
