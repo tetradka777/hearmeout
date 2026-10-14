@@ -18,17 +18,22 @@ type Person = { id?: string; name: string; avatarUrl: string | null };
 // The card the feed and reviews share: the palette's ink with a glow of
 // the cover in one corner, who and when on top, the content, and at the
 // foot comments / reactions and a round "open" button.
-export function DarkCard({ cover, head, right, children, onOpen, footLeft, className = '', openText }: {
+export function DarkCard({ cover, head, right, children, onOpen, footLeft, className = '', openText, aside, extra }: {
   cover?: string | null; head: ReactNode; right?: ReactNode; children: ReactNode; onOpen?: () => void; footLeft?: ReactNode; className?: string;
   // "open →" as words (the review card) instead of the round button.
   openText?: boolean;
+  // A big framed cover on the right, beside who and the text (feed cards),
+  // and a full-width part under both (a quote).
+  aside?: ReactNode; extra?: ReactNode;
 }) {
   const { t } = useApp();
   const bg = cover ? sizedImage(cover, 120) : null;
   return (
-    <article className={`dkc13 ${className}`.trim()} style={bg ? ({ ['--cvbg' as string]: `url('${bg}')` } as CSSProperties) : undefined}>
+    <article className={`dkc13 ${aside ? 'has-asd ' : ''}${className}`.trim()} style={bg ? ({ ['--cvbg' as string]: `url('${bg}')` } as CSSProperties) : undefined}>
       <div className="hd">{head}{right && <span className="rt">{right}</span>}</div>
       <div className="bd">{children}</div>
+      {aside && <div className="asd">{aside}</div>}
+      {extra && <div className="ex">{extra}</div>}
       {onOpen && (
         <div className="ft">
           <span className="fl">{footLeft}</span>
