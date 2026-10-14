@@ -329,8 +329,22 @@
 .rd .phd14.ph16::after{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(170deg,rgba(18,18,18,.1),rgba(18,18,18,.45))}
 .rd .phd14.ph16 .muted,.rd .phd14.ph16 small{color:rgba(255,255,255,.78)}
 
-/* Album page: the cover's colour glows softly behind the top. */
-.rd .two.alh16{position:relative;isolation:isolate}
-.rd .two.alh16::before{content:'';position:absolute;left:0;right:0;top:-30px;height:520px;z-index:-1;background:var(--cvbg,none) center/cover no-repeat;filter:blur(70px) saturate(1.3);opacity:.32;pointer-events:none;mask-image:linear-gradient(180deg,#000 40%,transparent)}
-[data-mode="dark"] .rd .two.alh16::before{opacity:.38}
 .rd{--s1:#E0955A;--s2:#8DB06A;--s3:#7E95D6;--s4:#D97C98;--s5:#D9B640;--s6:#5FB3A8}
+
+/* Album page: the cover, blurred, is the whole page's background (fixed
+   to the screen), frosted towards the theme's background so the menus and
+   text stay readable; the cards on it are glass. */
+.rd .wrap{position:relative;z-index:1}
+.rd .abg17{position:fixed;inset:-60px;z-index:0;pointer-events:none;background:var(--cvbg,none) center/cover no-repeat;filter:blur(42px) saturate(1.25)}
+.rd .abg17::after{content:'';position:absolute;inset:0;background:color-mix(in srgb,var(--bg) 48%,transparent)}
+.rd .alp17 .tile.tile{--tbg:color-mix(in srgb,var(--paper) 42%,transparent);--tfg:var(--fg);color:var(--fg);--bb:var(--fg);--bf:var(--bg);background:var(--tbg);-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3);outline-color:color-mix(in srgb,var(--fg) 14%,transparent)}
+[data-mode="dark"] .rd .alp17 .tile.tile{--tbg:color-mix(in srgb,#fff 8%,transparent)}
+.rd .alp17 .field,.rd .alp17 textarea{background:color-mix(in srgb,var(--paper) 50%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+
+/* Artist Popular: every track a card over its album's blurred cover. */
+.rd .ptl16{display:flex;flex-direction:column;gap:10px}
+.rd .ptl16 .row.ptr16{border:0;border-radius:20px;padding:14px 16px;margin:0}
+.rd .ptl16 .row.ptr16 .ib{background:rgba(255,255,255,.16);color:#fff}
+.rd .ptl16 .row.ptr16 .ib.on{background:#fff;color:#141414}
+.rd .ptl16 .row.ptr16 .tag:not([style]){background:rgba(255,255,255,.18);color:#fff}
+.rd .ptl16 .row.ptr16 .rowlink,.rd .ptl16 .row.ptr16 .num{color:#fff}

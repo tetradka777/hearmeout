@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { sizedImage } from '@/lib/imageSize';
 import { blurStyle } from '@/lib/imageColor';
 import { ArtistName } from '../ui/ArtistName';
@@ -186,11 +187,17 @@ export function RateScreen({ device: _device }: { device: Device }) {
     <p className="muted">{t('album.tracklistEmpty')}</p>
   );
 
+  // The cover, blurred, behind the whole page (fixed to the screen, so it's
+  // put on the shell, not inside the moving screen) while this page is open.
+  const backdrop = state.activeScreen === 'rate' && cover && typeof document !== 'undefined' && document.querySelector('.rd')
+    ? createPortal(<div className="abg17" style={blurStyle(sizedImage(cover, 640) ?? cover)} aria-hidden="true" />, document.querySelector('.rd')!)
+    : null;
+
   return (
-    <>
+    <div className="alp17">
+      {backdrop}
       {chips}
-      {/* The cover's colour glows behind the top of the page. */}
-      <div className="two alh16" style={blurStyle(cover ? sizedImage(cover, 300) ?? cover : null)}>
+      <div className="two">
         <div className="stack">
           <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: '100%', aspectRatio: '1' }} />
           <FriendsWhoRated albumId={a.id} />
@@ -312,6 +319,6 @@ export function RateScreen({ device: _device }: { device: Device }) {
           <AlbumReviews albumId={a.id} refreshToken={reviewsVersion} />
         </div>
       </div>
-    </>
+    </div>
   );
 }
