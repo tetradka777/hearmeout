@@ -48,6 +48,7 @@ const NAV_GROUP: Record<ScreenName, ScreenName | null> = {
   stats: null, recap: null,
   groups: 'groups',
   group: 'groups',
+  fanclub: 'groups',
   discover: 'discover',
   profile: 'profile',
   settings: null,

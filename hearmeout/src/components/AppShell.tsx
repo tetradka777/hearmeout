@@ -16,6 +16,7 @@ import { StatsScreen } from './screens/StatsScreen';
 import { MatchScreen } from './screens/MatchScreen';
 import { GroupsScreen } from './screens/GroupsScreen';
 import { GroupScreen } from './screens/GroupScreen';
+import { FanClubScreen } from './screens/FanClubScreen';
 import { DiscoverScreen } from './screens/DiscoverScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { StatesScreen } from './screens/StatesScreen';
@@ -40,6 +41,7 @@ const SCREENS: { name: ScreenName; Component: ComponentType<{ device: Device }> 
   { name: 'match', Component: MatchScreen },
   { name: 'groups', Component: GroupsScreen },
   { name: 'group', Component: GroupScreen },
+  { name: 'fanclub', Component: FanClubScreen },
   { name: 'discover', Component: DiscoverScreen },
   { name: 'settings', Component: SettingsScreen },
   { name: 'states', Component: StatesScreen },
@@ -95,6 +97,7 @@ export function AppShell() {
     : state.activeScreen === 'rate' ? `rate:${state.currentAlbumId ?? ''}`
     : state.activeScreen === 'friend' ? `friend:${state.viewingUserId ?? ''}`
     : state.activeScreen === 'group' ? `group:${state.viewingGroupId ?? ''}`
+    : state.activeScreen === 'fanclub' ? `fanclub:${state.viewingFanClub?.id ?? ''}`
     : state.activeScreen === 'artist' ? `artist:${state.currentArtist?.id ?? ''}`
     : state.activeScreen === 'recap' ? `recap:${state.recapViewUserId}`
     : state.activeScreen;

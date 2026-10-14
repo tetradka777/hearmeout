@@ -6,13 +6,13 @@ import { useCachedJson, invalidateJson } from '@/lib/cachedJson';
 import { usePaged } from '@/lib/usePaged';
 import type { FanClub } from '@/app/api/fanclubs/route';
 import { ArtistShelfCard, Shelf } from './ui/SuperCards';
-import { useOpenArtist } from './ui/ArtistName';
 
 // Fan clubs are the artists you follow: on Groups as a grid of photo cards
 // with how many people are in each, and on Discover as an endless shelf of
-// clubs to join (artists you play a lot, then popular ones).
+// clubs to join (artists you play a lot, then popular ones). A card opens
+// the club's own page (FanClubScreen).
 export function FanClubGrid() {
-  const { t, openSpotifyArtist, showScreen } = useApp();
+  const { t, openFanClub, showScreen } = useApp();
   const data = useCachedJson<{ mine: FanClub[] }>('/api/fanclubs').data;
   if (!data) return null;
   return (
@@ -21,7 +21,7 @@ export function FanClubGrid() {
       {data.mine.length ? (
         <div className="fg14">
           {data.mine.map((f) => (
-            <ArtistShelfCard key={f.name} name={f.name} id={f.id} sub={t('fandoms.members', { n: f.members })} onClick={() => f.id && openSpotifyArtist(f.id, f.name)} />
+            <ArtistShelfCard key={f.name} name={f.name} id={f.id} sub={t('fandoms.members', { n: f.members })} onClick={() => f.id && openFanClub(f.id, f.name)} />
           ))}
         </div>
       ) : <div className="tile t-soft2"><p className="muted" style={{ fontWeight: 600 }}>{t('fandoms.empty')}</p></div>}
@@ -36,8 +36,7 @@ async function resolveId(name: string): Promise<string | null> {
 }
 
 export function FanClubsForYou() {
-  const { t, showToast } = useApp();
-  const openArtist = useOpenArtist();
+  const { t, showToast, openFanClub } = useApp();
   const { items, done, more } = usePaged<FanClub, number>(async (from) => {
     const res = await fetch(`/api/fanclubs?suggest=${from ?? 0}`);
     if (!res.ok) throw new Error(String(res.status));
@@ -46,6 +45,11 @@ export function FanClubsForYou() {
   }, (f) => f.name.toLowerCase(), [], 50);
   const [joined, setJoined] = useState<Set<string>>(new Set());
   if (!items.length) return null;
+  // Opens the club's page (a chart artist's Spotify id is looked up first).
+  const openClub = async (f: FanClub) => {
+    const id = f.id ?? await resolveId(f.name);
+    if (id) openFanClub(id, f.name); else showToast(t('toast.artistOpenFailed'));
+  };
   const join = async (f: FanClub) => {
     setJoined((s) => new Set(s).add(f.name));
     // Chart artists come with a name only: find the Spotify artist first.
@@ -65,7 +69,7 @@ export function FanClubsForYou() {
         const n = f.members + (joined.has(f.name) ? 1 : 0);
         return (
           <div className="cc14" key={f.name}>
-            <ArtistShelfCard name={f.name} id={f.id} photo={f.photo} sub={n > 0 ? t('fandoms.members', { n }) : t('fandoms.beFirst')} onClick={() => openArtist(f.name, f.id)} />
+            <ArtistShelfCard name={f.name} id={f.id} photo={f.photo} sub={n > 0 ? t('fandoms.members', { n }) : t('fandoms.beFirst')} onClick={() => openClub(f)} />
             <button className={`jn14${joined.has(f.name) ? ' on' : ''}`} onClick={() => !joined.has(f.name) && join(f)} disabled={joined.has(f.name)}>
               {joined.has(f.name) ? t('fandoms.joined') : t('fandoms.join')}
             </button>

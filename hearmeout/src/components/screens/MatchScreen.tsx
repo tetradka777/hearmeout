@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { SharedArtistsCard } from '../SharedArtistsCard';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { ApiUser, Device, DiscoverMatchPerson, PublicProfile, StatsData } from '@/lib/types';
@@ -11,7 +12,6 @@ import { sharedArtists } from '@/lib/sharedArtists';
 import { toLocale } from '@/lib/i18n';
 import { CoverArt } from '../ui/CoverArt';
 import { MascotIcon } from '../redesign/icons';
-import { ArtistAvatar, useOpenArtist } from '../ui/ArtistName';
 import { Podium } from '../ui/Podium';
 import { MATCH_FRIEND_EVENT, takeRecentEvent } from '@/lib/uiEvents';
 import { CoverWall, PersonCards } from '../ui/Visual';
@@ -121,7 +121,6 @@ export function MatchScreen(_props: { device: Device }) {
   // visible too — otherwise it would only ever animate off-screen at load.
   const shownPct = useCountUp(activeInfo?.score ?? null, isActiveScreen ? activeId : null);
 
-  const openArtist = useOpenArtist();
   const history = useCachedJson<{ history: { pct: number; date: string }[] }>(activeId ? `/api/match/${activeId}/history` : null).data?.history ?? null;
 
   if (!me) return null;
@@ -232,20 +231,7 @@ export function MatchScreen(_props: { device: Device }) {
         </div>
         <div className="stack">
           {/* The most played shared artists only, the rest as a count. */}
-          <div className="tile">
-            <h2>{t('match.sharedArtistsTitle')}</h2>
-            {sharedArt.length ? (
-              <div className="sha13">
-                {sharedArt.slice(0, SHARED_SHOWN).map((n) => (
-                  <button key={n} onClick={() => openArtist(n)} aria-label={t('artist.openNamed', { name: n })}>
-                    <ArtistAvatar name={n} size={64} />
-                    <small>{n}</small>
-                  </button>
-                ))}
-                {sharedArt.length > SHARED_SHOWN && <span className="more13"><span>+{sharedArt.length - SHARED_SHOWN}</span></span>}
-              </div>
-            ) : <p className="muted" style={{ fontWeight: 600 }}>{t('match.noSharedArtists')}</p>}
-          </div>
+          <SharedArtistsCard names={sharedArt} shown={SHARED_SHOWN} title={t('match.sharedArtistsTitle')} empty={t('match.noSharedArtists')} />
           {/* Weekly leaderboard (rev 11): the top three, and how far you are from first. */}
           <div className="tile lb10">
             <div className="hd10"><div><h2 style={{ margin: 0 }}>{t('match.weeklyLeaderboard')}</h2><small className="muted" style={{ fontWeight: 700 }}>{t('match.leaderboardSub')}</small></div></div>
