@@ -15,7 +15,7 @@ import { ArtistAvatar, useOpenArtist } from '../ui/ArtistName';
 import { Podium } from '../ui/Podium';
 import { MATCH_FRIEND_EVENT, takeRecentEvent } from '@/lib/uiEvents';
 import { CoverWall, PersonCards } from '../ui/Visual';
-import { PROFILE_TAB_EVENT } from '../redesign/AvatarMenu';
+import { PROFILE_TAB_EVENT } from '@/lib/uiEvents';
 
 type RawInfo = { profile: PublicProfile | null; stats6m: StatsData | null; weekHours: number | null };
 type FriendInfo = RawInfo & { score: number | null };

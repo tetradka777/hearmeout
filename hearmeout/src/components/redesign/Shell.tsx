@@ -8,8 +8,7 @@ import type { TranslationKey } from '@/lib/i18n';
 import { HomeIcon, PeopleIcon, CompassSearchIcon } from '../ui/Icons';
 import { GroupsIcon } from './icons';
 import { Ticker } from './Ticker';
-import { AvatarMenu } from './AvatarMenu';
-import { QuickModeToggle } from './QuickModeToggle';
+import { TopButtons } from './TopButtons';
 import { GlobalPlayer } from '../DockedPlayer';
 import { NowPlayingBar } from './NowPlayingBar';
 import { usePlayer } from '@/lib/PlayerContext';
@@ -32,6 +31,8 @@ function useNavItems(): NavItem[] {
     { screen: 'match', labelKey: 'nav.match' },
     { screen: 'groups', labelKey: 'nav.groups' },
     { screen: 'discover', labelKey: 'nav.discover' },
+    // The tab bar has your photo for this; the top bar needs it written.
+    { screen: 'profile', labelKey: 'nav.profile' },
   ];
 }
 
@@ -48,7 +49,7 @@ const NAV_GROUP: Record<ScreenName, ScreenName | null> = {
   groups: 'groups',
   group: 'groups',
   discover: 'discover',
-  profile: null,
+  profile: 'profile',
   settings: null,
   states: null,
   later: null,
@@ -64,7 +65,7 @@ const TAB_ICON: Partial<Record<ScreenName, ReactNode>> = {
 };
 
 export function RedesignShell({ children }: { children: ReactNode }) {
-  const { me, t, state, showScreen, setSearchQuery, openAlbum } = useApp();
+  const { me, t, state, showScreen, setSearchQuery, openAlbum, friendRequests } = useApp();
   // "Rate" opens the album/rate screen for the album last looked at
   // (prototype: go('rate') with S.album), not the ratings history.
   const goToNavItem = (screen: ScreenName) => (screen === 'rate' ? openAlbum(state.currentAlbumId) : showScreen(screen));
@@ -104,8 +105,7 @@ export function RedesignShell({ children }: { children: ReactNode }) {
           onKeyDown={(e) => { if (e.key === 'Enter') showScreen('discover'); }}
         />
         <div className="topr">
-          <QuickModeToggle />
-          <AvatarMenu />
+          <TopButtons />
         </div>
       </div>
 
@@ -113,8 +113,7 @@ export function RedesignShell({ children }: { children: ReactNode }) {
       <header className="mobtop">
         <button className="logo" onClick={() => showScreen('catalog')}><span className="mk" />hearmeout</button>
         <div className="topr">
-          <QuickModeToggle />
-          <AvatarMenu />
+          <TopButtons />
         </div>
       </header>
 
@@ -135,6 +134,7 @@ export function RedesignShell({ children }: { children: ReactNode }) {
         {me && (
           <button className={`tbp${state.activeScreen === 'profile' ? ' on' : ''}`} onClick={() => showScreen('profile')} aria-label={t('nav.profile')}>
             <span className="avt" style={{ ...userAvatarStyle(me), backgroundSize: 'cover' }}>{!me.avatarUrl && me.name[0]?.toUpperCase()}</span>
+            {friendRequests.incoming.length > 0 && <span className="badge" aria-hidden="true">{friendRequests.incoming.length}</span>}
           </button>
         )}
       </nav>

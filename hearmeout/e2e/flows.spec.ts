@@ -72,7 +72,7 @@ test('switching to dark mode recolours muted text', async ({ page }) => {
   const muted = screen(page).locator('.muted').first();
   await expect(muted).toBeVisible();
   const before = await page.evaluate(() => document.documentElement.dataset.mode);
-  const toggle = page.locator('.rd .topr button:not([aria-haspopup])').filter({ visible: true }).first();
+  const toggle = page.locator('.rd .topr .mt15').filter({ visible: true }).first();
   await toggle.click();
   await expect.poll(() => page.evaluate(() => document.documentElement.dataset.mode)).not.toBe(before);
   // Muted text follows the new text colour (parent and muted share the RGB).

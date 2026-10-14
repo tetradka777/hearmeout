@@ -13,7 +13,7 @@ export function QuickModeToggle() {
   const effective = resolveMode(me.mode);
   return (
     <button
-      className="ib"
+      className="ib mt15"
       aria-label={t(effective === 'dark' ? 'settings.modeLight' : 'settings.modeDark')}
       onClick={() => updateAppearance({ mode: effective === 'dark' ? 'light' : 'dark' })}
     >
