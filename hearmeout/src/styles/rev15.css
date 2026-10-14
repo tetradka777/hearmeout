@@ -282,3 +282,61 @@
 .rd .tile.sac15 h2{text-shadow:0 1px 8px color-mix(in srgb,var(--paper) 80%,transparent)}
 .rd .tile.sac15 .sha13 small{padding:2px 8px;border-radius:99px;background:color-mix(in srgb,var(--paper) 78%,transparent)}
 .rd .tile.sac15 .aav{box-shadow:0 0 0 3px color-mix(in srgb,#fff 70%,transparent)}
+
+/* ---- Cards take the look of their picture (round 16) ----
+   .tn15: a plate tinted with the cover's / photo's colour (--tint, set
+   from lib/imageColor), a soft tone until it's known.
+   .bh15: the picture itself blurred over the whole card, white text —
+   the main card of a screen (the same look as the review cards). */
+.rd .tn15{--tint:var(--c3);background:color-mix(in srgb,var(--tint) 30%,var(--paper));transition:background-color .35s}
+[data-mode="dark"] .rd .tn15{background:color-mix(in srgb,var(--tint) 30%,#181513)}
+.rd .tile.tn15{--tbg:color-mix(in srgb,var(--tint) 30%,var(--paper));outline:0}
+[data-mode="dark"] .rd .tile.tn15{--tbg:color-mix(in srgb,var(--tint) 30%,#181513)}
+
+.rd .bh15{position:relative;overflow:hidden;isolation:isolate;outline:0;color:#fff;--tfg:#fff;--tbg:#1e1d1c;background:#1e1d1c}
+.rd .bh15::before{content:'';position:absolute;inset:-24px;z-index:-1;background:var(--cvbg,none) center/cover no-repeat;filter:blur(18px) saturate(1.15);opacity:.95;border-radius:0;width:auto;height:auto;transform:none}
+.rd .bh15::after{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(170deg,rgba(18,18,18,.28),rgba(18,18,18,.66));display:block}
+.rd .bh15>*{position:relative;z-index:1}
+.rd .bh15 .muted,.rd .bh15 small{color:rgba(255,255,255,.75)}
+.rd .bh15 h1,.rd .bh15 h2,.rd .bh15 h3,.rd .bh15 b{color:#fff;text-shadow:0 1px 10px rgba(0,0,0,.3)}
+.rd .bh15 .btn{--bb:#fff;--bf:#141414}
+.rd .bh15 .btn.ghost{--bb:transparent;color:#fff;border-color:rgba(255,255,255,.7)}
+
+/* Album cards on shelves and walls: the cover on a plate of its colour. */
+.rd .shc14.tn15{padding:10px 10px 12px;border-radius:calc(var(--r) - 2px)}
+.rd .cw15 .it.tn15{padding:8px 8px 10px;border-radius:18px}
+.rd .cw15 .it.tn15 .bg{box-shadow:0 0 0 3px color-mix(in srgb,var(--tint) 30%,var(--paper))}
+[data-mode="dark"] .rd .cw15 .it.tn15 .bg{box-shadow:0 0 0 3px color-mix(in srgb,var(--tint) 30%,#181513)}
+/* People cards: a plate of each person's colour. */
+.rd .pc15 .pb.tn15{background:color-mix(in srgb,var(--tint) 32%,var(--paper))}
+[data-mode="dark"] .rd .pc15 .pb.tn15{background:color-mix(in srgb,var(--tint) 32%,#181513)}
+
+/* Podium steps in each person's colour (stronger for first place). */
+.rd .pd13 .st13.tn15{background:color-mix(in srgb,var(--tint) 45%,var(--paper));color:var(--fg)}
+.rd .pd13.p1 .st13.tn15{background:color-mix(in srgb,var(--tint) 75%,var(--paper))}
+[data-mode="dark"] .rd .pd13 .st13.tn15{background:color-mix(in srgb,var(--tint) 45%,#181513)}
+[data-mode="dark"] .rd .pd13.p1 .st13.tn15{background:color-mix(in srgb,var(--tint) 70%,#181513)}
+
+/* Match: the % card over the two of you, your colour into your friend's. */
+.rd .tile.mh16{position:relative;overflow:hidden;isolation:isolate;outline:0;padding:28px;--tfg:#fff;color:#fff;--tbg:linear-gradient(115deg,color-mix(in srgb,var(--g1) 75%,#141210),color-mix(in srgb,var(--g2) 75%,#141210));background:linear-gradient(115deg,color-mix(in srgb,var(--g1) 75%,#141210),color-mix(in srgb,var(--g2) 75%,#141210))}
+.rd .tile.mh16::before{content:'';position:absolute;inset:-30px;z-index:-1;background:var(--a1) left center/60% auto no-repeat,var(--a2) right center/60% auto no-repeat;filter:blur(30px) saturate(1.2);opacity:.55}
+.rd .tile.mh16::after{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(170deg,rgba(18,18,18,.18),rgba(18,18,18,.5))}
+.rd .tile.mh16 .pct,.rd .tile.mh16 .pcts{color:#fff}
+.rd .tile.mh16 .dotm i{background:rgba(255,255,255,.28)}
+.rd .tile.mh16 .dotm i.f{background:#fff}
+.rd .tile.mh16 .btn{--bb:#fff;--bf:#141414}
+.rd .tile.mh16 .pill{background:rgba(255,255,255,.2);color:#fff}
+.rd .vt15 .vc.tn15{padding:8px 8px 10px;border-radius:16px;color:var(--fg)}
+.rd .vt15 .vc.tn15 .btn.ghost{color:var(--fg)}
+
+/* Profile header in your colour, your photo blurred over it. */
+.rd .phd14.ph16{position:relative;overflow:hidden;isolation:isolate;background:linear-gradient(135deg,color-mix(in srgb,var(--g1) 80%,#141210),color-mix(in srgb,var(--g1) 45%,#141210));color:#fff;--bb:#fff;--bf:#141414}
+.rd .phd14.ph16::before{content:'';position:absolute;inset:-30px;z-index:-1;background:var(--a1) center/cover no-repeat;filter:blur(30px) saturate(1.2);opacity:.5}
+.rd .phd14.ph16::after{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(170deg,rgba(18,18,18,.1),rgba(18,18,18,.45))}
+.rd .phd14.ph16 .muted,.rd .phd14.ph16 small{color:rgba(255,255,255,.78)}
+
+/* Album page: the cover's colour glows softly behind the top. */
+.rd .two.alh16{position:relative;isolation:isolate}
+.rd .two.alh16::before{content:'';position:absolute;left:0;right:0;top:-30px;height:520px;z-index:-1;background:var(--cvbg,none) center/cover no-repeat;filter:blur(70px) saturate(1.3);opacity:.32;pointer-events:none;mask-image:linear-gradient(180deg,#000 40%,transparent)}
+[data-mode="dark"] .rd .two.alh16::before{opacity:.38}
+.rd{--s1:#E0955A;--s2:#8DB06A;--s3:#7E95D6;--s4:#D97C98;--s5:#D9B640;--s6:#5FB3A8}

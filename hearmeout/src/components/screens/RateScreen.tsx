@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { sizedImage } from '@/lib/imageSize';
+import { blurStyle } from '@/lib/imageColor';
 import { ArtistName } from '../ui/ArtistName';
 import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
@@ -15,7 +17,7 @@ import { usePlayer, prefetchQueueTrack } from '@/lib/PlayerContext';
 import { AlbumReviews } from '../AlbumReviews';
 import { AlbumRatingDistribution } from '../AlbumRatingDistribution';
 import { AlbumTagsSummary } from '../AlbumTagsSummary';
-import { PersonCards, Phrase } from '../ui/Visual';
+import { PersonCards, Phrase, TintBox } from '../ui/Visual';
 import { REVIEW_TAG_ORDER, REVIEW_TAG_LABEL_KEY, MAX_REVIEW_TAGS } from '@/lib/reviewTags';
 
 type FriendRating = { id: string; name: string; avatarUrl: string | null; stars: number };
@@ -187,7 +189,8 @@ export function RateScreen({ device: _device }: { device: Device }) {
   return (
     <>
       {chips}
-      <div className="two">
+      {/* The cover's colour glows behind the top of the page. */}
+      <div className="two alh16" style={blurStyle(cover ? sizedImage(cover, 300) ?? cover : null)}>
         <div className="stack">
           <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: '100%', aspectRatio: '1' }} />
           <FriendsWhoRated albumId={a.id} />
@@ -282,12 +285,12 @@ export function RateScreen({ device: _device }: { device: Device }) {
       </div>
 
       <div className="sec bento b3">
-        <div className="tile s2">
+        <TintBox className="tile s2" picture={cover} fallbackKey={a.id}>
           <h2>{t('album.tracklist')}</h2>
           <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 8px' }}>{t('album.tracklistHint')}</p>
           <div>{tracklist}</div>
-        </div>
-        <div className="tile">
+        </TintBox>
+        <TintBox className="tile" picture={cover} fallbackKey={a.id}>
           <h2>{t('album.community')}</h2>
           <div style={{ display: 'flex', gap: 12, alignItems: 'baseline', flexWrap: 'wrap' }}>
             <span className="num" style={{ fontSize: 64, color: 'var(--acct)' }}>{ratingInfo ? fmt1(ratingInfo.avg) : '–'}</span>
@@ -303,7 +306,7 @@ export function RateScreen({ device: _device }: { device: Device }) {
           )}
           <div style={{ marginTop: 14 }}><AlbumRatingDistribution albumId={a.id} refreshToken={reviewsVersion} you={val > 0 ? val : null} /></div>
           <AlbumTagsSummary albumId={a.id} refreshToken={reviewsVersion} />
-        </div>
+        </TintBox>
         <div className="s3">
           <h2>{t('album.reviews')}</h2>
           <AlbumReviews albumId={a.id} refreshToken={reviewsVersion} />

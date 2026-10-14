@@ -20,7 +20,7 @@ import { useLaterPlay } from './LaterScreen';
 import { Initial } from '../ui/Initial';
 import { cachedJson, peekJson, useCachedJson } from '@/lib/cachedJson';
 import { AwardGallery } from '../AwardGallery';
-import { CoverWall, GenreFill, PersonCards, Phrase } from '../ui/Visual';
+import { CoverWall, GenreFill, PersonCards, Phrase, usePersonColor } from '../ui/Visual';
 
 type ProfileTab = 'ratings' | 'reviews' | 'loved' | 'later' | 'taste' | 'awards' | 'listening' | 'friends';
 const TAB_ORDER: ProfileTab[] = ['ratings', 'reviews', 'loved', 'later', 'taste', 'awards', 'listening', 'friends'];
@@ -388,6 +388,8 @@ function FriendsTab() {
 export function ProfileScreen(_props: { device: Device }) {
   const { t, language, me, myRatings, updateProfileName, updateProfileHandle, updateAvatar, showScreen, friendRequests, showToast } = useApp();
   const weekStats = useCachedJson<StatsData>(me ? `/api/stats?period=week&weekStart=${me.weekStart}` : null).data;
+  // The header in your colour, your photo blurred over it.
+  const myColor = usePersonColor(me ?? { id: '', name: '?', avatarUrl: null });
   const [tab, setTab] = useState<ProfileTab>('ratings');
   const tabsRef = useRef<HTMLDivElement>(null);
   const openFriends = () => { setTab('friends'); tabsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
@@ -424,7 +426,7 @@ export function ProfileScreen(_props: { device: Device }) {
       <h1 className="sr">{me.name}</h1>
       {/* Header: a coloured block with the photo, name, handle and region,
           then friends / edit profile / share. */}
-      <div className="phd14">
+      <div className="phd14 ph16" style={{ ['--g1' as string]: myColor, ['--a1' as string]: me.avatarUrl ? `url('${me.avatarUrl}')` : 'none' } as React.CSSProperties}>
         <label className="avwrap" aria-label={t('profile.uploadPhoto')}>
           <span className="avt lgA" style={{ ...userAvatarStyle(me), backgroundSize: 'cover' }}>{!me.avatarUrl && me.name[0].toUpperCase()}</span>
           <input
@@ -488,7 +490,7 @@ export function ProfileScreen(_props: { device: Device }) {
         </div>
       </div>
 
-      <button className="tile t-pop sst14" onClick={() => showScreen('stats')}>
+      <button className="tile t-c5 sst14" onClick={() => showScreen('stats')}>
         <i className="ic ic-bolt" aria-hidden="true" />
         <span className="g"><b>{t('profile.quickStats')}</b>{weekStats && weekStats.hours > 0 && <small>{t('profile.hoursWeek', { h: fmtHours(weekStats.hours) })}</small>}</span>
         <i className="ic ic-chev" aria-hidden="true" />

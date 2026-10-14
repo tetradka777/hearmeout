@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { blurStyle } from '@/lib/imageColor';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import { cachedJson } from '@/lib/cachedJson';
@@ -346,7 +347,7 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
 
     return (
       <>
-        <div className="tile t-ink glow" style={{ display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className={`tile ${art.photo ? 'bh15' : 't-ink glow'}`} style={{ ...blurStyle(art.photo), display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
           <CoverArt url={art.photo ?? undefined} fallbackLetter={art.name[0] || '?'} className="ph" />
           <div style={{ flex: 1, minWidth: 200 }}>
             <p className="eyebrow muted" style={{ margin: 0 }}>{t('artist.subtitleSpotify')}</p>

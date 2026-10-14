@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 
 // The main colour of a picture (an artist's photo), for tinting what's
 // around it: the image drawn tiny on a canvas and averaged, with the
@@ -76,4 +76,26 @@ export function useImageColors(urls: (string | null | undefined)[]): Record<stri
     return () => { cancelled = true; };
   }, [key]);
   return colors;
+}
+
+// One picture's colour (null until known, or when it can't be read).
+export function useImageColor(url: string | null | undefined): string | null {
+  const [color, setColor] = useState<{ url: string; c: string | null } | null>(null);
+  useEffect(() => {
+    if (!url) return;
+    let live = true;
+    imageColor(url).then((c) => { if (live) setColor({ url, c }); });
+    return () => { live = false; };
+  }, [url]);
+  return url && color?.url === url ? color.c : null;
+}
+
+// Inline styles for the two ways a card takes a picture's look: a plate
+// tinted with its colour (.tn15), or the picture itself blurred behind
+// everything (.bh15) — rev15.css.
+export function tintStyle(color: string | null | undefined): CSSProperties | undefined {
+  return color ? ({ ['--tint' as string]: color } as CSSProperties) : undefined;
+}
+export function blurStyle(url: string | null | undefined): CSSProperties | undefined {
+  return url ? ({ ['--cvbg' as string]: `url('${url}')` } as CSSProperties) : undefined;
 }

@@ -10,7 +10,8 @@ import { isReviewTagId, REVIEW_TAG_LABEL_KEY } from '@/lib/reviewTags';
 import { sizedImage } from '@/lib/imageSize';
 import { CoverArt } from './CoverArt';
 import { ArtistAvatar, ArtistName } from './ArtistName';
-import { toneClass } from './Visual';
+import { toneClass, toneColor } from './Visual';
+import { tintStyle, useImageColor } from '@/lib/imageColor';
 import { SocialBar } from './Social';
 import { socialKey } from '@/lib/socialClient';
 
@@ -161,8 +162,10 @@ export function Shelf({ title, sub, right, top, children, onMore, done = true, c
 export function AlbumShelfCard({ cover, title, artist, artistId, meta, badge, onClick }: {
   cover?: string | null; title: string; artist: string; artistId?: string | null; meta?: ReactNode; badge?: ReactNode; onClick: () => void;
 }) {
+  // The cover on a plate of its colour.
+  const tint = useImageColor(cover ? sizedImage(cover, 64) ?? cover : null);
   return (
-    <div className="shc14">
+    <div className="shc14 tn15" style={tintStyle(tint ?? toneColor(title))}>
       <button className="im" onClick={onClick} aria-label={title}>
         <CoverArt url={cover ?? undefined} fallbackLetter={artist[0] || '?'} className="cov" px={180} style={{ width: '100%', aspectRatio: '1' }} />
         {badge && <span className="bg">{badge}</span>}
