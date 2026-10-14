@@ -121,3 +121,10 @@
 .rd .rvc15.full .q13,.rd .rvc15.full .q13.clamp{-webkit-line-clamp:unset}
 .rd .dkc13.rvc15:not(.has-asd)>.bd{padding:10px 0 4px}
 .rd .rvc15 .q13,.rd .rvc15 .q13.clamp{line-height:1.3}
+
+/* Recaps take their colour from the music (lib/recapTone): the sheet, the
+   home card and friends' recap cards — a gradient from the top genre's
+   colour to the second's, cream text. */
+[data-design] .rd .rsh13[style*="--rc1"]{background:linear-gradient(160deg,var(--rc1),var(--rc2));color:#FFF7EA}
+[data-design] .rd .tile.t-rc{--tbg:linear-gradient(155deg,var(--rc1),var(--rc2));--tfg:#FFF7EA;--bb:#FFF7EA;--bf:var(--rc1);outline:0}
+.rd .tile.t-rc .muted{color:inherit;opacity:.75}

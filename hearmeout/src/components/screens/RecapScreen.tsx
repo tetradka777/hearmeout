@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { recapColors, recapToneStyle } from '@/lib/recapTone';
 import { ArtistAvatar, ArtistName } from '../ui/ArtistName';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
@@ -158,7 +159,7 @@ export function RecapScreen(_props: { device: Device }) {
     const canvas = document.createElement('canvas');
     drawStoryCard(canvas, {
       pill, lead: line.lead, emphasis: line.em, numbers: storyNumbers,
-      colors: { ink: color('--ink', '#294074'), cream: color('--cream', '#F6EFE0'), accent: color('--acc', '#D72E33'), pop: color('--pop', '#FDEDA3') },
+      colors: { ink: recapColors(r)[0], cream: color('--cream', '#F6EFE0'), accent: color('--acc', '#D72E33'), pop: color('--pop', '#FDEDA3') },
     });
     const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, 'image/png'));
     if (!blob) return;
@@ -246,7 +247,6 @@ export function RecapScreen(_props: { device: Device }) {
     const i = me.friends.findIndex((f) => f.id === targetId);
     return me.friends[(i + 1) % me.friends.length];
   })() : null;
-  const TILE_TONES = ['t-ac', 't-ink', 't-pop'];
   const vibeTitle = line ? `${line.lead}${line.em ? ` ${line.em}` : ''}` : undefined;
 
   return (
@@ -265,7 +265,7 @@ export function RecapScreen(_props: { device: Device }) {
         <div className="rcp13">
           {/* The recap as one coloured sheet (after Superfan): who and when, the
               vibe, three numbers, genres, top artists and songs, by day, awards. */}
-          <section className="rsh13" aria-label={isMe ? t(`recap.titleMe.${period}` as TranslationKey) : t(`recap.titleOf.${period}` as TranslationKey, { name })}>
+          <section className="rsh13" style={recapToneStyle(r)} aria-label={isMe ? t(`recap.titleMe.${period}` as TranslationKey) : t(`recap.titleOf.${period}` as TranslationKey, { name })}>
             <header className="rh">
               <span className="avt" style={{ ...userAvatarStyle({ avatarUrl }), backgroundSize: 'cover' }}>{!avatarUrl && name[0]?.toUpperCase()}</span>
               <div className="g"><b>{name}</b><small>{period === 'week' ? `${t('recap.weekPill', { n: weekNumber(offset) })} · ` : ''}{range}</small></div>
@@ -362,12 +362,12 @@ export function RecapScreen(_props: { device: Device }) {
             {isMe && friends.length > 0 && (
               <>
                 <h2 style={{ margin: '4px 0 0' }}>{t('recap.friendsRecaps')}</h2>
-                {friends.map((f, idx) => {
+                {friends.map((f) => {
                   const fk = recapKey(f.id, period, seasonKey, offset);
                   const fr = recapCache[fk];
                   const text = recapLocked[fk] ? t('recap.friendPrivate') : !fr ? t('recap.loading') : !fr.trackCount ? t('recap.friendQuiet') : null;
                   return (
-                    <div className={`tile rcf13 ${TILE_TONES[idx % TILE_TONES.length]}`} key={f.id}>
+                    <div className={`tile rcf13 ${fr && fr.trackCount ? 't-rc' : 't-ink'}`} style={fr && fr.trackCount ? recapToneStyle(fr) : undefined} key={f.id}>
                       <button className="rh" onClick={() => openRecap(f.id)}>
                         <span className="avt" style={{ ...userAvatarStyle(f), backgroundSize: 'cover' }}>{!f.avatarUrl && f.name[0]?.toUpperCase()}</span>
                         <span className="g"><b>{f.name}</b><small>{range}</small></span>

@@ -5,7 +5,7 @@ import { useApp } from '@/lib/AppContext';
 import { userAvatarStyle } from '@/lib/format';
 import type { ScreenName } from '@/lib/types';
 import type { TranslationKey } from '@/lib/i18n';
-import { HomeIcon, PeopleIcon, BarsIcon, CompassSearchIcon } from '../ui/Icons';
+import { HomeIcon, PeopleIcon, CompassSearchIcon } from '../ui/Icons';
 import { GroupsIcon } from './icons';
 import { Ticker } from './Ticker';
 import { AvatarMenu } from './AvatarMenu';
@@ -30,21 +30,21 @@ function useNavItems(): NavItem[] {
     { screen: 'catalog', labelKey: 'nav.home' },
     { screen: 'rate', labelKey: 'nav.rate' },
     { screen: 'match', labelKey: 'nav.match' },
-    { screen: 'stats', labelKey: 'nav.stats' },
     { screen: 'groups', labelKey: 'nav.groups' },
     { screen: 'discover', labelKey: 'nav.discover' },
   ];
 }
 
 // Which nav item lights up for a given screen — the prototype's NAVKEY:
-// artist → Discover, friend → Match, group → Groups, recap → Stats;
+// artist → Discover, friend → Match, group → Groups; Stats and Recap
+// (opened from the profile) light up nothing;
 // profile / settings / later / states light up nothing. History is
 // special-cased below (Rate only when opened from Rate).
 const NAV_GROUP: Record<ScreenName, ScreenName | null> = {
   catalog: 'catalog', artist: 'discover',
   history: null, rate: 'rate',
   match: 'match', friend: 'match',
-  stats: 'stats', recap: 'stats',
+  stats: null, recap: null,
   groups: 'groups',
   group: 'groups',
   discover: 'discover',
@@ -54,12 +54,13 @@ const NAV_GROUP: Record<ScreenName, ScreenName | null> = {
   later: null,
 };
 
-const TAB_SCREENS: ScreenName[] = ['catalog', 'match', 'discover', 'stats', 'groups'];
+// Statistics isn't in the menu: it opens from the profile.
+const TAB_SCREENS: ScreenName[] = ['catalog', 'match', 'discover', 'groups'];
 const TAB_LABEL: Partial<Record<ScreenName, TranslationKey>> = {
-  catalog: 'nav.home', match: 'tab.match', discover: 'nav.find', stats: 'nav.stats', groups: 'nav.groups',
+  catalog: 'nav.home', match: 'tab.match', discover: 'nav.find', groups: 'nav.groups',
 };
 const TAB_ICON: Partial<Record<ScreenName, ReactNode>> = {
-  catalog: <HomeIcon />, match: <PeopleIcon />, discover: <CompassSearchIcon />, stats: <BarsIcon />, groups: <GroupsIcon />,
+  catalog: <HomeIcon />, match: <PeopleIcon />, discover: <CompassSearchIcon />, groups: <GroupsIcon />,
 };
 
 export function RedesignShell({ children }: { children: ReactNode }) {

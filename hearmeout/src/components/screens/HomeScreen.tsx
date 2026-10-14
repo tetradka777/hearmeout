@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { recapToneStyle } from '@/lib/recapTone';
 import { ArtistName } from '../ui/ArtistName';
 import { CardWho, DarkCard } from '../ui/SuperCards';
 import { SocialBar } from '../ui/Social';
@@ -97,7 +98,7 @@ function RecapCard({ r, week }: { r: RecapData | undefined; week: number }) {
   const covers = r ? recapCovers(r) : [];
   const award = r?.awards[0];
   return (
-    <button className="tile t-ac rc" onClick={() => openRecap('me', 'week')}>
+    <button className={`tile ${r ? 't-rc' : 't-ink'} rc`} style={recapToneStyle(r)} onClick={() => openRecap('me', 'week')}>
       <span className="rc-top"><span>{eyebrow}</span>{r && <span className="rc-new"><i aria-hidden="true" />{t('home.rcNew')}</span>}</span>
       <span className="rc-stage" aria-hidden="true">
         <span className="rc-covs">

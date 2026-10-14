@@ -68,7 +68,7 @@ function AppearanceTab() {
   const palBtn = (p: (typeof PALETTES)[number]) => (
     <button key={p.id} className="palbtn" role="radio" aria-checked={me.palette === p.id} onClick={() => updateAppearance({ palette: p.id })}>
       <span className="sws" data-palette={p.id}>
-        <i style={{ background: 'var(--ink)' }} /><i style={{ background: 'var(--ac)' }} /><i style={{ background: 'var(--pop)' }} /><i style={{ background: 'var(--hi)' }} />
+        <i style={{ background: 'var(--ac)' }} /><i style={{ background: 'var(--scl)' }} /><i style={{ background: 'var(--hi)' }} />
       </span>
       <span>{p.name}</span>
     </button>
