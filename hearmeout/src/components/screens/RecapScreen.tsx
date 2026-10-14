@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { PlayRing } from '../redesign/PreviewButton';
 import { recapColors, recapToneStyle } from '@/lib/recapTone';
 import { ArtistAvatar, ArtistName } from '../ui/ArtistName';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
@@ -126,7 +127,7 @@ export function RecapScreen(_props: { device: Device }) {
     if (!autoKey || !autoSong || autoplayed.current === autoKey) return;
     autoplayed.current = autoKey;
     if (currentTrack?.title === autoSong.title && currentTrack?.albumId === autoSong.albumId) return;
-    playQueue([{ title: autoSong.title, artist: autoSong.artist, cover: autoSong.cover, albumId: autoSong.albumId }], 0, { quiet: true });
+    playQueue([{ title: autoSong.title, artist: autoSong.artist, cover: autoSong.cover, albumId: autoSong.albumId }], 0, { quiet: true, loop: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.activeScreen, autoKey, autoSong]);
 
@@ -272,9 +273,10 @@ export function RecapScreen(_props: { device: Device }) {
               {song && (
                 <button
                   className="pp13"
-                  onClick={() => (onSong || (currentTrack?.title === song.title && currentTrack?.albumId === song.albumId) ? toggle() : playQueue(songQueue, 0))}
+                  onClick={() => (onSong || (currentTrack?.title === song.title && currentTrack?.albumId === song.albumId) ? toggle() : playQueue(songQueue, 0, { loop: true }))}
                   aria-label={`${onSong ? t('player.pause') : t('player.play')} ${song.title}`}
                 >
+                  <PlayRing track={song} />
                   <i className={`ic ${onSong ? 'ic-pause' : 'ic-play'}`} />
                 </button>
               )}

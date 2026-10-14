@@ -62,3 +62,30 @@ export function PreviewButton({ tracks, index = 0, size = 60 }: { tracks: QueueT
     </button>
   );
 }
+
+// Just the progress ring, to lay over any round play button (the recap's
+// song): follows the track's preview every frame while it plays, holds
+// where it paused, empty for any other track.
+export function PlayRing({ track }: { track: { title: string; albumId?: string | null } }) {
+  const { currentTrack, playing, progress, getProgress } = usePlayer();
+  const ring = useRef<SVGCircleElement>(null);
+  const isCurrent = currentTrack?.title === track.title && (currentTrack?.albumId ?? null) === (track.albumId ?? null);
+  const isPlaying = isCurrent && playing;
+  useEffect(() => {
+    const el = ring.current;
+    if (!el) return;
+    const set = () => { el.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - (isCurrent ? getProgress() : 0))); };
+    set();
+    if (!isPlaying) return;
+    let raf = 0;
+    const draw = () => { set(); raf = requestAnimationFrame(draw); };
+    draw();
+    return () => cancelAnimationFrame(raf);
+  }, [isPlaying, isCurrent, getProgress, progress]);
+  return (
+    <svg className="prr15" viewBox="0 0 60 60" aria-hidden="true">
+      <circle className="trk" cx="30" cy="30" r={RADIUS} />
+      <circle ref={ring} className="prg" cx="30" cy="30" r={RADIUS} strokeDasharray={CIRCUMFERENCE} strokeDashoffset={CIRCUMFERENCE} />
+    </svg>
+  );
+}
