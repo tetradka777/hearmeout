@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { blurStyle, tintStyle } from '@/lib/imageColor';
+import { sizedImage } from '@/lib/imageSize';
 import { recapToneStyle } from '@/lib/recapTone';
 import { ArtistName } from '../ui/ArtistName';
 import { AlbumShelfCard, CardWho, DarkCard, Shelf } from '../ui/SuperCards';
@@ -22,7 +24,7 @@ import { DEMO_PROFILES } from '@/lib/demoAccounts';
 import { RECAP_SEEN_EVENT, recapSeenWeek } from '@/lib/recapSeen';
 import { ImportNudge } from '../ConnectionBlocks';
 import { PROFILE_TAB_EVENT } from '@/lib/uiEvents';
-import { CoverWall } from '../ui/Visual';
+import { CoverWall, usePersonColor } from '../ui/Visual';
 import { useAlbum, useAlbums } from '@/lib/useAlbum';
 
 // Home (prototype rev 8–11, redesign/v7): the hot take and the week's recap
@@ -242,8 +244,10 @@ function FriendCard({ user, demo, pct }: { user: ApiUser; demo: boolean; pct: nu
   if (demo && failed) return null; // a demo profile missing from this database
   const play = profile?.nowPlaying || profile?.lastPlayed || null;
   const live = !!profile?.nowPlaying;
+  // Each friend in their own colour (their photo's, or their tone).
+  const color = usePersonColor(user);
   return (
-    <button className="tile fr13" onClick={() => viewFriend(user.id)}>
+    <button className="tile fr13 tn15" style={tintStyle(color)} onClick={() => viewFriend(user.id)}>
       {demo && <span className="tag dm13">{t('friends.demoTag')}</span>}
       <span className="avt" style={{ ...userAvatarStyle(user), backgroundSize: 'cover' }}>{!user.avatarUrl && user.name[0]?.toUpperCase()}</span>
       <b className="nm13">{user.name}</b>
@@ -327,7 +331,8 @@ function DayTile() {
     if (!covers.some((c) => c.key === key)) covers.push({ key, cover: s.cover, albumId: s.albumId, title: s.title, artist: s.artist });
   }
   return (
-    <div className="tile day13">
+    // The day over its covers, blurred (the first one), white text.
+    <div className={`tile day13${covers[0]?.cover ? ' bh15' : ''}`} style={blurStyle(covers[0]?.cover ? sizedImage(covers[0].cover, 300) ?? covers[0].cover : null)}>
       <div className="hd10"><h2 style={{ margin: 0 }}>{t('home.daySoFar')}</h2></div>
       {/* The same three numbers as the recap's strip. */}
       <div className="st15">

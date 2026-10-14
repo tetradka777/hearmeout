@@ -5,6 +5,8 @@ import { userAvatarStyle } from '@/lib/format';
 import { CoverArt } from './CoverArt';
 import { ArtistName } from './ArtistName';
 import { Initial } from './Initial';
+import { sizedImage } from '@/lib/imageSize';
+import { tintStyle, useImageColor } from '@/lib/imageColor';
 
 // Pictures instead of tables (after Superfan, which shows no raw data): a
 // wall of covers, people as cards, numbers as short phrases. Styles in
@@ -24,20 +26,26 @@ export type WallItem = {
 export function CoverWall({ items, small, row }: { items: WallItem[]; small?: boolean; row?: boolean }) {
   return (
     <div className={`cw15${small ? ' sm' : ''}${row ? ' hrow row' : ''}`}>
-      {items.map((it) => (
-        <div className="it" key={it.key}>
-          <button className="im" onClick={it.onClick} aria-label={it.title} disabled={!it.onClick}>
-            <CoverArt url={it.cover ?? undefined} fallbackLetter={(it.artist || it.title)[0] || '?'} className="cov" px={small ? 120 : 180} style={{ width: '100%', aspectRatio: '1' }} />
-            {it.badge != null && <span className="bg">{it.badge}</span>}
-          </button>
-          {it.corner && <span className="cn">{it.corner}</span>}
-          <span className="tx">
-            <b>{it.title}</b>
-            {it.artist && <small><ArtistName name={it.artist} id={it.artistId} size={14} /></small>}
-            {it.sub && <small className="sb">{it.sub}</small>}
-          </span>
-        </div>
-      ))}
+      {items.map((it) => <WallCell key={it.key} it={it} small={small} />)}
+    </div>
+  );
+}
+
+// One cover on a plate of its colour.
+function WallCell({ it, small }: { it: WallItem; small?: boolean }) {
+  const tint = useImageColor(it.cover ? sizedImage(it.cover, 64) ?? it.cover : null);
+  return (
+    <div className={`it tn15${tint ? '' : ` ${toneClass(it.title)}`}`} style={tintStyle(tint ?? toneColor(it.title))}>
+      <button className="im" onClick={it.onClick} aria-label={it.title} disabled={!it.onClick}>
+        <CoverArt url={it.cover ?? undefined} fallbackLetter={(it.artist || it.title)[0] || '?'} className="cov" px={small ? 120 : 180} style={{ width: '100%', aspectRatio: '1' }} />
+        {it.badge != null && <span className="bg">{it.badge}</span>}
+      </button>
+      {it.corner && <span className="cn">{it.corner}</span>}
+      <span className="tx">
+        <b>{it.title}</b>
+        {it.artist && <small><ArtistName name={it.artist} id={it.artistId} size={14} /></small>}
+        {it.sub && <small className="sb">{it.sub}</small>}
+      </span>
     </div>
   );
 }
@@ -49,19 +57,33 @@ export type PersonItem = { id: string; name: string; avatarUrl: string | null; v
 export function PersonCards({ people, grid }: { people: PersonItem[]; grid?: boolean }) {
   return (
     <div className={grid ? 'pc15 grid' : 'hrow pc15'}>
-      {people.map((p) => (
-        <div className="pcd" key={p.id}>
-          <button className="pb" onClick={p.onClick} disabled={!p.onClick}>
-            <span className="av" style={{ ...userAvatarStyle(p), backgroundSize: 'cover' }}>{!p.avatarUrl && <Initial name={p.name} />}</span>
-            <b>{p.name}</b>
-            {p.value != null && <span className="vl">{p.value}</span>}
-            {p.sub && <small>{p.sub}</small>}
-          </button>
-          {p.action}
-        </div>
-      ))}
+      {people.map((p) => <PersonCell key={p.id} p={p} />)}
     </div>
   );
+}
+
+// A person on a plate of their colour: from their photo, or their own
+// tone by name when there's no photo.
+function PersonCell({ p }: { p: PersonItem }) {
+  const tint = usePersonColor(p);
+  return (
+    <div className="pcd">
+      <button className="pb tn15" style={tintStyle(tint)} onClick={p.onClick} disabled={!p.onClick}>
+        <span className="av" style={{ ...userAvatarStyle(p), backgroundSize: 'cover' }}>{!p.avatarUrl && <Initial name={p.name} />}</span>
+        <b>{p.name}</b>
+        {p.value != null && <span className="vl">{p.value}</span>}
+        {p.sub && <small>{p.sub}</small>}
+      </button>
+      {p.action}
+    </div>
+  );
+}
+
+// A person's colour everywhere on the site: their photo's, else a tone
+// picked by their id (or name).
+export function usePersonColor(p: { id?: string; name: string; avatarUrl: string | null }): string {
+  const photo = useImageColor(p.avatarUrl);
+  return photo ?? toneColor(p.id || p.name);
 }
 
 // A few numbers as one phrase of pills ("152 albums · 7.4 average"), not
@@ -93,4 +115,17 @@ export function toneClass(key: string): string {
   let h = 0;
   for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) | 0;
   return `t-c${(Math.abs(h) % 6) + 1}`;
+}
+
+// The same tone as a colour value (for --tint and the like).
+// (--s1…--s6: the tones at full strength, since --tint is mixed down to a
+// plate.)
+export function toneColor(key: string): string {
+  return `var(--s${toneClass(key).slice(3)})`;
+}
+
+// Any block on a plate of a picture's colour (a vote candidate, …).
+export function TintBox({ picture, fallbackKey, className = '', children }: { picture?: string | null; fallbackKey: string; className?: string; children: ReactNode }) {
+  const tint = useImageColor(picture ? sizedImage(picture, 64) ?? picture : null);
+  return <div className={`tn15 ${className}`.trim()} style={tintStyle(tint ?? toneColor(fallbackKey))}>{children}</div>;
 }

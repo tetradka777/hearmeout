@@ -10,13 +10,14 @@ import { userAvatarStyle, formatRelative } from '@/lib/format';
 import { toLocale, pluralForKey } from '@/lib/i18n';
 import { CoverArt } from '../ui/CoverArt';
 import { useCachedJson } from '@/lib/cachedJson';
-import { Phrase } from '../ui/Visual';
+import { Phrase, TintBox } from '../ui/Visual';
+import { blurStyle } from '@/lib/imageColor';
 import { sinceLabel } from './GroupsScreen';
 
 // Group page (spec 6.6): a real full-screen route reached via viewGroup,
 // with its own back crumb — not a locally-selected panel any more.
 export function GroupScreen({ device: _device }: { device: Device }) {
-  const { t, language, me, state, goBack, showScreen, albums, liveAlbums, openAlbum, showToast, viewFriend } = useApp();
+  const { t, language, me, state, goBack, showScreen, albums, liveAlbums, spotifyCovers, openAlbum, showToast, viewFriend } = useApp();
   const [inviteHandle, setInviteHandle] = useState('');
   const [inviteErr, setInviteErr] = useState('');
   const [period, setPeriod] = useState<GroupLeaderboardPeriod>('month');
@@ -98,13 +99,16 @@ export function GroupScreen({ device: _device }: { device: Device }) {
 
   const statOf = (id: string) => statsByUser.get(id);
   const heroCovers = detail.topAlbums.slice(0, 3);
+  // The page's top card over its best album's cover, blurred.
+  const heroAlbum = heroCovers[0] ? albumMeta(heroCovers[0].albumId) : undefined;
+  const heroCover = heroAlbum ? spotifyCovers[heroAlbum.id] || heroAlbum.cover : null;
 
   return (
     <>
       <button className="crumb" onClick={() => goBack('groups')}>‹ {t('groups.allGroups')}</button>
 
       {/* Hero: the group on the left, its three best-rated albums on the right. */}
-      <div className="tile t-ink glow ghero9">
+      <div className={`tile ghero9 ${heroCover ? 'bh15' : 't-ink glow'}`} style={blurStyle(heroCover)}>
         <div className="gh-l">
           <span className="pill">{t('groups.privateGroup')}</span>
           <h1 className="big" style={{ margin: '16px 0 8px' }}>{detail.name}</h1>
@@ -165,6 +169,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
               you: row.user.id === me.id,
               avatar: { style: { ...userAvatarStyle(row.user), backgroundSize: 'cover' }, letter: !row.user.avatarUrl && row.user.name[0]?.toUpperCase() },
               onClick: row.user.id === me.id ? undefined : () => openMember(row.user.id),
+              person: { id: row.user.id, name: row.user.name, avatarUrl: row.user.avatarUrl },
             }))}
           />
           <div className="mem13">
@@ -217,7 +222,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
                 const pct = totalVotes ? Math.round((c.count / totalVotes) * 100) : 0;
                 const mine = detail.vote.myVote === c.albumId;
                 return (
-                  <div key={c.albumId} className="vc">
+                  <TintBox key={c.albumId} className="vc" picture={a?.cover} fallbackKey={c.albumId}>
                     <CoverArt url={a?.cover} fallbackLetter={a?.artist[0] || '?'} className="cov" px={170} style={{ width: '100%', aspectRatio: '1' }} />
                     <b className="vt">{a ? a.title : '…'}</b>
                     <div className="meter" style={{ height: 10 }}><i style={{ width: `${pct}%` }} /></div>
@@ -225,7 +230,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
                     <button className={`btn${mine ? '' : ' ghost'}`} style={{ width: '100%', padding: 8 }} onClick={() => castVote(c.albumId)} aria-pressed={mine}>
                       {mine ? t('groups.yourVote') : t('groups.voteBtn')}
                     </button>
-                  </div>
+                  </TintBox>
                 );
               })}
             </div>

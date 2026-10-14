@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { recapToneStyle } from '@/lib/recapTone';
+import { blurStyle } from '@/lib/imageColor';
 import { ArtistAvatar, ArtistName, useOpenArtist } from '../ui/ArtistName';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
@@ -140,7 +142,7 @@ function ListeningCalendar({ data, t, language, weekStart }: { data: StatsData; 
   }
 
   return (
-    <div className="tile s3 cal11">
+    <div className="tile t-c2 s3 cal11">
       <h2>{t('stats.calendarTitle')}</h2>
       <p className="muted" style={{ margin: '-6px 0 18px', fontWeight: 600 }}>{t('stats.calendarHelp')}</p>
       <div className="cal" ref={calRef}>
@@ -332,7 +334,7 @@ export function StatsScreen(_props: { device: Device }) {
         <>
           <div className="bento b3">
             {/* One summary tile (rev 11): hours and the small figures on the left, hours per day or week on the right. */}
-            <div className="tile t-ac s3 sum11">
+            <div className="tile t-rc s3 sum11" style={recapToneStyle({ topGenres: data.genreSplit, topArtists: data.topArtists })}>
               <div className="l">
                 <span className="num">{fmtHours(data.hours)}</span>
                 <p>{t('stats.hoursOfMusic')}{deltaTxt ? ` · ${deltaTxt}` : ''}</p>
@@ -354,7 +356,7 @@ export function StatsScreen(_props: { device: Device }) {
             <ListeningCalendar data={data} t={t} language={language} weekStart={me.weekStart ?? 'mon'} />
 
             {/* Top artists as photos: the first big, the next four in a row. */}
-            <div className="tile t-soft2 tar13">
+            <div className={`tile tar13${data.topArtists[0]?.cover ? ' bh15' : ' t-c3'}`} style={blurStyle(data.topArtists[0]?.cover)}>
               <h2>{t('stats.topArtists')}</h2>
               {data.topArtists.length ? (() => {
                 const [lead, ...rest] = data.topArtists.slice(0, 5);
@@ -385,7 +387,7 @@ export function StatsScreen(_props: { device: Device }) {
               })() : <p className="muted" style={{ fontWeight: 600 }}>{t('stats.notEnough')}</p>}
             </div>
 
-            <div className="tile s2">
+            <div className="tile t-c5 s2">
               <div className="hd10"><div><h2 style={{ margin: 0 }}>{t('stats.topAlbums')}</h2><small className="muted" style={{ fontWeight: 700 }}>{t('stats.topAlbumsSub')}</small></div></div>
               {data.topAlbums?.length ? (
                 <div className="alg13">
@@ -409,7 +411,7 @@ export function StatsScreen(_props: { device: Device }) {
             </div>
 
             {/* Time of day and genres in one tile. */}
-            <div className="tile">
+            <div className="tile t-c6">
               <h2>{t('stats.whenYouListen')}</h2>
               <div className="tod" role="img" aria-label={t('stats.todAria', { hour: peak })}>
                 {data.heatmap.map((n, h) => <i key={h} className={h === data.peakHour ? 'pk' : ''} style={{ height: `${Math.max(4, Math.round((n / maxHeat) * 100))}%` }} title={formatHour(h, tf)} />)}
@@ -433,7 +435,7 @@ export function StatsScreen(_props: { device: Device }) {
               )}
             </div>
 
-            <div className="tile s2">
+            <div className="tile t-c4 s2">
               <h2>{t('stats.recentPlays')}</h2>
               {data.recentPlays.length ? (
                 <div className="hrow rp13">
@@ -466,7 +468,7 @@ export function StatsScreen(_props: { device: Device }) {
           </div>
 
           <div className="sec">
-            <button className="tile t-ac" style={{ textAlign: 'left', width: '100%', display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }} onClick={() => openRecap('me', 'week')}>
+            <button className="tile t-rc" style={{ ...recapToneStyle({ topGenres: data.genreSplit, topArtists: data.topArtists }), textAlign: 'left', width: '100%', display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }} onClick={() => openRecap('me', 'week')}>
               <div>
                 <span className="pill">{t('stats.recapLinkEyebrow')}</span>
                 {weekRecap && weekRecap.trackCount > 0 ? (

@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
+import { toneColor, usePersonColor } from '../ui/Visual';
 import { SharedArtistsCard } from '../SharedArtistsCard';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
@@ -55,6 +57,23 @@ function useCountUp(target: number | null, replayKey: unknown): number | null {
 // (top three) and a discover-more-people list. All
 // numbers here are real (computeMatch, shared ratings, /api/stats), unlike
 // the prototype's own hardcoded demo data.
+type Who = { id: string; name: string; avatarUrl: string | null };
+
+// The big match card: you and your friend blurred behind it, from your
+// colour on the left to theirs on the right.
+function MatchHero({ me, friend, children }: { me: Who | null; friend: Who | null; children: ReactNode }) {
+  const mine = usePersonColor(me ?? { id: 'me', name: '?', avatarUrl: null });
+  const theirs = usePersonColor(friend ?? { id: 'friend', name: '?', avatarUrl: null });
+  // Two people with the same tone would make no gradient: the friend's side shifts.
+  const right = theirs === mine ? toneColor(`${friend?.id ?? 'friend'}~`) : theirs;
+  const style = {
+    ['--g1' as string]: mine, ['--g2' as string]: right,
+    ['--a1' as string]: me?.avatarUrl ? `url('${me.avatarUrl}')` : 'none',
+    ['--a2' as string]: friend?.avatarUrl ? `url('${friend.avatarUrl}')` : 'none',
+  } as CSSProperties;
+  return <div className="tile mh16" style={style}>{children}</div>;
+}
+
 export function MatchScreen(_props: { device: Device }) {
   const { t, language, me, state, myRatings, albums, liveAlbums, spotifyCovers, openAlbum, viewFriend, showScreen, addFriend, friendRequests } = useApp();
   const [rawInfo, setRawInfo] = useState<Record<string, RawInfo>>({});
@@ -183,7 +202,7 @@ export function MatchScreen(_props: { device: Device }) {
         ))}
       </div>
 
-      <div className="tile t-ink glow" style={{ padding: 28 }}>
+      <MatchHero me={me} friend={active ?? null}>
         {trendDelta != null && trendDelta !== 0 && (
           <span className="pill" style={{ marginBottom: 12 }}>
             {t(trendDelta > 0 ? 'match.pctUpSince' : 'match.pctDownSince', { delta: Math.abs(trendDelta), date: trendDate })}
@@ -199,7 +218,7 @@ export function MatchScreen(_props: { device: Device }) {
         <div className="acts">
           <button className="btn" onClick={() => active && viewFriend(active.id)}>{t('match.viewProfile', { name: active?.name ?? '' })}</button>
         </div>
-      </div>
+      </MatchHero>
 
       <div className="sec two">
         <div>
@@ -243,6 +262,7 @@ export function MatchScreen(_props: { device: Device }) {
                 value: `${fmtHours(l.hours)}${t('unit.h')}`,
                 you: l.id === 'me',
                 avatar: { style: l.user ? { ...userAvatarStyle(l.user), backgroundSize: 'cover' } : undefined, letter: l.user ? !l.user.avatarUrl && l.user.name[0]?.toUpperCase() : t('friend.you')[0] },
+                person: l.user ? { id: l.user.id, name: l.user.name, avatarUrl: l.user.avatarUrl } : me ? { id: me.id, name: me.name, avatarUrl: me.avatarUrl } : undefined,
                 onClick: l.id === 'me' ? undefined : () => viewFriend(l.id),
               }))}
             />

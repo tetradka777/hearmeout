@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { blurStyle } from '@/lib/imageColor';
 import { createPortal } from 'react-dom';
 import { useApp } from '@/lib/AppContext';
 import { FanClubGrid } from '../FanClubs';
@@ -53,11 +54,14 @@ function LeadingVote({ albumId }: { albumId: string }) {
 }
 
 function GroupCard({ g }: { g: GroupSummary }) {
-  const { t, language, viewGroup } = useApp();
+  const { t, language, viewGroup, spotifyCovers } = useApp();
   const shown = g.members.slice(0, 5);
   const more = g.members.length - shown.length;
+  // The group over its first album cover, blurred.
+  const first = useAlbum(g.coverAlbumIds?.[0] ?? null);
+  const cover = first ? spotifyCovers[first.id] || first.cover : null;
   return (
-    <button className="tile gl gc11" onClick={() => viewGroup(g.id)}>
+    <button className={`tile gl gc11${cover ? ' bh15' : ''}`} style={blurStyle(cover)} onClick={() => viewGroup(g.id)}>
       <span className="gcv11" aria-hidden="true">
         {(g.coverAlbumIds?.length ? g.coverAlbumIds : []).map((id, i) => <StackCover key={id} albumId={id} i={i} />)}
         {!g.coverAlbumIds?.length && <span className="c c0" style={{ width: 88 }}><span className="cov" style={{ width: 88, height: 88, display: 'grid', placeItems: 'center' }}><MascotIcon /></span></span>}
