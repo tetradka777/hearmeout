@@ -98,7 +98,7 @@ export function ReviewCard({ user, createdAt, stars, review, tags, albumId, show
       {showAlbum && a && (
         <div className="alb13">
           <button className="cvb" onClick={() => openAlbum(albumId)} aria-label={a.title}>
-            <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="cov" px={84} style={{ width: 84, height: 84 }} />
+            <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="cov" px={72} style={{ width: 72, height: 72 }} />
           </button>
           <span className="g">
             <button className="tt" onClick={() => openAlbum(albumId)}>{a.title}</button>
