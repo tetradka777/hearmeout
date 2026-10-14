@@ -192,3 +192,31 @@
 .rd .pc15 .av{background-color:var(--acc);color:var(--onacc);background-position:center}
 .rd .ph15 span{background:color-mix(in srgb,currentColor 9%,transparent)}
 .rd .tile .ph15 span{background:color-mix(in srgb,currentColor 12%,transparent)}
+
+/* The recap song's play button: a progress ring round it, like the
+   mini-player's (PlayRing). */
+.rd .pp13{position:relative;border-color:transparent}
+.rd .pp13 .prr15{position:absolute;inset:-3px;width:calc(100% + 6px);height:calc(100% + 6px);transform:rotate(-90deg);pointer-events:none}
+.rd .pp13 .prr15 circle{fill:none;stroke-width:3.5}
+.rd .pp13 .prr15 .trk{stroke:color-mix(in srgb,var(--cream) 30%,transparent)}
+.rd .pp13 .prr15 .prg{stroke:var(--cream);stroke-linecap:round}
+
+/* Lower cards still (asked for): 236px — smaller title and lines, a
+   smaller album cover in reviews, a slimmer foot. */
+.rd .dkc13.rvc15{height:236px;padding-top:14px}
+.rd .dkc13.rvc15.has-asd{grid-template-columns:minmax(0,1fr) 34%}
+.rd .dkc13.rvc15.has-asd>.bd{padding:8px 0 6px}
+.rd .dkc13.rvc15.has-asd>.asd{padding-bottom:8px}
+.rd .dkc13.rvc15.has-asd>.ex{padding-bottom:8px}
+.rd .fdc15 .ft15{font-size:clamp(19px,5.4vw,23px);margin-bottom:4px}
+.rd .fdc15 .s15{font-size:15px;margin-bottom:2px}
+.rd .fdc15 .m15{font-size:14px}
+.rd .rvc15 .ex .q13,.rd .rvc15 .ex .q13.clamp{font-size:16px}
+.rd .dkc13.rvc15:not(.has-asd)>.bd{padding:8px 0 2px}
+.rd .rvc15 .alb13{margin-bottom:6px;gap:12px}
+.rd .rvc15 .alb13 .tt{font-size:17px}
+.rd .rvc15 .alb13 small{font-size:14px}
+.rd .rvc15 .q13,.rd .rvc15 .q13.clamp{font-size:16px;line-height:1.3}
+.rd .rvc15 .ft{padding:8px 20px 10px}
+.rd .rvc15 .who13 .dot{width:28px;height:28px;font-size:12px}
+.rd .rvc15.full{height:auto}
