@@ -27,7 +27,7 @@ export function DarkCard({ cover, head, right, children, onOpen, footLeft, class
   aside?: ReactNode; extra?: ReactNode;
 }) {
   const { t } = useApp();
-  const bg = cover ? sizedImage(cover, 120) : null;
+  const bg = cover ? sizedImage(cover, 300) : null;
   return (
     <article className={`dkc13 ${aside ? 'has-asd ' : ''}${className}`.trim()} style={bg ? ({ ['--cvbg' as string]: `url('${bg}')` } as CSSProperties) : undefined}>
       <div className="hd">{head}{right && <span className="rt">{right}</span>}</div>

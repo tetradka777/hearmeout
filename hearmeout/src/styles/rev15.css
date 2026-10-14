@@ -12,8 +12,9 @@
    whole), a slightly lighter strip at the foot with comments / reactions
    and "open →". */
 .rd .dkc13.rvc15{background:#1e1d1c;color:#fff;outline:0;border-radius:26px;padding:18px 20px 0;overflow:hidden;isolation:isolate;font-family:var(--font-body)}
-.rd .dkc13.rvc15::before{inset:-20%;width:auto;height:auto;border-radius:0;background:var(--cvbg,none) center/cover no-repeat;filter:blur(48px) saturate(1.1);opacity:.34;transform:none}
-.rd .dkc13.rvc15::after{display:block;content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(160deg,rgba(22,22,22,.35),rgba(22,22,22,.6))}
+.rd .dkc13.rvc15::before{inset:-24px;width:auto;height:auto;border-radius:0;background:var(--cvbg,none) center/cover no-repeat;filter:blur(12px) saturate(1.15);opacity:.95;transform:none}
+.rd .dkc13.rvc15::after{display:block;content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(160deg,rgba(18,18,18,.18),rgba(18,18,18,.55))}
+.rd .dkc13.rvc15 .hd,.rd .dkc13.rvc15 .bd,.rd .dkc13.rvc15 .ex{text-shadow:0 1px 10px rgba(0,0,0,.35)}
 .rd .rvc15 .who13{gap:10px}
 .rd .rvc15 .who13 .dot{width:34px;height:34px;font-size:14px;box-shadow:0 0 0 2px #fff}
 .rd .rvc15 .who13 b{font-size:16px;font-weight:700;letter-spacing:-.01em}
