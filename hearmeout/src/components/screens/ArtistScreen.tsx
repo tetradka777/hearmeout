@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { sizedImage } from '@/lib/imageSize';
 import { blurStyle } from '@/lib/imageColor';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
@@ -201,8 +202,9 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
         </div>
       );
     } else if (tab === 'popular') {
+      // Each track a card over its album's cover, blurred.
       body = (
-        <div className="tile">
+        <div className="ptl16">
           {topTracks === null ? <p className="muted">{t('artist.popularLoading')}</p>
             : !tracks.length ? <p className="muted">{t('artist.popularEmpty')}</p>
             : tracks.map((tr, i) => {
@@ -211,7 +213,7 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
               const saved = laterItems.some((li) => li.type === 'track' && li.albumId === tr.albumId && li.trackIndex === trackIndex);
               const isCur = currentTrack?.albumId === tr.albumId && currentTrack?.title === tr.title;
               return (
-                <div className="row poprow" key={tr.id}>
+                <div className={`row poprow ptr16${tr.albumCover ? ' bh15' : ' tile t-c3'}`} key={tr.id} style={blurStyle(tr.albumCover ? sizedImage(tr.albumCover, 300) ?? tr.albumCover : null)}>
                   <span className="num" style={{ fontSize: 22, minWidth: 28, opacity: 0.8, whiteSpace: 'nowrap' }}>{i + 1}</span>
                   <button className="rowlink" onClick={() => openAlbum(tr.albumId)}>
                     <span className="g">
@@ -392,42 +394,13 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
           </div>
         )}
 
-        {/* Rev 9c: the albums shelf with scores, and friends who listen. */}
-        {(art.releasedAlbums?.length || fans.length) ? (
-          <div className="bento b3" style={{ margin: '14px 0' }}>
-            {art.releasedAlbums?.length ? (
-              <div className="tile s3 ash9">
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'baseline', flexWrap: 'wrap' }}>
-                  <h2 style={{ margin: 0 }}>{t('artist.albums')}</h2>
-                  <small className="muted" style={{ fontWeight: 800 }}>{t('artist.albumsCount', { n: art.releasedAlbums.length })}</small>
-                </div>
-                <div className="hshelf9">
-                  {art.releasedAlbums.slice(0, 6).map((al) => {
-                    const mine = myScoreByAlbum.get(al.id);
-                    const community = albumRatings[al.id]?.avg;
-                    const score = mine ?? community;
-                    return (
-                      <button key={al.id} onClick={() => openAlbum(al.id)} style={{ textAlign: 'left' }}>
-                        <div className="cvw">
-                          <CoverArt url={al.cover ?? undefined} fallbackLetter={art.name[0] || '?'} className="cov" px={170} style={{ width: '100%', aspectRatio: '1' }} />
-                          {score != null && <span className="bdg">{fmt1(score)}</span>}
-                        </div>
-                        <b>{al.title}</b>
-                        <small className="muted" style={{ fontWeight: 600 }}>{al.year ?? '—'}{score != null ? ` · ${mine != null ? t('artist.yourScoreLabel') : t('artist.communityScoreLabel')}` : ''}</small>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : null}
-            {fans.length > 0 && (
-              <div className="tile t-soft2 s3">
-                <h2>{t('artist.friendsWhoListen', { name: art.name })}</h2>
-                <PersonCards people={fans.map((f) => ({ id: f.id, name: f.name, avatarUrl: f.avatarUrl, value: `${fmtHours(f.hours)} ${t('unit.h')}`, onClick: () => viewFriend(f.id) }))} />
-              </div>
-            )}
+        {/* Friends who listen (the albums are on the Albums tab). */}
+        {fans.length > 0 && (
+          <div className="tile t-soft2" style={{ margin: '14px 0' }}>
+            <h2>{t('artist.friendsWhoListen', { name: art.name })}</h2>
+            <PersonCards people={fans.map((f) => ({ id: f.id, name: f.name, avatarUrl: f.avatarUrl, value: `${fmtHours(f.hours)} ${t('unit.h')}`, onClick: () => viewFriend(f.id) }))} />
           </div>
-        ) : null}
+        )}
 
         <div className="chips" style={{ margin: '18px 0' }} role="tablist">
           {TABS.map((tb) => (
