@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArtistAvatar, ArtistName, useOpenArtist } from '../ui/ArtistName';
+import { ArtistAvatar, useOpenArtist } from '../ui/ArtistName';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { PROFILE_TAB_EVENT, takeRecentEvent } from '@/lib/uiEvents';
 import { useApp } from '@/lib/AppContext';
@@ -13,14 +13,14 @@ import { regionDisplayName, toLocale } from '@/lib/i18n';
 import { LovedTracksColumn, LovedAlbumsColumn, LovedArtistsColumn } from '../ProfileBlocks';
 import { CoverArt } from '../ui/CoverArt';
 import { AlbumShelfCard, ReviewCard, Shelf } from '../ui/SuperCards';
-import { Stars } from '../redesign/Stars';
 import { MascotIcon } from '../redesign/icons';
 import { useFriendScores } from '@/lib/useFriendScores';
 import type { TranslationKey } from '@/lib/i18n';
-import { LaterRow, useLaterPlay } from './LaterScreen';
+import { useLaterPlay } from './LaterScreen';
 import { Initial } from '../ui/Initial';
 import { cachedJson, peekJson, useCachedJson } from '@/lib/cachedJson';
 import { AwardGallery } from '../AwardGallery';
+import { CoverWall, GenreFill, PersonCards, Phrase } from '../ui/Visual';
 
 type ProfileTab = 'ratings' | 'reviews' | 'loved' | 'later' | 'taste' | 'awards' | 'listening' | 'friends';
 const TAB_ORDER: ProfileTab[] = ['ratings', 'reviews', 'loved', 'later', 'taste', 'awards', 'listening', 'friends'];
@@ -37,53 +37,29 @@ function useAlbumOf() {
   };
 }
 
-// vProfile()'s rating row: cover 48, title, "artist · date", stars, big score.
-function RatingRow({ r }: { r: RatingRecord }) {
-  const { language, openAlbum } = useApp();
-  const a = useAlbumOf()(r.albumId);
-  return (
-    <button className="row" onClick={() => openAlbum(r.albumId)}>
-      <CoverArt url={a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: 48, height: 48 }} />
-      <span className="g">
-        <b>{a.title}</b>
-        <small className="muted" style={{ fontWeight: 600 }}>{a.artist && <><ArtistName name={a.artist} size={16} /> · </>}{new Date(r.createdAt).toLocaleDateString(toLocale(language), { day: '2-digit', month: 'short' })}</small>
-      </span>
-      <span className="stars"><Stars value={r.stars} size={14} /></span>
-      <span className="num" style={{ fontSize: 26, width: 44, textAlign: 'right' }}>{fmt1(r.stars)}</span>
-    </button>
-  );
-}
-
 function EmptyTile({ title, body, children, plain }: { title: string; body: string; children?: React.ReactNode; plain?: boolean }) {
   return (
     <div className={plain ? 'empty' : 'tile t-soft2 empty'} style={plain ? { padding: 10 } : undefined}>
       <MascotIcon />
       <h3>{title}</h3>
-      <p className="muted" style={{ fontWeight: 600 }}>{body}</p>
+      {body && <p className="muted" style={{ fontWeight: 600 }}>{body}</p>}
       {children}
     </div>
   );
 }
 
-function RatingsTab({ list, avg, reviews }: { list: RatingRecord[]; avg: number; reviews: number }) {
-  const { t, viewHistory } = useApp();
+// Ratings as a wall of covers with the score on each (not a list of rows).
+function RatingsTab({ list }: { list: RatingRecord[] }) {
+  const { t, viewHistory, openAlbum } = useApp();
+  const albumOf = useAlbumOf();
+  if (!list.length) return <EmptyTile title={t('profile.noRatingsYet')} body="" />;
   return (
     <>
-      <div className="tile t-pop" style={{ display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', marginBottom: 14 }}>
-        <div>
-          <small style={{ fontWeight: 800 }}>{t('profile.yourRatings')}</small>
-          <div className="vsline">
-            <div><span className="num" style={{ fontSize: 44 }}>{list.length}</span><br /><small style={{ fontWeight: 700 }}>{t('profile.albumsL')}</small></div>
-            <div><span className="num" style={{ fontSize: 44 }}>{fmt1(avg)}</span><br /><small style={{ fontWeight: 700 }}>{t('profile.averageL')}</small></div>
-            <div><span className="num" style={{ fontSize: 44 }}>{reviews}</span><br /><small style={{ fontWeight: 700 }}>{t('profile.reviewsL')}</small></div>
-          </div>
-        </div>
-        <button className="btn lg" onClick={() => viewHistory('profile')}>{t('profile.openHistoryStats')} →</button>
-      </div>
-      <div className="tile">
-        {list.length ? list.slice(0, 6).map((r) => <RatingRow key={r.albumId} r={r} />) : <p className="muted" style={{ fontWeight: 600 }}>{t('profile.noRatingsYet')}</p>}
-        {list.length > 0 && <div className="acts"><button className="btn ghost" onClick={() => viewHistory('profile')}>{t('profile.seeAllRatings', { count: list.length })}</button></div>}
-      </div>
+      <CoverWall items={list.slice(0, 12).map((r) => {
+        const a = albumOf(r.albumId);
+        return { key: r.albumId, cover: a.cover, title: a.title, artist: a.artist, badge: fmt1(r.stars), onClick: () => openAlbum(r.albumId) };
+      })} />
+      <div className="acts"><button className="btn ghost" onClick={() => viewHistory('profile')}>{t('profile.seeAllRatings', { count: list.length })}</button></div>
     </>
   );
 }
@@ -115,11 +91,9 @@ function LovedTab() {
   return (
     <>
       <div className="acts" style={{ margin: '0 0 14px' }}><button className="btn" onClick={share}>{t('profile.shareLovedTracks')}</button></div>
-      <div className="bento b3">
-        <div className="tile"><h2>{t('profile.lovedTracksTitle')}</h2><LovedTracksColumn /></div>
-        <div className="tile t-soft2"><h2>{t('profile.lovedAlbumsTitle')}</h2><LovedAlbumsColumn /></div>
-        <div className="tile"><h2>{t('profile.lovedArtistsTitle')}</h2><LovedArtistsColumn /></div>
-      </div>
+      <div className="sec"><h2>{t('profile.lovedTracksTitle')}</h2><LovedTracksColumn /></div>
+      <div className="sec"><h2>{t('profile.lovedAlbumsTitle')}</h2><LovedAlbumsColumn /></div>
+      <div className="sec"><h2>{t('profile.lovedArtistsTitle')}</h2><LovedArtistsColumn /></div>
     </>
   );
 }
@@ -128,23 +102,15 @@ function LaterTab() {
   const { t, laterItems, showScreen } = useApp();
   const play = useLaterPlay();
   const sorted = [...laterItems].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  if (!sorted.length) return <EmptyTile title={t('later.emptyTitle')} body={t('profile.laterEmptyBody')} />;
+  // Covers to tap and play; everything else is on the Listen later page.
   return (
     <>
-      <div className="tile t-pop" style={{ display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', marginBottom: 14 }}>
-        <div>
-          <small style={{ fontWeight: 800 }}>{t('later.eyebrow')}</small>
-          <div className="vsline">
-            <div><span className="num" style={{ fontSize: 44 }}>{laterItems.filter((x) => x.type === 'album').length}</span><br /><small style={{ fontWeight: 700 }}>{t('later.albumMany')}</small></div>
-            <div><span className="num" style={{ fontSize: 44 }}>{laterItems.filter((x) => x.type === 'track').length}</span><br /><small style={{ fontWeight: 700 }}>{t('later.trackMany')}</small></div>
-          </div>
-        </div>
-        <button className="btn lg" onClick={() => showScreen('later')}>{t('later.openLater')} →</button>
-      </div>
-      {sorted.length ? (
-        <div className="tile">{sorted.slice(0, 5).map((item) => <LaterRow key={item.id} item={item} onPlay={play} />)}</div>
-      ) : (
-        <EmptyTile title={t('later.emptyTitle')} body={t('profile.laterEmptyBody')} />
-      )}
+      <CoverWall items={sorted.slice(0, 12).map((item) => ({
+        key: String(item.id), cover: item.cover, title: item.title, artist: item.artist,
+        sub: item.type === 'album' ? t('later.tagAlbum') : t('later.tagTrack'), onClick: () => play(item),
+      }))} />
+      <div className="acts"><button className="btn ghost" onClick={() => showScreen('later')}>{t('later.openLater')} →</button></div>
     </>
   );
 }
@@ -171,27 +137,15 @@ function TasteTab({ list }: { list: RatingRecord[] }) {
         <h2>{t('profile.taste')}</h2>
         <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 12px' }}>{t('profile.tasteFingerprintSubtitle')}</p>
         {fp.length ? (
-          <div className="fp">
-            {fp.map((x) => (
-              <div className="fpc" key={x.g}>
-                <b>{x.g}</b>
-                <span className="num">{fmt1(x.avg)}</span>
-                <div className="meter"><i style={{ width: `${Math.round((x.avg / 5) * 100)}%` }} /></div>
-                <small className="muted" style={{ fontWeight: 700 }}>{t(x.n === 1 ? 'profile.albumCountOne' : 'profile.albumCountMany', { n: x.n })}</small>
-              </div>
-            ))}
-          </div>
+          <GenreFill items={fp.map((x) => ({ name: x.g, share: x.avg / 5, label: `★ ${fmt1(x.avg)}` }))} />
         ) : <p className="muted" style={{ fontWeight: 600 }}>{t('profile.fingerprintEmpty')}</p>}
       </div>
       <div className="tile">
         <h2>{t('profile.favoriteGenres')}</h2>
         <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 12px' }}>{t('profile.favoriteGenresSubtitle')}</p>
-        {genres.length ? genres.slice(0, 4).map((g) => (
-          <div className="cmp" key={g.g}>
-            <small style={{ fontWeight: 800 }}>{g.g} · {g.pct}%</small>
-            <div className="cmpb"><i className="a" style={{ width: `${Math.round((g.pct / maxPct) * 100)}%`, background: 'var(--acct)' }} /></div>
-          </div>
-        )) : <p className="muted" style={{ fontWeight: 600 }}>{t('profile.notEnoughData')}</p>}
+        {genres.length ? (
+          <GenreFill items={genres.slice(0, 6).map((g) => ({ name: g.g, share: g.pct / maxPct }))} />
+        ) : <p className="muted" style={{ fontWeight: 600 }}>{t('profile.notEnoughData')}</p>}
       </div>
       <div className="tile s3">
         <h2>{t('profile.top4')}</h2>
@@ -263,16 +217,10 @@ function AwardsTab({ onGoToFriends }: { onGoToFriends: () => void }) {
       <div className="tile t-soft2">
         <h2>{t('profile.monthAwards')}</h2>
         {data && data.minutes && data.niche ? (
-          <>
-            <div className="row">
-              <span className="gl9 sm" aria-hidden="true"><i className="ic ic-clock" /></span>
-              <span className="g"><b>{t('awards.mostMinutes')}</b><small className="muted" style={{ fontWeight: 600 }}>{who(data.minutes)} · {t('profile.hoursN', { n: data.minutes.v })}</small></span>
-            </div>
-            <div className="row">
-              <span className="gl9 sm" aria-hidden="true"><i className="ic ic-gem" /></span>
-              <span className="g"><b>{t('awards.mostNiche')}</b><small className="muted" style={{ fontWeight: 600 }}>{who(data.niche)} · {t('profile.uniqueArtistsN', { n: data.niche.v })}</small></span>
-            </div>
-          </>
+          <PersonCards grid people={[
+            { id: `m-${data.minutes.id}`, name: who(data.minutes), avatarUrl: data.minutes.avatarUrl, value: t('profile.hoursN', { n: data.minutes.v }), sub: t('awards.mostMinutes') },
+            { id: `n-${data.niche.id}`, name: who(data.niche), avatarUrl: data.niche.avatarUrl, value: t('profile.uniqueArtistsN', { n: data.niche.v }), sub: t('awards.mostNiche') },
+          ]} />
         ) : data === null && me.friends.length ? (
           <p className="muted">{t('awards.computing')}</p>
         ) : (
@@ -302,47 +250,25 @@ function ListeningTab() {
   return (
     <>
     {/* This week at a glance (rev 9c). */}
+    {/* This week as a phrase, then what was played as covers. */}
     {week && week.hours > 0 && (
-      <div className="tile t-pop" style={{ marginBottom: 14 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <div>
-            <small className="k9">{t('profile.thisWeek')}</small>
-            <div className="vsline">
-              <div><span className="num" style={{ fontSize: 44 }}>{fmtHours(week.hours)}{t('unit.h')}</span><br /><small style={{ fontWeight: 700 }}>{t('recap.listened')}</small></div>
-              <div><span className="num" style={{ fontSize: 44 }}>{week.newArtistCount}</span><br /><small style={{ fontWeight: 700 }}>{t('recap.newArtists')}</small></div>
-              {week.peakHour != null && <div><span className="num" style={{ fontSize: 44 }}>{String(week.peakHour).padStart(2, '0')}:00</span><br /><small style={{ fontWeight: 700 }}>{t('stats.peakHour')}</small></div>}
-            </div>
-          </div>
-          <div style={{ flex: 1, minWidth: 200, maxWidth: 340 }}><WeekBars bars={week.bars} /></div>
-        </div>
+      <Phrase parts={[
+        [`${fmtHours(week.hours)} ${t('unit.h')}`, t('recap.listened')],
+        [week.newArtistCount, t('recap.newArtists')],
+      ]} />
+    )}
+    {plays === null ? <p className="muted">{t('stats.loading')}</p> : plays.length ? (
+      <CoverWall items={plays.slice(0, 12).map((p, i) => ({
+        key: `${i}-${p.playedAt}`, cover: p.cover, title: p.title, artist: p.artist,
+        sub: formatRelative(p.playedAt, language), onClick: p.albumId ? () => openAlbum(p.albumId!) : undefined,
+      }))} />
+    ) : (
+      <div className="tile t-soft2">
+        <p className="muted" style={{ fontWeight: 600 }}>{t('profile.notEnoughData')}</p>
+        {/* No plays and no Spotify: offer the connection right here. */}
+        {me && !me.connections.spotify && <div className="acts"><a className="btn" href="/api/auth/spotify">{t('profile.connectSpotify')}</a></div>}
       </div>
     )}
-    <div className="tile">
-      {plays === null ? <p className="muted">{t('stats.loading')}</p> : plays.length ? plays.slice(0, 8).map((p, i) => (
-        <button className="row" key={i} onClick={() => p.albumId && openAlbum(p.albumId)} style={{ cursor: p.albumId ? 'pointer' : 'default' }}>
-          <CoverArt url={p.cover ?? undefined} fallbackLetter={p.artist[0] || '?'} className="cov" style={{ width: 48, height: 48 }} />
-          <span className="g"><b>{p.title}</b><small className="muted" style={{ fontWeight: 600 }}><ArtistName name={p.artist} size={16} /></small></span>
-          <small className="muted" style={{ fontWeight: 700 }}>{formatRelative(p.playedAt, language)}</small>
-        </button>
-      )) : (
-        <>
-          <p className="muted" style={{ fontWeight: 600 }}>{t('profile.notEnoughData')}</p>
-          {/* No plays and no Spotify: offer the connection right here. */}
-          {me && !me.connections.spotify && <div className="acts"><a className="btn" href="/api/auth/spotify">{t('profile.connectSpotify')}</a></div>}
-        </>
-      )}
-    </div>
-    </>
-  );
-}
-
-// A week of hours as small bars with the day initials under them.
-function WeekBars({ bars }: { bars: StatsData['bars'] }) {
-  const mx = Math.max(0.1, ...bars.map((b) => b.hours));
-  return (
-    <>
-      <span className="b9" aria-hidden="true">{bars.map((b, i) => <i key={i} style={{ height: `${Math.round((b.hours / mx) * 100)}%`, opacity: b.future ? 0.3 : undefined }} />)}</span>
-      <span className="m9" aria-hidden="true">{bars.map((b, i) => <span key={i}>{b.label.slice(0, 1)}</span>)}</span>
     </>
   );
 }
@@ -430,14 +356,13 @@ function FriendsTab() {
 
       <div className="tile s2">
         <h2>{t('profile.friends')}</h2>
-        {me.friends.length ? me.friends.map((f) => (
-          <button className="row" key={f.id} onClick={() => viewFriend(f.id)}>
-            <span className="dot" style={userAvatarStyle(f)}>{!f.avatarUrl && <Initial name={f.name} />}</span>
-            <span className="g"><b>{f.name}</b><small className="muted" style={{ fontWeight: 600 }}>{t('friends.sharedArtistsN', { n: scores[f.id]?.shared ?? 0 })}</small></span>
-            <span className="num" style={{ fontSize: 30 }}>{scores[f.id]?.pct != null ? `${scores[f.id]!.pct}%` : '—'}</span>
-            <span className="tag">{t('friends.viewProfile')}</span>
-          </button>
-        )) : <EmptyTile plain title={t('friends.empty')} body={t('friends.emptyBody')} />}
+        {me.friends.length ? (
+          <PersonCards grid people={me.friends.map((f) => ({
+            id: f.id, name: f.name, avatarUrl: f.avatarUrl, onClick: () => viewFriend(f.id),
+            value: scores[f.id]?.pct != null ? `${scores[f.id]!.pct}%` : undefined,
+            sub: t('friends.sharedArtistsN', { n: scores[f.id]?.shared ?? 0 }),
+          }))} />
+        ) : <EmptyTile plain title={t('friends.empty')} body={t('friends.emptyBody')} />}
       </div>
 
       <div className="tile t-ac">
@@ -582,7 +507,7 @@ export function ProfileScreen(_props: { device: Device }) {
             </button>
           ))}
         </div>
-        {tab === 'ratings' && <RatingsTab list={list} avg={avg} reviews={reviews} />}
+        {tab === 'ratings' && <RatingsTab list={list} />}
         {tab === 'reviews' && <ReviewsTab list={list} />}
         {tab === 'loved' && <LovedTab />}
         {tab === 'later' && <LaterTab />}

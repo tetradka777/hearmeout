@@ -134,3 +134,61 @@
    which come from data, are lowercased here; names of people, artists and
    albums keep their own spelling. */
 .rd .chip:not(.arl),.rd .gch14,.rd .gcl13 span,.rd .gbar10 span{text-transform:lowercase}
+
+/* Pictures instead of tables (components/ui/Visual.tsx). */
+.rd .cw15{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px 12px}
+@media (min-width:700px){.rd .cw15{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (min-width:1000px){.rd .cw15{grid-template-columns:repeat(6,minmax(0,1fr))}}
+.rd .cw15.sm{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 10px}
+@media (min-width:1000px){.rd .cw15.sm{grid-template-columns:repeat(8,minmax(0,1fr))}}
+.rd .cw15 .it{min-width:0;display:flex;flex-direction:column;gap:7px}
+.rd .cw15 .im{position:relative;display:block;width:100%;line-height:0;border-radius:14px;overflow:visible;padding:0}
+.rd .cw15 .im .cov{border-radius:14px}
+.rd .cw15 .bg{position:absolute;right:-5px;bottom:-5px;min-width:34px;height:34px;padding:0 7px;border-radius:99px;display:grid;place-items:center;background:var(--acc);color:var(--onacc);font:800 13px/1 var(--font-display);box-shadow:0 0 0 3px var(--bg)}
+.rd .cw15 .tx{display:flex;flex-direction:column;gap:2px;min-width:0}
+.rd .cw15 .tx b{font-size:14px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .cw15 .tx small{font-size:12.5px;font-weight:600;opacity:.75;min-width:0}
+.rd .cw15 .tx small .arn{white-space:nowrap}
+.rd .cw15.sm .tx b{font-size:12.5px}
+
+.rd .pc15{gap:12px;margin-top:4px}
+.rd .pc15.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (min-width:700px){.rd .pc15.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.rd .hrow.pc15>.pcd{width:150px;flex:none;scroll-snap-align:start}
+.rd .pc15 .pcd{display:flex;flex-direction:column;gap:8px;min-width:0}
+.rd .pc15 .pb{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:18px 10px 16px;border-radius:calc(var(--r) - 2px);background:var(--soft2);color:inherit;width:100%;min-width:0}
+.rd .pc15 .av{width:76px;height:76px;border-radius:50%;display:grid;place-items:center;font:800 28px/1 var(--font-display)}
+.rd .pc15 .pb b{font-size:16px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .pc15 .vl{padding:4px 12px;border-radius:99px;background:var(--acc);color:var(--onacc);font:800 15px/1.2 var(--font-display)}
+.rd .pc15 .pb small{font-size:12.5px;font-weight:600;opacity:.7}
+.rd .pc15 .pcd>.btn{width:100%;justify-content:center}
+
+.rd .ph15{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;font-size:15px;font-weight:600}
+.rd .ph15 span{padding:8px 14px;border-radius:99px;background:var(--soft2)}
+.rd .ph15 b{font:800 17px/1 var(--font-display)}
+
+.rd .gf15{display:flex;flex-wrap:wrap;gap:8px}
+.rd .gf15 span{position:relative;overflow:hidden;display:inline-flex;align-items:baseline;gap:6px;padding:9px 16px;border-radius:99px;background:color-mix(in srgb,currentColor 9%,transparent);text-transform:lowercase}
+.rd .gf15 span::before{content:"";position:absolute;inset:0 auto 0 0;width:var(--w);background:color-mix(in srgb,var(--acc) 35%,transparent)}
+.rd .gf15 b,.rd .gf15 small{position:relative}
+.rd .gf15 b{font-weight:800}
+.rd .gf15 small{font-weight:700;opacity:.75}
+
+/* Concert dates as cards: the day big, the month under it, then the city. */
+.rd .cdc15{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-top:8px}
+.rd .cdc15 .cd{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:calc(var(--r) - 6px);background:var(--soft2);color:inherit;text-decoration:none;min-width:0}
+.rd .cdc15 a.cd:hover{background:color-mix(in srgb,var(--acc) 18%,var(--soft2))}
+.rd .cdc15 .dt{flex:none;width:54px;height:58px;border-radius:14px;background:var(--acc);color:var(--onacc);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.rd .cdc15 .dt b{font:800 24px/1 var(--font-display)}
+.rd .cdc15 .dt small{font-weight:800;font-size:12px;margin-top:2px}
+.rd .cdc15 .g{display:flex;flex-direction:column;gap:2px;min-width:0}
+.rd .cdc15 .g b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .cdc15 .g small{font-weight:600;opacity:.7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .tile .ph15 span{background:color-mix(in srgb,currentColor 12%,transparent)}
+.rd .tile .ph15{margin:10px 0 0}
+.rd .cw15 .it{position:relative}
+.rd .cw15 .cn{position:absolute;top:6px;right:6px;z-index:2}
+.rd .cw15 .cn .ib{width:34px;height:34px;background:color-mix(in srgb,#000 45%,transparent);color:#fff}
+.rd .pc15 .av{background-color:var(--acc);color:var(--onacc);background-position:center}
+.rd .ph15 span{background:color-mix(in srgb,currentColor 9%,transparent)}
+.rd .tile .ph15 span{background:color-mix(in srgb,currentColor 12%,transparent)}

@@ -12,10 +12,10 @@ import { PreviewButton } from '../redesign/PreviewButton';
 import { pluralForKey } from '@/lib/i18n';
 import type { QueueTrack } from '@/lib/PlayerContext';
 import { usePlayer, prefetchQueueTrack } from '@/lib/PlayerContext';
-import { userAvatarStyle } from '@/lib/format';
 import { AlbumReviews } from '../AlbumReviews';
 import { AlbumRatingDistribution } from '../AlbumRatingDistribution';
 import { AlbumTagsSummary } from '../AlbumTagsSummary';
+import { PersonCards, Phrase } from '../ui/Visual';
 import { REVIEW_TAG_ORDER, REVIEW_TAG_LABEL_KEY, MAX_REVIEW_TAGS } from '@/lib/reviewTags';
 
 type FriendRating = { id: string; name: string; avatarUrl: string | null; stars: number };
@@ -23,7 +23,7 @@ type FriendRating = { id: string; name: string; avatarUrl: string | null; stars:
 // "Friends who rated" (spec 6.2): which of the viewer's friends rated this
 // exact album.
 function FriendsWhoRated({ albumId }: { albumId: string }) {
-  const { t, me } = useApp();
+  const { t, me, viewFriend } = useApp();
   const [rows, setRows] = useState<FriendRating[] | null>(null);
 
   useEffect(() => {
@@ -46,14 +46,7 @@ function FriendsWhoRated({ albumId }: { albumId: string }) {
     <div className="tile t-soft2">
       <h3 style={{ marginBottom: 6 }}>{t('album.friendsWhoRated')}</h3>
       {rows === null ? null : rows.length ? (
-        rows.map((r) => (
-          <div className="row" key={r.id}>
-            <div className="dot" style={userAvatarStyle({ avatarUrl: r.avatarUrl })}>{!r.avatarUrl && r.name[0]}</div>
-            <b className="g">{r.name}</b>
-            <span className="stars"><Stars value={r.stars} size={15} /></span>
-            <span className="num" style={{ fontSize: 30 }}>{fmt1(r.stars)}</span>
-          </div>
-        ))
+        <PersonCards people={rows.map((r) => ({ id: r.id, name: r.name, avatarUrl: r.avatarUrl, value: `★ ${fmt1(r.stars)}`, onClick: () => viewFriend(r.id) }))} />
       ) : (
         <p className="muted">{t('album.friendsWhoRatedEmpty')}</p>
       )}
@@ -227,20 +220,11 @@ export function RateScreen({ device: _device }: { device: Device }) {
               </div>
             </div>
           )}
-          <div className="stats3">
-            <div className="tile t-pop">
-              {circleAvg ? <span className="num">{fmt1(circleAvg.avg)}</span> : <span className="num">—</span>}
-              <small>{t('album.yourCircle')}</small>
-            </div>
-            <div className="tile t-ac">
-              {ratingInfo ? <span className="num">{fmt1(ratingInfo.avg)}</span> : <span className="num">—</span>}
-              <small>{t('album.everyoneCount', { n: ratingInfo?.count ?? 0 })}</small>
-            </div>
-            <div className="tile t-ink">
-              <span className="num">{myPlays ?? '–'}</span>
-              <small>{t('album.yourPlays')}</small>
-            </div>
-          </div>
+          <Phrase parts={[
+            [circleAvg ? `★ ${fmt1(circleAvg.avg)}` : '—', t('album.yourCircle')],
+            [ratingInfo ? `★ ${fmt1(ratingInfo.avg)}` : '—', t('album.everyoneCount', { n: ratingInfo?.count ?? 0 })],
+            [myPlays ?? '–', t('album.yourPlays')],
+          ]} />
 
           <div className="tile ratebox">
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>

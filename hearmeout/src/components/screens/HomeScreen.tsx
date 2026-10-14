@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { recapToneStyle } from '@/lib/recapTone';
 import { ArtistName } from '../ui/ArtistName';
-import { CardWho, DarkCard } from '../ui/SuperCards';
+import { AlbumShelfCard, CardWho, DarkCard, Shelf } from '../ui/SuperCards';
 import { SocialBar } from '../ui/Social';
 import { socialKey } from '@/lib/socialClient';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
@@ -11,7 +11,6 @@ import { useApp } from '@/lib/AppContext';
 import type { ApiUser, Device, FeedEvent, FeedResponse, PublicProfile, RecapData } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
 import { userAvatarStyle, formatRelative } from '@/lib/format';
-import { Stars } from '../redesign/Stars';
 import { MascotIcon } from '../redesign/icons';
 import { MATCH_FRIEND_EVENT } from '@/lib/uiEvents';
 import { useFriendScores } from '@/lib/useFriendScores';
@@ -23,7 +22,8 @@ import { DEMO_PROFILES } from '@/lib/demoAccounts';
 import { RECAP_SEEN_EVENT, recapSeenWeek } from '@/lib/recapSeen';
 import { ImportNudge } from '../ConnectionBlocks';
 import { PROFILE_TAB_EVENT } from '../redesign/AvatarMenu';
-import { useAlbum } from '@/lib/useAlbum';
+import { CoverWall, Phrase } from '../ui/Visual';
+import { useAlbum, useAlbums } from '@/lib/useAlbum';
 
 // Home (prototype rev 8–11, redesign/v7): the hot take and the week's recap
 // card on top, friends' activity as compact rows in one tile, friends with
@@ -328,11 +328,11 @@ function DayTile() {
   return (
     <div className="tile day13">
       <div className="hd10"><h2 style={{ margin: 0 }}>{t('home.daySoFar')}</h2></div>
-      <div className="kv11">
-        <span><b className="num">{r?.trackCount ?? 0}</b><small>{t('home.cornerTracks')}</small></span>
-        <span><b className="num">{minutesLabel(r?.minutes ?? 0, t)}</b><small>{t('home.listened')}</small></span>
-        <span><b className="num">{r?.uniqueArtists ?? 0}</b><small>{t('home.cornerArtists')}</small></span>
-      </div>
+      <Phrase parts={[
+        [r?.trackCount ?? 0, t('home.cornerTracks')],
+        [minutesLabel(r?.minutes ?? 0, t), t('home.listened')],
+        [r?.uniqueArtists ?? 0, t('home.cornerArtists')],
+      ]} />
       {covers.length > 0 && (
         <div className="dcv13">
           {covers.slice(0, 4).map((c) => (
@@ -348,58 +348,38 @@ function DayTile() {
   );
 }
 
-function RateRow({ albumId }: { albumId: string }) {
-  const { openAlbum, spotifyCovers } = useApp();
-  const album = useAlbum(albumId);
-  if (!album) return null;
-  return (
-    <button className="row" onClick={() => openAlbum(album.id)}>
-      <CoverArt url={spotifyCovers[album.id] || album.cover} fallbackLetter={album.artist[0] || '?'} className="cov" style={{ width: 44, height: 44 }} />
-      <span className="g"><b>{album.title}</b><small className="muted"><ArtistName name={album.artist} id={album.artistId} size={16} /></small></span>
-      <Stars value={0} size={13} />
-    </button>
-  );
-}
-
 function RateTile() {
-  const { t, myRatings, feed } = useApp();
+  const { t, myRatings, feed, openAlbum, spotifyCovers } = useApp();
   const rated = useMemo(() => new Set(myRatings.map((r) => r.albumId)), [myRatings]);
-  const unrated = (feed?.recentAlbumIds || []).filter((id) => !rated.has(id)).slice(0, 3);
+  const unrated = useAlbums((feed?.recentAlbumIds || []).filter((id) => !rated.has(id)).slice(0, 3));
   return (
     <div className="tile">
       <div className="hd10"><h2 style={{ margin: 0 }}>{t('home.rateWhatPlayed')}</h2></div>
-      {unrated.length ? unrated.map((id) => <RateRow key={id} albumId={id} />) : <p className="muted">{t('home.rateWhatPlayedEmpty')}</p>}
+      {unrated.length ? (
+        <CoverWall items={unrated.map(({ id, album }) => ({ key: id, cover: spotifyCovers[album.id] || album.cover, title: album.title, artist: album.artist, artistId: album.artistId, onClick: () => openAlbum(album.id) }))} />
+      ) : <p className="muted">{t('home.rateWhatPlayedEmpty')}</p>}
     </div>
   );
 }
 
 // ----- Trending in your circle (rev 10/11) -----
 
-function TrendingRow({ rank, albumId, count, avg }: { rank: number; albumId: string; count: number; avg: number }) {
-  const { t, openAlbum, spotifyCovers } = useApp();
-  const album = useAlbum(albumId);
-  if (!album) return null;
-  return (
-    <button className="row tr11" onClick={() => openAlbum(album.id)}>
-      <span className="rk11">{rank}</span>
-      <CoverArt url={spotifyCovers[album.id] || album.cover} fallbackLetter={album.artist[0] || '?'} className="cov" style={{ width: 44, height: 44 }} />
-      <span className="g"><b>{album.title}</b><small className="muted"><ArtistName name={album.artist} id={album.artistId} size={16} /> · {t('home.trendingFriends', { n: count })}</small></span>
-      <b className="num" style={{ fontSize: 24, color: 'var(--acct)' }}>{fmt1(avg)}</b>
-    </button>
-  );
-}
-
+// A shelf of covers: rank on the cover, the friends' average under it.
 function TrendingSection() {
-  const { t, feed } = useApp();
+  const { t, feed, openAlbum, spotifyCovers } = useApp();
   const list = feed?.trending || [];
-  if (!list.length) return null;
+  const known = useAlbums(list.map((x) => x.albumId));
+  if (!known.length) return null;
   return (
-    <div className="sec">
-      <div className="hd10">
-        <div><h2 style={{ margin: 0 }}>{t('home.trendingTitle')}</h2><small className="muted" style={{ fontWeight: 700 }}>{t('home.trendingSub')}</small></div>
-      </div>
-      <div className="tile">{list.map((x, i) => <TrendingRow key={x.albumId} rank={i + 1} {...x} />)}</div>
-    </div>
+    <Shelf title={t('home.trendingTitle')} sub={t('home.trendingSub')}>
+      {known.map(({ id, album }, i) => {
+        const x = list.find((y) => y.albumId === id)!;
+        return (
+          <AlbumShelfCard key={id} cover={spotifyCovers[album.id] || album.cover} title={album.title} artist={album.artist} artistId={album.artistId}
+            badge={`#${i + 1}`} meta={`★ ${fmt1(x.avg)} · ${t('home.trendingFriends', { n: x.count })}`} onClick={() => openAlbum(album.id)} />
+        );
+      })}
+    </Shelf>
   );
 }
 

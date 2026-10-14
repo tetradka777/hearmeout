@@ -4,13 +4,14 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp } from '@/lib/AppContext';
 import { FanClubGrid } from '../FanClubs';
-import type { ApiUser, Device, GroupSummary } from '@/lib/types';
+import type { Device, GroupSummary } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
-import { useAlbum } from '@/lib/useAlbum';
+import { useAlbum, useAlbums } from '@/lib/useAlbum';
 import { fmt1 } from '@/lib/numberFormat';
 import { userAvatarStyle } from '@/lib/format';
 import { toLocale, pluralForKey, type Language } from '@/lib/i18n';
 import { MascotIcon } from '../redesign/icons';
+import { CoverWall } from '../ui/Visual';
 import { useCachedJson } from '@/lib/cachedJson';
 
 // vGroups() "since march": the month, plus the year outside the current one.
@@ -81,29 +82,25 @@ function GroupCard({ g }: { g: GroupSummary }) {
   );
 }
 
-// "Latest in your groups": the newest ratings across all of them.
-function LatestRow({ user, albumId, stars, group }: { user: ApiUser; albumId: string; stars: number; group: GroupSummary }) {
-  const { t, viewGroup } = useApp();
-  const album = useAlbum(albumId);
-  return (
-    <button className="row" onClick={() => viewGroup(group.id)}>
-      <span className="dot" style={userAvatarStyle(user)}>{!user.avatarUrl && user.name[0]}</span>
-      <span className="g"><b style={{ fontWeight: 700 }}>{t('groups.recentRated', { name: user.name, album: album?.title ?? '…', stars: fmt1(stars) })}</b><small className="muted" style={{ fontWeight: 600 }}>{group.name}</small></span>
-    </button>
-  );
-}
-
+// "Latest in your groups": the newest ratings across all of them, as
+// covers — who and the score on each, the group under it.
 function LatestInGroups({ groups }: { groups: GroupSummary[] }) {
-  const { t } = useApp();
+  const { t, viewGroup, spotifyCovers } = useApp();
   const items = groups.flatMap((g) => (g.recent || []).map((r) => ({ ...r, group: g })))
-    .sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, 4);
+    .sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, 6);
+  const known = useAlbums(items.map((r) => r.albumId));
   if (!items.length) return null;
   return (
     <div className="sec">
-      <div className="tile">
-        <h2>{t('groups.latestTitle')}</h2>
-        {items.map((r) => <LatestRow key={`${r.group.id}-${r.albumId}-${r.at}`} user={r.user} albumId={r.albumId} stars={r.stars} group={r.group} />)}
-      </div>
+      <h2>{t('groups.latestTitle')}</h2>
+      <CoverWall items={items.flatMap((r) => {
+        const album = known.find((k) => k.id === r.albumId)?.album;
+        if (!album) return [];
+        return [{
+          key: `${r.group.id}-${r.albumId}-${r.at}`, cover: spotifyCovers[album.id] || album.cover, title: album.title,
+          sub: `${r.user.name} · ${r.group.name}`, badge: fmt1(r.stars), onClick: () => viewGroup(r.group.id),
+        }];
+      })} />
     </div>
   );
 }
