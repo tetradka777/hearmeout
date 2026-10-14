@@ -580,7 +580,7 @@ html::-webkit-scrollbar, .rd ::-webkit-scrollbar { display: none; }
    a row or grid a card with a one-line title sat lower than its neighbours. */
 .rd .hrow { align-items: flex-start; }
 /* Cards only: list rows (.row, .rowlink) keep their cover beside the text. */
-.rd .hrow > button, .rd button:not(.row):not(.rowlink):has(> .cov, > .cvw) { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; }
+.rd .hrow > button, .rd button:not(.row):not(.rowlink):not(.ln):has(> .cov, > .cvw) { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; }
 /* A word longer than its box is hyphenated at a syllable (page language),
    and broken only if it still does not fit: "anywhere" split words mid-letter. */
 .rd { overflow-wrap: break-word; -webkit-hyphens: auto; hyphens: auto; }

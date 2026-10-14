@@ -188,20 +188,22 @@ function FeedRow({ event }: { event: FeedEvent }) {
     : event.type === 'rating_review' ? socialKey.review(ownerId, event.albumId)
     : socialKey.play(ownerId, event.albumId, event.at);
   return (
-    <DarkCard cover={cover} head={<CardWho user={who} when={when} onClick={openWho} />} right={right} onOpen={open} footLeft={<SocialBar target={target} title={title} />}>
-      <div className="fd13">
-        <div className="tx">
-          <h3>{title}</h3>
-          {sub && <p className="sub">{sub}</p>}
-          {event.type === 'rating_review' && event.review && <p className="q13 clamp">{quoted(language, event.review)}</p>}
-          {meta && <p className="meta">{meta}</p>}
-        </div>
+    <DarkCard cover={cover} head={<CardWho user={who} when={when} onClick={openWho} />} right={right} onOpen={open} openText className="rvc15" footLeft={<SocialBar target={target} title={title} />}>
+      {/* The same layout as a review card: the album (whole cover, whole
+          title), then the take or the quote. */}
+      <div className="alb13">
         {cover && (
-          <button className="bigcv" onClick={open} aria-label={title} tabIndex={-1}>
-            <CoverArt url={cover} fallbackLetter={title[0] || '?'} className="cov" px={150} style={{ width: '100%', aspectRatio: '1' }} />
+          <button className="cvb" onClick={open} aria-label={title} tabIndex={-1}>
+            <CoverArt url={cover} fallbackLetter={title[0] || '?'} className="cov" px={96} style={{ width: 96, height: 96 }} />
           </button>
         )}
+        <span className="g">
+          {open ? <button className="tt" onClick={open}>{title}</button> : <b className="tt">{title}</b>}
+          {meta && <small>{meta}</small>}
+        </span>
       </div>
+      {sub && <p className="sub15">{sub}</p>}
+      {event.type === 'rating_review' && event.review && <p className="q13 clamp">{quoted(language, event.review)}</p>}
     </DarkCard>
   );
 }

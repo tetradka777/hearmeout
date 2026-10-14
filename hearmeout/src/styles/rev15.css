@@ -6,23 +6,34 @@
 .rd .tabbar .tbp .avt{width:44px;height:44px;font-size:18px;outline:0;box-shadow:0 0 0 2px color-mix(in srgb,var(--chr-fg) 70%,transparent)}
 .rd .tabbar .tbp.on .avt{box-shadow:0 0 0 3px var(--acc)}
 
-/* Review card: the earlier darker layout (the user prefers it) — the cover
-   blurred over the whole card, the score top right, the album with its
-   whole cover and whole title, a white play button, "open →" in words. */
-.rd .dkc13.rvc15{background:color-mix(in srgb,var(--ink) 30%,#0e0e11);color:#F4EEE2;outline:0;border-radius:calc(var(--r) + 6px)}
-.rd .dkc13.rvc15::before{inset:-40px;width:auto;height:auto;border-radius:0;filter:blur(42px) saturate(1.25);opacity:.5}
-.rd .dkc13.rvc15::after{display:block;content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.45))}
-.rd .rvc15 .who13 .wp{background:none;padding:0;margin:0;color:rgba(244,238,226,.65);font-size:13px}
-.rd .rvc15 .sc13{background:none;padding:0;color:#F4EEE2;font-size:20px;margin-top:4px}
-.rd .rvc15 .alb13{align-items:center}
-.rd .rvc15 .alb13 .cvb{border-radius:14px;overflow:hidden}
-.rd .rvc15 .alb13 .tt{display:block;-webkit-line-clamp:unset;overflow:visible;white-space:normal;overflow-wrap:break-word}
-.rd .rvc15 .pl13{position:static;width:44px;height:44px;font-size:16px;background:#F4EEE2;color:#111;box-shadow:none}
-.rd .rvc15 .q13{border-left:0;padding-left:0}
-.rd .rvc15 .tg13 span{background:rgba(244,238,226,.12);outline:0}
-.rd .rvc15 .ft{border-top:1px solid rgba(244,238,226,.16);padding:12px 0 14px}
-.rd .dkc13 .op.txt{width:auto;height:auto;border-radius:0;background:none;color:rgba(244,238,226,.75);font-weight:800;font-size:15px;display:inline}
-.rd .dkc13 .op.txt:hover{color:#F4EEE2}
+/* Review and feed cards, as in Superfan (the user asked for it exactly):
+   the album cover blurred over the whole card, softened to a muted
+   frosted tone, white text, the album with its whole cover in a dark frame,
+   a darker strip at the foot with comments / reactions and "open →". */
+.rd .dkc13.rvc15{background:#55504b;color:#fff;outline:0;border-radius:30px;padding:20px 22px 0;overflow:hidden;isolation:isolate}
+.rd .dkc13.rvc15::before{inset:-30%;width:auto;height:auto;border-radius:0;background:var(--cvbg,none) center/cover no-repeat;filter:blur(36px) saturate(.9);opacity:1;transform:scale(1.1)}
+.rd .dkc13.rvc15::after{display:block;content:'';position:absolute;inset:0;z-index:-1;background:rgba(66,61,57,.45)}
+.rd .rvc15 .who13 .dot{width:40px;height:40px;box-shadow:none}
+.rd .rvc15 .who13 b{font-size:17px;font-weight:800}
+.rd .rvc15 .who13 .wp,.rd .rvc15 .who13 small{background:none;padding:0;margin:0;color:rgba(255,255,255,.62);font-size:14px;font-weight:600}
+.rd .rvc15 .sc13{background:none;padding:0;color:#fff;font:800 22px/1 var(--font-display);letter-spacing:-.02em;margin-top:6px;border-radius:0}
+.rd .rvc15 .bd{padding:16px 0 18px}
+.rd .rvc15 .alb13{align-items:center;gap:18px;margin-bottom:14px}
+.rd .rvc15 .alb13 .cvb{flex:none;border-radius:8px;overflow:hidden;line-height:0;border:4px solid #141414;background:#141414}
+.rd .rvc15 .alb13 .cvb .cov,.rd .rvc15 .alb13 .cvb>button{border-radius:4px}
+.rd .rvc15 .alb13 .tt{display:block;-webkit-line-clamp:unset;overflow:visible;white-space:normal;overflow-wrap:break-word;font:600 22px/1.2 var(--font-body);letter-spacing:-.01em;color:#fff}
+.rd .rvc15 .alb13 small{color:rgba(255,255,255,.62);font-weight:600;font-size:16px}
+.rd .rvc15 .alb13 small .arl,.rd .rvc15 .alb13 small .arn{color:inherit;white-space:normal;overflow:visible;text-overflow:clip}
+.rd .rvc15 .pl13{position:static;flex:none;width:40px;height:40px;font-size:15px;background:#fff;color:#111;box-shadow:none;border-radius:50%}
+.rd .rvc15 .q13{border-left:0;padding-left:0;font-size:20px;line-height:1.38;font-weight:500;color:#fff}
+.rd .rvc15 .sub15{display:inline-block;margin:0 0 10px;padding:4px 12px;border-radius:99px;background:rgba(255,255,255,.14);font-weight:700;font-size:14px}
+.rd .rvc15 .tg13 span{background:rgba(255,255,255,.14);outline:0;color:#fff}
+.rd .rvc15 .ft{margin:0 -22px;padding:4px 22px 16px;border-top:0;background:rgba(0,0,0,.14);position:relative}
+.rd .rvc15 .ft::before{content:'';position:absolute;left:22px;right:22px;top:0;border-top:1px solid rgba(255,255,255,.18)}
+.rd .rvc15 .ft{padding-top:14px}
+.rd .rvc15 .ft .ic{color:rgba(255,255,255,.8)}
+.rd .dkc13 .op.txt{width:auto;height:auto;border-radius:0;background:none;color:rgba(255,255,255,.7);font-weight:700;font-size:17px;display:inline}
+.rd .dkc13 .op.txt:hover{color:#fff}
 
 /* Endless shelves: a small spinner at the end of the row while the next
    page loads (it's also what the shelf watches to ask for more). */
