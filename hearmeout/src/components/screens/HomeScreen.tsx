@@ -21,7 +21,7 @@ import { computeMatch } from '@/lib/matchScore';
 import { DEMO_PROFILES } from '@/lib/demoAccounts';
 import { RECAP_SEEN_EVENT, recapSeenWeek } from '@/lib/recapSeen';
 import { ImportNudge } from '../ConnectionBlocks';
-import { PROFILE_TAB_EVENT } from '../redesign/AvatarMenu';
+import { PROFILE_TAB_EVENT } from '@/lib/uiEvents';
 import { CoverWall, Phrase } from '../ui/Visual';
 import { useAlbum, useAlbums } from '@/lib/useAlbum';
 

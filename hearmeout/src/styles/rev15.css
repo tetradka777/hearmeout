@@ -220,3 +220,11 @@
 .rd .rvc15 .ft{padding:8px 20px 10px}
 .rd .rvc15 .who13 .dot{width:28px;height:28px;font-size:12px}
 .rd .rvc15.full{height:auto}
+
+/* Top right: three separate round buttons — notifications (with its
+   count), light/dark, settings. */
+.rd .topr{display:flex;align-items:center;gap:8px}
+.rd .tb15{position:relative;display:inline-flex}
+.rd .topr .ib.on{background:var(--fg);color:var(--bg)}
+.rd .tabbar .tbp{position:relative}
+.rd .tabbar .tbp .badge{top:0;right:0}
