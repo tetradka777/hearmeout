@@ -43,15 +43,8 @@ function HeroTile({ wide }: { wide: boolean }) {
   const album = useAlbum(hero?.albumId || null);
   const span = wide ? 's3' : 's2';
 
-  if (!hero || !album) {
-    return (
-      <section className={`tile t-ink hero glow ${span}`}>
-        <span className="pill">{t('home.heroSticker')}</span>
-        <h1>{t('home.heroEmptyTitle')}</h1>
-        <p className="muted">{t('home.heroEmptySub')}</p>
-      </section>
-    );
-  }
+  // No hot take this week: the block isn't shown at all.
+  if (!hero || !album) return null;
 
   return (
     <section className={`tile t-ink hero glow ${span}`}>

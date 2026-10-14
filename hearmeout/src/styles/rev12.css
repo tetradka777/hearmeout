@@ -61,7 +61,7 @@
 /* ===== rev 8: recap card ===== */
 .rd .rc{text-align:left;display:flex;flex-direction:column;gap:16px;justify-content:space-between;min-height:250px;position:relative;overflow:hidden}
 .rd .rc .rc-top{display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:800}
-.rd .rc .rc-new{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.rd .rc .rc-new{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:none}
 .rd .rc .rc-new i{width:9px;height:9px;border-radius:50%;background:currentColor;box-shadow:0 0 0 0 currentColor;animation:rcpulse 2s infinite}
 @keyframes rcpulse{70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
 @media (prefers-reduced-motion:reduce){.rd .rc .rc-new i{animation:none}}
@@ -74,7 +74,7 @@
 .rd .rc-stage .sc{position:absolute;right:0;bottom:0;z-index:3;padding:4px 11px;border-radius:99px;font-weight:800;font-size:13px;border:2px solid var(--bb,var(--ink));background:var(--pop);color:var(--ink)}
 .rd .rc-stage .c1 .sc,.rd .rc-stage .c2 .sc{display:none}
 .rd .rc .rc-stat{position:absolute;right:0;bottom:6px;z-index:3;background:var(--pop);color:var(--ink);border:2px solid var(--bb,var(--ink));border-radius:16px;padding:8px 14px 9px;text-align:center;box-shadow:0 4px 0 rgba(0,0,0,.18);max-width:48%}
-.rd .rc .rc-stat small{display:block;font-weight:800;font-size:11px;letter-spacing:.06em;text-transform:uppercase;opacity:.75}
+.rd .rc .rc-stat small{display:block;font-weight:800;font-size:11px;letter-spacing:.06em;text-transform:none;opacity:.75}
 .rd .rc .rc-stat b{display:block;font:800 clamp(18px,2vw,24px)/1.05 var(--font-display);letter-spacing:-.03em;margin-top:2px}
 .rd .rc-nums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .rd .rc-nums b{display:block;font:800 clamp(26px,2.8vw,34px)/1 var(--font-display);letter-spacing:-.04em}
@@ -99,7 +99,7 @@
 .rd .rc-bar{height:12px;border-radius:99px;background:color-mix(in srgb,currentColor 18%,transparent);overflow:hidden}
 .rd .rc-bar i{display:block;height:100%;border-radius:99px;background:currentColor}
 /* ===== rev 9: fewer empty spots ===== */
-.rd .k9{font-weight:800;font-size:12px;letter-spacing:.06em;text-transform:uppercase;display:block;opacity:.85}
+.rd .k9{font-weight:800;font-size:12px;letter-spacing:.06em;text-transform:none;display:block;opacity:.85}
 .rd .b9{display:flex;align-items:flex-end;gap:5px;height:56px;margin:8px 0 4px}
 .rd .b9 i{flex:1;border-radius:6px 6px 2px 2px;background:currentColor;opacity:.85;min-height:5px}
 .rd .b9.inv i{opacity:.9}
@@ -126,7 +126,7 @@
 .rd .mini9{display:flex;gap:12px;align-items:center;margin:10px 0 6px}
 .rd .mini9 small{display:block}
 .rd .d9{display:grid;place-items:center;gap:2px;padding:6px 0;border-radius:12px;background:color-mix(in srgb,currentColor 8%,transparent)}
-.rd .d9 small{font-size:10px;font-weight:800;text-transform:uppercase;opacity:.75}
+.rd .d9 small{font-size:10px;font-weight:800;text-transform:none;opacity:.75}
 .rd .d9 b{font-size:15px}
 .rd .d9.on{background:var(--ink,#223);color:var(--cream,#fff)}
 .rd .wk9{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
@@ -197,7 +197,7 @@
 .rd .acv9 .cov{border-radius:10px!important;overflow:hidden}
 /* rev 9c */
 .rd .awc9{display:flex;flex-direction:column;gap:6px;align-items:flex-start;padding:14px;border-radius:18px;background:color-mix(in srgb,var(--paper,#fff) 70%,transparent);border:2px solid var(--ink,#222)}
-.rd .awc9 b{font-size:16px;text-transform:capitalize}
+.rd .awc9 b{font-size:16px;text-transform:none}
 .rd .awc9 small{font-weight:600;font-size:12px;opacity:.78;line-height:1.3}
 .rd .awc9.off{border-style:dashed;opacity:.65}
 .rd .awc9.off .gl9{filter:grayscale(1)}

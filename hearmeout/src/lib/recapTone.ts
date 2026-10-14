@@ -2,9 +2,8 @@ import type { CSSProperties } from 'react';
 import type { RecapData } from './types';
 
 // A recap's colour comes from the music in it, not the palette (after
-// Superfan, where every recap looks different): the top genre gives the
-// main colour, the second one the other end of the gradient. Deep tones,
-// so cream text reads on all of them.
+// Superfan, where every recap looks different): one solid colour, the top
+// genre's. Deep tones, so cream text reads on all of them.
 const GENRE_TONE: Record<string, string> = {
   Rock: '#B5382C',
   'Hip-Hop': '#B0620F',

@@ -343,7 +343,7 @@ export function HistoryScreen(_props: { device: Device }) {
             return (
               <div className="tile" key={key} style={{ marginBottom: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-                  <h2 style={{ margin: 0, textTransform: 'capitalize' }}>{label}</h2>
+                  <h2 style={{ margin: 0 }}>{label}</h2>
                   <span className="muted" style={{ fontWeight: 700 }}>{t('history.monthSummary', { count: rows.length, avg: fmt1(avg) })}</span>
                 </div>
                 {rows.map((r) => <HistoryRow key={r.albumId} rating={r} />)}

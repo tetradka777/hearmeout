@@ -619,7 +619,7 @@ html::-webkit-scrollbar, .rd ::-webkit-scrollbar { display: none; }
 /* A cover without a picture (none yet, or it failed to load) shows the
    artist's first letter, sized to the box, instead of an empty tile. */
 .rd .cover-fallback { display: grid; place-items: center; container-type: inline-size; color: var(--ink); }
-.rd .cover-fallback .fallback-letter { font-family: var(--font-display); font-weight: 800; font-size: 46cqi; line-height: 1; text-transform: uppercase; }
+.rd .cover-fallback .fallback-letter { font-family: var(--font-display); font-weight: 800; font-size: 46cqi; line-height: 1; text-transform:none; }
 /* "Skip to content": off-screen until it gets keyboard focus. */
 .rd .skip { position: fixed; left: 12px; top: -60px; z-index: 400; padding: 10px 16px; border-radius: 999px; background: var(--fg); color: var(--bg); font-weight: 800; }
 .rd .skip:focus { top: 12px; }
