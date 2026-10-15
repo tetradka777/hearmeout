@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { PageBackdrop } from '../ui/Backdrop';
 import type { CSSProperties, ReactNode } from 'react';
 import { toneColor, usePersonColor } from '../ui/Visual';
 import { SharedArtistsCard } from '../SharedArtistsCard';
@@ -71,7 +72,13 @@ function MatchHero({ me, friend, children }: { me: Who | null; friend: Who | nul
     ['--a1' as string]: me?.avatarUrl ? `url('${me.avatarUrl}')` : 'none',
     ['--a2' as string]: friend?.avatarUrl ? `url('${friend.avatarUrl}')` : 'none',
   } as CSSProperties;
-  return <div className="tile mh16" style={style}>{children}</div>;
+  // Your two colours flow behind the whole page too.
+  return (
+    <>
+      <PageBackdrop screen="match" colors={[mine, right]} />
+      <div className="tile mh16" style={style}>{children}</div>
+    </>
+  );
 }
 
 export function MatchScreen(_props: { device: Device }) {
