@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { blurStyle } from '@/lib/imageColor';
+import { toneClass } from '../ui/Visual';
 import { createPortal } from 'react-dom';
 import { useApp } from '@/lib/AppContext';
 import { FanClubGrid } from '../FanClubs';
@@ -9,9 +9,8 @@ import type { Device, GroupSummary } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
 import { useAlbum, useAlbums } from '@/lib/useAlbum';
 import { fmt1 } from '@/lib/numberFormat';
-import { userAvatarStyle } from '@/lib/format';
+import { userAvatarStyle, formatRelative } from '@/lib/format';
 import { toLocale, pluralForKey, type Language } from '@/lib/i18n';
-import { MascotIcon } from '../redesign/icons';
 import { CoverWall } from '../ui/Visual';
 import { useCachedJson } from '@/lib/cachedJson';
 
@@ -33,55 +32,46 @@ export function sinceLabel(iso: string, language: Language): string {
   return language === 'de' ? label : label.toLowerCase();
 }
 
-// A list card (prototype rev 11): a stack of the group's best-rated albums,
-// the name and new-ratings tag, members and hours this week, the member
-// avatars, and the month's leading vote.
-function StackCover({ albumId, i }: { albumId: string; i: number }) {
-  const { spotifyCovers } = useApp();
-  const album = useAlbum(albumId);
-  const px = i === 0 ? 88 : 68;
-  return (
-    <span className={`c c${i}`} style={{ width: px }}>
-      <CoverArt url={album ? spotifyCovers[album.id] || album.cover : undefined} fallbackLetter={album?.artist[0] || '?'} className="cov" px={px} style={{ width: px, height: px }} />
-    </span>
-  );
-}
-
 function LeadingVote({ albumId }: { albumId: string }) {
   const { t } = useApp();
   const album = useAlbum(albumId);
   return <>{t('groups.voteLeads', { album: album?.title ?? '…' })}</>;
 }
 
+// A group card: its own colour, the people in it big, how much they
+// listened this week, and the latest thing that happened — who rated which
+// album (with that cover, so it's clear what it is), else the album
+// leading this month's vote.
 function GroupCard({ g }: { g: GroupSummary }) {
   const { t, language, viewGroup, spotifyCovers } = useApp();
   const shown = g.members.slice(0, 5);
   const more = g.members.length - shown.length;
-  // The group over its first album cover, blurred.
-  const first = useAlbum(g.coverAlbumIds?.[0] ?? null);
-  const cover = first ? spotifyCovers[first.id] || first.cover : null;
+  const last = g.recent?.[0];
+  const lastAlbum = useAlbum(last?.albumId ?? null);
   return (
-    <button className={`tile gl gc11${cover ? ' bh15' : ''}`} style={blurStyle(cover)} onClick={() => viewGroup(g.id)}>
-      <span className="gcv11" aria-hidden="true">
-        {(g.coverAlbumIds?.length ? g.coverAlbumIds : []).map((id, i) => <StackCover key={id} albumId={id} i={i} />)}
-        {!g.coverAlbumIds?.length && <span className="c c0" style={{ width: 88 }}><span className="cov" style={{ width: 88, height: 88, display: 'grid', placeItems: 'center' }}><MascotIcon /></span></span>}
+    <button className={`tile gc16 ${toneClass(g.id)}`} onClick={() => viewGroup(g.id)}>
+      <span className="avs16" aria-hidden="true">
+        {shown.map((m) => <span key={m.id} className="dot" style={{ ...userAvatarStyle(m), backgroundSize: 'cover' }}>{!m.avatarUrl && m.name[0]?.toUpperCase()}</span>)}
+        {more > 0 && <span className="dot more">+{more}</span>}
       </span>
-      <span className="gx11">
-        <span style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <h3>{g.name}</h3>
-          {g.newPlays > 0 && <span className="tag" style={{ background: 'var(--acc)', color: 'var(--onacc)' }}>{t('groups.newPlaysTag', { count: g.newPlays })}</span>}
-        </span>
-        <small className="muted" style={{ fontWeight: 700, display: 'block', margin: '4px 0 8px' }}>
-          {t('groups.memberCount', { count: g.memberCount, word: pluralForKey(language, g.memberCount, 'groups.memberOne', 'groups.memberFew', 'groups.memberMany') })} · {t('groups.hoursThisWeek', { n: g.hoursWeek ?? 0 })}
-        </small>
-        <span className="stk9" aria-hidden="true">
-          {shown.map((m) => <span key={m.id} className="dot" style={userAvatarStyle(m)}>{!m.avatarUrl && m.name[0]}</span>)}
-          {more > 0 && <span className="dot more">+{more}</span>}
-        </span>
-        <small className="muted" style={{ fontWeight: 700, display: 'block', marginTop: 10 }}>
-          {g.leadingVote ? <LeadingVote albumId={g.leadingVote} /> : t('groups.voteOpenHint')}
-        </small>
+      <span className="nm16">
+        <h3>{g.name}</h3>
+        {g.newPlays > 0 && <span className="tag" style={{ background: 'var(--acc)', color: 'var(--onacc)' }}>{t('groups.newPlaysTag', { count: g.newPlays })}</span>}
       </span>
+      <small className="mt16">
+        {t('groups.memberCount', { count: g.memberCount, word: pluralForKey(language, g.memberCount, 'groups.memberOne', 'groups.memberFew', 'groups.memberMany') })} · {t('groups.hoursThisWeek', { n: g.hoursWeek ?? 0 })}
+      </small>
+      {last && lastAlbum ? (
+        <span className="ev16">
+          <CoverArt url={spotifyCovers[lastAlbum.id] || lastAlbum.cover} fallbackLetter={lastAlbum.artist[0] || '?'} className="cov" px={44} style={{ width: 44, height: 44 }} />
+          <span className="g">
+            <small>{formatRelative(last.at, language)}</small>
+            <b>{t('groups.recentRated', { name: last.user.name, album: lastAlbum.title, stars: fmt1(last.stars) })}</b>
+          </span>
+        </span>
+      ) : (
+        <small className="mt16">{g.leadingVote ? <LeadingVote albumId={g.leadingVote} /> : t('groups.voteOpenHint')}</small>
+      )}
     </button>
   );
 }
@@ -177,7 +167,7 @@ export function GroupsScreen(_props: { device: Device }) {
       ) : (
         <>
           {groups.length > 0 && <div className="gl11">{groups.map((g) => <GroupCard key={g.id} g={g} />)}</div>}
-          <button className="tile t-soft2 newg11" onClick={openModal}>
+          <button className="tile t-ac newg11" onClick={openModal}>
             <span className="avt" style={{ width: 40, height: 40, fontSize: 22 }}>+</span>
             <span className="g"><b>{t('groups.newGroup')}</b><small className="muted" style={{ fontWeight: 600 }}>{t('groups.newGroupHint')}</small></span>
           </button>

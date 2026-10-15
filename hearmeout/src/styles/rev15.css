@@ -348,3 +348,36 @@
 .rd .ptl16 .row.ptr16 .ib.on{background:#fff;color:#141414}
 .rd .ptl16 .row.ptr16 .tag:not([style]){background:rgba(255,255,255,.18);color:#fff}
 .rd .ptl16 .row.ptr16 .rowlink,.rd .ptl16 .row.ptr16 .num{color:#fff}
+
+/* ---- No colourless cards left (round 18) ----
+   Every plain card on the pages (white / soft / sand, the same in both
+   themes otherwise) takes one of the six deep tones, by its place among
+   its neighbours so cards side by side differ. Settings and windows stay
+   neutral. Inside a toned card the text colours follow (--fg). */
+.rd main .tile:is(.t-soft2,.t-pop,:not([class*="t-"])):not(.tn15):not(.bh15):not(.mh16):not(.sac15):not(.rvc15):not(.dkc13):not(.setgrid .tile):not(.alp17 .tile){outline:0;--tfg:var(--cfg);--fg:var(--cfg);--bb:var(--cfg);--bf:var(--cdk);--tb:color-mix(in srgb,var(--cfg) 30%,transparent);--soft2:color-mix(in srgb,#fff 9%,transparent)}
+.rd main .tile:is(.t-soft2,.t-pop,:not([class*="t-"])):not(.tn15):not(.bh15):not(.mh16):not(.sac15):not(.rvc15):not(.dkc13):not(.setgrid .tile):not(.alp17 .tile):nth-child(6n+1){--tbg:var(--c3)}
+.rd main .tile:is(.t-soft2,.t-pop,:not([class*="t-"])):not(.tn15):not(.bh15):not(.mh16):not(.sac15):not(.rvc15):not(.dkc13):not(.setgrid .tile):not(.alp17 .tile):nth-child(6n+2){--tbg:var(--c1)}
+.rd main .tile:is(.t-soft2,.t-pop,:not([class*="t-"])):not(.tn15):not(.bh15):not(.mh16):not(.sac15):not(.rvc15):not(.dkc13):not(.setgrid .tile):not(.alp17 .tile):nth-child(6n+3){--tbg:var(--c6)}
+.rd main .tile:is(.t-soft2,.t-pop,:not([class*="t-"])):not(.tn15):not(.bh15):not(.mh16):not(.sac15):not(.rvc15):not(.dkc13):not(.setgrid .tile):not(.alp17 .tile):nth-child(6n+4){--tbg:var(--c4)}
+.rd main .tile:is(.t-soft2,.t-pop,:not([class*="t-"])):not(.tn15):not(.bh15):not(.mh16):not(.sac15):not(.rvc15):not(.dkc13):not(.setgrid .tile):not(.alp17 .tile):nth-child(6n+5){--tbg:var(--c2)}
+.rd main .tile:is(.t-soft2,.t-pop,:not([class*="t-"])):not(.tn15):not(.bh15):not(.mh16):not(.sac15):not(.rvc15):not(.dkc13):not(.setgrid .tile):not(.alp17 .tile):nth-child(6n){--tbg:var(--c5)}
+/* Toned tiles of t-c* too: their text colours follow. */
+.rd .tile.t-c1,.rd .tile.t-c2,.rd .tile.t-c3,.rd .tile.t-c4,.rd .tile.t-c5,.rd .tile.t-c6,.rd .tile.tn15{--fg:var(--cfg);--soft2:color-mix(in srgb,#fff 9%,transparent)}
+/* Inputs inside a toned card read as light fields (not in settings). */
+.rd main .tile:not(.setgrid .tile):not(.alp17 .tile) .field{background:color-mix(in srgb,#fff 12%,transparent);color:inherit}
+
+/* Group cards: its own colour, the people big, the latest event. */
+.rd .tile.gc16{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;padding:20px}
+.rd .gc16 .avs16{display:flex;margin-bottom:6px}
+.rd .gc16 .avs16 .dot{width:46px;height:46px;font-size:18px;box-shadow:0 0 0 3px color-mix(in srgb,var(--cdk) 70%,transparent)}
+.rd .gc16 .avs16 .dot+.dot{margin-left:-12px}
+.rd .gc16 .avs16 .more{background:color-mix(in srgb,#fff 20%,transparent);color:var(--cfg);display:grid;place-items:center;font-weight:800}
+.rd .gc16 .nm16{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.rd .gc16 h3{margin:0;font-size:22px}
+.rd .gc16 .mt16{font-weight:700;opacity:.75}
+.rd .gc16 .ev16{display:flex;gap:10px;align-items:center;margin-top:8px;padding:8px 12px 8px 8px;border-radius:14px;background:color-mix(in srgb,#000 22%,transparent);max-width:100%}
+.rd .gc16 .ev16 .cov{border-radius:8px;flex:none}
+.rd .gc16 .ev16 .g{display:flex;flex-direction:column;min-width:0}
+.rd .gc16 .ev16 small{opacity:.7;font-weight:700;font-size:12px}
+.rd .gc16 .ev16 b{font-size:14px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.rd .gc16 .avs16 .dot{background-color:color-mix(in srgb,#fff 22%,var(--cdk));color:var(--cfg)}
