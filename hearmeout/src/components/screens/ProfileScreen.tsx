@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { PageBackdrop } from '../ui/Backdrop';
 import { ArtistAvatar, useOpenArtist } from '../ui/ArtistName';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { PROFILE_TAB_EVENT, takeRecentEvent } from '@/lib/uiEvents';
@@ -424,8 +423,6 @@ export function ProfileScreen(_props: { device: Device }) {
     <>
       {/* The visible name is an editable field, so the page heading for
           screen readers is this hidden one. */}
-      {/* Your photo behind the page, else your colour. */}
-      <PageBackdrop screen="profile" image={me.avatarUrl} colors={[myColor, '#141210']} />
       <h1 className="sr">{me.name}</h1>
       {/* Header: a coloured block with the photo, name, handle and region,
           then friends / edit profile / share. */}

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { PageBackdrop } from '../ui/Backdrop';
 import { useApp } from '@/lib/AppContext';
 import { usePlayer } from '@/lib/PlayerContext';
 import { invalidateJson, useCachedJson } from '@/lib/cachedJson';
@@ -40,7 +39,6 @@ export function FanClubScreen(_props: { device: Device }) {
 
   return (
     <>
-      <PageBackdrop screen="fanclub" image={data?.artist.photo} />
       <button className="crumb" onClick={() => goBack('groups')}>‹ {t('fanclub.back')}</button>
       <div className={`tile fch15 ${toneClass(name)}`}>
         <ArtistAvatar name={name} id={club.id} photo={data?.artist.photo} size={128} />

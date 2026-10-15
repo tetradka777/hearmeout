@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { PageBackdrop } from '../ui/Backdrop';
 import { ArtistName } from '../ui/ArtistName';
 import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
@@ -296,11 +295,8 @@ export function FriendScreen({ device: _device }: { device: Device }) {
   const snaps = matchHistory?.map((h) => h.pct) ?? (matchScore != null ? [matchScore] : []);
   const lp = f.lastPlayed ?? f.nowPlaying;
 
-  // Their photo behind the page, else their favourite album's cover.
-  const top1 = f.top4Albums[0] ? liveAlbums[f.top4Albums[0]] || albums.find((x) => x.id === f.top4Albums[0]) : undefined;
   return (
     <>
-      <PageBackdrop screen="friend" image={f.avatarUrl || (top1 ? spotifyCovers[top1.id] || top1.cover : null)} />
       {head}
 
       <div className="acts" style={{ margin: '14px 0 6px' }}>
