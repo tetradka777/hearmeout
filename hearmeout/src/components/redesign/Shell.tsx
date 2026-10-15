@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { AmbientBackdrop } from '../ui/Backdrop';
 import { useApp } from '@/lib/AppContext';
 import { userAvatarStyle } from '@/lib/format';
 import type { ScreenName } from '@/lib/types';
@@ -118,6 +119,7 @@ export function RedesignShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
+      <AmbientBackdrop />
       <Ticker />
 
       <main className="fade" id="main" tabIndex={-1}>{children}</main>
