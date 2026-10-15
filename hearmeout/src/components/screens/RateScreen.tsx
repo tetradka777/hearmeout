@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { PageBackdrop } from '../ui/Backdrop';
+import { sizedImage } from '@/lib/imageSize';
+import { blurStyle } from '@/lib/imageColor';
 import { ArtistName } from '../ui/ArtistName';
 import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
