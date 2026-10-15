@@ -381,3 +381,11 @@
 .rd .gc16 .ev16 small{opacity:.7;font-weight:700;font-size:12px}
 .rd .gc16 .ev16 b{font-size:14px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .rd .gc16 .avs16 .dot{background-color:color-mix(in srgb,#fff 22%,var(--cdk));color:var(--cfg)}
+
+/* Album page: the cards follow the theme's text colour (the tracklist and
+   community cards are tinted ones, whose cream text vanished on light
+   glass), with denser glass and a stronger frost so titles read over any
+   cover. */
+.rd .alp17 .tile.tile{--fg:inherit;--soft2:color-mix(in srgb,var(--fg) 8%,transparent);--tbg:color-mix(in srgb,var(--paper) 72%,transparent)}
+[data-mode="dark"] .rd .alp17 .tile.tile{--tbg:color-mix(in srgb,#141210 62%,transparent)}
+.rd:has(.alp17) .abg17::after{background:color-mix(in srgb,var(--bg) 62%,transparent)}
