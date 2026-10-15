@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { PageBackdrop } from '../ui/Backdrop';
 import { lastSeasons } from '@/lib/seasons';
 import { PlayRing } from '../redesign/PreviewButton';
 import { recapColors, recapToneStyle } from '@/lib/recapTone';
@@ -263,8 +262,6 @@ export function RecapScreen(_props: { device: Device }) {
         <p className="muted" style={{ marginTop: 14 }}>{t('recap.loading')}</p>
       ) : (
         <div className="rcp13">
-          {/* The recap's colour behind the whole page. */}
-          <PageBackdrop screen="recap" colors={[recapColors(r)[0], `color-mix(in srgb, ${recapColors(r)[0]} 35%, #141210)`]} />
           {/* The recap as one coloured sheet (after Superfan): who and when, the
               vibe, three numbers, genres, top artists and songs, by day, awards. */}
           <section className="rsh13" style={recapToneStyle(r)} aria-label={isMe ? t(`recap.titleMe.${period}` as TranslationKey) : t(`recap.titleOf.${period}` as TranslationKey, { name })}>

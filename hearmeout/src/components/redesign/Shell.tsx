@@ -1,7 +1,6 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { LiveBackdrop } from '../ui/LiveBackdrop';
 import { useApp } from '@/lib/AppContext';
 import { userAvatarStyle } from '@/lib/format';
 import type { ScreenName } from '@/lib/types';
@@ -57,8 +56,6 @@ const NAV_GROUP: Record<ScreenName, ScreenName | null> = {
   later: null,
 };
 
-const LIVE_SCREENS: ScreenName[] = ['catalog', 'match', 'discover', 'stats', 'history', 'later', 'groups', 'settings', 'states'];
-
 // Statistics isn't in the menu: it opens from the profile.
 const TAB_SCREENS: ScreenName[] = ['catalog', 'match', 'discover', 'groups'];
 const TAB_LABEL: Partial<Record<ScreenName, TranslationKey>> = {
@@ -87,9 +84,6 @@ export function RedesignShell({ children }: { children: ReactNode }) {
           A button, not an #main link: a hash change would add a history
           entry, and back/forward drive the screen here. */}
       <button className="skip" onClick={() => document.getElementById('main')?.focus()}>{t('nav.skipToContent')}</button>
-      {/* Screens without a picture of their own: the background is made of
-          the coloured cards on screen. */}
-      {LIVE_SCREENS.includes(state.activeScreen) && <LiveBackdrop key={state.activeScreen} />}
       <div className="wrap">
       {/* Desktop top bar — identical structure in both designs (spec 2.4/15.1), skin only differs via CSS */}
       <div className="nav">
