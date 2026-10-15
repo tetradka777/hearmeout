@@ -117,7 +117,7 @@ function RecapStrip({ r, week }: { r: RecapData; week: number }) {
   const { t, openRecap } = useApp();
   const award = r.awards[0];
   return (
-    <button className="tile rcstrip" onClick={() => openRecap('me', 'week')}>
+    <button className="tile t-rc rcstrip" style={recapToneStyle(r)} onClick={() => openRecap('me', 'week')}>
       <span className="mini">{recapCovers(r, 3).map((c) => <CoverArt key={c} url={c} fallbackLetter="?" className="cov" px={34} style={{ width: 34, aspectRatio: '1' }} />)}</span>
       <span className="tt">{t('home.rcStripTitle', { n: week })}</span>
       <span className="mt">
@@ -360,7 +360,8 @@ function RateTile() {
   const rated = useMemo(() => new Set(myRatings.map((r) => r.albumId)), [myRatings]);
   const unrated = useAlbums((feed?.recentAlbumIds || []).filter((id) => !rated.has(id)).slice(0, 12));
   return (
-    <div className="tile">
+    // No card of its own: the covers under it are the cards.
+    <div className="sec rt16">
       <div className="hd10"><h2 style={{ margin: 0 }}>{t('home.rateWhatPlayed')}</h2></div>
       {unrated.length ? (
         <CoverWall row items={unrated.map(({ id, album }) => ({ key: id, cover: spotifyCovers[album.id] || album.cover, title: album.title, artist: album.artist, artistId: album.artistId, onClick: () => openAlbum(album.id) }))} />
