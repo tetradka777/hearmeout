@@ -5,7 +5,6 @@ import { createPortal } from 'react-dom';
 import { useApp } from '@/lib/AppContext';
 import { sizedImage } from '@/lib/imageSize';
 import type { ScreenName } from '@/lib/types';
-import { useAlbums } from '@/lib/useAlbum';
 
 // The page's background behind the glass cards: a picture (the album's
 // cover, the artist's photo…), several pictures as a soft collage, or a
@@ -43,20 +42,4 @@ export function PageBackdrop({ screen, image, images, colors }: {
     return null;
   }
   return createPortal(<div className="abg17" style={style} aria-hidden="true">{body}</div>, host);
-}
-
-// Screens without a picture of their own (home, search, stats, history,
-// Listen later, groups) sit on what you've been playing lately: a collage
-// of your latest albums' covers, so the background moves with the music.
-// Without any, the theme's colours.
-const AMBIENT: ScreenName[] = ['catalog', 'discover', 'stats', 'history', 'later', 'groups'];
-
-export function AmbientBackdrop() {
-  const { feed, myRatings, spotifyCovers } = useApp();
-  const ids = (feed?.recentAlbumIds?.length ? feed.recentAlbumIds : [...myRatings].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)).map((r) => r.albumId)).slice(0, 4);
-  const albums = useAlbums(ids);
-  const covers = albums.map(({ album }) => spotifyCovers[album.id] || album.cover).filter(Boolean);
-  return covers.length
-    ? <PageBackdrop screen={AMBIENT} images={covers} />
-    : <PageBackdrop screen={AMBIENT} colors={['var(--pal)', 'var(--ac)']} />;
 }

@@ -398,3 +398,22 @@
 .rd .topr .ib{background:color-mix(in srgb,var(--paper) 50%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
 .rd .modalbg{background:rgba(10,8,6,.35);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
 .rd .modal.tile,.rd .modal{--tbg:color-mix(in srgb,var(--paper) 72%,transparent);background:var(--tbg);-webkit-backdrop-filter:blur(24px) saturate(1.4);backdrop-filter:blur(24px) saturate(1.4)}
+
+/* ---- The background made of the cards on screen (round 20) ----
+   LiveBackdrop: one soft patch of each visible coloured card's colour,
+   where that card is, all blurred together and frosted towards the theme.
+   The patches glide and recolour as you scroll. */
+.rd .lbg18{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;filter:blur(60px) saturate(1.25)}
+.rd .lbg18 span{position:absolute;left:0;top:0;border-radius:40%;opacity:0;will-change:transform;transition:transform .7s ease,width .7s ease,height .7s ease,background-color .7s ease,opacity .7s ease}
+.rd .lbg18::after{content:'';position:absolute;inset:-100px;background:color-mix(in srgb,var(--bg) 42%,transparent)}
+@media (prefers-reduced-motion:reduce){.rd .lbg18 span{transition:none}}
+
+/* Album page: denser glass and a stronger frost, so track titles read over
+   any cover. */
+.rd .alp17 .tile.tile{--tbg:color-mix(in srgb,var(--paper) 72%,transparent)}
+[data-mode="dark"] .rd .alp17 .tile.tile{--tbg:color-mix(in srgb,#141210 62%,transparent)}
+.rd:has(.alp17) .abg17::after{background:color-mix(in srgb,var(--bg) 62%,transparent)}
+.rd .alp17 .trk b,.rd .alp17 .trk .rowlink{color:var(--fg)}
+/* Cards on the album page follow the theme's text colour (the tracklist and
+   community cards are tinted ones, whose cream text vanished on light glass). */
+.rd .alp17 .tile.tile{--fg:inherit;--soft2:color-mix(in srgb,var(--fg) 8%,transparent)}
