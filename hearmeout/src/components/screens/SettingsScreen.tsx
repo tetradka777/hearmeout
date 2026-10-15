@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { PageBackdrop } from '../ui/Backdrop';
 import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
 import { regionDisplayName, toLocale, LANGUAGES, LANGUAGE_LABEL, type Language, type TranslationKey } from '@/lib/i18n';
@@ -342,8 +341,6 @@ export function SettingsScreen(_props: { device: Device }) {
 
   return (
     <>
-      {/* A calm glow of the theme's colours behind settings. */}
-      <PageBackdrop screen="settings" colors={['var(--pal)', 'var(--ac)']} />
       <p className="eyebrow muted">{t('settings.eyebrow')}</p>
       <h1 className="big">{t('settings.title')}</h1>
       <div className={`setgrid${section === 'appearance' ? '' : ' has3'}`}>
