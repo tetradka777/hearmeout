@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { PageBackdrop } from '../ui/Backdrop';
 import { Podium } from '../ui/Podium';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
@@ -105,6 +106,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
 
   return (
     <>
+      <PageBackdrop screen="group" image={heroCover} images={heroCovers.map((h) => { const a = albumMeta(h.albumId); return a ? spotifyCovers[a.id] || a.cover : null; })} />
       <button className="crumb" onClick={() => goBack('groups')}>‹ {t('groups.allGroups')}</button>
 
       {/* Hero: the group on the left, its three best-rated albums on the right. */}

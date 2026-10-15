@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { PageBackdrop } from '../ui/Backdrop';
 import { sizedImage } from '@/lib/imageSize';
 import { blurStyle } from '@/lib/imageColor';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
@@ -349,6 +350,7 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
 
     return (
       <>
+        <PageBackdrop screen="artist" image={art.photo} />
         <div className={`tile ${art.photo ? 'bh15' : 't-ink glow'}`} style={{ ...blurStyle(art.photo), display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
           <CoverArt url={art.photo ?? undefined} fallbackLetter={art.name[0] || '?'} className="ph" />
           <div style={{ flex: 1, minWidth: 200 }}>

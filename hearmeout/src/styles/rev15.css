@@ -349,22 +349,10 @@
 .rd .ptl16 .row.ptr16 .tag:not([style]){background:rgba(255,255,255,.18);color:#fff}
 .rd .ptl16 .row.ptr16 .rowlink,.rd .ptl16 .row.ptr16 .num{color:#fff}
 
-/* ---- No colourless cards left (round 18) ----
-   Every plain card on the pages (white / soft / sand, the same in both
-   themes otherwise) takes one of the six deep tones, by its place among
-   its neighbours so cards side by side differ. Settings and windows stay
-   neutral. Inside a toned card the text colours follow (--fg). */
-.rd main .tile:is(.t-soft2,.t-pop,:not([class*="t-"])):not(.tn15):not(.bh15):not(.mh16):not(.sac15):not(.rvc15):not(.dkc13):not(.setgrid .tile):not(.alp17 .tile){outline:0;--tfg:var(--cfg);--fg:var(--cfg);--bb:var(--cfg);--bf:var(--cdk);--tb:color-mix(in srgb,var(--cfg) 30%,transparent);--soft2:color-mix(in srgb,#fff 9%,transparent)}
-.rd main .tile:is(.t-soft2,.t-pop,:not([class*="t-"])):not(.tn15):not(.bh15):not(.mh16):not(.sac15):not(.rvc15):not(.dkc13):not(.setgrid .tile):not(.alp17 .tile):nth-child(6n+1){--tbg:var(--c3)}
-.rd main .tile:is(.t-soft2,.t-pop,:not([class*="t-"])):not(.tn15):not(.bh15):not(.mh16):not(.sac15):not(.rvc15):not(.dkc13):not(.setgrid .tile):not(.alp17 .tile):nth-child(6n+2){--tbg:var(--c1)}
-.rd main .tile:is(.t-soft2,.t-pop,:not([class*="t-"])):not(.tn15):not(.bh15):not(.mh16):not(.sac15):not(.rvc15):not(.dkc13):not(.setgrid .tile):not(.alp17 .tile):nth-child(6n+3){--tbg:var(--c6)}
-.rd main .tile:is(.t-soft2,.t-pop,:not([class*="t-"])):not(.tn15):not(.bh15):not(.mh16):not(.sac15):not(.rvc15):not(.dkc13):not(.setgrid .tile):not(.alp17 .tile):nth-child(6n+4){--tbg:var(--c4)}
-.rd main .tile:is(.t-soft2,.t-pop,:not([class*="t-"])):not(.tn15):not(.bh15):not(.mh16):not(.sac15):not(.rvc15):not(.dkc13):not(.setgrid .tile):not(.alp17 .tile):nth-child(6n+5){--tbg:var(--c2)}
-.rd main .tile:is(.t-soft2,.t-pop,:not([class*="t-"])):not(.tn15):not(.bh15):not(.mh16):not(.sac15):not(.rvc15):not(.dkc13):not(.setgrid .tile):not(.alp17 .tile):nth-child(6n){--tbg:var(--c5)}
 /* Toned tiles of t-c* too: their text colours follow. */
 .rd .tile.t-c1,.rd .tile.t-c2,.rd .tile.t-c3,.rd .tile.t-c4,.rd .tile.t-c5,.rd .tile.t-c6,.rd .tile.tn15{--fg:var(--cfg);--soft2:color-mix(in srgb,#fff 9%,transparent)}
-/* Inputs inside a toned card read as light fields (not in settings). */
-.rd main .tile:not(.setgrid .tile):not(.alp17 .tile) .field{background:color-mix(in srgb,#fff 12%,transparent);color:inherit}
+/* Inputs inside a toned card read as light fields. */
+.rd main .tile:is(.tn15,[class*="t-c"]) .field{background:color-mix(in srgb,#fff 12%,transparent);color:inherit}
 
 /* Group cards: its own colour, the people big, the latest event. */
 .rd .tile.gc16{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;padding:20px}
@@ -381,3 +369,32 @@
 .rd .gc16 .ev16 small{opacity:.7;font-weight:700;font-size:12px}
 .rd .gc16 .ev16 b{font-size:14px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .rd .gc16 .avs16 .dot{background-color:color-mix(in srgb,#fff 22%,var(--cdk));color:var(--cfg)}
+
+/* ---- Glass everywhere (round 19) ----
+   Every screen sits on its own blurred background (ui/Backdrop.tsx:
+   a picture, a collage of recent covers, or colours), and the cards on it
+   are glass: plain cards frosted towards the theme (as on the album page),
+   coloured cards a tinted glass that stays dark in both themes; menus,
+   the ticker and windows are frosted glass too. */
+.rd .abg17 .clg17{position:absolute;inset:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+.rd .abg17 .clg17 i{background:center/cover no-repeat}
+.rd .abg17 .clg17.n1 i{grid-column:1/-1;grid-row:1/-1}
+.rd .abg17 .clg17.n2 i{grid-row:1/-1}
+.rd .abg17 .clg17.n3 i:first-child{grid-row:1/-1}
+.rd .abg17::after{z-index:1}
+
+/* Plain cards: frosted glass in the theme's direction. */
+.rd main .tile:is(.t-soft2,.t-pop,:not([class*="t-"])):not(.tn15):not(.bh15):not(.mh16):not(.sac15):not(.rvc15):not(.dkc13):not(.phd14){--tbg:color-mix(in srgb,var(--paper) 46%,transparent);background:var(--tbg);outline-color:color-mix(in srgb,var(--fg) 14%,transparent);-webkit-backdrop-filter:blur(14px) saturate(1.3);backdrop-filter:blur(14px) saturate(1.3)}
+[data-mode="dark"] .rd main .tile:is(.t-soft2,.t-pop,:not([class*="t-"])):not(.tn15):not(.bh15):not(.mh16):not(.sac15):not(.rvc15):not(.dkc13):not(.phd14){--tbg:color-mix(in srgb,#fff 8%,transparent)}
+
+/* Coloured cards: tinted glass (the tones and plates let the page through). */
+.rd{--c1:rgb(90 65 48/.8);--c2:rgb(62 75 51/.8);--c3:rgb(54 64 90/.8);--c4:rgb(90 53 66/.8);--c5:rgb(90 78 38/.8);--c6:rgb(47 77 73/.8);--cdk:rgb(24 21 19/.72)}
+.rd main .tile[class*="t-c"],.rd main .tile.tn15{-webkit-backdrop-filter:blur(14px) saturate(1.3);backdrop-filter:blur(14px) saturate(1.3)}
+
+/* Menus, ticker, windows: frosted glass tinted with the theme. */
+.rd .tabbar{background:color-mix(in srgb,var(--chr-bg) 74%,transparent);-webkit-backdrop-filter:blur(20px) saturate(1.5);backdrop-filter:blur(20px) saturate(1.5)}
+.rd .nav{background:color-mix(in srgb,var(--paper) 55%,transparent);-webkit-backdrop-filter:blur(20px) saturate(1.5);backdrop-filter:blur(20px) saturate(1.5)}
+.rd .ticker{background:color-mix(in srgb,var(--tk-bg) 74%,transparent);-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4)}
+.rd .topr .ib{background:color-mix(in srgb,var(--paper) 50%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.rd .modalbg{background:rgba(10,8,6,.35);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.rd .modal.tile,.rd .modal{--tbg:color-mix(in srgb,var(--paper) 72%,transparent);background:var(--tbg);-webkit-backdrop-filter:blur(24px) saturate(1.4);backdrop-filter:blur(24px) saturate(1.4)}
