@@ -7,7 +7,15 @@ import { fetchSpotifyProfile } from './spotify';
 // scope, so accounts connected before that scope was added need to
 // reconnect once. Never throws — region detection must not break a sync,
 // and before migration 023 the columns simply don't exist yet.
+// The account's country hardly ever changes: asked at most once a day per
+// user (a sync runs every 20 minutes, and each call spends Spotify quota).
+const lastChecked = new Map<string, number>();
+const CHECK_EVERY_MS = 24 * 3600 * 1000;
+
 export async function detectRegionFromSpotify(admin: SupabaseClient, userId: string, accessToken: string): Promise<void> {
+  const last = lastChecked.get(userId);
+  if (last && Date.now() - last < CHECK_EVERY_MS) return;
+  lastChecked.set(userId, Date.now());
   try {
     const profile = await fetchSpotifyProfile(accessToken);
     const country = typeof profile.country === 'string' && /^[A-Z]{2}$/.test(profile.country) ? profile.country : null;

@@ -13,9 +13,9 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   if (!(await getCurrentUserId())) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
   const { id } = await context.params;
   try {
-    const result = await withSpotifyCache<CachedArtist>(`artist:v3:${id}`, 21600, async () => {
+    const result = await withSpotifyCache<CachedArtist>(`artist:v3:${id}`, 86400, async () => {
       // The albums first (cached): the artist detail compares them with Deezer.
-      const albums = await withSpotifyCache(`artistalbums:v1:${id}`, 12 * 3600, () => fetchArtistAlbumsSplit(id));
+      const albums = await withSpotifyCache(`artistalbums:v1:${id}`, 86400, () => fetchArtistAlbumsSplit(id));
       const artist = await fetchSpotifyArtistDetail(id);
       return { artist, released: albums.released, upcoming: albums.upcoming };
     });

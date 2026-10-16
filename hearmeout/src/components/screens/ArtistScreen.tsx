@@ -5,7 +5,7 @@ import { sizedImage } from '@/lib/imageSize';
 import { blurStyle } from '@/lib/imageColor';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
-import { cachedJson } from '@/lib/cachedJson';
+import { cachedJson, peekJson, storeJson } from '@/lib/cachedJson';
 import { usePlayer, type QueueTrack } from '@/lib/PlayerContext';
 import type { ApiUser, Device, SpotifyArtistAlbum } from '@/lib/types';
 import type { ArtistTopTrack } from '@/lib/spotifyCatalog';
@@ -91,11 +91,19 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
   useEffect(() => {
     if (!art || !isSpotify) { setTopTracks(null); return; }
     let cancelled = false;
-    setTopTracks(null);
-    fetch(`/api/artist/${art.id}/top-tracks?name=${encodeURIComponent(art.name)}`)
+    // The last copy shows at once (kept in the browser), then it's refreshed.
+    const storeKey = `/api/artist/${art.id}/top-tracks`;
+    const stored = peekJson<{ tracks: ArtistTopTrack[] }>(storeKey);
+    setTopTracks(stored ? stored.tracks : null);
+    fetch(`${storeKey}?name=${encodeURIComponent(art.name)}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (!cancelled) setTopTracks(d ? d.tracks : 'error'); })
-      .catch(() => { if (!cancelled) setTopTracks('error'); });
+      .then((d: { tracks: ArtistTopTrack[]; limited?: boolean } | null) => {
+        if (cancelled) return;
+        if (d && !d.limited) storeJson(storeKey, d);
+        if (d && !(d.limited && stored)) setTopTracks(d.tracks);
+        else if (!d && !stored) setTopTracks('error');
+      })
+      .catch(() => { if (!cancelled && !stored) setTopTracks('error'); });
     return () => { cancelled = true; };
   }, [art?.id, art?.name, isSpotify]);
 

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { getSpotifyAppToken } from './spotifyAppAuth';
+import { fetchSpotifyTrackAlbum } from './spotifyCatalog';
+import { withSpotifyCache } from './spotifyCache';
 import { deezerArtistByName, deezerArtistGenres, normalizeTitle } from './deezerServer';
 import { bucketForGenres } from './genreBuckets';
 import { fetchAllRows } from './supabasePaginate';
@@ -17,11 +18,13 @@ import { RateLimitError } from './upstreamError';
 // - Genres: Deezer genres per main artist (cached 30 days), stored as the
 //   catalog bucket like everywhere else, so taste match counts them.
 //
-// Spotify lookups run one at a time with a delay, and a 429 stops the whole
+// Spotify lookups run one at a time with a delay through the app-wide
+// pacing (spotifyCatalog), at most 60 per run, and a 429 stops the whole
 // run: an earlier version that ran 8 at once got an 11-hour penalty that
 // broke album and artist pages app-wide.
 const REQUEST_DELAY_MS = 150;
-const MAX_ALBUMS_PER_RUN = 300;
+const MAX_ALBUMS_PER_RUN = 60;
+const SPOTIFY_ID = /^[0-9A-Za-z]{22}$/;
 const MAX_ARTISTS_PER_RUN = 200;
 
 // One run per user at a time (a manual sync and the background sync can
@@ -57,29 +60,25 @@ async function enrich(admin: SupabaseClient, userId: string): Promise<void> {
     const key = `${r.album ?? ''}\u0000${r.artist}`;
     if (!albums.has(key)) albums.set(key, { album: r.album, artist: r.artist, trackId: r.track_id });
   }
-  const token = albums.size ? await getSpotifyAppToken() : '';
   let n = 0;
   for (const a of albums.values()) {
+    // Only real Spotify track ids (imports and demo data have others).
+    if (!SPOTIFY_ID.test(a.trackId)) continue;
     if (n++ >= MAX_ALBUMS_PER_RUN) break;
     try {
-      const res = await fetch(`https://api.spotify.com/v1/tracks/${a.trackId}`, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.status === 429) break; // shared token is rate-limited — stop, don't make it worse
-      if (res.ok) {
-        const data = await res.json();
-        const patch = {
-          cover_url: (data.album?.images?.[0]?.url as string | undefined) ?? null,
-          album_id: (data.album?.id as string | undefined) ?? null,
-          artist_id: (data.artists?.[0]?.id as string | undefined) ?? null,
-          release_year: data.album?.release_date ? parseInt(String(data.album.release_date).slice(0, 4), 10) : null,
-        };
-        if (patch.cover_url || patch.album_id) {
-          let q = admin.from('listening_events').update(patch).eq('user_id', userId).eq('artist', a.artist).is('cover_url', null);
-          q = a.album == null ? q.eq('track_id', a.trackId) : q.eq('album', a.album);
-          await q;
-        }
+      // Cached for half a year, a miss too: a track Spotify doesn't know
+      // used to be asked about again on every run.
+      const info = await withSpotifyCache(`sp-trackalb:v1:${a.trackId}`, 180 * 86400, () => fetchSpotifyTrackAlbum(a.trackId));
+      if (info && (info.cover || info.albumId)) {
+        const patch = { cover_url: info.cover, album_id: info.albumId, artist_id: info.artistId, release_year: info.year };
+        let q = admin.from('listening_events').update(patch).eq('user_id', userId).eq('artist', a.artist).is('cover_url', null);
+        q = a.album == null ? q.eq('track_id', a.trackId) : q.eq('album', a.album);
+        await q;
       }
-    } catch {
-      // best-effort — one bad album shouldn't stop the rest of the run
+    } catch (err) {
+      // Spotify is rate-limiting the app: stop, don't make it worse.
+      if (err instanceof RateLimitError) break;
+      // Anything else is one bad album; the rest go on.
     }
     await new Promise((r) => setTimeout(r, REQUEST_DELAY_MS));
   }
