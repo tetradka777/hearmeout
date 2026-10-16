@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { sizedImage } from '@/lib/imageSize';
 import { blurStyle } from '@/lib/imageColor';
@@ -15,6 +15,7 @@ import { PreviewButton } from '../redesign/PreviewButton';
 import { pluralForKey } from '@/lib/i18n';
 import type { QueueTrack } from '@/lib/PlayerContext';
 import { usePlayer, prefetchQueueTrack } from '@/lib/PlayerContext';
+import { albumFriendsUrl, useAlbumJson } from '@/lib/useAlbumJson';
 import { AlbumReviews } from '../AlbumReviews';
 import { AlbumRatingDistribution } from '../AlbumRatingDistribution';
 import { AlbumTagsSummary } from '../AlbumTagsSummary';
@@ -27,23 +28,12 @@ type FriendRating = { id: string; name: string; avatarUrl: string | null; stars:
 // exact album.
 function FriendsWhoRated({ albumId }: { albumId: string }) {
   const { t, me, viewFriend } = useApp();
-  const [rows, setRows] = useState<FriendRating[] | null>(null);
-
-  useEffect(() => {
-    if (!me || !me.friends.length) { setRows([]); return; }
-    let cancelled = false;
-    const byId = new Map(me.friends.map((f) => [f.id, f]));
-    fetch(`/api/albums/${encodeURIComponent(albumId)}/friends`)
-      .then((r) => (r.ok ? r.json() : { ratings: [] }))
-      .then((d: { ratings: { userId: string; stars: number }[] }) => {
-        if (cancelled) return;
-        setRows(d.ratings.map((r) => {
-          const f = byId.get(r.userId);
-          return { id: r.userId, name: f?.name || '?', avatarUrl: f?.avatarUrl ?? null, stars: r.stars };
-        }));
-      });
-    return () => { cancelled = true; };
-  }, [albumId, me]);
+  const hasFriends = !!me?.friends.length;
+  const data = useAlbumJson<{ ratings: { userId: string; stars: number }[] }>(hasFriends ? albumFriendsUrl(albumId) : null);
+  const rows: FriendRating[] | null = !hasFriends ? [] : !data ? null : data.ratings.map((r) => {
+    const f = me!.friends.find((x) => x.id === r.userId);
+    return { id: r.userId, name: f?.name || '?', avatarUrl: f?.avatarUrl ?? null, stars: r.stars };
+  });
 
   return (
     <div className="tile t-soft2">
@@ -79,33 +69,19 @@ export function RateScreen({ device: _device }: { device: Device }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.activeScreen, state.currentAlbumId, enriched]);
 
-  const [circleAvg, setCircleAvg] = useState<{ avg: number; n: number } | null>(null);
-  useEffect(() => {
-    if (!a || !me) return;
-    let cancelled = false;
-    // "your circle": your score plus friends' visible ones (server-side).
-    const mine = myRatings.find((r) => r.albumId === a.id)?.stars;
-    fetch(`/api/albums/${encodeURIComponent(a.id)}/friends`)
-      .then((r) => (r.ok ? r.json() : { ratings: [] }))
-      .then((d: { ratings: { stars: number }[] }) => {
-        if (cancelled) return;
-        const scores = [...d.ratings.map((r) => r.stars), ...(mine != null ? [mine] : [])];
-        setCircleAvg(scores.length ? { avg: scores.reduce((s, x) => s + x, 0) / scores.length, n: scores.length } : null);
-      });
-    return () => { cancelled = true; };
-  }, [a, me, myRatings]);
+  // "your circle": your score plus friends' visible ones (server-side; the
+  // same cached answer as "friends who rated").
+  const friendScores = useAlbumJson<{ ratings: { stars: number }[] }>(a && me ? albumFriendsUrl(a.id) : null, reviewsVersion);
+  const mineStars = a ? myRatings.find((r) => r.albumId === a.id)?.stars : undefined;
+  const circleAvg = useMemo(() => {
+    if (!friendScores) return null;
+    const scores = [...friendScores.ratings.map((r) => r.stars), ...(mineStars != null ? [mineStars] : [])];
+    return scores.length ? { avg: scores.reduce((s, x) => s + x, 0) / scores.length, n: scores.length } : null;
+  }, [friendScores, mineStars]);
 
   // Third stat tile (spec 6.2): your plays of this album.
-  const [myPlays, setMyPlays] = useState<number | null>(null);
   const playIds = a ? [a.id, a.spotifyId].filter(Boolean).join(',') : '';
-  useEffect(() => {
-    if (!playIds || !me) { setMyPlays(null); return; }
-    let cancelled = false;
-    fetch(`/api/me/album-plays?ids=${encodeURIComponent(playIds)}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (!cancelled) setMyPlays(d ? d.plays : null); });
-    return () => { cancelled = true; };
-  }, [playIds, me]);
+  const myPlays = useAlbumJson<{ plays: number }>(playIds && me ? `/api/me/album-plays?ids=${encodeURIComponent(playIds)}` : null)?.plays ?? null;
 
   const [text, setText] = useState(state.ratingDraftText);
   useEffect(() => setText(state.ratingDraftText), [state.currentAlbumId, state.ratingDraftText]);

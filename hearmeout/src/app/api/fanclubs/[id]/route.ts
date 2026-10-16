@@ -35,7 +35,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const [{ rows: follows }, { data: friendRows }, photo] = await Promise.all([
     fetchAllRows((f, t) => admin.from('artist_follows').select('user_id, artist_name').eq('artist_id', id).order('user_id').range(f, t), 50000, 4),
     admin.from('friendships').select('friend:friend_id(id, name, handle, avatar_url)').eq('user_id', userId),
-    withSpotifyCache(`sp-aphoto:v1:${id}`, 30 * 86400, () => fetchSpotifyArtistPhoto(id)).catch(() => null),
+    withSpotifyCache(`sp-aphoto:v1:${id}`, 90 * 86400, () => fetchSpotifyArtistPhoto(id)).catch(() => null),
   ]);
   const memberIds = new Set((follows || []).map((r) => r.user_id as string));
   const name = nameParam || ((follows || [])[0]?.artist_name as string | undefined) || '';

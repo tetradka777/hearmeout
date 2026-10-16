@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { cachedPage } from '@/lib/cachedJson';
 import { useApp } from '@/lib/AppContext';
 import { usePaged } from '@/lib/usePaged';
 import type { CatalogArtist } from '@/lib/spotifyCatalog';
@@ -19,9 +20,7 @@ export function GenreTopArtists({ onlyGenre, sub }: { onlyGenre?: string; sub?: 
   const market = me?.region ? `&market=${encodeURIComponent(me.region)}` : '';
   const { items, done, failed, more } = usePaged<CatalogArtist, number>(async (offset) => {
     const from = offset ?? 0;
-    const res = await fetch(`/api/spotify/genre-artists?genre=${encodeURIComponent(genre)}&offset=${from}${market}`);
-    if (!res.ok) throw new Error(String(res.status));
-    const page = await res.json() as CatalogArtist[];
+    const page = await cachedPage<CatalogArtist[]>(`/api/spotify/genre-artists?genre=${encodeURIComponent(genre)}&offset=${from}${market}`);
     return { items: page, next: !page.length || from + STEP >= 1000 ? null : from + STEP };
   }, (a) => a.id, [genre, market], 50);
 

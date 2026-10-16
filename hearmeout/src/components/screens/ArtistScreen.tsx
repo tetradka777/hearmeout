@@ -5,7 +5,7 @@ import { sizedImage } from '@/lib/imageSize';
 import { blurStyle } from '@/lib/imageColor';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
-import { cachedJson, peekJson, storeJson } from '@/lib/cachedJson';
+import { cachedJson, peekJson, storeJson, useCachedJson } from '@/lib/cachedJson';
 import { usePlayer, type QueueTrack } from '@/lib/PlayerContext';
 import type { ApiUser, Device, SpotifyArtistAlbum } from '@/lib/types';
 import type { ArtistTopTrack } from '@/lib/spotifyCatalog';
@@ -57,36 +57,24 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
   const art = state.currentArtist;
   const [resolvingGroup, setResolvingGroup] = useState<string | null>(null);
   const [tab, setTab] = useState<ArtistTab>('popular');
-  const [following, setFollowing] = useState(false);
   const [topTracks, setTopTracks] = useState<ArtistTopTrack[] | null | 'error'>(null);
-  const [reviews, setReviews] = useState<FriendReview[] | null>(null);
   // null = not loaded; configured=false = no Ticketmaster key on the server.
   const [concerts, setConcerts] = useState<{ configured: boolean; list: Concert[] } | 'error' | null>(null);
-  const [topFan, setTopFan] = useState<{ id: string; name: string; handle: string; avatarUrl: string | null; hours: number } | null>(null);
-  const [fans, setFans] = useState<{ id: string; name: string; handle: string; avatarUrl: string | null; hours: number }[]>([]);
 
   const isSpotify = art?.source === 'spotify';
 
+  // Through the browser's shared cache (lib/cachedJson): an artist seen
+  // before opens with all of it at once, refreshed quietly.
+  type Fan = { id: string; name: string; handle: string; avatarUrl: string | null; hours: number };
+  const fanData = useCachedJson<{ topFan: Fan | null; fans?: Fan[] }>(art && isSpotify && art.name ? `/api/artist/${art.id}/top-fan?name=${encodeURIComponent(art.name)}` : null).data;
+  const topFan = fanData?.topFan ?? null;
+  const fans = fanData?.fans ?? [];
+  const followUrl = art && isSpotify && me ? `/api/artist/${art.id}/follow` : null;
+  const following = !!useCachedJson<{ following: boolean }>(followUrl).data?.following;
+  const setFollowing = (v: boolean) => { if (followUrl) storeJson(followUrl, { following: v }); };
+
   useEffect(() => { setTab('popular'); }, [art?.id]);
 
-  useEffect(() => {
-    if (!art || !isSpotify) { setTopFan(null); setFans([]); return; }
-    let cancelled = false;
-    setTopFan(null);
-    setFans([]);
-    fetch(`/api/artist/${art.id}/top-fan?name=${encodeURIComponent(art.name)}`)
-      .then((r) => (r.ok ? r.json() : { topFan: null }))
-      .then((d) => { if (!cancelled) { setTopFan(d.topFan); setFans(d.fans || []); } });
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [art?.id, art?.name, isSpotify]);
-
-  useEffect(() => {
-    if (!art || !isSpotify || !me) { setFollowing(false); return; }
-    let cancelled = false;
-    fetch(`/api/artist/${art.id}/follow`).then((r) => (r.ok ? r.json() : { following: false })).then((d) => { if (!cancelled) setFollowing(!!d.following); });
-    return () => { cancelled = true; };
-  }, [art?.id, isSpotify, me]);
 
   useEffect(() => {
     if (!art || !isSpotify) { setTopTracks(null); return; }
@@ -121,16 +109,7 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
   }, [art, isSpotify, tab, concerts, me?.region]);
 
   const albumIdsKey = (art?.releasedAlbums || []).map((al) => al.id).join(',');
-  useEffect(() => {
-    if (!art || !isSpotify || !albumIdsKey) { setReviews(null); return; }
-    let cancelled = false;
-    setReviews(null);
-    fetch(`/api/artist/${art.id}/reviews?albums=${encodeURIComponent(albumIdsKey)}`)
-      .then((r) => (r.ok ? r.json() : { reviews: [] }))
-      .then((d) => { if (!cancelled) setReviews(d.reviews); });
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [art?.id, isSpotify, albumIdsKey]);
+  const reviews = useCachedJson<{ reviews: FriendReview[] }>(art && isSpotify && albumIdsKey ? `/api/artist/${art.id}/reviews?albums=${encodeURIComponent(albumIdsKey)}` : null).data?.reviews ?? null;
 
   const openMbGroup = async (title: string, artistName: string, groupId: string) => {
     if (resolvingGroup) return;

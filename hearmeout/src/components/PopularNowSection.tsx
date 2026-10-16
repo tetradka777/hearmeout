@@ -1,7 +1,7 @@
 'use client';
 
 import { useApp } from '@/lib/AppContext';
-import { cachedJson } from '@/lib/cachedJson';
+import { cachedJson, cachedPage } from '@/lib/cachedJson';
 import { fmt1 } from '@/lib/numberFormat';
 import { usePaged } from '@/lib/usePaged';
 import type { ChartAlbum, ChartAlbumLite } from '@/lib/appleCharts';
@@ -23,9 +23,7 @@ export function PopularNowSection({ genre }: { genre?: string }) {
       const top = await cachedJson<ChartAlbum[]>(`/api/charts/albums${region ? `?region=${region}` : ''}`);
       return { items: (top || []).filter(fits).map((a) => ({ ...a, country: me?.region || 'us' })), next: 0 };
     }
-    const res = await fetch(`/api/charts/more?page=${page}${region ? `&region=${region}` : ''}`);
-    if (!res.ok) throw new Error(String(res.status));
-    const d = await res.json() as { albums: ChartAlbumLite[]; next: number | null };
+    const d = await cachedPage<{ albums: ChartAlbumLite[]; next: number | null }>(`/api/charts/more?page=${page}${region ? `&region=${region}` : ''}`);
     return { items: d.albums.filter(fits), next: d.next };
   }, (a) => `${a.title}|${a.artist}`.toLowerCase(), [region, genre], 50);
 

@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
+import { albumStatsUrl, useAlbumJson } from '@/lib/useAlbumJson';
 import { useApp } from '@/lib/AppContext';
 import { REVIEW_TAG_LABEL_KEY, isReviewTagId, type ReviewTagId } from '@/lib/reviewTags';
 
@@ -13,31 +14,23 @@ const MAX_SHOWN = 8;
 // entirely rather than showing an empty header).
 export function AlbumTagsSummary({ albumId, refreshToken }: { albumId: string; refreshToken: number }) {
   const { t } = useApp();
-  const [counts, setCounts] = useState<{ id: ReviewTagId; count: number }[] | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    setCounts(null);
-    // Server-side aggregate (no private ratings, no user ids).
-    fetch(`/api/albums/${encodeURIComponent(albumId)}/stats`)
-      .then((r) => (r.ok ? r.json() : { tags: [] }))
-      .then((d: { tags: string[][] }) => {
-        if (cancelled) return;
-        const tally = new Map<ReviewTagId, number>();
-        for (const tags of d.tags) {
-          for (const tag of tags) {
-            if (!isReviewTagId(tag)) continue;
-            tally.set(tag, (tally.get(tag) || 0) + 1);
-          }
-        }
-        const sorted = [...tally.entries()]
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, MAX_SHOWN)
-          .map(([id, count]) => ({ id, count }));
-        setCounts(sorted);
-      });
-    return () => { cancelled = true; };
-  }, [albumId, refreshToken]);
+  // Server-side aggregate (no private ratings, no user ids), shared with
+  // the rating distribution through the browser cache.
+  const stats = useAlbumJson<{ tags: string[][] }>(albumStatsUrl(albumId), refreshToken);
+  const counts = useMemo(() => {
+    if (!stats) return null;
+    const tally = new Map<ReviewTagId, number>();
+    for (const tags of stats.tags || []) {
+      for (const tag of tags) {
+        if (!isReviewTagId(tag)) continue;
+        tally.set(tag, (tally.get(tag) || 0) + 1);
+      }
+    }
+    return [...tally.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, MAX_SHOWN)
+      .map(([id, count]) => ({ id, count }));
+  }, [stats]);
 
   if (!counts || !counts.length) return null;
 

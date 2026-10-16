@@ -1,8 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { ALBUMS } from './data';
-import { withSpotifyCache } from './spotifyCache';
 import { fetchAllRows } from './supabasePaginate';
-import { fetchArtistAlbumsSplit, resolveSpotifyArtistId } from './spotifyCatalog';
+import { deezerArtistIdForName, deezerReleasesById } from './deezerServer';
 import { RateLimitError } from './upstreamError';
 import { cachedArtistConcerts, concertsConfigured, regionFirst } from './concerts';
 import { DEFAULT_PRIVACY, fetchPrivacy } from './privacy';
@@ -12,8 +11,8 @@ import { DEFAULT_PRIVACY, fetchPrivacy } from './privacy';
 // about artists the viewer listens to most; the rest are about the most
 // popular artists (the catalog's all-time Spotify streaming rank, kworb).
 export type TickerNewsItem =
-  | { kind: 'release'; id: string; artist: string; title: string; date: string; mine: boolean; spotifyAlbumId: string }
-  | { kind: 'upcoming'; id: string; artist: string; title: string; date: string; mine: boolean; spotifyAlbumId: string }
+  | { kind: 'release'; id: string; artist: string; title: string; date: string; mine: boolean }
+  | { kind: 'upcoming'; id: string; artist: string; title: string; date: string; mine: boolean }
   | { kind: 'concert'; id: string; artist: string; date: string; city: string | null; country: string | null; mine: boolean }
   | { kind: 'dayRecord'; id: string; minutes: number }
   | { kind: 'milestone'; id: string; userId: string; name: string | null; count: number }
@@ -61,9 +60,9 @@ export async function topArtistsOf(admin: SupabaseClient, userId: string, n: num
   return [...ms.values()].sort((a, b) => b.ms - a.ms).slice(0, n).map((a) => a.name);
 }
 
-// Recent and announced albums of these artists. Artist ids and album lists
-// go through the shared cache, so a warm cache costs Spotify nothing; a rate
-// limit stops the loop and keeps what was found so far.
+// Recent and announced albums of these artists, from Deezer (no Spotify
+// quota spent: lib/deezerServer deezerReleasesById); an artist whose name
+// Deezer can't pin down for sure is skipped.
 export async function releasesFor(artists: string[], mine: boolean): Promise<TickerNewsItem[]> {
   const items: TickerNewsItem[] = [];
   const now = Date.now();
@@ -72,13 +71,13 @@ export async function releasesFor(artists: string[], mine: boolean): Promise<Tic
   const upcomingTo = isoDay(now + UPCOMING_DAYS * dayMs);
   for (const artist of artists) {
     try {
-      const id = await withSpotifyCache(`artistid:v2:${artist.toLowerCase()}`, 30 * 86400, () => resolveSpotifyArtistId(artist));
-      if (!id) continue;
-      const { released, upcoming } = await withSpotifyCache(`artistalbums:v1:${id}`, 86400, () => fetchArtistAlbumsSplit(id));
-      const fresh = released.find((a) => a.releaseDate && a.releaseDate.length === 10 && a.releaseDate >= recentFrom && a.releaseDate <= today);
-      if (fresh) items.push({ kind: 'release', id: `rel-${fresh.id}`, artist, title: fresh.title, date: fresh.releaseDate!, mine, spotifyAlbumId: fresh.id });
-      const next = upcoming.find((a) => a.releaseDate && a.releaseDate <= upcomingTo);
-      if (next) items.push({ kind: 'upcoming', id: `up-${next.id}`, artist, title: next.title, date: next.releaseDate!, mine, spotifyAlbumId: next.id });
+      const dzId = await deezerArtistIdForName(artist);
+      if (!dzId) continue;
+      const releases = await deezerReleasesById(dzId);
+      const fresh = releases.find((a) => a.date >= recentFrom && a.date <= today);
+      if (fresh) items.push({ kind: 'release', id: `rel-dz${fresh.id}`, artist, title: fresh.title, date: fresh.date, mine });
+      const next = [...releases].reverse().find((a) => a.date > today && a.date <= upcomingTo);
+      if (next) items.push({ kind: 'upcoming', id: `up-dz${next.id}`, artist, title: next.title, date: next.date, mine });
     } catch (err) {
       if (err instanceof RateLimitError) break;
     }

@@ -16,7 +16,7 @@ import { ConcertsFeed } from '../ConcertsFeed';
 import { ObscureAlbums } from '../ObscureAlbums';
 import { GenreTopArtists } from '../GenreTopArtists';
 import { MascotIcon } from '../redesign/icons';
-import { cachedJson, peekJson } from '@/lib/cachedJson';
+import { cachedJson, peekJson, cachedPage } from '@/lib/cachedJson';
 import { usePaged } from '@/lib/usePaged';
 
 // Discover: this is where the old Home/catalog-browser content lives now
@@ -127,9 +127,7 @@ function useEnsureAlbums(ids: string[]) {
 function SiteReviewsShelf() {
   const { t, albums, liveAlbums, failedAlbumIds } = useApp();
   const { items, done, failed, more } = usePaged<SiteReview, number>(async (from) => {
-    const res = await fetch(`/api/reviews/recent?from=${from ?? 0}`);
-    if (!res.ok) throw new Error(String(res.status));
-    const d = await res.json() as { reviews: SiteReview[]; next: number | null };
+    const d = await cachedPage<{ reviews: SiteReview[]; next: number | null }>(`/api/reviews/recent?from=${from ?? 0}`);
     return { items: d.reviews, next: d.next };
   }, (r) => `${r.user.id || r.user.handle}|${r.albumId}`, [], 50);
   useEnsureAlbums(items.map((r) => r.albumId));

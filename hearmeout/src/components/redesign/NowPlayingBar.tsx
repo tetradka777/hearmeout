@@ -42,7 +42,7 @@ export function NowPlayingBar() {
         <div className="cov" style={{ width: 40, height: 40, flex: 'none', borderRadius: 10, ...(np.cover ? { backgroundImage: `url('${sizedImage(np.cover, 40)}')`, backgroundSize: 'cover' } : {}) }} />
         <div>
           <b>{np.title}</b>
-          <small><ArtistName name={np.artist} size={16} /></small>
+          <small><ArtistName name={np.artist} albumId={np.albumId} size={16} /></small>
         </div>
       </div>
       {np.albumId && (

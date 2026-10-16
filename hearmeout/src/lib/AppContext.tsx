@@ -5,7 +5,7 @@ import { setNumberLanguage } from './numberFormat';
 import { ALBUMS } from './data';
 import { pickLanguage, translate, type Language, type TranslationKey } from './i18n';
 import { clearStatsCache } from './statsClientCache';
-import { peekJson, setJsonCacheOwner, storeJson } from './cachedJson';
+import { jsonAge, peekJson, setJsonCacheOwner, storeJson } from './cachedJson';
 import { storeAlbums, storedAlbums } from './albumStore';
 import { completedWeekRange } from './weeks';
 import type {
@@ -39,6 +39,9 @@ function catalogAlbumToAlbum(c: CatalogAlbum): Album {
 // Full detail (real tracklist + primary artist id) for an on-demand album —
 // one recap track, a friend's top-4 pick, an artist's discography entry —
 // that isn't already sitting in the local catalog or a loaded home section.
+// Artist page requests in flight, by Spotify id (see openSpotifyArtist).
+const artistRequests = new Map<string, Promise<unknown>>();
+
 function albumDetailToAlbum(d: AlbumDetail, overrideId?: string): Album {
   // Live data replaces the catalog entry in liveAlbums, so keep the
   // catalog's genre when Spotify has none — an empty bucket here used to
@@ -1147,10 +1150,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
     const stored = peekJson<ArtistData>(storeKey);
     if (stored) apply(stored);
+    // A copy under a minute old needs no request at all.
+    if (stored && (jsonAge(storeKey) ?? Infinity) < 60_000) {
+      replaceScreenHistory({ activeScreen: 'artist', artistId: id, artistName: stored.name, artistSource: 'spotify' });
+      return;
+    }
     try {
-      const res = await fetch(`${storeKey}${knownName ? `?name=${encodeURIComponent(knownName)}` : ''}`);
-      if (!res.ok) throw new Error(res.status === 503 ? 'rate_limited' : String(res.status));
-      const data = await res.json() as ArtistData;
+      // The same artist asked for again while its request is out (restoring
+      // from the URL can call this several times) shares that request.
+      let req = artistRequests.get(id);
+      if (!req) {
+        req = fetch(`${storeKey}${knownName ? `?name=${encodeURIComponent(knownName)}` : ''}`)
+          .then(async (res) => {
+            if (!res.ok) throw new Error(res.status === 503 ? 'rate_limited' : String(res.status));
+            return await res.json() as ArtistData;
+          })
+          .finally(() => { artistRequests.delete(id); });
+        artistRequests.set(id, req);
+      }
+      const data = await req as ArtistData;
       // A partial page (Spotify busy) doesn't replace a full copy.
       if (!(data.limited && stored)) apply(data);
       if (!data.limited) storeJson(storeKey, data);

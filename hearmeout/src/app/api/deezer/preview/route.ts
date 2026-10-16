@@ -67,14 +67,13 @@ export async function GET(request: NextRequest) {
 //    artist and the title must match. Never "something by a similar
 //    artist" or "the album's first track": no preview beats a wrong one.
 async function findPreview(artist: string, title: string, albumId: string): Promise<{ title: string; preview: string } | null> {
-  // Without an album the ISRC route starts with a Spotify search, which
-  // costs the quota the whole app shares: the strict Deezer search goes
-  // first, Spotify only when it finds nothing.
-  if (!albumId) {
-    const found = await previewBySearch(artist, title);
-    if (found) return found;
-    try { return await previewByIsrc(artist, title, albumId); } catch { return null; }
-  }
+  // The ISRC route costs Spotify requests (the quota the whole app
+  // shares), so a Deezer track with exactly this title by exactly this
+  // artist goes first — the same recording in practice. Only when there's
+  // none (or just a "(Live)"/"- Remastered" variant) is the exact recording
+  // looked up through Spotify, then the looser Deezer match.
+  const exactTitle = await previewBySearch(artist, title, true);
+  if (exactTitle) return exactTitle;
   try {
     const exact = await previewByIsrc(artist, title, albumId);
     if (exact) return exact;
@@ -88,7 +87,7 @@ async function findPreview(artist: string, title: string, albumId: string): Prom
 async function previewByIsrc(artist: string, title: string, albumId: string): Promise<{ title: string; preview: string } | null> {
   let trackId: string | null = null;
   if (albumId) {
-    const detail = await withSpotifyCache(`album:${albumId}`, 14 * 86400, () => fetchSpotifyAlbumDetail(albumId));
+    const detail = await withSpotifyCache(`album:${albumId}`, 180 * 86400, () => fetchSpotifyAlbumDetail(albumId));
     const list = detail?.tracklist || [];
     trackId = (list.find((t) => normalize(t.title) === normalize(title)) || list.find((t) => sameTitle(t.title, title)))?.id ?? null;
   }
@@ -104,10 +103,12 @@ async function previewByIsrc(artist: string, title: string, albumId: string): Pr
   return dz?.preview ? { title: dz.title, preview: dz.preview } : null;
 }
 
-async function previewBySearch(artist: string, title: string): Promise<{ title: string; preview: string } | null> {
+// exact: the whole title must match, not just its core (so "Song (Live)"
+// doesn't pass for "Song").
+async function previewBySearch(artist: string, title: string, exact = false): Promise<{ title: string; preview: string } | null> {
   for (const q of [`artist:"${artist}" track:"${title}"`, `${artist} ${title}`]) {
     const data = await deezerGet<{ data?: DeezerTrack[] }>(`/search?q=${encodeURIComponent(q)}&limit=15`);
-    const hit = (data.data || []).find((t) => t.preview && sameTitle(t.title, title) && sameArtist([t.artist?.name || ''], artist));
+    const hit = (data.data || []).find((t) => t.preview && (exact ? normalize(t.title) === normalize(title) : sameTitle(t.title, title)) && sameArtist([t.artist?.name || ''], artist));
     if (hit) return { title: hit.title, preview: hit.preview };
   }
   return null;

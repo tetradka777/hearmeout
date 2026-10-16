@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
+import { albumStatsUrl, useAlbumJson } from '@/lib/useAlbumJson';
 import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 
@@ -13,25 +14,18 @@ const BUCKET_COUNT = 50;
 // message once loaded with zero rows.
 export function AlbumRatingDistribution({ albumId, refreshToken, you }: { albumId: string; refreshToken: number; you?: number | null }) {
   const { t } = useApp();
-  const [counts, setCounts] = useState<number[] | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    setCounts(null);
-    // Server-side aggregate (no private ratings, no user ids).
-    fetch(`/api/albums/${encodeURIComponent(albumId)}/stats`)
-      .then((r) => (r.ok ? r.json() : { stars: [] }))
-      .then((d: { stars: number[] }) => {
-        if (cancelled) return;
-        const buckets = new Array(BUCKET_COUNT).fill(0);
-        for (const stars of d.stars) {
-          const tenths = Math.min(BUCKET_COUNT, Math.max(1, Math.round(stars * 10)));
-          buckets[tenths - 1]++;
-        }
-        setCounts(buckets);
-      });
-    return () => { cancelled = true; };
-  }, [albumId, refreshToken]);
+  // Server-side aggregate (no private ratings, no user ids), shared with
+  // the tags summary through the browser cache.
+  const stats = useAlbumJson<{ stars: number[] }>(albumStatsUrl(albumId), refreshToken);
+  const counts = useMemo(() => {
+    if (!stats) return null;
+    const buckets = new Array(BUCKET_COUNT).fill(0);
+    for (const stars of stats.stars || []) {
+      const tenths = Math.min(BUCKET_COUNT, Math.max(1, Math.round(stars * 10)));
+      buckets[tenths - 1]++;
+    }
+    return buckets as number[];
+  }, [stats]);
 
   if (counts === null) return null;
 

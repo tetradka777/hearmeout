@@ -361,7 +361,7 @@ export function FriendScreen({ device: _device }: { device: Device }) {
               <div>
                 <small style={{ fontWeight: 800 }}>{f.nowPlaying ? t('friend.listeningNow') : t('friend.lastPlayedAgo', { time: formatRelative(lp.startedAt, language) })}</small>
                 <h3>{a?.title ?? lp.title}</h3>
-                <p className="muted" style={{ fontWeight: 600 }}><ArtistName name={lp.artist} size={18} /></p>
+                <p className="muted" style={{ fontWeight: 600 }}><ArtistName name={lp.artist} albumId={lp.albumId} size={18} /></p>
               </div>
             </button>
           );

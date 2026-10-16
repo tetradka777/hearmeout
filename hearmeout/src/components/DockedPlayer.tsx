@@ -32,7 +32,7 @@ export function GlobalPlayer() {
           <div className="cov" style={{ width: 40, height: 40, flex: 'none', ...(currentTrack.cover ? { backgroundImage: `url('${sizedImage(currentTrack.cover, 40)}')`, backgroundSize: 'cover' } : {}) }} />
           <div className="mp-tt">
             <b>{currentTrack.title}</b>
-            <small><ArtistName name={currentTrack.artist} size={16} /></small>
+            <small><ArtistName name={currentTrack.artist} albumId={currentTrack.spotifyId || currentTrack.albumId} size={16} /></small>
           </div>
         </div>
         <div className="mp-ctl">

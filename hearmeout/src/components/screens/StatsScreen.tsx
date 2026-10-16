@@ -240,8 +240,10 @@ export function StatsScreen(_props: { device: Device }) {
     if (hit) pickSeason(hit.data);
     if (hit?.fresh) return;
     fetch(`/api/stats?${key}`).then((r) => (r.ok ? r.json() : null)).then((d: StatsData | null) => {
-      if (cancelled || !d) return;
+      if (!d) return;
+      // Kept even if you've already switched away, so coming back is instant.
       storeStats(key, d);
+      if (cancelled) return;
       setData(d);
       pickSeason(d);
     });
@@ -402,7 +404,7 @@ export function StatsScreen(_props: { device: Device }) {
                           {mine != null && <span className="sc13">{fmt1(mine)}</span>}
                         </div>
                         <b>{a.title}</b>
-                        <small className="muted"><ArtistName name={a.artist} size={16} /></small>
+                        <small className="muted"><ArtistName name={a.artist} albumId={a.albumId} size={16} /></small>
                       </button>
                     );
                   })}
@@ -449,7 +451,7 @@ export function StatsScreen(_props: { device: Device }) {
                           <span className="pi13" aria-hidden="true"><i className="ic ic-play" /></span>
                         </button>
                         <b>{p.title}</b>
-                        <small className="muted" style={{ fontWeight: 600 }}><ArtistName name={p.artist} size={16} /></small>
+                        <small className="muted" style={{ fontWeight: 600 }}><ArtistName name={p.artist} albumId={p.albumId} size={16} /></small>
                         <small className="muted" style={{ fontWeight: 700, fontSize: 12 }}>{formatRelative(p.playedAt, language)}</small>
                         <span className="acts13">
                           <button className={`ib love${loved ? ' on' : ''}`} aria-pressed={loved} onClick={() => toggleLoved('track', p.title, p.artist, p.trackId, p.cover)} aria-label={loved ? t('album.removeFromLoved') : t('album.addToLoved')}>

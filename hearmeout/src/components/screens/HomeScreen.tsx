@@ -241,11 +241,13 @@ function FeedSection() {
 function FriendCard({ user, demo, pct }: { user: ApiUser; demo: boolean; pct: number | null }) {
   const { t, language, viewFriend } = useApp();
   const { data: profile, failed } = useCachedJson<PublicProfile>(`/api/users/${user.id}`);
+  // Each friend in their own colour (their photo's, or their tone). Hooks
+  // before the early return: a hook after it crashed the page (React #300)
+  // when a demo profile turned out missing.
+  const color = usePersonColor(user);
   if (demo && failed) return null; // a demo profile missing from this database
   const play = profile?.nowPlaying || profile?.lastPlayed || null;
   const live = !!profile?.nowPlaying;
-  // Each friend in their own colour (their photo's, or their tone).
-  const color = usePersonColor(user);
   return (
     <button className="tile fr13 tn15" style={tintStyle(color)} onClick={() => viewFriend(user.id)}>
       {demo && <span className="tag dm13">{t('friends.demoTag')}</span>}
@@ -392,7 +394,7 @@ function TrendingSection() {
 }
 
 export function HomeScreen(_props: { device: Device }) {
-  const { me, setFeed, ensureRecap, recapCache } = useApp();
+  const { t, me, setFeed, ensureRecap, recapCache } = useApp();
   const feedUrl = `/api/feed?tz=${new Date().getTimezoneOffset()}`;
 
   useEffect(() => {
@@ -423,6 +425,8 @@ export function HomeScreen(_props: { device: Device }) {
 
   return (
     <>
+      {/* the page heading for screen readers (the hot take, when there is one, has its own) */}
+      <h1 className="sr">{t('nav.home')}</h1>
       <div className="bento b3">
         <HeroTile wide={seen} />
         {!seen && <RecapCard r={r} week={week} />}

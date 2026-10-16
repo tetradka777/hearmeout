@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { fetchSpotifyTrackAlbum } from './spotifyCatalog';
 import { withSpotifyCache } from './spotifyCache';
+import { inBackground } from './spotifyPriority';
 import { deezerArtistByName, deezerArtistGenres, normalizeTitle } from './deezerServer';
 import { bucketForGenres } from './genreBuckets';
 import { fetchAllRows } from './supabasePaginate';
@@ -37,7 +38,8 @@ export async function enrichListeningHistoryCovers(admin: SupabaseClient, userId
   if (runningFor.has(userId)) return;
   runningFor.add(userId);
   try {
-    await enrich(admin, userId);
+    // Nobody waits for this: background share of the Spotify budget.
+    await inBackground(() => enrich(admin, userId));
   } finally {
     runningFor.delete(userId);
   }

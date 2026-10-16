@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useApp } from '@/lib/AppContext';
-import { useCachedJson, invalidateJson } from '@/lib/cachedJson';
+import { useCachedJson, invalidateJson, cachedPage } from '@/lib/cachedJson';
 import { usePaged } from '@/lib/usePaged';
 import type { FanClub } from '@/app/api/fanclubs/route';
 import { ArtistShelfCard, Shelf } from './ui/SuperCards';
@@ -38,9 +38,7 @@ async function resolveId(name: string): Promise<string | null> {
 export function FanClubsForYou() {
   const { t, showToast, openFanClub } = useApp();
   const { items, done, more } = usePaged<FanClub, number>(async (from) => {
-    const res = await fetch(`/api/fanclubs?suggest=${from ?? 0}`);
-    if (!res.ok) throw new Error(String(res.status));
-    const d = await res.json() as { suggested: FanClub[]; next: number | null };
+    const d = await cachedPage<{ suggested: FanClub[]; next: number | null }>(`/api/fanclubs?suggest=${from ?? 0}`);
     return { items: d.suggested, next: d.next };
   }, (f) => f.name.toLowerCase(), [], 50);
   const [joined, setJoined] = useState<Set<string>>(new Set());
