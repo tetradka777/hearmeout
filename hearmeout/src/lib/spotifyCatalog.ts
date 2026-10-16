@@ -1,6 +1,7 @@
 import { getSpotifyAppToken } from './spotifyAppAuth';
 import { bucketForGenres } from './genreBuckets';
-import { deezerArtistByName, deezerArtistGenres } from './deezerServer';
+import { deezerArtistFor, deezerArtistGenres, deezerGenresById } from './deezerServer';
+import { withSpotifyCache } from './spotifyCache';
 import { RateLimitError, retryAfterSeconds } from './upstreamError';
 import { logServerError } from './errorLog';
 
@@ -283,10 +284,11 @@ export async function fetchSpotifyArtistDetail(id: string): Promise<ArtistDetail
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`Spotify request failed (/artists/${id}): ${res.status}`);
   const a = await res.json();
-  const [dz, genres] = await Promise.all([
-    deezerArtistByName(a.name).catch(() => null),
-    deezerArtistGenres(a.name).catch(() => [] as string[]),
-  ]);
+  // Deezer's artist only when its albums match this artist's (namesakes).
+  const albums = await withSpotifyCache(`artistalbums:v1:${id}`, 12 * 3600, () => fetchArtistAlbumsSplit(id)).catch(() => null);
+  const titles = albums ? [...albums.released, ...albums.upcoming].map((al) => al.title) : [];
+  const dz = await deezerArtistFor(id, a.name, titles).catch(() => null);
+  const genres = dz ? await deezerGenresById(dz.id).catch(() => [] as string[]) : [];
   return {
     id: a.id,
     name: a.name,

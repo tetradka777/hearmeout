@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const artist = await deezerArtistByName(name);
-    if (!artist?.photo) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+    if (!artist?.photo || !artist.exact || (artist.namesakes ?? 1) > 1) return NextResponse.json({ error: 'not_found' }, { status: 404 });
     // No Cache-Control: an edge cache keyed by path only would ignore the
     // `name` query string and give every artist the first cached photo.
     return NextResponse.json({ photo: artist.photo });

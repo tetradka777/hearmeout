@@ -1,5 +1,5 @@
 import { withSpotifyCache } from './spotifyCache';
-import { deezerTopTracks, normalizeTitle } from './deezerServer';
+import { deezerArtistFor, deezerTopTracksById, normalizeTitle } from './deezerServer';
 import { fetchArtistAlbumsSplit, fetchSpotifyAlbumDetail, resolveArtistAlbumId, type ArtistTopTrack } from './spotifyCatalog';
 import { RateLimitError } from './upstreamError';
 
@@ -12,10 +12,11 @@ import { RateLimitError } from './upstreamError';
 // both and the album tracklists go through the shared cache. A track whose
 // album or title can't be matched is left out.
 export async function fetchArtistTopTracks(spotifyArtistId: string, artistName: string): Promise<ArtistTopTrack[]> {
-  const top = await deezerTopTracks(artistName);
-  if (!top.length) return [];
-
   const own = await withSpotifyCache(`artistalbums:v1:${spotifyArtistId}`, 12 * 3600, () => fetchArtistAlbumsSplit(spotifyArtistId)).catch(() => null);
+  // The Deezer artist must be this one, not a namesake (deezerArtistFor).
+  const dz = await deezerArtistFor(spotifyArtistId, artistName, own ? [...own.released, ...own.upcoming].map((a) => a.title) : []);
+  const top = dz ? await deezerTopTracksById(dz.id) : [];
+  if (!top.length) return latestReleaseTracks(spotifyArtistId, artistName, own?.released || []);
   const ownByTitle = new Map((own?.released || []).map((a) => [normalizeTitle(a.title), a.id] as const));
 
   const albumIdFor = new Map<string, string | null>();
@@ -32,7 +33,7 @@ export async function fetchArtistTopTracks(spotifyArtistId: string, artistName: 
       if (!albumId) continue;
       const album = await withSpotifyCache(`album:${albumId}`, 14 * 86400, () => fetchSpotifyAlbumDetail(albumId));
       // Only the artist's own releases: never a cover or tribute album.
-      if (!album || (album.artistId !== spotifyArtistId && !album.artist.toLowerCase().includes(artistName.toLowerCase()))) continue;
+      if (!album || (album.artistId !== spotifyArtistId && normalizeTitle(album.artist) !== normalizeTitle(artistName))) continue;
       const want = normalizeTitle(tr.title);
       const match = album.tracklist.find((t) => normalizeTitle(t.title) === want)
         || album.tracklist.find((t) => { const n = normalizeTitle(t.title); return !!want && (n.startsWith(want) || want.startsWith(n)); });
@@ -52,14 +53,38 @@ export async function fetchArtistTopTracks(spotifyArtistId: string, artistName: 
       if (err instanceof RateLimitError) throw err;
     }
   }
+  return out.length ? out : latestReleaseTracks(spotifyArtistId, artistName, own?.released || []);
+}
+
+// An artist too small for Deezer's ranking (or not on Deezer): the lead
+// track of each of their latest releases on Spotify, newest first.
+async function latestReleaseTracks(spotifyArtistId: string, artistName: string, released: { id: string }[]): Promise<ArtistTopTrack[]> {
+  const out: ArtistTopTrack[] = [];
+  for (const ref of released.slice(0, 8)) {
+    const album = await withSpotifyCache(`album:${ref.id}`, 14 * 86400, () => fetchSpotifyAlbumDetail(ref.id));
+    if (!album || (album.artistId !== spotifyArtistId && normalizeTitle(album.artist) !== normalizeTitle(artistName))) continue;
+    const first = album.tracklist[0];
+    if (!first || out.some((o) => o.id === first.id || normalizeTitle(o.title) === normalizeTitle(first.title))) continue;
+    out.push({
+      id: first.id,
+      title: first.title,
+      durationMs: first.durationMs ?? 0,
+      albumId: album.id,
+      albumTitle: album.title,
+      albumCover: album.cover,
+      trackNumber: first.trackNumber,
+    });
+  }
   return out;
 }
 
 // Deezer's ranking alone, for while Spotify is rate-limiting the app: the
 // tracks play (previews come from Deezer) but have no Spotify album, so the
-// page can't open, rate or bookmark them.
-export async function deezerOnlyTopTracks(artistName: string): Promise<ArtistTopTrack[]> {
-  const top = await deezerTopTracks(artistName);
+// page can't open, rate or bookmark them. Only a Deezer artist that is
+// surely this one (compared with whatever album titles are cached).
+export async function deezerOnlyTopTracks(spotifyArtistId: string, artistName: string, albumTitles: string[]): Promise<ArtistTopTrack[]> {
+  const dz = await deezerArtistFor(spotifyArtistId, artistName, albumTitles);
+  const top = dz ? await deezerTopTracksById(dz.id) : [];
   return top.map((tr, i) => ({
     id: `dz-${i}-${normalizeTitle(tr.title)}`,
     title: tr.title,
