@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentUserId } from '@/lib/identity';
 import { RateLimitError, upstreamErrorResponse } from '@/lib/upstreamError';
 import { fetchSpotifyArtistDetail, fetchArtistAlbumsSplit, type ArtistDetail, type SpotifyArtistAlbumRef } from '@/lib/spotifyCatalog';
-import { deezerArtistByName, deezerArtistGenres } from '@/lib/deezerServer';
+import { deezerArtistFor, deezerGenresById } from '@/lib/deezerServer';
 import { peekSpotifyCache, withSpotifyCache } from '@/lib/spotifyCache';
 
 type CachedArtist = { artist: ArtistDetail | null; released: SpotifyArtistAlbumRef[]; upcoming: SpotifyArtistAlbumRef[] };
@@ -13,8 +13,10 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   if (!(await getCurrentUserId())) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
   const { id } = await context.params;
   try {
-    const result = await withSpotifyCache<CachedArtist>(`artist:v2:${id}`, 21600, async () => {
-      const [artist, albums] = await Promise.all([fetchSpotifyArtistDetail(id), fetchArtistAlbumsSplit(id)]);
+    const result = await withSpotifyCache<CachedArtist>(`artist:v3:${id}`, 21600, async () => {
+      // The albums first (cached): the artist detail compares them with Deezer.
+      const albums = await withSpotifyCache(`artistalbums:v1:${id}`, 12 * 3600, () => fetchArtistAlbumsSplit(id));
+      const artist = await fetchSpotifyArtistDetail(id);
       return { artist, released: albums.released, upcoming: albums.upcoming };
     });
     if (!result.artist) return NextResponse.json({ error: 'not_found' }, { status: 404 });
@@ -30,10 +32,12 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     if (err instanceof RateLimitError) {
       const name = (await peekSpotifyCache<string>(`artist-name:v1:${id}`)) || new URL(request.url).searchParams.get('name')?.slice(0, 200);
       if (name) {
-        // Only a Deezer artist with exactly this name: never someone else's face.
-        const found = await deezerArtistByName(name).catch(() => null);
-        const dz = found?.exact ? found : null;
-        const genres = dz ? await deezerArtistGenres(name).catch(() => [] as string[]) : [];
+        // Deezer's artist only when it's surely this one (deezerArtistFor):
+        // compared with whatever album list is cached, else a unique name.
+        const albums = (await peekSpotifyCache<{ released: SpotifyArtistAlbumRef[] }>(`artistalbums:v1:${id}`))?.released
+          || (await peekSpotifyCache<CachedArtist>(`artist:v2:${id}`))?.released || [];
+        const dz = await deezerArtistFor(id, name, albums.map((al) => al.title)).catch(() => null);
+        const genres = dz ? await deezerGenresById(dz.id).catch(() => [] as string[]) : [];
         return NextResponse.json({ id, name, photo: dz?.photo ?? null, genres, fans: dz?.fans ?? null, releasedAlbums: [], upcomingAlbums: [], limited: true });
       }
     }

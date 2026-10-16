@@ -46,19 +46,73 @@ export function normalizeTitle(s: string): string {
 
 type DzArtist = { id: number; name: string; nb_fan?: number; picture_medium?: string; picture_big?: string };
 // exact: the name matched exactly (else the best known artist for the search).
-export type DeezerArtist = { id: number; name: string; fans: number | null; photo: string | null; exact?: boolean };
+// namesakes: how many Deezer artists have exactly this name.
+export type DeezerArtist = { id: number; name: string; fans: number | null; photo: string | null; exact?: boolean; namesakes?: number };
 
 // The artist with exactly this name if there is one, else the best known
 // (Deezer orders artist search by relevance and popularity). 30 days.
 export function deezerArtistByName(name: string): Promise<DeezerArtist | null> {
-  return withSpotifyCache(`dz-artist:v3:${name.toLowerCase()}`, 30 * 86400, async () => {
+  return withSpotifyCache(`dz-artist:v4:${name.toLowerCase()}`, 30 * 86400, async () => {
     const data = await deezerGet<{ data?: DzArtist[] }>(`/search/artist?q=${encodeURIComponent(name)}&limit=5`);
     const list = data.data || [];
     const want = normalizeTitle(name);
     // Several artists can share a name: the best known of them.
     const same = list.filter((x) => normalizeTitle(x.name) === want).sort((x, y) => (y.nb_fan ?? 0) - (x.nb_fan ?? 0));
     const a = same[0] || list[0];
-    return a ? { id: a.id, name: a.name, fans: a.nb_fan ?? null, photo: a.picture_medium ?? null, exact: !!same[0] } : null;
+    return a ? { id: a.id, name: a.name, fans: a.nb_fan ?? null, photo: a.picture_medium ?? null, exact: !!same[0], namesakes: same.length } : null;
+  });
+}
+
+// The Deezer artist that is this Spotify artist. Names aren't enough —
+// Deezer has three different "Miley"s, and a name search also returns Miley
+// Cyrus — so only artists with exactly this name count, and among them the
+// one whose albums share titles with the Spotify artist's albums. Without
+// any shared title it's nobody (null): no Deezer data beats someone else's.
+// With no Spotify album titles to compare (Spotify unavailable), only a
+// name nobody else on Deezer has is trusted. 30 days per Spotify artist.
+export function deezerArtistFor(spotifyId: string, name: string, spotifyAlbumTitles: string[]): Promise<DeezerArtist | null> {
+  const titles = new Set(spotifyAlbumTitles.map(normalizeTitle).filter(Boolean));
+  const find = async (): Promise<DeezerArtist | null> => {
+    const data = await deezerGet<{ data?: DzArtist[] }>(`/search/artist?q=${encodeURIComponent(name)}&limit=25`);
+    const want = normalizeTitle(name);
+    const same = (data.data || []).filter((x) => normalizeTitle(x.name) === want).sort((x, y) => (y.nb_fan ?? 0) - (x.nb_fan ?? 0));
+    const pick = (a: DzArtist): DeezerArtist => ({ id: a.id, name: a.name, fans: a.nb_fan ?? null, photo: a.picture_medium ?? null, exact: true, namesakes: same.length });
+    if (!titles.size) return same.length === 1 ? pick(same[0]) : null;
+    let best: { a: DzArtist; shared: number } | null = null;
+    for (const a of same.slice(0, 5)) {
+      const albums = await deezerGet<{ data?: { title: string }[] }>(`/artist/${a.id}/albums?limit=100`);
+      const shared = new Set((albums.data || []).map((al) => normalizeTitle(al.title)).filter((tl) => titles.has(tl))).size;
+      if (shared && (!best || shared > best.shared)) best = { a, shared };
+    }
+    return best ? pick(best.a) : null;
+  };
+  // Only a comparison with real titles is worth keeping for a month.
+  return titles.size ? withSpotifyCache(`dz-artist-for:v1:${spotifyId}`, 30 * 86400, find) : find();
+}
+
+// The genres of a Deezer artist's latest albums, most common first. 30 days.
+export function deezerGenresById(artistId: number): Promise<string[]> {
+  return withSpotifyCache(`dz-genres-id:v1:${artistId}`, 30 * 86400, async () => {
+    const albums = await deezerGet<{ data?: { id: number }[] }>(`/artist/${artistId}/albums?limit=3`);
+    const count = new Map<string, number>();
+    for (const al of (albums.data || []).slice(0, 2)) {
+      const full = await deezerGet<{ genres?: { data?: { name: string }[] } }>(`/album/${al.id}`);
+      for (const g of full.genres?.data || []) count.set(g.name, (count.get(g.name) || 0) + 1);
+    }
+    return [...count.entries()].sort((a, b) => b[1] - a[1]).map(([g]) => g);
+  });
+}
+
+// A Deezer artist's most played tracks. A day.
+export function deezerTopTracksById(artistId: number, limit = 10): Promise<DeezerTopTrack[]> {
+  return withSpotifyCache(`dz-top-id:v1:${artistId}`, 86400, async () => {
+    const top = await deezerGet<{ data?: { title: string; duration: number; album?: { title?: string; cover_xl?: string } }[] }>(`/artist/${artistId}/top?limit=${limit}`);
+    return (top.data || []).map((t) => ({
+      title: t.title,
+      durationMs: (t.duration || 0) * 1000,
+      albumTitle: t.album?.title || '',
+      albumCover: t.album?.cover_xl ?? null,
+    }));
   });
 }
 

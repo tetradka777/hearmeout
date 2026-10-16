@@ -25,7 +25,8 @@ async function photoFor({ name, id }: Item): Promise<string | null> {
   }
   try {
     const dz = await deezerArtistByName(name);
-    if (dz?.exact && dz.photo) return dz.photo;
+    // Not when Deezer has several artists with this name (which one?).
+    if (dz?.exact && (dz.namesakes ?? 1) <= 1 && dz.photo) return dz.photo;
   } catch { /* fall through */ }
   try {
     const hit = await withSpotifyCache(`sp-aexact:v1:${name.toLowerCase()}`, 30 * DAY, () => searchSpotifyArtistPhotoExact(name));
