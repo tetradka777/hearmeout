@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 
   const { data: created, error: insertErr } = await admin
     .from('users')
-    .insert({ name, handle, auth_user_id: authData.user.id })
+    .insert({ name, handle, auth_user_id: authData.user.id, region: 'US' })
     .select('id, name, handle, avatar_url')
     .single();
   if (insertErr || !created) {

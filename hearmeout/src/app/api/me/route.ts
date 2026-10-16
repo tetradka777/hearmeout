@@ -7,7 +7,8 @@ import { slugifyHandle } from '@/lib/slug';
 import type { ApiUser, Me } from '@/lib/types';
 import { isInternalEmail } from '@/lib/authInternalEmail';
 import { isDesign, isMode, isPaletteId } from '@/lib/palettes';
-import { fetchRegionAuto } from '@/lib/regionDetect';
+import { DEFAULT_REGION, detectRegionFromSpotify, fetchRegionAuto } from '@/lib/regionDetect';
+import { spotifyUserToken } from '@/lib/spotifySync';
 
 export async function GET() {
   const userId = await getCurrentUserId();
@@ -53,7 +54,7 @@ export async function GET() {
     playsCount: playsCount ?? 0,
     friends,
     language: (prefs?.language as Me['language']) || 'en',
-    region: prefs?.region ?? null,
+    region: prefs?.region ?? DEFAULT_REGION,
     regionAuto: regionAuto.regionAuto,
     detectedRegion: regionAuto.detectedRegion,
     hasPassword: !!prefs?.auth_user_id,
@@ -131,6 +132,12 @@ export async function PATCH(request: NextRequest) {
     if (body.regionAuto && detectedRegion) autoPatch.region = detectedRegion;
     const { error: autoErr } = await admin.from('users').update(autoPatch).eq('id', userId);
     if (autoErr) return NextResponse.json({ error: autoErr.message }, { status: 500 });
+    // Turned on and the country isn't known yet: ask Spotify now, once (no
+    // connection yet → on the first sync after connecting).
+    if (body.regionAuto && !detectedRegion) {
+      const token = await spotifyUserToken(admin, userId).catch(() => null);
+      if (token) await detectRegionFromSpotify(admin, userId, token);
+    }
   }
   // Release notification switches (migration 028), their own update for
   // the same reason as regionAuto.
