@@ -92,12 +92,12 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
     if (!art || !isSpotify) { setTopTracks(null); return; }
     let cancelled = false;
     setTopTracks(null);
-    fetch(`/api/artist/${art.id}/top-tracks`)
+    fetch(`/api/artist/${art.id}/top-tracks?name=${encodeURIComponent(art.name)}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { if (!cancelled) setTopTracks(d ? d.tracks : 'error'); })
       .catch(() => { if (!cancelled) setTopTracks('error'); });
     return () => { cancelled = true; };
-  }, [art?.id, isSpotify]);
+  }, [art?.id, art?.name, isSpotify]);
 
   // Concerts load lazily, the first time the tab is opened for this artist.
   useEffect(() => { setConcerts(null); }, [art?.id, me?.region]);
@@ -215,7 +215,7 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
               return (
                 <div className={`row poprow ptr16${tr.albumCover ? ' bh15' : ' tile t-c3'}`} key={tr.id} style={blurStyle(tr.albumCover ? sizedImage(tr.albumCover, 300) ?? tr.albumCover : null)}>
                   <span className="num" style={{ fontSize: 22, minWidth: 28, opacity: 0.8, whiteSpace: 'nowrap' }}>{i + 1}</span>
-                  <button className="rowlink" onClick={() => openAlbum(tr.albumId)}>
+                  <button className="rowlink" disabled={!tr.albumId} onClick={() => tr.albumId && openAlbum(tr.albumId)}>
                     <span className="g">
                       <b>{tr.title}</b>
                       <small className="muted" style={{ fontWeight: 600 }}>{formatDuration(tr.durationMs)} · {tr.albumTitle}</small>
@@ -232,14 +232,14 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
                   >
                     <HeartIcon />
                   </button>
-                  <button
+                  {tr.albumId && <button
                     className={`ib love later${saved ? ' on' : ''}`}
                     aria-pressed={saved}
                     aria-label={saved ? t('track.removeLater') : t('track.saveLater')}
                     onClick={() => toggleLaterTrack(tr.albumId, trackIndex, tr.title, art.name, tr.albumCover)}
                   >
                     <BookmarkIcon />
-                  </button>
+                  </button>}
                   <button className="ib" onClick={() => playQueue(queue, i)} aria-label={t('album.playPreviewOf', { title: tr.title })}>
                     {isCur && playing ? <span className="eq"><b /><b /><b /></span> : <PlayIcon size={14} />}
                   </button>

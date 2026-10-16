@@ -67,6 +67,14 @@ export async function GET(request: NextRequest) {
 //    artist and the title must match. Never "something by a similar
 //    artist" or "the album's first track": no preview beats a wrong one.
 async function findPreview(artist: string, title: string, albumId: string): Promise<{ title: string; preview: string } | null> {
+  // Without an album the ISRC route starts with a Spotify search, which
+  // costs the quota the whole app shares: the strict Deezer search goes
+  // first, Spotify only when it finds nothing.
+  if (!albumId) {
+    const found = await previewBySearch(artist, title);
+    if (found) return found;
+    try { return await previewByIsrc(artist, title, albumId); } catch { return null; }
+  }
   try {
     const exact = await previewByIsrc(artist, title, albumId);
     if (exact) return exact;

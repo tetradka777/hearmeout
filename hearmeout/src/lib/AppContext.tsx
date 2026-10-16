@@ -1089,7 +1089,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
     if (!fromHistory) pushScreenHistory({ activeScreen: 'artist', artistId: id, artistName: knownName || '', artistSource: 'spotify' });
     try {
-      const res = await fetch(`/api/spotify/artist/${id}`);
+      const res = await fetch(`/api/spotify/artist/${id}${knownName ? `?name=${encodeURIComponent(knownName)}` : ''}`);
       if (!res.ok) throw new Error(res.status === 503 ? 'rate_limited' : String(res.status));
       const data = await res.json();
       setState((s) => ({
