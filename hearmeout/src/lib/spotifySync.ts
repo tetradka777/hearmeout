@@ -5,7 +5,9 @@ import { bucketForGenres } from './genreBuckets';
 import { RateLimitError } from './upstreamError';
 import { detectRegionFromSpotify } from './regionDetect';
 
-export async function syncSpotifyForUser(admin: SupabaseClient, userId: string): Promise<{ imported: number }> {
+// The user's Spotify access token, refreshed (and stored) when it's about
+// to expire. Throws 'not_connected' without a connection.
+export async function spotifyUserToken(admin: SupabaseClient, userId: string): Promise<string> {
   const { data: conn, error: connErr } = await admin
     .from('connections')
     .select('*')
@@ -31,8 +33,13 @@ export async function syncSpotifyForUser(admin: SupabaseClient, userId: string):
       .eq('user_id', userId)
       .eq('provider', 'spotify');
   }
+  return accessToken;
+}
 
-  // Keep the account country current for "Detect from my streaming account".
+export async function syncSpotifyForUser(admin: SupabaseClient, userId: string): Promise<{ imported: number }> {
+  const accessToken = await spotifyUserToken(admin, userId);
+
+  // "Detect from my streaming account": the country, once (lib/regionDetect).
   await detectRegionFromSpotify(admin, userId, accessToken);
   const items = await fetchRecentlyPlayed(accessToken);
   if (!items.length) return { imported: 0 };

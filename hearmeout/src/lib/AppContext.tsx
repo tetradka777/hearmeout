@@ -931,8 +931,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateRegionAuto = useCallback(async (regionAuto: boolean) => {
     setMe((prev) => (prev ? { ...prev, regionAuto, region: regionAuto && prev.detectedRegion ? prev.detectedRegion : prev.region } : prev));
     const res = await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ regionAuto }) });
-    if (!res.ok) { setMe((prev) => (prev ? { ...prev, regionAuto: !regionAuto } : prev)); showToast(t('settings.regionAutoFailed')); }
-  }, [showToast, t]);
+    if (!res.ok) { setMe((prev) => (prev ? { ...prev, regionAuto: !regionAuto } : prev)); showToast(t('settings.regionAutoFailed')); return; }
+    // Turning it on may have just asked Spotify for the country.
+    if (regionAuto) await refreshMe();
+  }, [showToast, t, refreshMe]);
 
   const updateOpenProfile = useCallback(async (isOpenProfile: boolean) => {
     setMe((prev) => (prev ? { ...prev, isOpenProfile } : prev));
