@@ -39,6 +39,13 @@ async function refresh<T>(key: string, ttlSeconds: number, fetcher: () => Promis
   return p;
 }
 
+// Whatever is stored under key, however old, without fetching (null if
+// nothing is) — for fallbacks while an upstream API is unavailable.
+export async function peekSpotifyCache<T>(key: string): Promise<T | null> {
+  const { data } = await supabaseAdmin().from('spotify_cache').select('payload').eq('key', key).maybeSingle();
+  return data ? (data.payload as T) : null;
+}
+
 export async function withSpotifyCache<T>(key: string, ttlSeconds: number, fetcher: () => Promise<T>, staleMaxSeconds = STALE_MAX_SECONDS): Promise<T> {
   const { data: cached } = await supabaseAdmin()
     .from('spotify_cache')

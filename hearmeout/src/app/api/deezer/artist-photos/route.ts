@@ -11,10 +11,11 @@ const SPOTIFY_ID = /^[A-Za-z0-9]{22}$/;
 type Item = { name: string; id?: string | null };
 
 // One artist's photo, the most certain source first: the Spotify artist by
-// id; else the Spotify artist with exactly this name; else a Deezer artist
-// with exactly this name. A merely similar name gives no photo (the avatar
-// shows a letter) rather than someone else's face. Each lookup is cached
-// for 30 days; Spotify being over its rate limit falls through to Deezer.
+// id; else a Deezer artist with exactly this name; else the Spotify artist
+// with exactly this name (Deezer first: a name search costs Spotify quota,
+// which the whole app shares). A merely similar name gives no photo (the
+// avatar shows a letter) rather than someone else's face. Each lookup is
+// cached for 30 days; Spotify over its rate limit just falls through.
 async function photoFor({ name, id }: Item): Promise<string | null> {
   if (id && SPOTIFY_ID.test(id)) {
     try {
@@ -23,12 +24,12 @@ async function photoFor({ name, id }: Item): Promise<string | null> {
     } catch { /* fall through */ }
   }
   try {
-    const hit = await withSpotifyCache(`sp-aexact:v1:${name.toLowerCase()}`, 30 * DAY, () => searchSpotifyArtistPhotoExact(name));
-    if (hit.photo) return hit.photo;
+    const dz = await deezerArtistByName(name);
+    if (dz?.exact && dz.photo) return dz.photo;
   } catch { /* fall through */ }
   try {
-    const dz = await deezerArtistByName(name);
-    return dz?.exact ? dz.photo : null;
+    const hit = await withSpotifyCache(`sp-aexact:v1:${name.toLowerCase()}`, 30 * DAY, () => searchSpotifyArtistPhotoExact(name));
+    return hit.photo;
   } catch {
     return null;
   }

@@ -47,10 +47,26 @@ export async function fetchArtistTopTracks(spotifyArtistId: string, artistName: 
         trackNumber: match.trackNumber,
       });
     } catch (err) {
-      // A rate limit stops here and keeps what was matched so far; with
-      // nothing matched it propagates, so the cache isn't filled with [].
-      if (err instanceof RateLimitError) { if (!out.length) throw err; break; }
+      // A rate limit propagates: a half-matched list mustn't be cached for
+      // a day (the route answers with Deezer's list meanwhile).
+      if (err instanceof RateLimitError) throw err;
     }
   }
   return out;
+}
+
+// Deezer's ranking alone, for while Spotify is rate-limiting the app: the
+// tracks play (previews come from Deezer) but have no Spotify album, so the
+// page can't open, rate or bookmark them.
+export async function deezerOnlyTopTracks(artistName: string): Promise<ArtistTopTrack[]> {
+  const top = await deezerTopTracks(artistName);
+  return top.map((tr, i) => ({
+    id: `dz-${i}-${normalizeTitle(tr.title)}`,
+    title: tr.title,
+    durationMs: tr.durationMs,
+    albumId: '',
+    albumTitle: tr.albumTitle,
+    albumCover: tr.albumCover,
+    trackNumber: 0,
+  }));
 }

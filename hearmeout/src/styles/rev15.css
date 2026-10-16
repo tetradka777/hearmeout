@@ -389,3 +389,9 @@
 .rd .alp17 .tile.tile{--fg:inherit;--soft2:color-mix(in srgb,var(--fg) 8%,transparent);--tbg:color-mix(in srgb,var(--paper) 72%,transparent)}
 [data-mode="dark"] .rd .alp17 .tile.tile{--tbg:color-mix(in srgb,#141210 62%,transparent)}
 .rd:has(.alp17) .abg17::after{background:color-mix(in srgb,var(--bg) 62%,transparent)}
+
+/* The activity strip is one very long line of text, which iOS Safari's
+   text autosizing enlarged item by item (some read much bigger than the
+   rest). The size is fixed here; max-height also switches off Chrome's
+   font boosting on Android. */
+.rd .ticker,.rd .ticker *{-webkit-text-size-adjust:none;text-size-adjust:none;max-height:999999px}

@@ -2,6 +2,7 @@ import { getSpotifyAppToken } from './spotifyAppAuth';
 import { bucketForGenres } from './genreBuckets';
 import { deezerArtistByName, deezerArtistGenres } from './deezerServer';
 import { RateLimitError, retryAfterSeconds } from './upstreamError';
+import { logServerError } from './errorLog';
 
 // Every Spotify Web API call goes through here: a 429 with a short
 // Retry-After (2 s or less) is waited out and retried once; a longer one
@@ -11,21 +12,48 @@ import { RateLimitError, retryAfterSeconds } from './upstreamError';
 // still count against the quota and stretch the penalty.
 let blockedUntil = 0;
 
-function block(res: Response): RateLimitError {
+// Requests are also paced: at most MAX_IN_WINDOW per WINDOW_MS for the whole
+// server (every visitor shares the app's quota), so a burst — a page of
+// shelves, a batch of artist photos, the release check — queues up for a
+// moment instead of tipping the app into a long 429 penalty.
+const WINDOW_MS = 10_000;
+const MAX_IN_WINDOW = 25;
+const sent: number[] = [];
+
+async function slot(): Promise<void> {
+  for (;;) {
+    if (Date.now() < blockedUntil) throw new RateLimitError(Math.ceil((blockedUntil - Date.now()) / 1000));
+    const now = Date.now();
+    while (sent.length && now - sent[0] >= WINDOW_MS) sent.shift();
+    if (sent.length < MAX_IN_WINDOW) { sent.push(now); return; }
+    await new Promise((r) => setTimeout(r, WINDOW_MS - (now - sent[0]) + 20));
+  }
+}
+
+function block(res: Response, url: string): RateLimitError {
   const wait = retryAfterSeconds(res, 30);
+  // Logged once per penalty, with the request that hit it, so the error log
+  // shows how long Spotify blocked the app and what was asking.
+  if (Date.now() >= blockedUntil) logServerError('spotify rate limit', new Error(`429, retry after ${wait} s: ${url.replace('https://api.spotify.com/v1', '').slice(0, 120)}`));
   blockedUntil = Math.max(blockedUntil, Date.now() + wait * 1000);
   return new RateLimitError(wait);
 }
 
+// Is Spotify blocking the app right now (so a caller can go straight to a
+// fallback instead of waiting)?
+export function spotifyBlocked(): boolean {
+  return Date.now() < blockedUntil;
+}
+
 async function spotifyFetch(input: string | URL, init?: RequestInit): Promise<Response> {
-  if (Date.now() < blockedUntil) throw new RateLimitError(Math.ceil((blockedUntil - Date.now()) / 1000));
+  await slot();
   let res = await fetch(input, init);
   if (res.status === 429) {
     const wait = retryAfterSeconds(res, 30);
-    if (wait > 2) throw block(res);
+    if (wait > 2) throw block(res, String(input));
     await new Promise((r) => setTimeout(r, wait * 1000));
     res = await fetch(input, init);
-    if (res.status === 429) throw block(res);
+    if (res.status === 429) throw block(res, String(input));
   }
   return res;
 }

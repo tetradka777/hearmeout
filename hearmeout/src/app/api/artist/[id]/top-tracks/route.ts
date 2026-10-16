@@ -1,25 +1,35 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUserId } from '@/lib/identity';
-import { upstreamErrorResponse } from '@/lib/upstreamError';
-import { fetchArtistTopTracks } from '@/lib/artistTopTracks';
+import { RateLimitError, upstreamErrorResponse } from '@/lib/upstreamError';
+import { fetchArtistTopTracks, deezerOnlyTopTracks } from '@/lib/artistTopTracks';
 import { fetchSpotifyArtistName } from '@/lib/spotifyCatalog';
-import { withSpotifyCache } from '@/lib/spotifyCache';
+import { peekSpotifyCache, withSpotifyCache } from '@/lib/spotifyCache';
 
 // The artist page's Popular tab: Deezer's ranking matched to Spotify albums
 // (lib/artistTopTracks.ts). The artist's name is looked up here rather than
 // taken from the request, so nobody can fill the shared cache for an artist
-// with another artist's tracks.
-export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+// with another artist's tracks. While Spotify is rate-limiting the app the
+// tab shows Deezer's ranking alone (not cached): the request's name is used
+// only for that, when Spotify's name isn't known yet.
+export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   // Signed-in only: this calls Spotify/Deezer/Ticketmaster on the server, and
   // an open endpoint let anyone spend the app's shared API quota.
   if (!(await getCurrentUserId())) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
   const { id } = await context.params;
+  const nameKey = `artist-name:v1:${id}`;
   try {
-    const name = await withSpotifyCache(`artist-name:v1:${id}`, 30 * 86400, () => fetchSpotifyArtistName(id));
+    const name = await withSpotifyCache(nameKey, 30 * 86400, () => fetchSpotifyArtistName(id));
     if (!name) return NextResponse.json({ tracks: [] });
     const tracks = await withSpotifyCache(`artist-top:v3:${id}`, 86400, () => fetchArtistTopTracks(id, name));
     return NextResponse.json({ tracks });
   } catch (err) {
+    if (err instanceof RateLimitError) {
+      const name = (await peekSpotifyCache<string>(nameKey)) || new URL(request.url).searchParams.get('name')?.slice(0, 200);
+      if (name) {
+        const tracks = await deezerOnlyTopTracks(name).catch(() => null);
+        if (tracks?.length) return NextResponse.json({ tracks, limited: true });
+      }
+    }
     return upstreamErrorResponse(err, '/api/artist/[id]/top-tracks');
   }
 }

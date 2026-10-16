@@ -61,15 +61,15 @@ export function useTickerEvents(): TickerEvent[] {
     if (title) events.push({ id: 'hero', name: t('friend.you'), text: t('ticker.disagree', { friend: feed.hero.friend.name, album: title }) });
   }
 
-  for (const e of feed.events) {
+  for (const [i, e] of feed.events.entries()) {
     if (events.length >= OWN_MAX) break;
     if (e.type === 'first_play') {
-      events.push({ id: `fp-${e.at}`, name: e.user.name, text: t('ticker.firstPlay', { track: e.trackTitle }) });
+      events.push({ id: `fp-${i}-${e.at}`, name: e.user.name, text: t('ticker.firstPlay', { track: e.trackTitle }) });
     } else if (e.type === 'rating_review') {
       const title = albumTitle(e.albumId);
-      if (title) events.push({ id: `rr-${e.at}`, name: e.user.name, text: t('ticker.rated', { album: title, stars: e.stars.toFixed(1) }) });
+      if (title) events.push({ id: `rr-${i}-${e.at}`, name: e.user.name, text: t('ticker.rated', { album: title, stars: e.stars.toFixed(1) }) });
     } else if (e.type === 'session') {
-      events.push({ id: `se-${e.at}`, name: t('ticker.youSubject'), text: t('ticker.session', { minutes: e.minutes }) });
+      events.push({ id: `se-${i}-${e.at}`, name: t('ticker.youSubject'), text: t('ticker.session', { minutes: e.minutes }) });
     }
   }
 
@@ -77,8 +77,8 @@ export function useTickerEvents(): TickerEvent[] {
   for (const n of news) {
     if (added >= NEWS_MAX) break;
     let ev: TickerEvent | null = null;
-    if (n.kind === 'release') ev = { id: n.id, name: n.artist, text: t('ticker.release', { album: n.title }) };
-    else if (n.kind === 'upcoming') ev = { id: n.id, name: n.artist, text: t('ticker.upcoming', { album: n.title, date: shortDate(n.date, language) }) };
+    if (n.kind === 'release') ev = { id: n.id, name: n.artist, text: t('ticker.release', { album: shortTitle(n.title) }) };
+    else if (n.kind === 'upcoming') ev = { id: n.id, name: n.artist, text: t('ticker.upcoming', { album: shortTitle(n.title), date: shortDate(n.date, language) }) };
     else if (n.kind === 'concert') ev = { id: n.id, name: n.artist, text: t('ticker.concert', { date: shortDate(n.date, language), place: placeOf(n.city, n.country, language) }) };
     else if (n.kind === 'dayRecord') ev = { id: n.id, name: t('ticker.recordLabel'), text: t('ticker.dayRecord', { minutes: n.minutes }) };
     else if (n.kind === 'milestone') {
@@ -93,4 +93,11 @@ export function useTickerEvents(): TickerEvent[] {
   }
 
   return events;
+}
+
+// A release's title without the extras that make a strip item endless:
+// '(feat. …)', '[from …]', ' - single'.
+function shortTitle(title: string): string {
+  const short = title.replace(/\s*[([][^)\]]*[)\]]/g, '').replace(/\s+-\s+.*$/, '').trim();
+  return short || title;
 }
