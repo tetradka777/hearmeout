@@ -12,7 +12,7 @@ import { RateLimitError } from './upstreamError';
 // both and the album tracklists go through the shared cache. A track whose
 // album or title can't be matched is left out.
 export async function fetchArtistTopTracks(spotifyArtistId: string, artistName: string): Promise<ArtistTopTrack[]> {
-  const own = await withSpotifyCache(`artistalbums:v1:${spotifyArtistId}`, 12 * 3600, () => fetchArtistAlbumsSplit(spotifyArtistId)).catch(() => null);
+  const own = await withSpotifyCache(`artistalbums:v1:${spotifyArtistId}`, 86400, () => fetchArtistAlbumsSplit(spotifyArtistId)).catch(() => null);
   // The Deezer artist must be this one, not a namesake (deezerArtistFor).
   const dz = await deezerArtistFor(spotifyArtistId, artistName, own ? [...own.released, ...own.upcoming].map((a) => a.title) : []);
   const top = dz ? await deezerTopTracksById(dz.id) : [];

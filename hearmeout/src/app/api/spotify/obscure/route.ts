@@ -15,11 +15,11 @@ export async function GET(request: NextRequest) {
   try {
     // ?offset=: one page of 10 for Discover's endless shelf (6 hours).
     if (params.has('offset') && Number.isInteger(offset) && offset >= 0 && offset < 1000) {
-      return NextResponse.json(await withSpotifyCache(`obscure-page:${genre}:${market || 'global'}:${offset}`, 6 * 3600, () => obscureAlbumsPage(genre, offset, market)));
+      return NextResponse.json(await withSpotifyCache(`obscure-page:${genre}:${market || 'global'}:${offset}`, 3 * 86400, () => obscureAlbumsPage(genre, offset, market)));
     }
     const albums = await withSpotifyCache(
       `obscure:v2:${genre}:${market || 'global'}`,
-      3600,
+      86400,
       () => fetchObscureAlbums(genre, 10, market)
     );
     // No Cache-Control: Netlify's edge cache ignores the genre/market query

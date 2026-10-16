@@ -6,9 +6,10 @@ import { ALBUMS } from './data';
 import { pickLanguage, translate, type Language, type TranslationKey } from './i18n';
 import { clearStatsCache } from './statsClientCache';
 import { peekJson, setJsonCacheOwner, storeJson } from './cachedJson';
+import { storeAlbums, storedAlbums } from './albumStore';
 import { completedWeekRange } from './weeks';
 import type {
-  Album, AlbumRatingInfo, AppNotification, ArtistState, Device, FeedResponse, FriendRequest, LaterItem, LovedItem, LovedItemType, Me, RatingRecord, RecapData, RecapPeriod, ScreenName, SeasonOption,
+  Album, AlbumRatingInfo, AppNotification, ArtistState, Device, FeedResponse, FriendRequest, LaterItem, LovedItem, LovedItemType, Me, RatingRecord, RecapData, RecapPeriod, ScreenName, SeasonOption, SpotifyArtistAlbum,
 } from './types';
 import type { AlbumDetail, CatalogAlbum, CatalogArtist } from './spotifyCatalog';
 import { resolveMode, type Design, type Mode, type PaletteId, type TimeFormat, type WeekStart } from './palettes';
@@ -330,6 +331,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [fetchedAlbums, setFetchedAlbums] = useState<Record<string, Album>>({});
   const [failedAlbumIds, setFailedAlbumIds] = useState<Record<string, true>>({});
   const requestedAlbumIds = useRef<Set<string>>(new Set());
+  // Albums already fetched (this visit or kept from an earlier one): never asked again.
+  const knownAlbumIds = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const kept = storedAlbums();
+    const ids = Object.keys(kept);
+    if (!ids.length) return;
+    for (const id of ids) knownAlbumIds.current.add(id);
+    setFetchedAlbums((s) => ({ ...kept, ...s }));
+  }, []);
   const requestedRecapKeys = useRef<Set<string>>(new Set());
   // <html lang> as the server set it from Accept-Language, read before the
   // effect below starts mirroring the interface language into it.
@@ -1050,29 +1060,54 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // like "ok-computer", or a raw Spotify id for anything sourced live).
   // `spotifyId` is what to actually fetch — for catalog albums that's a
   // different value than `id`; for everything else they're the same.
+  //
+  // Requests are gathered for a moment and sent together (a wall of covers
+  // is one request, not one per album), and every album that came back is
+  // kept in the browser (lib/albumStore) for the next visit.
+  const albumQueue = useRef<Map<string, string>>(new Map());
+  const albumQueueTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flushAlbumQueue = useCallback(() => {
+    albumQueueTimer.current = null;
+    const batch = [...albumQueue.current.entries()];
+    albumQueue.current.clear();
+    for (let i = 0; i < batch.length; i += 60) {
+      const part = batch.slice(i, i + 60);
+      fetch('/api/spotify/albums', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: part.map(([, target]) => target) }) })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((d: { albums?: Record<string, AlbumDetail | null> } | null) => {
+          const got: Record<string, Album> = {};
+          const failed: string[] = [];
+          for (const [id, target] of part) {
+            requestedAlbumIds.current.delete(id);
+            const detail = d?.albums?.[target];
+            if (detail) got[id] = albumDetailToAlbum(detail, id);
+            else failed.push(id);
+          }
+          if (Object.keys(got).length) {
+            setFetchedAlbums((s) => ({ ...s, ...got }));
+            setFailedAlbumIds((s) => { if (!Object.keys(got).some((id) => id in s)) return s; const n = { ...s }; for (const id of Object.keys(got)) delete n[id]; return n; });
+            for (const id of Object.keys(got)) knownAlbumIds.current.add(id);
+            storeAlbums(got);
+          }
+          if (failed.length) setFailedAlbumIds((s) => ({ ...s, ...Object.fromEntries(failed.map((id) => [id, true as const])) }));
+        })
+        .catch(() => {
+          for (const [id] of part) requestedAlbumIds.current.delete(id);
+          setFailedAlbumIds((s) => ({ ...s, ...Object.fromEntries(part.map(([id]) => [id, true as const])) }));
+        });
+    }
+  }, []);
+
   const ensureLiveAlbum = useCallback((id: string, spotifyId?: string) => {
-    if (!id || requestedAlbumIds.current.has(id)) return;
+    if (!id || requestedAlbumIds.current.has(id) || knownAlbumIds.current.has(id)) return;
     // A catalog slug is fetched by its Spotify id (callers often pass only
     // the slug); anything else that isn't a Spotify id can't be fetched.
     const target = spotifyId || ALBUMS.find((x) => x.id === id)?.spotifyId || id;
     if (!/^[0-9A-Za-z]{22}$/.test(target)) { setFailedAlbumIds((s) => (id in s ? s : { ...s, [id]: true })); return; }
     requestedAlbumIds.current.add(id);
-    fetch(`/api/spotify/album/${target}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((detail: AlbumDetail | null) => {
-        requestedAlbumIds.current.delete(id);
-        if (detail) {
-          setFetchedAlbums((s) => ({ ...s, [id]: albumDetailToAlbum(detail, id) }));
-          setFailedAlbumIds((s) => { if (!(id in s)) return s; const n = { ...s }; delete n[id]; return n; });
-        } else {
-          setFailedAlbumIds((s) => ({ ...s, [id]: true }));
-        }
-      })
-      .catch(() => {
-        requestedAlbumIds.current.delete(id);
-        setFailedAlbumIds((s) => ({ ...s, [id]: true }));
-      });
-  }, []);
+    albumQueue.current.set(id, target);
+    if (!albumQueueTimer.current) albumQueueTimer.current = setTimeout(flushAlbumQueue, 30);
+  }, [flushAlbumQueue]);
 
   // `fromHistory` is set only when the popstate handler below is replaying
   // a browser back/forward into an artist page — the fetch still needs to
@@ -1088,27 +1123,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
       navAction: 'push',
     }));
     if (!fromHistory) pushScreenHistory({ activeScreen: 'artist', artistId: id, artistName: knownName || '', artistSource: 'spotify' });
+    // The last copy of this artist's page (kept in the browser) shows at
+    // once; the request below refreshes it.
+    type ArtistData = { name: string; photo?: string | null; genres?: string[]; fans?: number | null; releasedAlbums?: SpotifyArtistAlbum[]; upcomingAlbums?: SpotifyArtistAlbum[]; limited?: boolean };
+    const storeKey = `/api/spotify/artist/${id}`;
+    const apply = (data: ArtistData) => setState((s) => ({
+      ...s,
+      currentArtist: s.currentArtist && s.currentArtist.id === id
+        ? {
+          ...s.currentArtist,
+          name: data.name,
+          photo: data.photo,
+          genres: data.genres,
+          fans: data.fans,
+          releasedAlbums: data.releasedAlbums,
+          upcomingAlbums: data.upcomingAlbums,
+          loading: false,
+          error: null,
+        }
+        : s.currentArtist,
+    }));
+    const stored = peekJson<ArtistData>(storeKey);
+    if (stored) apply(stored);
     try {
-      const res = await fetch(`/api/spotify/artist/${id}${knownName ? `?name=${encodeURIComponent(knownName)}` : ''}`);
+      const res = await fetch(`${storeKey}${knownName ? `?name=${encodeURIComponent(knownName)}` : ''}`);
       if (!res.ok) throw new Error(res.status === 503 ? 'rate_limited' : String(res.status));
-      const data = await res.json();
-      setState((s) => ({
-        ...s,
-        currentArtist: s.currentArtist && s.currentArtist.id === id
-          ? {
-            ...s.currentArtist,
-            name: data.name,
-            photo: data.photo,
-            genres: data.genres,
-            fans: data.fans,
-            releasedAlbums: data.releasedAlbums,
-            upcomingAlbums: data.upcomingAlbums,
-            loading: false,
-          }
-          : s.currentArtist,
-      }));
+      const data = await res.json() as ArtistData;
+      // A partial page (Spotify busy) doesn't replace a full copy.
+      if (!(data.limited && stored)) apply(data);
+      if (!data.limited) storeJson(storeKey, data);
       replaceScreenHistory({ activeScreen: 'artist', artistId: id, artistName: data.name, artistSource: 'spotify' });
     } catch (err) {
+      if (stored) return;
       const message = err instanceof Error && err.message === 'rate_limited' ? t('artist.rateLimited') : t('artist.loadError');
       setState((s) => ({
         ...s,

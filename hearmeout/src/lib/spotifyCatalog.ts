@@ -285,7 +285,7 @@ export async function fetchSpotifyArtistDetail(id: string): Promise<ArtistDetail
   if (!res.ok) throw new Error(`Spotify request failed (/artists/${id}): ${res.status}`);
   const a = await res.json();
   // Deezer's artist only when its albums match this artist's (namesakes).
-  const albums = await withSpotifyCache(`artistalbums:v1:${id}`, 12 * 3600, () => fetchArtistAlbumsSplit(id)).catch(() => null);
+  const albums = await withSpotifyCache(`artistalbums:v1:${id}`, 86400, () => fetchArtistAlbumsSplit(id)).catch(() => null);
   const titles = albums ? [...albums.released, ...albums.upcoming].map((al) => al.title) : [];
   const dz = await deezerArtistFor(id, a.name, titles).catch(() => null);
   const genres = dz ? await deezerGenresById(dz.id).catch(() => [] as string[]) : [];
@@ -351,6 +351,24 @@ export async function fetchSpotifyTrackIsrc(id: string): Promise<string | null> 
   if (!res.ok) throw new Error(`Spotify request failed (/tracks/${id}): ${res.status}`);
   const t = await res.json();
   return (t.external_ids?.isrc as string | undefined) ?? null;
+}
+
+// The album side of a track (for filling in imported listening history):
+// cover, album and artist ids, release year. Null for a track Spotify
+// doesn't know (local files, removed tracks).
+export type TrackAlbumInfo = { cover: string | null; albumId: string | null; artistId: string | null; year: number | null };
+export async function fetchSpotifyTrackAlbum(id: string): Promise<TrackAlbumInfo | null> {
+  const token = await getSpotifyAppToken();
+  const res = await spotifyFetch(`https://api.spotify.com/v1/tracks/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+  if (res.status === 404 || res.status === 400) return null;
+  if (!res.ok) throw new Error(`Spotify request failed (/tracks/${id}): ${res.status}`);
+  const data = await res.json();
+  return {
+    cover: (data.album?.images?.[0]?.url as string | undefined) ?? null,
+    albumId: (data.album?.id as string | undefined) ?? null,
+    artistId: (data.artists?.[0]?.id as string | undefined) ?? null,
+    year: data.album?.release_date ? parseInt(String(data.album.release_date).slice(0, 4), 10) : null,
+  };
 }
 
 // Track search by artist and title; the caller decides which hit (if any)

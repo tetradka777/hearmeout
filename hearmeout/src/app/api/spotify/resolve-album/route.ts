@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   if (!title || !artist) return NextResponse.json({ error: 'missing_params' }, { status: 400 });
 
   try {
-    const id = await withSpotifyCache(`resolve-album:${title}:${artist}`, 86400, () => resolveSpotifyAlbumId(title, artist));
+    const id = await withSpotifyCache(`resolve-album:${title}:${artist}`, 30 * 86400, () => resolveSpotifyAlbumId(title, artist));
     if (!id) return NextResponse.json({ error: 'not_found' }, { status: 404 });
     return NextResponse.json({ id }, { headers: { 'Cache-Control': 's-maxage=3600, stale-while-revalidate=86400' } });
   } catch (err) {

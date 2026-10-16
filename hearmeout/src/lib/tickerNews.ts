@@ -74,7 +74,7 @@ export async function releasesFor(artists: string[], mine: boolean): Promise<Tic
     try {
       const id = await withSpotifyCache(`artistid:v2:${artist.toLowerCase()}`, 30 * 86400, () => resolveSpotifyArtistId(artist));
       if (!id) continue;
-      const { released, upcoming } = await withSpotifyCache(`artistalbums:v1:${id}`, 12 * 3600, () => fetchArtistAlbumsSplit(id));
+      const { released, upcoming } = await withSpotifyCache(`artistalbums:v1:${id}`, 86400, () => fetchArtistAlbumsSplit(id));
       const fresh = released.find((a) => a.releaseDate && a.releaseDate.length === 10 && a.releaseDate >= recentFrom && a.releaseDate <= today);
       if (fresh) items.push({ kind: 'release', id: `rel-${fresh.id}`, artist, title: fresh.title, date: fresh.releaseDate!, mine, spotifyAlbumId: fresh.id });
       const next = upcoming.find((a) => a.releaseDate && a.releaseDate <= upcomingTo);

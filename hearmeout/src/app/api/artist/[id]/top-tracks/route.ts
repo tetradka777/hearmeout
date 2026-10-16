@@ -20,7 +20,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   try {
     const name = await withSpotifyCache(nameKey, 30 * 86400, () => fetchSpotifyArtistName(id));
     if (!name) return NextResponse.json({ tracks: [] });
-    const tracks = await withSpotifyCache(`artist-top:v5:${id}`, 86400, () => fetchArtistTopTracks(id, name));
+    const tracks = await withSpotifyCache(`artist-top:v5:${id}`, 3 * 86400, () => fetchArtistTopTracks(id, name));
     return NextResponse.json({ tracks });
   } catch (err) {
     if (err instanceof RateLimitError) {
