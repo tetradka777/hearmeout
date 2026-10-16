@@ -31,7 +31,7 @@ export async function fetchArtistTopTracks(spotifyArtistId: string, artistName: 
       }
       const albumId = albumIdFor.get(key);
       if (!albumId) continue;
-      const album = await withSpotifyCache(`album:${albumId}`, 14 * 86400, () => fetchSpotifyAlbumDetail(albumId));
+      const album = await withSpotifyCache(`album:${albumId}`, 180 * 86400, () => fetchSpotifyAlbumDetail(albumId));
       // Only the artist's own releases: never a cover or tribute album.
       if (!album || (album.artistId !== spotifyArtistId && normalizeTitle(album.artist) !== normalizeTitle(artistName))) continue;
       const want = normalizeTitle(tr.title);
@@ -61,7 +61,7 @@ export async function fetchArtistTopTracks(spotifyArtistId: string, artistName: 
 async function latestReleaseTracks(spotifyArtistId: string, artistName: string, released: { id: string }[]): Promise<ArtistTopTrack[]> {
   const out: ArtistTopTrack[] = [];
   for (const ref of released.slice(0, 8)) {
-    const album = await withSpotifyCache(`album:${ref.id}`, 14 * 86400, () => fetchSpotifyAlbumDetail(ref.id));
+    const album = await withSpotifyCache(`album:${ref.id}`, 180 * 86400, () => fetchSpotifyAlbumDetail(ref.id));
     if (!album || (album.artistId !== spotifyArtistId && normalizeTitle(album.artist) !== normalizeTitle(artistName))) continue;
     const first = album.tracklist[0];
     if (!first || out.some((o) => o.id === first.id || normalizeTitle(o.title) === normalizeTitle(first.title))) continue;

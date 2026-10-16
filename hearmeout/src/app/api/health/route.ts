@@ -28,7 +28,11 @@ export async function GET() {
   if (Date.now() - lastRun > EVERY_MS) {
     lastRun = Date.now();
     try {
-      await supabaseAdmin().from('spotify_cache').delete().lt('expires_at', new Date(Date.now() - 3 * 86400000).toISOString());
+      // Old entries stay for 60 days past their time: while Spotify is down or
+      // blocking the app, a stale answer is what keeps pages working. Signed
+      // preview links are useless after 15 minutes, so those go after a day.
+      await supabaseAdmin().from('spotify_cache').delete().lt('expires_at', new Date(Date.now() - 60 * 86400000).toISOString());
+      await supabaseAdmin().from('spotify_cache').delete().like('key', 'dz-preview:%').lt('expires_at', new Date(Date.now() - 86400000).toISOString());
       // Error log: 30 days is plenty (migration 027).
       await supabaseAdmin().from('app_errors').delete().lt('created_at', new Date(Date.now() - 30 * 86400000).toISOString());
     } catch {

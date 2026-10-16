@@ -12,6 +12,13 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   // an open endpoint let anyone spend the app's shared API quota.
   if (!(await getCurrentUserId())) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
   const { id } = await context.params;
+  // ?cached=1: a prefetch (pointer over a link) — only what the server has
+  // already, never a Spotify request; 204 when there's nothing.
+  if (new URL(request.url).searchParams.get('cached') === '1') {
+    const hit = await peekSpotifyCache<CachedArtist>(`artist:v3:${id}`);
+    if (!hit?.artist) return new NextResponse(null, { status: 204 });
+    return NextResponse.json({ ...hit.artist, releasedAlbums: hit.released, upcomingAlbums: hit.upcoming });
+  }
   try {
     const result = await withSpotifyCache<CachedArtist>(`artist:v3:${id}`, 86400, async () => {
       // The albums first (cached): the artist detail compares them with Deezer.

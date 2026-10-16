@@ -12,7 +12,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   // Not a Spotify album id (e.g. a catalog slug): Spotify would answer 400.
   if (!/^[0-9A-Za-z]{22}$/.test(id)) return NextResponse.json({ error: 'not_found' }, { status: 404 });
   try {
-    const album = await withSpotifyCache(`album:${id}`, 14 * 86400, () => fetchSpotifyAlbumDetail(id));
+    const album = await withSpotifyCache(`album:${id}`, 180 * 86400, () => fetchSpotifyAlbumDetail(id));
     if (!album) return NextResponse.json({ error: 'not_found' }, { status: 404 });
     return NextResponse.json(album, { headers: { 'Cache-Control': 's-maxage=3600, stale-while-revalidate=86400' } });
   } catch (err) {

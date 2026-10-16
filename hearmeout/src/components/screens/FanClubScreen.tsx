@@ -34,6 +34,7 @@ export function FanClubScreen(_props: { device: Device }) {
     if (!res?.ok) { showToast(t('artist.followFailed')); return; }
     if (!data.joined) showToast(t('artist.followedToast', { name }));
     invalidateJson('/api/fanclubs');
+    invalidateJson(`/api/artist/${club.id}/follow`);
     await page.reload();
   };
 

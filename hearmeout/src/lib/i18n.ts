@@ -1324,6 +1324,7 @@ const ru = {
   'fanclub.nothingYet': 'участники пока ничего не слушали',
   'fanclub.loadError': 'не получилось открыть фан-клуб',
   'fanclub.back': 'назад',
+  'recap.pageTitle': 'рекап',
 };
 
 export type TranslationKey = keyof typeof ru;
@@ -2644,6 +2645,7 @@ const en: Dict = {
   'fanclub.nothingYet': 'members haven’t played anything yet',
   'fanclub.loadError': 'couldn’t open the fan club',
   'fanclub.back': 'back',
+  'recap.pageTitle': 'recap',
 };
 
 const fr: Dict = {
@@ -3961,6 +3963,7 @@ const fr: Dict = {
   'fanclub.nothingYet': 'les membres n’ont encore rien écouté',
   'fanclub.loadError': 'impossible d’ouvrir le fan club',
   'fanclub.back': 'retour',
+  'recap.pageTitle': 'récap',
 };
 
 const es: Dict = {
@@ -5278,6 +5281,7 @@ const es: Dict = {
   'fanclub.nothingYet': 'los miembros aún no han escuchado nada',
   'fanclub.loadError': 'no se pudo abrir el club de fans',
   'fanclub.back': 'atrás',
+  'recap.pageTitle': 'resumen',
 };
 
 const de: Dict = {
@@ -6595,6 +6599,7 @@ const de: Dict = {
   'fanclub.nothingYet': 'mitglieder haben noch nichts gehört',
   'fanclub.loadError': 'fanclub konnte nicht geöffnet werden',
   'fanclub.back': 'zurück',
+  'recap.pageTitle': 'rückblick',
 };
 
 const DICTS: Record<Language, Dict> = { ru, en, fr, es, de };

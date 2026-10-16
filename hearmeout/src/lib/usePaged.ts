@@ -59,6 +59,10 @@ export function usePaged<T, C>(
 
   useEffect(() => {
     state.current = { cursor: null, busy: false, keys: new Set(), count: 0, done: false };
+    // The list starts over with the fresh state: an effect run again (dev
+    // StrictMode, hot reload) used to append page one a second time after
+    // the first run's page had already landed — duplicate cards and keys.
+    setView({ key, items: [], done: false, failed: false });
     more();
   }, [key, more]);
 

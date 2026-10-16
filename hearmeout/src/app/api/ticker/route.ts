@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
   const admin = supabaseAdmin();
 
   try {
-    const mine = await withSpotifyCache(`ticker:me:v1:${userId}:${country ?? '-'}`, 3600, async () => {
+    const mine = await withSpotifyCache(`ticker:me:v2:${userId}:${country ?? '-'}`, 3600, async () => {
       const { data: friendRows } = await admin.from('friendships').select('friend_id').eq('user_id', userId);
       const friendIds = (friendRows || []).map((r) => r.friend_id as string);
       const { data: friendUsers } = friendIds.length
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     });
 
     const skip = new Set(mine.artists.map((a) => a.toLowerCase()));
-    const global = await withSpotifyCache(`ticker:global:v1:${country ?? '-'}`, 6 * 3600, async () => {
+    const global = await withSpotifyCache(`ticker:global:v2:${country ?? '-'}`, 6 * 3600, async () => {
       const artists = popularArtists(POPULAR_ARTISTS);
       return [...(await releasesFor(artists, false)), ...(await concertsFor(artists.slice(0, POPULAR_CONCERTS), false, country))];
     });

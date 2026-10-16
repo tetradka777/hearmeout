@@ -19,7 +19,7 @@ type Item = { name: string; id?: string | null };
 async function photoFor({ name, id }: Item): Promise<string | null> {
   if (id && SPOTIFY_ID.test(id)) {
     try {
-      const photo = await withSpotifyCache(`sp-aphoto:v1:${id}`, 30 * DAY, () => fetchSpotifyArtistPhoto(id));
+      const photo = await withSpotifyCache(`sp-aphoto:v1:${id}`, 90 * DAY, () => fetchSpotifyArtistPhoto(id));
       if (photo) return photo;
     } catch { /* fall through */ }
   }
@@ -29,7 +29,7 @@ async function photoFor({ name, id }: Item): Promise<string | null> {
     if (dz?.exact && (dz.namesakes ?? 1) <= 1 && dz.photo) return dz.photo;
   } catch { /* fall through */ }
   try {
-    const hit = await withSpotifyCache(`sp-aexact:v1:${name.toLowerCase()}`, 30 * DAY, () => searchSpotifyArtistPhotoExact(name));
+    const hit = await withSpotifyCache(`sp-aexact:v1:${name.toLowerCase()}`, 90 * DAY, () => searchSpotifyArtistPhotoExact(name));
     return hit.photo;
   } catch {
     return null;

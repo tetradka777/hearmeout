@@ -149,3 +149,19 @@ if (typeof window !== 'undefined') {
     // Storage blocked: everything just loads over the network.
   }
 }
+
+// One page of an endless shelf: the stored copy at once (however old, so a
+// shelf seen before fills in instantly, even after a reload), refreshed in
+// the background when older than an hour; otherwise the request. Throws when
+// there's nothing to show, like a failed fetch.
+const PAGE_REFRESH_MS = 3600 * 1000;
+export async function cachedPage<T>(url: string): Promise<T> {
+  const hit = peekJson<T>(url);
+  if (hit != null) {
+    if ((jsonAge(url) ?? Infinity) > PAGE_REFRESH_MS) void cachedJson(url, { force: true });
+    return hit;
+  }
+  const v = await cachedJson<T>(url);
+  if (v == null) throw new Error('page_failed');
+  return v;
+}

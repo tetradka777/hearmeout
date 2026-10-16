@@ -66,7 +66,7 @@ async function build(country: string): Promise<ChartAlbum[]> {
       const i = next++;
       const r = results[i];
       const artist = r.artistName.split(/ & |, /)[0];
-      ids[i] = await withSpotifyCache(`albumid:v1:${r.name.toLowerCase()}|${artist.toLowerCase()}`, 30 * 86400, () => resolveSpotifyAlbumId(r.name, artist))
+      ids[i] = await withSpotifyCache(`albumid:v1:${r.name.toLowerCase()}|${artist.toLowerCase()}`, 180 * 86400, () => resolveSpotifyAlbumId(r.name, artist))
         .catch((err) => { if (err instanceof RateLimitError) limited = true; return null; });
     }
   }));

@@ -1,6 +1,7 @@
 'use client';
 
 import { useApp } from '@/lib/AppContext';
+import { cachedPage } from '@/lib/cachedJson';
 import { usePaged } from '@/lib/usePaged';
 import type { CatalogAlbum } from '@/lib/spotifyCatalog';
 import { ArtistShelfCard, Shelf } from './ui/SuperCards';
@@ -15,9 +16,7 @@ export function ObscureAlbums({ genre, sub }: { genre: string; sub?: string }) {
   const market = me?.region ? `&market=${encodeURIComponent(me.region)}` : '';
   const { items, done, failed, more } = usePaged<CatalogAlbum, number>(async (offset) => {
     const from = offset ?? 0;
-    const res = await fetch(`/api/spotify/obscure?genre=${encodeURIComponent(genre)}&offset=${from}${market}`);
-    if (!res.ok) throw new Error(String(res.status));
-    const page = await res.json() as CatalogAlbum[];
+    const page = await cachedPage<CatalogAlbum[]>(`/api/spotify/obscure?genre=${encodeURIComponent(genre)}&offset=${from}${market}`);
     // Compilations ("Various Artists") aren't an artist to discover.
     return { items: page.filter((a) => !/^various artists$/i.test(a.artist)), next: !page.length || from + STEP >= 1000 ? null : from + STEP };
   }, (a) => (a.artistId || a.artist).toLowerCase(), [genre, market], 50);

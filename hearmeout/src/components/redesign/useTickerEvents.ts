@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
+import { useCachedJson } from '@/lib/cachedJson';
 import { toLocale, type Language } from '@/lib/i18n';
 import type { TickerNewsItem } from '@/lib/tickerNews';
 import type { TickerNewsResponse } from '@/app/api/ticker/route';
@@ -17,22 +17,12 @@ export type TickerEvent = { id: string; name: string; text: string };
 const OWN_MAX = 6;
 const NEWS_MAX = 10;
 
-// Loaded once per page: the strip lives in the shell and never remounts.
-let newsCache: { key: string; items: TickerNewsItem[] } | null = null;
-
+// Through the browser's shared cache (lib/cachedJson): after a reload the
+// strip starts with the last copy at once and refreshes quietly.
 function useTickerNews(enabled: boolean, region: string | null): TickerNewsItem[] {
-  const key = region ?? '-';
-  const [items, setItems] = useState<TickerNewsItem[]>(() => (newsCache?.key === key ? newsCache.items : []));
-  useEffect(() => {
-    if (!enabled || newsCache?.key === key) return;
-    let cancelled = false;
-    fetch(`/api/ticker${region ? `?country=${encodeURIComponent(region)}` : ''}`)
-      .then((r) => (r.ok ? (r.json() as Promise<TickerNewsResponse>) : { items: [] }))
-      .then((d) => { newsCache = { key, items: d.items }; if (!cancelled) setItems(d.items); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [enabled, key, region]);
-  return enabled ? items : [];
+  const url = enabled ? `/api/ticker${region ? `?country=${encodeURIComponent(region)}` : ''}` : null;
+  const items = useCachedJson<TickerNewsResponse>(url).data?.items;
+  return enabled && items ? items : [];
 }
 
 function shortDate(iso: string, language: Language): string {

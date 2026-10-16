@@ -1,4 +1,4 @@
-import { withSpotifyCache } from './spotifyCache';
+import { peekSpotifyCache, withSpotifyCache } from './spotifyCache';
 import { RateLimitError } from './upstreamError';
 
 // Server-side Deezer API (no key). Spotify's development mode no longer gives
@@ -148,4 +148,31 @@ export function deezerTopTracks(name: string, limit = 10): Promise<DeezerTopTrac
       albumCover: t.album?.cover_xl ?? null,
     }));
   });
+}
+
+// An artist's releases on Deezer, newest first (12 hours). The news strip
+// and release notifications use this instead of Spotify's artist album
+// list: they look at dozens of artists every few hours, which is exactly
+// the kind of background load that got the app's Spotify quota blocked.
+export type DeezerRelease = { id: number; title: string; date: string; cover: string | null };
+export function deezerReleasesById(artistId: number): Promise<DeezerRelease[]> {
+  return withSpotifyCache(`dz-releases:v1:${artistId}`, 12 * 3600, async () => {
+    const data = await deezerGet<{ data?: { id: number; title: string; release_date?: string; cover_xl?: string; cover_medium?: string }[] }>(`/artist/${artistId}/albums?limit=50`);
+    return (data.data || [])
+      .filter((a) => a.release_date && /^\d{4}-\d{2}-\d{2}$/.test(a.release_date))
+      .map((a) => ({ id: a.id, title: a.title, date: a.release_date!, cover: a.cover_xl ?? a.cover_medium ?? null }))
+      .sort((a, b) => b.date.localeCompare(a.date));
+  });
+}
+
+// The Deezer artist for a bare name (news strip, release checks): exactly
+// this name, and if Deezer has namesakes, only the one already confirmed
+// for this artist's Spotify id (deezerArtistFor's cache) — never a guess.
+export async function deezerArtistIdForName(name: string): Promise<number | null> {
+  const dz = await deezerArtistByName(name);
+  if (!dz?.exact) return null;
+  if ((dz.namesakes ?? 1) <= 1) return dz.id;
+  const spotifyId = await peekSpotifyCache<string | null>(`artistid:v2:${name.toLowerCase()}`);
+  const confirmed = spotifyId ? await peekSpotifyCache<DeezerArtist | null>(`dz-artist-for:v1:${spotifyId}`) : null;
+  return confirmed?.id ?? null;
 }

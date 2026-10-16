@@ -1,32 +1,54 @@
 import { getSpotifyAppToken } from './spotifyAppAuth';
 import { bucketForGenres } from './genreBuckets';
-import { deezerArtistFor, deezerArtistGenres, deezerGenresById } from './deezerServer';
+import { deezerArtistFor, deezerArtistGenres, deezerGenresById, normalizeTitle } from './deezerServer';
 import { withSpotifyCache } from './spotifyCache';
 import { RateLimitError, retryAfterSeconds } from './upstreamError';
 import { logServerError } from './errorLog';
+import { supabaseAdmin } from './supabaseAdmin';
+import { isBackground } from './spotifyPriority';
 
 // Every Spotify Web API call goes through here: a 429 with a short
 // Retry-After (2 s or less) is waited out and retried once; a longer one
 // throws RateLimitError so routes can answer 503 + Retry-After and the
 // shared cache can fall back to stale data. After a long 429 every call
 // fails fast until Retry-After has passed: requests sent while limited
-// still count against the quota and stretch the penalty.
+// still count against the quota and stretch the penalty. The block is also
+// stored in the database (spotify_cache, key BLOCK_KEY), so a restarted
+// server (every deploy) doesn't knock on Spotify again mid-penalty — it
+// used to, every 20 minutes, during a 7-hour block.
 let blockedUntil = 0;
+const BLOCK_KEY = 'sp-blocked-until';
+let blockLoaded: Promise<void> | null = null;
 
-// Requests are also paced: at most MAX_IN_WINDOW per WINDOW_MS for the whole
-// server (every visitor shares the app's quota), so a burst — a page of
-// shelves, a batch of artist photos, the release check — queues up for a
-// moment instead of tipping the app into a long 429 penalty.
-const WINDOW_MS = 10_000;
-const MAX_IN_WINDOW = 25;
+function loadBlock(): Promise<void> {
+  blockLoaded ??= (async () => {
+    try {
+      const { data } = await supabaseAdmin().from('spotify_cache').select('payload').eq('key', BLOCK_KEY).maybeSingle();
+      const until = Number((data?.payload as { until?: number } | null)?.until);
+      if (Number.isFinite(until)) blockedUntil = Math.max(blockedUntil, until);
+    } catch { /* no stored block */ }
+  })();
+  return blockLoaded;
+}
+
+// Requests are also paced for the whole server (every visitor shares the
+// app's quota): at most MAX_IN_WINDOW per WINDOW_MS, of which background
+// work (lib/spotifyPriority) may use only MAX_BACKGROUND, so pages people
+// have open always have room. A burst queues for a moment instead of
+// tipping the app into a long penalty.
+const WINDOW_MS = 30_000;
+const MAX_IN_WINDOW = 40;
+const MAX_BACKGROUND = 10;
 const sent: number[] = [];
 
 async function slot(): Promise<void> {
+  await loadBlock();
+  const cap = isBackground() ? MAX_BACKGROUND : MAX_IN_WINDOW;
   for (;;) {
     if (Date.now() < blockedUntil) throw new RateLimitError(Math.ceil((blockedUntil - Date.now()) / 1000));
     const now = Date.now();
     while (sent.length && now - sent[0] >= WINDOW_MS) sent.shift();
-    if (sent.length < MAX_IN_WINDOW) { sent.push(now); return; }
+    if (sent.length < cap) { sent.push(now); return; }
     await new Promise((r) => setTimeout(r, WINDOW_MS - (now - sent[0]) + 20));
   }
 }
@@ -35,8 +57,15 @@ function block(res: Response, url: string): RateLimitError {
   const wait = retryAfterSeconds(res, 30);
   // Logged once per penalty, with the request that hit it, so the error log
   // shows how long Spotify blocked the app and what was asking.
-  if (Date.now() >= blockedUntil) logServerError('spotify rate limit', new Error(`429, retry after ${wait} s: ${url.replace('https://api.spotify.com/v1', '').slice(0, 120)}`));
+  if (Date.now() >= blockedUntil) logServerError('spotify rate limit', new Error(`429, retry after ${wait} s${isBackground() ? ' (background)' : ''}: ${url.replace('https://api.spotify.com/v1', '').slice(0, 120)}`));
   blockedUntil = Math.max(blockedUntil, Date.now() + wait * 1000);
+  const until = blockedUntil;
+  void supabaseAdmin().from('spotify_cache').upsert({
+    key: BLOCK_KEY,
+    payload: { until },
+    fetched_at: new Date().toISOString(),
+    expires_at: new Date(until).toISOString(),
+  }).then(() => {}, () => {});
   return new RateLimitError(wait);
 }
 
@@ -105,29 +134,6 @@ function toCatalogAlbum(a: SpotifyAlbumSearchItem): CatalogAlbum {
   };
 }
 
-// Real cover art for our curated catalog, keyed by OUR album id. Batch
-// lookup (/v1/albums?ids=) is 403 for this app, so these are singular
-// lookups run in parallel — still one Spotify id per catalog album.
-export async function fetchAlbumCovers(spotifyIds: { ourId: string; spotifyId: string }[]): Promise<Record<string, string>> {
-  const token = await getSpotifyAppToken();
-  const results = await Promise.all(
-    spotifyIds.map(async ({ ourId, spotifyId }) => {
-      try {
-        const res = await spotifyFetch(`https://api.spotify.com/v1/albums/${spotifyId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) return null;
-        const data = await res.json();
-        const cover = data.images?.[0]?.url as string | undefined;
-        return cover ? [ourId, cover] as const : null;
-      } catch {
-        return null;
-      }
-    })
-  );
-  return Object.fromEntries(results.filter((r): r is readonly [string, string] => r !== null));
-}
-
 // `market` biases/filters results toward what's actually available in that
 // country on Spotify.
 function isValidMarket(market?: string | null): market is string {
@@ -174,10 +180,21 @@ export function isFunctionalAudio(title: string, artist: string): boolean {
 // from non-Spotify sources (library search, an artist's MusicBrainz
 // discography) can still open a real album page instead of being a dead
 // click. limit=1 dodges the "Invalid limit" cap confirmed on this app's tier.
+//
+// Only an album that credits an artist with exactly this name (any of the
+// credited artists, or the main one of "A & B" / "A, B") and has this title
+// (ignoring "(Deluxe)", "- Remastered" and the like) — no match is null,
+// never the first search hit, which used to open someone else's album.
 export async function resolveSpotifyAlbumId(title: string, artist: string): Promise<string | null> {
-  const params: Record<string, string> = { q: `album:${title} artist:${artist}`, type: 'album', limit: '1' };
+  const params: Record<string, string> = { q: `album:${title} artist:${artist}`, type: 'album', limit: '10' };
   const data = await spotifyGet('/search', params);
-  return data.albums?.items?.[0]?.id ?? null;
+  const items = (data.albums?.items || []) as SpotifyAlbumSearchItem[];
+  const wantArtists = new Set([artist, ...artist.split(/\s*,\s*|\s+&\s+/)].map(normalizeTitle).filter(Boolean));
+  const wantTitle = normalizeTitle(title);
+  const byArtist = items.filter((a) => a.artists?.some((x) => wantArtists.has(normalizeTitle(x.name))));
+  const hit = byArtist.find((a) => normalizeTitle(a.name) === wantTitle)
+    || byArtist.find((a) => { const n = normalizeTitle(a.name); return !!wantTitle && !!n && (n.startsWith(wantTitle) || wantTitle.startsWith(n)); });
+  return hit?.id ?? null;
 }
 
 // An album of this artist by title: search results (at most 10 in
@@ -187,7 +204,8 @@ export async function resolveArtistAlbumId(title: string, artistName: string, ar
   const data = await spotifyGet('/search', { q: `album:${title} artist:${artistName}`, type: 'album', limit: '10' });
   const items = ((data.albums?.items || []) as SpotifyAlbumSearchItem[]).filter((a) => a.artists?.some((x) => x.id === artistId));
   const want = normalize(title);
-  return (items.find((a) => normalize(a.name) === want) || items[0])?.id ?? null;
+  return (items.find((a) => normalize(a.name) === want)
+    || items.find((a) => { const n = normalize(a.name); return !!want && !!n && (n.startsWith(want) || want.startsWith(n)); }))?.id ?? null;
 }
 
 // Resolves a catalog artist name (our curated albums only know the artist's
@@ -199,8 +217,10 @@ export async function resolveSpotifyArtistId(name: string): Promise<string | nul
   const params: Record<string, string> = { q: `artist:${name}`, type: 'artist', limit: '10' };
   const data = await spotifyGet('/search', params);
   const items: { id: string; name: string }[] = data.artists?.items ?? [];
-  const want = name.trim().toLowerCase();
-  return (items.find((a) => a.name.toLowerCase() === want) ?? items[0])?.id ?? null;
+  // Exactly this name or nobody: the first hit used to be returned when
+  // nothing matched, which opened the wrong artist's page.
+  const want = normalizeTitle(name);
+  return items.find((a) => normalizeTitle(a.name) === want)?.id ?? null;
 }
 
 // durationMs is optional: details cached before it was added lack it.

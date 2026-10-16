@@ -1,8 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabaseAdmin } from './supabaseAdmin';
 import { fetchAllRows } from './supabasePaginate';
-import { withSpotifyCache } from './spotifyCache';
-import { fetchArtistAlbumsSplit, resolveSpotifyArtistId } from './spotifyCatalog';
+import { peekSpotifyCache, withSpotifyCache } from './spotifyCache';
+import { resolveSpotifyAlbumId } from './spotifyCatalog';
+import { deezerArtistIdForName, deezerReleasesById } from './deezerServer';
+import { inBackground } from './spotifyPriority';
 import { RateLimitError } from './upstreamError';
 import { popularArtists, topArtistsOf } from './tickerNews';
 import { sendPush } from './push';
@@ -14,8 +16,10 @@ import { logServerError } from './errorLog';
 // follow, plus the most popular catalog artists for those who turned that
 // on. A release out within the last couple of days becomes one in-app
 // notification and a push, once per release per person, at most a couple a
-// day. Artist lookups share the Spotify cache with the news strip, and each
-// artist is looked up once per run however many people listen to them.
+// day. Releases come from Deezer (shared with the news strip, each artist
+// once per run); Spotify is asked only for the album id of a release that
+// is about to be announced, at background priority. The time of the last
+// run is kept in the database, so a deploy doesn't start a new run.
 const CHECK_EVERY_MS = 3 * 60 * 60 * 1000;
 const FRESH_DAYS = 2;
 const MINE_ARTISTS = 10;
@@ -24,18 +28,28 @@ const PER_DAY = 2;
 const MAX_LOOKUPS = 300;
 const dayMs = 86400000;
 
-type Release = { albumId: string; artist: string; title: string; date: string; cover: string | null };
+type Release = { dzId: number; artist: string; title: string; date: string; cover: string | null };
 type Candidate = Release & { popular: boolean };
 
 let lastCheck = 0;
 let running = false;
+const LAST_RUN_KEY = 'job:release-notify:last';
 
 export function maybeNotifyReleases(): void {
   if (process.env.NODE_ENV !== 'production') return;
   if (running || Date.now() - lastCheck < CHECK_EVERY_MS) return;
-  lastCheck = Date.now();
   running = true;
-  runReleaseNotifications()
+  (async () => {
+    // A fresh process (deploy) checks when the last run really was.
+    const stored = Number((await peekSpotifyCache<{ at?: number }>(LAST_RUN_KEY))?.at) || 0;
+    lastCheck = Math.max(lastCheck, stored);
+    if (Date.now() - lastCheck < CHECK_EVERY_MS) return;
+    lastCheck = Date.now();
+    await supabaseAdmin().from('spotify_cache').upsert({
+      key: LAST_RUN_KEY, payload: { at: lastCheck }, fetched_at: new Date().toISOString(), expires_at: new Date(lastCheck + 30 * dayMs).toISOString(),
+    });
+    await inBackground(() => runReleaseNotifications());
+  })()
     .catch((err) => logServerError('release notifications', err))
     .finally(() => { running = false; });
 }
@@ -54,11 +68,13 @@ function releaseLookup() {
     if (hit) return hit;
     if (++lookups > MAX_LOOKUPS) throw new OutOfBudget();
     const p = (async () => {
-      const id = knownId || await withSpotifyCache(`artistid:v2:${artist.toLowerCase()}`, 30 * 86400, () => resolveSpotifyArtistId(artist));
-      if (!id) return null;
-      const { released } = await withSpotifyCache(`artistalbums:v1:${id}`, 86400, () => fetchArtistAlbumsSplit(id));
-      const fresh = released.find((a) => a.releaseDate && a.releaseDate.length === 10 && a.releaseDate >= fromDay && a.releaseDate <= today);
-      return fresh ? { albumId: fresh.id, artist, title: fresh.title, date: fresh.releaseDate!, cover: fresh.cover } : null;
+      // A followed artist (known Spotify id) whose Deezer twin was already
+      // confirmed is found by that; otherwise by exact, unambiguous name.
+      const confirmed = knownId ? (await peekSpotifyCache<{ id: number } | null>(`dz-artist-for:v1:${knownId}`))?.id : null;
+      const dzId = confirmed ?? await deezerArtistIdForName(artist);
+      if (!dzId) return null;
+      const fresh = (await deezerReleasesById(dzId)).find((a) => a.date >= fromDay && a.date <= today);
+      return fresh ? { dzId: fresh.id, artist, title: fresh.title, date: fresh.date, cover: fresh.cover } : null;
     })().catch((err) => {
       // A rate limit ends the run; any other failure only skips this artist.
       if (err instanceof RateLimitError) throw err;
@@ -120,16 +136,21 @@ export async function runReleaseNotifications(opts: { userIds?: string[] } = {})
 
       const { data: past } = await admin.from('notifications').select('payload, created_at')
         .eq('user_id', userId).eq('kind', 'release').gte('created_at', new Date(Date.now() - 30 * dayMs).toISOString());
-      const seen = new Set((past || []).map((n) => (n.payload as { albumId?: string } | null)?.albumId));
+      const seen = new Set((past || []).flatMap((n) => { const pl = n.payload as { albumId?: string; dzId?: number } | null; return [pl?.albumId, pl?.dzId != null ? `dz${pl.dzId}` : null]; }));
       let left = PER_DAY - (past || []).filter((n) => Date.now() - new Date(n.created_at as string).getTime() < dayMs).length;
 
       for (const c of candidates) {
         if (left <= 0) break;
-        if (seen.has(c.albumId)) continue;
-        seen.add(c.albumId);
+        if (seen.has(`dz${c.dzId}`)) continue;
+        seen.add(`dz${c.dzId}`);
+        // The notification opens the album, which the app knows by its
+        // Spotify id: one search, cached for half a year, only now.
+        const albumId = await withSpotifyCache(`albumid:v1:${c.title.toLowerCase()}|${c.artist.toLowerCase()}`, 180 * 86400, () => resolveSpotifyAlbumId(c.title, c.artist));
+        if (!albumId || seen.has(albumId)) continue;
+        seen.add(albumId);
         const { error: insErr } = await admin.from('notifications').insert({
           user_id: userId, actor_id: null, kind: 'release',
-          payload: { albumId: c.albumId, artist: c.artist, title: c.title, date: c.date, cover: c.cover, popular: c.popular },
+          payload: { albumId, dzId: c.dzId, artist: c.artist, title: c.title, date: c.date, cover: c.cover, popular: c.popular },
         });
         if (insErr) continue; // already notified (unique index) or migration missing
         left--;
@@ -138,8 +159,8 @@ export async function runReleaseNotifications(opts: { userIds?: string[] } = {})
           titleKey: 'push.newReleaseTitle',
           bodyKey: 'push.newReleaseBody',
           vars: { artist: c.artist, title: c.title },
-          url: `/?screen=rate&id=${encodeURIComponent(c.albumId)}`,
-          tag: `release-${c.albumId}`,
+          url: `/?screen=rate&id=${encodeURIComponent(albumId)}`,
+          tag: `release-${albumId}`,
         });
       }
     }

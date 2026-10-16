@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCachedJson } from '@/lib/cachedJson';
 import { useOpenArtist } from './ui/ArtistName';
 import { ArtistShelfCard, Shelf } from './ui/SuperCards';
 import { useApp } from '@/lib/AppContext';
@@ -13,19 +13,9 @@ import type { ConcertFeedItem } from '@/app/api/concerts/route';
 export function ConcertsFeed() {
   const { t, language, me } = useApp();
   const openArtist = useOpenArtist();
-  const [data, setData] = useState<{ configured: boolean; items: ConcertFeedItem[] } | null>(null);
   const region = me?.region ?? null;
-
-  useEffect(() => {
-    if (!me) return;
-    let cancelled = false;
-    fetch(`/api/concerts${region ? `?country=${encodeURIComponent(region)}` : ''}`)
-      .then((r) => (r.ok ? r.json() : { configured: false, items: [] }))
-      .then((d) => { if (!cancelled) setData(d); })
-      .catch(() => { if (!cancelled) setData({ configured: false, items: [] }); });
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [me?.id, region]);
+  // Through the browser's shared cache: shown at once on a later visit.
+  const data = useCachedJson<{ configured: boolean; items: ConcertFeedItem[] }>(me ? `/api/concerts${region ? `?country=${encodeURIComponent(region)}` : ''}` : null).data;
 
   if (!data || !data.configured || !data.items.length) return null;
   const loc = toLocale(language);

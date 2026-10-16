@@ -1,4 +1,5 @@
 import { supabaseAdmin } from './supabaseAdmin';
+import { inBackground } from './spotifyPriority';
 
 // Shared, durable cache for upstream API responses (Spotify, Deezer,
 // Ticketmaster) in the spotify_cache table, read by every visitor, so N
@@ -9,14 +10,14 @@ import { supabaseAdmin } from './supabaseAdmin';
 //     no database round trip at all;
 //   - the same key asked for at once (a page firing parallel requests, two
 //     visitors on one artist) runs the fetcher once;
-//   - an entry that expired less than staleMaxSeconds ago (3 days unless
+//   - an entry that expired less than staleMaxSeconds ago (30 days unless
 //     the caller says otherwise) is answered right away and refreshed in
 //     the background (the refresh survives the response);
 //   - a failed fetch (rate limit, outage) falls back to whatever's cached,
 //     even if stale, rather than showing an error.
 // staleMaxSeconds = 0 turns both fallbacks off, for data that goes bad
 // (signed preview URLs).
-const STALE_MAX_SECONDS = 3 * 86400;
+const STALE_MAX_SECONDS = 30 * 86400;
 const inflight = new Map<string, Promise<unknown>>();
 
 // The memory layer: insertion order doubles as recency (a hit is moved to
@@ -105,7 +106,8 @@ export async function withSpotifyCache<T>(key: string, ttlSeconds: number, fetch
   if (cached) {
     if (cached.expires > now) return cached.payload as T;
     if (now - cached.expires < staleMaxSeconds * 1000) {
-      refresh(key, ttlSeconds, fetcher).catch(() => {});
+      // Nobody waits for this one: background priority (lib/spotifyPriority).
+      inBackground(() => refresh(key, ttlSeconds, fetcher)).catch(() => {});
       return cached.payload as T;
     }
   }

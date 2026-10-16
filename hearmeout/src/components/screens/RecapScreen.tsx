@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
+import { useCachedJson } from '@/lib/cachedJson';
 import { lastSeasons } from '@/lib/seasons';
 import { PlayRing } from '../redesign/PreviewButton';
 import { recapColors, recapToneStyle } from '@/lib/recapTone';
@@ -64,7 +65,6 @@ export function RecapScreen(_props: { device: Device }) {
   const { currentTrack, playing, quiet, toggle, playQueue, close } = usePlayer();
   const targetId = state.recapViewUserId === 'me' ? me?.id : state.recapViewUserId;
   const isMe = state.recapViewUserId === 'me' || (!!me && state.recapViewUserId === me.id);
-  const [profile, setProfile] = useState<PublicProfile | null>(null);
   const period = state.recapPeriod;
   const isSeason = period === 'season';
   const seasonKey = isSeason ? state.recapSeasonKey : null;
@@ -88,12 +88,9 @@ export function RecapScreen(_props: { device: Device }) {
     for (const id of friendIdsKey ? friendIdsKey.split(',') : []) ensureRecap(id, period, seasonKey, offset);
   }, [state.activeScreen, friendIdsKey, period, seasonKey, offset, isSeason, ensureRecap]);
 
-  useEffect(() => {
-    if (isMe || !targetId) { setProfile(null); return; }
-    let cancelled = false;
-    fetch(`/api/users/${targetId}`).then((res) => (res.ok ? res.json() : null)).then((data) => { if (!cancelled) setProfile(data); });
-    return () => { cancelled = true; };
-  }, [isMe, targetId]);
+  // A friend's profile: usually already in the shared cache (the background
+  // preload fetches every friend's), so it's there at once.
+  const profile = useCachedJson<PublicProfile>(!isMe && targetId ? `/api/users/${targetId}` : null).data;
 
   // Opening a recap plays its song of the period (the most played track)
   // once per recap: switching period or window plays that one's song, and
@@ -250,6 +247,7 @@ export function RecapScreen(_props: { device: Device }) {
 
   return (
     <>
+      <h1 className="sr">{t('recap.pageTitle')}</h1>
       {top}
       <div className="chips" role="group" aria-label={t('recap.periodLabel')} style={{ marginTop: 8 }}>
         {PERIODS.map((p) => (

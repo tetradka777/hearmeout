@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties, type Keyb
 import { useApp } from '@/lib/AppContext';
 import { useArtistPhoto } from '@/lib/artistPhotos';
 import { sizedImage } from '@/lib/imageSize';
+import { prefetchArtist } from '@/lib/prefetchPages';
 
 // Opens an artist's page from just a name (most rows only carry the name):
 // the Spotify id is looked up on click. A known id skips the lookup.
@@ -60,9 +61,16 @@ export function ArtistAvatar({ name, id, size = 18, photo: known, style }: { nam
 // An artist's name with their photo before it, opening their page. Made of
 // spans (not a button) so it can sit inside a row that is itself a button:
 // the click is kept from reaching the row.
-export function ArtistName({ name, id, size = 18, className = '', style, noAvatar }: { name: string; id?: string | null; size?: number; className?: string; style?: CSSProperties; noAvatar?: boolean }) {
+//
+// Without an id the page is found by name, which can't tell namesakes apart
+// (three different "Miley"s). albumId helps: when the row's album is known
+// and credits an artist with this name, that artist's exact id is used.
+export function ArtistName({ name, id: givenId, albumId, size = 18, className = '', style, noAvatar }: { name: string; id?: string | null; albumId?: string | null; size?: number; className?: string; style?: CSSProperties; noAvatar?: boolean }) {
   const openArtist = useOpenArtist();
-  const { t } = useApp();
+  const { t, albums, liveAlbums } = useApp();
+  const album = !givenId && albumId ? liveAlbums[albumId] || albums.find((a) => a.id === albumId || a.spotifyId === albumId) : undefined;
+  const sameName = (x: string) => x.trim().toLowerCase() === name.split(',')[0].trim().toLowerCase();
+  const id = givenId || (album?.artistId && album.artist.split(',').map((x) => x.trim()).some(sameName) ? album.artistId : null);
   if (!name) return null;
   const go = (e: MouseEvent | KeyboardEvent) => {
     e.stopPropagation();
@@ -77,6 +85,10 @@ export function ArtistName({ name, id, size = 18, className = '', style, noAvata
       aria-label={t('artist.openNamed', { name })}
       onClick={go}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') go(e); }}
+      // The page starts loading the moment you point at the link.
+      onPointerEnter={() => prefetchArtist(id)}
+      onPointerDown={() => prefetchArtist(id)}
+      onFocus={() => prefetchArtist(id)}
       style={style}
     >
       {!noAvatar && <ArtistAvatar name={name} id={id} size={size} />}

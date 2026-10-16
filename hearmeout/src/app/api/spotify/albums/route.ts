@@ -5,7 +5,7 @@ import { peekSpotifyCacheMany, withSpotifyCache } from '@/lib/spotifyCache';
 
 const MAX_IDS = 60;
 const SPOTIFY_ID = /^[0-9A-Za-z]{22}$/;
-const TTL = 14 * 86400;
+const TTL = 180 * 86400;
 
 // Many albums in one request (a wall of covers used to fire one request
 // per album): every cached album comes from one database query, and only
