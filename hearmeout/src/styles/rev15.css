@@ -395,3 +395,48 @@
    rest). The size is fixed here; max-height also switches off Chrome's
    font boosting on Android. */
 .rd .ticker,.rd .ticker *{-webkit-text-size-adjust:none;text-size-adjust:none;max-height:999999px}
+
+/* Taste fingerprint: a bar per genre on the 0–5 scale (a tick at every
+   star), in the genre's colour, growing in; the score big on the right. */
+.rd .sb18{display:grid;gap:14px}
+.rd .sb18 .r{display:grid;grid-template-columns:minmax(92px,28%) minmax(0,1fr) 48px;align-items:center;gap:14px}
+.rd .sb18 .n{display:flex;flex-direction:column;min-width:0}
+.rd .sb18 .n b{font-weight:800;font-size:16px;text-transform:lowercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rd .sb18 .n small{font-size:12px;font-weight:600;opacity:.65}
+.rd .sb18 .t{position:relative;height:14px;border-radius:99px;background:color-mix(in srgb,currentColor 13%,transparent);overflow:hidden}
+.rd .sb18 .t i{position:absolute;left:0;top:0;bottom:0;width:var(--w);border-radius:inherit;background:var(--c);animation:sb18 .9s var(--d,0ms) cubic-bezier(.2,.8,.2,1) both}
+.rd .sb18 .t::after{content:"";position:absolute;top:0;bottom:0;left:0;right:0;background:repeating-linear-gradient(90deg,transparent 0 calc(20% - 2px),rgba(0,0,0,.28) calc(20% - 2px) 20%);pointer-events:none}
+.rd .sb18 .v{font:800 26px/1 var(--font-display);letter-spacing:-.03em;text-align:right}
+@keyframes sb18{from{width:0}}
+
+/* Favourite genres: one bar split into coloured segments by listening
+   time, and a legend with the percentages big. */
+.rd .gm18 .bar{display:flex;gap:4px;height:22px;border-radius:99px;overflow:hidden}
+.rd .gm18 .bar i{flex-basis:0;min-width:6px;background:var(--c);transform-origin:left;animation:gm18 .8s var(--d,0ms) cubic-bezier(.2,.8,.2,1) both}
+@keyframes gm18{from{transform:scaleX(0)}}
+.rd .gm18 .lg{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:14px 12px;margin-top:18px}
+.rd .gm18 .lg span{display:flex;flex-direction:column;gap:3px;padding-left:12px;border-left:4px solid var(--c);min-width:0}
+.rd .gm18 .lg b{font:800 30px/1 var(--font-display);letter-spacing:-.03em}
+.rd .gm18 .lg b small{font-size:16px;margin-left:1px}
+.rd .gm18 .lg em{font-style:normal;font-weight:700;font-size:14px;opacity:.8;text-transform:lowercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (prefers-reduced-motion:reduce){.rd .sb18 .t i,.rd .gm18 .bar i{animation:none}}
+
+/* Computer screens. The hot take and the recap card next to it were very
+   tall (a 64px headline over four lines, 100px scores, and the recap card
+   stretched to match): a smaller headline and scores. */
+@media (min-width:900px){
+  .rd .hero h1{font-size:clamp(30px,3.1vw,46px);margin:14px 0 18px;max-width:22ch}
+  .rd .hero .bub{padding:10px 22px 8px}
+  .rd .hero .bub .num{font-size:clamp(46px,4.4vw,66px)}
+}
+@media (min-width:1000px){
+  /* The feed in two columns; the framed cover no wider than 200px (it was
+     44% of a full-width card, so as big as the screen). */
+  .rd .fd13s{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:stretch}
+  .rd .dkc13.has-asd{grid-template-columns:minmax(0,1fr) min(40%,200px)}
+  /* "Rate what you played" as a grid, not a sideways strip (the mouse
+     wheel scrolled it so the first cover was cut off at the left). */
+  .rd .rt16 .cw15.hrow.row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible;gap:14px 12px}
+  .rd .rt16 .cw15.hrow.row>.it{width:auto}
+  .rd .rt16 .cw15.hrow.row>.it:nth-child(n+9){display:none}
+}

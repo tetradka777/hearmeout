@@ -7,6 +7,7 @@ import { ArtistName } from './ArtistName';
 import { Initial } from './Initial';
 import { sizedImage } from '@/lib/imageSize';
 import { tintStyle, useImageColor } from '@/lib/imageColor';
+import { fmt1 } from '@/lib/numberFormat';
 
 // Pictures instead of tables (after Superfan, which shows no raw data): a
 // wall of covers, people as cards, numbers as short phrases. Styles in
@@ -105,6 +106,62 @@ export function GenreFill({ items }: { items: { name: string; share: number; lab
           <b>{g.name}</b>{g.label != null && <small>{g.label}</small>}
         </span>
       ))}
+    </div>
+  );
+}
+
+// A bright colour per genre for charts on the dark cards — always the same
+// for the same genre, and the common ones never share one (a hash of the
+// name gave rock and pop the same pink).
+const GENRE_COLORS: Record<string, string> = {
+  rock: '#FF6B5A', pop: '#FF85BE', 'hip-hop': '#FFB547', 'r&b': '#C58BFF', electronic: '#6E8BFF', latin: '#FF8A3D',
+  jazz: '#4FD1C5', indie: '#9BE15D', classical: '#E8D9A8', metal: '#B6BFCC', country: '#E6B85C', folk: '#8FD18B',
+  soul: '#F2A65A', alternative: '#5ED3F3', 'k-pop': '#FF9EDB', reggae: '#7BD88F', blues: '#7FA7FF', punk: '#FF5F8F',
+};
+const GENRE_FALLBACK = ['#5ED3F3', '#F2A65A', '#9BE15D', '#B6BFCC', '#FF9EDB', '#E8D9A8'];
+export function genreColor(name: string): string {
+  const k = name.trim().toLowerCase();
+  if (GENRE_COLORS[k]) return GENRE_COLORS[k];
+  let h = 0;
+  for (let i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) | 0;
+  return GENRE_FALLBACK[Math.abs(h) % GENRE_FALLBACK.length];
+}
+
+// Your average score per genre as bars on a 0–5 scale: the genre, a bar in
+// the genre's colour that grows in, the score big and how many ratings it
+// stands on.
+export function ScoreBars({ items }: { items: { name: string; score: number; sub?: ReactNode }[] }) {
+  return (
+    <div className="sb18">
+      {items.map((x, i) => (
+        <div key={x.name} className="r" style={{ ['--c' as string]: genreColor(x.name), ['--w' as string]: `${Math.max(4, Math.min(100, (x.score / 5) * 100))}%`, ['--d' as string]: `${i * 70}ms` }}>
+          <span className="n"><b>{x.name}</b>{x.sub != null && <small>{x.sub}</small>}</span>
+          <span className="t" aria-hidden="true"><i /></span>
+          <b className="v">{fmt1(x.score)}</b>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// How listening time splits between genres: one bar of coloured segments
+// (each as long as its share) and a legend with the percentages big.
+export function GenreMix({ items }: { items: { name: string; pct: number }[] }) {
+  const total = items.reduce((s, x) => s + x.pct, 0) || 1;
+  const parts = items.map((x) => ({ ...x, share: (x.pct / total) * 100 }));
+  return (
+    <div className="gm18">
+      <div className="bar" aria-hidden="true">
+        {parts.map((x, i) => <i key={x.name} style={{ ['--c' as string]: genreColor(x.name), flexGrow: x.share, ['--d' as string]: `${i * 80}ms` }} />)}
+      </div>
+      <div className="lg">
+        {parts.map((x) => (
+          <span key={x.name} style={{ ['--c' as string]: genreColor(x.name) }}>
+            <b>{Math.round(x.share)}<small>%</small></b>
+            <em>{x.name}</em>
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
