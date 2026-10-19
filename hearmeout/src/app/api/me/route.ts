@@ -10,26 +10,30 @@ import { isDesign, isMode, isPaletteId } from '@/lib/palettes';
 import { DEFAULT_REGION, detectRegionFromSpotify, fetchRegionAuto } from '@/lib/regionDetect';
 import { spotifyUserToken } from '@/lib/spotifySync';
 
+const emailMemo = new Map<string, { at: number; email: string | null }>();
+
 export async function GET() {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
 
   const admin = supabaseAdmin();
-  const [profile, { data: prefs }, { data: conns }, { data: friendRows }, isOpenProfile, regionAuto] = await Promise.all([
+  // Everything at once: the play count, invite code and notification
+  // switches used to be read one after another after this.
+  const [profile, { data: prefs }, { data: conns }, { data: friendRows }, isOpenProfile, regionAuto, { count: playsCount }, { data: codeRow }, { data: notifyRow }] = await Promise.all([
     getUserProfile(admin, userId, userId),
     admin.from('users').select('language, region, auth_user_id, banner_url, design, mode, palette, ticker_enabled, motion_enabled, time_format, week_start, ratings_visible, share_live, public_reviews, discoverable').eq('id', userId).maybeSingle(),
     admin.from('connections').select('provider').eq('user_id', userId),
     admin.from('friendships').select('friend:friend_id(id, name, handle, avatar_url)').eq('user_id', userId),
     fetchIsOpenProfile(admin, userId),
     fetchRegionAuto(admin, userId),
+    // How many plays the account has (Home suggests importing the Spotify
+    // history while it's small).
+    admin.from('listening_events').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+    admin.from('users').select('invite_code').eq('id', userId).maybeSingle(),
+    // Release notification switches (migration 028), apart so a missing
+    // column can't break the rest of the account.
+    admin.from('users').select('notify_releases_mine, notify_releases_popular').eq('id', userId).maybeSingle(),
   ]);
-  // How many plays the account has (Home suggests importing the Spotify
-  // history while it's small).
-  const { count: playsCount } = await admin.from('listening_events').select('id', { count: 'exact', head: true }).eq('user_id', userId);
-  const { data: codeRow } = await admin.from('users').select('invite_code').eq('id', userId).maybeSingle();
-  // Release notification switches (migration 028), apart so a missing
-  // column can't break the rest of the account.
-  const { data: notifyRow } = await admin.from('users').select('notify_releases_mine, notify_releases_popular').eq('id', userId).maybeSingle();
 
   if (!profile) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
@@ -43,9 +47,16 @@ export async function GET() {
 
   let email: string | null = null;
   if (prefs?.auth_user_id) {
-    const { data: authUser } = await admin.auth.admin.getUserById(prefs.auth_user_id as string);
-    const realEmail = authUser.user?.email ?? null;
-    email = isInternalEmail(realEmail) ? null : realEmail;
+    // A call to Supabase Auth on every page load: kept for 10 minutes.
+    const authId = prefs.auth_user_id as string;
+    const hit = emailMemo.get(authId);
+    if (hit && Date.now() - hit.at < 10 * 60 * 1000) email = hit.email;
+    else {
+      const { data: authUser } = await admin.auth.admin.getUserById(authId);
+      const realEmail = authUser.user?.email ?? null;
+      email = isInternalEmail(realEmail) ? null : realEmail;
+      emailMemo.set(authId, { at: Date.now(), email });
+    }
   }
 
   const me: Me = {

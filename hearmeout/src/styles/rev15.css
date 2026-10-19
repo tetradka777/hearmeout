@@ -440,3 +440,18 @@
   .rd .rt16 .cw15.hrow.row>.it{width:auto}
   .rd .rt16 .cw15.hrow.row>.it:nth-child(n+9){display:none}
 }
+
+/* Every card in a shelf as tall as the tallest one in it (a card with an
+   extra line, like a genre under the artist, used to stick out). The
+   cards are flex columns, so their coloured plates fill the height. */
+.rd .hrow.sr14,.rd .cw15.hrow.row,.rd .hrow.rp13,.rd .hrow.tal14,.rd .hrow.dcv15{align-items:stretch}
+.rd .hrow.sr14>.cc14{display:flex;flex-direction:column}
+.rd .hrow.sr14>.cc14>.arc14{flex:1}
+
+/* Album page on a computer: the community card sat next to the long
+   tracklist and was stretched to its height (a 1000px glass slab, almost
+   empty). Its own height, and it stays in view while the tracklist
+   scrolls past. */
+@media (min-width:1000px){
+  .rd .alp17 .bento>.tile:has(.h50),.rd .alp17 .bento>.tile:has([data-community]){align-self:start;position:-webkit-sticky;position:sticky;top:96px}
+}
