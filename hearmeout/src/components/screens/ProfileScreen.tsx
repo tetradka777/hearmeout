@@ -20,7 +20,7 @@ import { useLaterPlay } from './LaterScreen';
 import { Initial } from '../ui/Initial';
 import { cachedJson, peekJson, useCachedJson } from '@/lib/cachedJson';
 import { AwardGallery } from '../AwardGallery';
-import { CoverWall, GenreFill, PersonCards, Phrase, usePersonColor } from '../ui/Visual';
+import { CoverWall, GenreMix, PersonCards, Phrase, ScoreBars, usePersonColor } from '../ui/Visual';
 
 type ProfileTab = 'ratings' | 'reviews' | 'loved' | 'later' | 'taste' | 'awards' | 'listening' | 'friends';
 const TAB_ORDER: ProfileTab[] = ['ratings', 'reviews', 'loved', 'later', 'taste', 'awards', 'listening', 'friends'];
@@ -130,21 +130,20 @@ function TasteTab({ list }: { list: RatingRecord[] }) {
   }, [list]);
   const top4 = [...list].sort((a, b) => b.stars - a.stars).slice(0, 4);
   const genres = me?.genres ?? [];
-  const maxPct = Math.max(1, ...genres.map((g) => g.pct));
   return (
     <div className="bento b3">
       <div className="tile s2">
         <h2>{t('profile.taste')}</h2>
         <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 12px' }}>{t('profile.tasteFingerprintSubtitle')}</p>
         {fp.length ? (
-          <GenreFill items={fp.map((x) => ({ name: x.g, share: x.avg / 5, label: `★ ${fmt1(x.avg)}` }))} />
+          <ScoreBars items={fp.slice(0, 6).map((x) => ({ name: x.g, score: x.avg, sub: t('profile.ratedN', { n: x.n }) }))} />
         ) : <p className="muted" style={{ fontWeight: 600 }}>{t('profile.fingerprintEmpty')}</p>}
       </div>
       <div className="tile">
         <h2>{t('profile.favoriteGenres')}</h2>
         <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 12px' }}>{t('profile.favoriteGenresSubtitle')}</p>
         {genres.length ? (
-          <GenreFill items={genres.slice(0, 6).map((g) => ({ name: g.g, share: g.pct / maxPct }))} />
+          <GenreMix items={genres.slice(0, 6).map((g) => ({ name: g.g, pct: g.pct }))} />
         ) : <p className="muted" style={{ fontWeight: 600 }}>{t('profile.notEnoughData')}</p>}
       </div>
       <div className="tile s3">
