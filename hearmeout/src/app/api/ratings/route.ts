@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
+import { clearAlbumSummary } from '@/lib/albumSummary';
 import { isReviewTagId, MAX_REVIEW_TAGS } from '@/lib/reviewTags';
 
 export async function POST(request: NextRequest) {
@@ -49,5 +50,7 @@ export async function POST(request: NextRequest) {
       { onConflict: 'user_id,album_id' }
     );
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  // The community averages change: everyone's next read is fresh.
+  clearAlbumSummary();
   return NextResponse.json({ ok: true });
 }

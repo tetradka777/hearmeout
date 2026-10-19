@@ -77,6 +77,21 @@ async function fetchCircleAwards(admin: SupabaseClient, userId: string, friends:
 //   - open: the teaser tier (stats/genres/top albums, never reviews or the
 //     friend graph)
 //   - closed (the default): a locked name-card stub
+// The genres of someone's 5000 most recent plays (taste fingerprint, match
+// %). Read on every /api/me and every profile view, so the pages are
+// fetched in parallel and the result is kept for 10 minutes per person in
+// this process — genre shares barely move in that time.
+const GENRE_TTL_MS = 10 * 60 * 1000;
+const genreMemo = new Map<string, { at: number; rows: { genre: string | null }[] }>();
+async function recentGenres(admin: SupabaseClient, userId: string): Promise<{ genre: string | null }[]> {
+  const hit = genreMemo.get(userId);
+  if (hit && Date.now() - hit.at < GENRE_TTL_MS) return hit.rows;
+  const { rows } = await fetchAllRows<{ genre: string | null }>((f, t) => admin.from('listening_events').select('genre').eq('user_id', userId).not('genre', 'is', null).order('played_at', { ascending: false }).range(f, t), 5000, 5);
+  genreMemo.set(userId, { at: Date.now(), rows });
+  if (genreMemo.size > 2000) genreMemo.delete(genreMemo.keys().next().value as string);
+  return rows;
+}
+
 export async function getUserProfile(
   admin: SupabaseClient,
   userId: string,
@@ -90,7 +105,7 @@ export async function getUserProfile(
     admin.from('ratings').select('album_id, stars, review, tags, created_at, is_private').eq('user_id', userId).order('created_at', { ascending: false }),
     // Genre shares (taste fingerprint, match %) from the 5000 most recent
     // plays, paged: one request returns at most 1000 rows.
-    fetchAllRows((f, t) => admin.from('listening_events').select('genre').eq('user_id', userId).not('genre', 'is', null).order('played_at', { ascending: false }).range(f, t), 5000).then((r) => ({ data: r.rows })),
+    recentGenres(admin, userId).then((rows) => ({ data: rows })),
     admin.from('listening_events').select('duration_ms').eq('user_id', userId).gte('played_at', startOfDay.toISOString()),
     fetchLastPlay(admin, userId),
     fetchIsOpenProfile(admin, userId),
