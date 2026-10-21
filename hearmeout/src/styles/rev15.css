@@ -455,3 +455,8 @@
 @media (min-width:1000px){
   .rd .alp17 .bento>.tile:has(.h50),.rd .alp17 .bento>.tile:has([data-community]){align-self:start;position:-webkit-sticky;position:sticky;top:96px}
 }
+
+/* No frames around album covers anywhere: the thick black frames on the
+   feed and review cards are gone too — just the rounded cover. */
+.rd .rvc15 .alb13 .cvb,.rd .fdc15 .asd .cvb{border:0;background:none;border-radius:14px}
+.rd .rvc15 .alb13 .cvb .cov,.rd .rvc15 .alb13 .cvb>button,.rd .fdc15 .asd .cvb .cov{border-radius:14px}
