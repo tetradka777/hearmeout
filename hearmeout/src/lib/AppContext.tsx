@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { setNumberLanguage } from './numberFormat';
 import { ALBUMS } from './data';
 import { pickLanguage, translate, type Language, type TranslationKey } from './i18n';
+import { useLoadedLanguage } from './useLoadedLanguage';
 import { clearStatsCache } from './statsClientCache';
 import { jsonAge, peekJson, setJsonCacheOwner, storeJson } from './cachedJson';
 import { storeAlbums, storedAlbums } from './albumStore';
@@ -11,30 +12,10 @@ import { completedWeekRange } from './weeks';
 import type {
   Album, AlbumRatingInfo, AppNotification, ArtistState, Device, FeedResponse, FriendRequest, LaterItem, LovedItem, LovedItemType, Me, RatingRecord, RecapData, RecapPeriod, ScreenName, SeasonOption, SpotifyArtistAlbum,
 } from './types';
-import type { AlbumDetail, CatalogAlbum, CatalogArtist } from './spotifyCatalog';
+import type { AlbumDetail } from './spotifyCatalog';
 import { resolveMode, type Design, type Mode, type PaletteId, type TimeFormat, type WeekStart } from './palettes';
 import { PENDING_INVITE_KEY, PENDING_INVITE_NAME_KEY } from './pendingInvite';
 
-const GENRE_BUCKETS = ['Rock', 'Hip-Hop', 'Electronic', 'R&B', 'Pop', 'Latin'];
-
-// Home-screen sections built from live Spotify search results aren't part
-// of the curated ALBUMS catalog, but they should still open like any other
-// album (rate them, read/write reviews — ratings.album_id has no FK, so a
-// Spotify search result id works there exactly like a curated one).
-function catalogAlbumToAlbum(c: CatalogAlbum): Album {
-  return {
-    id: c.id,
-    spotifyId: c.id,
-    title: c.title,
-    artist: c.artist,
-    artistId: c.artistId,
-    year: c.year ?? 0,
-    genre: '',
-    genreBucket: '',
-    cover: c.cover ?? undefined,
-    tracklist: [],
-  };
-}
 
 // Full detail (real tracklist + primary artist id) for an on-demand album —
 // one recap track, a friend's top-4 pick, an artist's discography entry —
@@ -177,8 +158,6 @@ type AppContextValue = {
   spotifyCovers: Record<string, string>;
   liveAlbums: Record<string, Album>;
   failedAlbumIds: Record<string, true>;
-  spotifyObscure: Record<string, CatalogAlbum[] | 'error'>;
-  spotifyGenreArtists: Record<string, CatalogArtist[] | 'error'>;
   myRatings: RatingRecord[];
   feed: FeedResponse | null;
   setFeed: (feed: FeedResponse | null) => void;
@@ -320,8 +299,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [me, setMe] = useState<Me | null>(null);
   const [albumRatings, setAlbumRatings] = useState<Record<string, AlbumRatingInfo>>({});
   const [spotifyCovers, setSpotifyCovers] = useState<Record<string, string>>({});
-  const [spotifyObscure, setSpotifyObscure] = useState<Record<string, CatalogAlbum[] | 'error'>>({});
-  const [spotifyGenreArtists, setSpotifyGenreArtists] = useState<Record<string, CatalogArtist[] | 'error'>>({});
   const [myRatings, setMyRatings] = useState<RatingRecord[]>([]);
   const [feed, setFeed] = useState<FeedResponse | null>(null);
   const [lovedItems, setLovedItems] = useState<LovedItem[]>([]);
@@ -348,7 +325,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // effect below starts mirroring the interface language into it.
   const serverLang = useRef<string | null>(typeof document !== 'undefined' ? document.documentElement.lang : null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastRegionFetched = useRef<string | null | undefined>(undefined);
   // Mirrors `state` so callbacks that build a history snapshot right after
   // calling setState can read the just-computed value without needing
   // `state` itself in their dependency array (which would recreate them,
@@ -358,7 +334,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => { stateRef.current = state; }, [state]);
 
   const patch = useCallback((p: Partial<AppState>) => setState((s) => ({ ...s, ...p })), []);
-  const t = useCallback((key: TranslationKey, vars?: Record<string, string | number>) => translate(state.language, key, vars), [state.language]);
+  // Strings in English until the account language's dictionary has loaded.
+  const textLanguage = useLoadedLanguage(state.language);
+  const t = useCallback((key: TranslationKey, vars?: Record<string, string | number>) => translate(textLanguage, key, vars), [textLanguage]);
 
   const showToast = useCallback((msg: string) => {
     patch({ toast: msg });
@@ -386,13 +364,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const refreshAlbumRatings = useCallback(async () => {
     // Server-side (the view is closed to the browser's anon key, migration 022).
+    // A failed request keeps the averages on screen instead of blanking them.
     const res = await fetch('/api/albums/summary').catch(() => null);
-    const data: { album_id: string; avg_stars: number; ratings_count: number }[] = res?.ok ? await res.json() : [];
+    if (!res?.ok) return;
+    const data: { album_id: string; avg_stars: number; ratings_count: number }[] = await res.json().catch(() => null);
+    if (!Array.isArray(data)) return;
     const map: Record<string, AlbumRatingInfo> = {};
-    for (const row of data || []) {
+    for (const row of data) {
       map[row.album_id as string] = { avg: Number(row.avg_stars), count: Number(row.ratings_count) };
     }
-    if (res?.ok) storeJson('/api/albums/summary', data);
+    storeJson('/api/albums/summary', data);
     setAlbumRatings(map);
   }, []);
 
@@ -519,29 +500,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .then((d) => { if (d) { storeJson('/api/spotify/covers', d); setSpotifyCovers(d); } })
       .catch(() => {});
   }, []);
-
-  // Region-aware sections: refetched whenever the profile's region setting
-  // changes (including the very first time it becomes known after login).
-  useEffect(() => {
-    if (state.authStatus !== 'ready') return;
-    const region = me?.region ?? null;
-    if (lastRegionFetched.current === region) return;
-    lastRegionFetched.current = region;
-
-    const marketQS = region ? `&market=${encodeURIComponent(region)}` : '';
-
-    fetch(`/api/spotify/obscure?genre=Electronic${marketQS}`)
-      .then((res) => (res.ok ? res.json() : Promise.reject()))
-      .then((data) => setSpotifyObscure((s) => ({ ...s, Electronic: data })))
-      .catch(() => setSpotifyObscure((s) => ({ ...s, Electronic: 'error' })));
-
-    GENRE_BUCKETS.forEach((genre) => {
-      fetch(`/api/spotify/genre-artists?genre=${encodeURIComponent(genre)}${marketQS}`)
-        .then((res) => (res.ok ? res.json() : Promise.reject()))
-        .then((data) => setSpotifyGenreArtists((s) => ({ ...s, [genre]: data })))
-        .catch(() => setSpotifyGenreArtists((s) => ({ ...s, [genre]: 'error' })));
-    });
-  }, [state.authStatus, me?.region]);
 
   useEffect(() => { if (state.authStatus === 'ready') refreshMyRatings(); }, [state.authStatus, refreshMyRatings]);
   useEffect(() => { if (state.authStatus === 'ready') refreshLovedItems(); }, [state.authStatus, refreshLovedItems]);
@@ -1294,24 +1252,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const liveAlbums = useMemo(() => {
     const map: Record<string, Album> = {};
-    for (const list of Object.values(spotifyObscure)) {
-      if (Array.isArray(list)) for (const a of list) map[a.id] = catalogAlbumToAlbum(a);
-    }
     for (const [id, a] of Object.entries(fetchedAlbums)) map[id] = a;
     return map;
-  }, [spotifyObscure, fetchedAlbums]);
+  }, [fetchedAlbums]);
 
   const value = useMemo<AppContextValue>(() => ({
     state, language: state.language, t, albums: ALBUMS, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds,
-    spotifyObscure, spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, laterItems, toggleLaterAlbum, toggleLaterTrack, removeLaterItem, removeAllLater, friendRequests, recapCache, recapLocked, reviewsVersion,
+    myRatings, feed, setFeed, lovedItems, toggleLoved, laterItems, toggleLaterAlbum, toggleLaterTrack, removeLaterItem, removeAllLater, friendRequests, recapCache, recapLocked, reviewsVersion,
     showScreen, viewHistory, goBack, openAlbum, viewFriend, viewGroup, openFanClub, openRecap, closeRecap,
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, setRecapOffset, recapSeasons,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, logoutEverywhere, deleteAccount,
     updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateLanguage, updateRegion, updateRegionAuto, updateOpenProfile, updateAppearance, updatePrivacy,
     addFriend, respondToFriendRequest, removeFriend, notifications, markNotificationsRead, sendHi, shareRecapWithFriends, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
-  }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds, spotifyObscure,
-    spotifyGenreArtists, myRatings, feed, setFeed, lovedItems, toggleLoved, laterItems, toggleLaterAlbum, toggleLaterTrack, removeLaterItem, removeAllLater, friendRequests, recapCache, recapLocked, reviewsVersion, showScreen, viewHistory, goBack, openAlbum,
+  }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds,
+    myRatings, feed, setFeed, lovedItems, toggleLoved, laterItems, toggleLaterAlbum, toggleLaterTrack, removeLaterItem, removeAllLater, friendRequests, recapCache, recapLocked, reviewsVersion, showScreen, viewHistory, goBack, openAlbum,
     setRecapSeasonKey, setRecapOffset, recapSeasons,
     viewFriend, viewGroup, openFanClub, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,

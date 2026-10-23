@@ -7,6 +7,7 @@
 import { useEffect, useState } from 'react';
 import { userAvatarStyle } from '@/lib/format';
 import { translate, type Language, type TranslationKey } from '@/lib/i18n';
+import { useLoadedLanguage } from '@/lib/useLoadedLanguage';
 import { isDemoAccountId } from '@/lib/demoAccounts';
 import { PENDING_INVITE_KEY, PENDING_INVITE_NAME_KEY } from '@/lib/pendingInvite';
 
@@ -33,7 +34,8 @@ export default function InviteClient({ id, initialInviter, initialLanguage, host
   const [language, setLanguage] = useState<Language>(initialLanguage);
   const [status, setStatus] = useState<'idle' | 'sending' | 'error'>('idle');
 
-  const t = (key: TranslationKey, vars?: Record<string, string | number>) => translate(language, key, vars);
+  const textLanguage = useLoadedLanguage(language);
+  const t = (key: TranslationKey, vars?: Record<string, string | number>) => translate(textLanguage, key, vars);
 
   useEffect(() => {
     let cancelled = false;

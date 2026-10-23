@@ -28,8 +28,9 @@ export async function GET(request: NextRequest) {
     { data: friendRatings },
     { data: myRatings },
     { data: todayEvents },
-    { data: olderEvents },
     { data: mySessionRows },
+    { data: myRecentPlays },
+    privacy,
   ] = await Promise.all([
     friendIds.length
       ? admin.from('users').select('id, name, handle, avatar_url').in('id', friendIds)
@@ -41,24 +42,24 @@ export async function GET(request: NextRequest) {
     friendIds.length
       ? admin.from('listening_events').select('user_id, track_id, track_title, artist, album_id, cover_url, played_at').in('user_id', friendIds).gte('played_at', dayStart.toISOString()).order('played_at', { ascending: false }).limit(300)
       : Promise.resolve({ data: [] as { user_id: string; track_id: string | null; track_title: string | null; artist: string | null; album_id: string | null; cover_url: string | null; played_at: string }[] }),
-    friendIds.length
-      ? fetchAllRows((f, t) => admin.from('listening_events').select('user_id, track_id, track_title').in('user_id', friendIds).gte('played_at', monthAgo).lt('played_at', dayStart.toISOString()).order('id').range(f, t)).then((r) => ({ data: r.rows }))
-      : Promise.resolve({ data: [] as { user_id: string; track_id: string | null; track_title: string | null }[] }),
     admin.from('listening_events').select('duration_ms, artist, album_id, cover_url, played_at, track_title').eq('user_id', userId).gte('played_at', dayStart.toISOString()),
+    // "Rate what you played": the viewer's own recently played albums, most
+    // recent first, deduped. Filtering out already-rated ones happens on the
+    // client (it already holds the full rating list).
+    admin.from('listening_events').select('album_id, played_at').eq('user_id', userId).not('album_id', 'is', null)
+      .gte('played_at', new Date(now - 5 * 24 * 60 * 60 * 1000).toISOString()).order('played_at', { ascending: false }).limit(200),
+    fetchPrivacy(admin, friendIds),
   ]);
 
-  // "Rate what you played": the viewer's own recently played albums, most
-  // recent first, deduped. Filtering out already-rated ones happens on the
-  // client (it already holds the full rating list).
-  const fiveDaysAgo = new Date(now - 5 * 24 * 60 * 60 * 1000).toISOString();
-  const { data: myRecentPlays } = await admin
-    .from('listening_events')
-    .select('album_id, played_at')
-    .eq('user_id', userId)
-    .not('album_id', 'is', null)
-    .gte('played_at', fiveDaysAgo)
-    .order('played_at', { ascending: false })
-    .limit(200);
+  // Earlier plays (30 days) of only the tracks friends played today — all
+  // that "first play" needs; reading every play of the month was the slow
+  // part of this request.
+  const todayTrackIds = [...new Set((todayEvents || []).map((e) => e.track_id).filter((x): x is string => !!x))];
+  const todayTitles = [...new Set((todayEvents || []).filter((e) => !e.track_id && e.track_title).map((e) => e.track_title as string))];
+  const earlier = (column: 'track_id' | 'track_title', values: string[]) => values.length
+    ? fetchAllRows<{ user_id: string; track_id: string | null; track_title: string | null }>((f, t) => admin.from('listening_events').select('user_id, track_id, track_title').in('user_id', friendIds).in(column, values).gte('played_at', monthAgo).lt('played_at', dayStart.toISOString()).order('id').range(f, t)).then((r) => r.rows)
+    : Promise.resolve([]);
+  const olderEvents = (await Promise.all([earlier('track_id', todayTrackIds), earlier('track_title', todayTitles)])).flat();
   const recentAlbumIds: string[] = [];
   for (const row of myRecentPlays || []) {
     const id = row.album_id as string;
@@ -75,7 +76,6 @@ export async function GET(request: NextRequest) {
   // Settings → Privacy: friends who turned off "Ratings visible to friends"
   // don't appear as rating events or in the hero; "Show what I'm playing"
   // off keeps their plays out of first-play events.
-  const privacy = await fetchPrivacy(admin, friendIds);
   const flags = (id: string) => privacy.get(id) ?? DEFAULT_PRIVACY;
   const visibleFriendRatings = (friendRatings || []).filter((r) => !r.is_private && flags(r.user_id).ratingsVisible);
 

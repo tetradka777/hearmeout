@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { cache } from 'react';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { pickLanguage, translate, type Language } from '@/lib/i18n';
+import { loadLanguage, pickLanguage, translate, type Language } from '@/lib/i18n';
 import { previewImages } from '@/lib/siteMeta';
 import InviteClient, { type InviterInfo } from './InviteClient';
 
@@ -21,7 +21,9 @@ const loadInviter = cache(async (id: string): Promise<InviterInfo | null> => {
 // like the site's own preview (lib/siteMeta.ts).
 async function requestLanguage(): Promise<Language> {
   const header = (await headers()).get('accept-language');
-  return header ? pickLanguage(header) : 'en';
+  const lang = header ? pickLanguage(header) : 'en';
+  await loadLanguage(lang);
+  return lang;
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {

@@ -1,29 +1,51 @@
 'use client';
 
 import { useEffect, useState, type ComponentType } from 'react';
+import dynamic from 'next/dynamic';
 import { useApp } from '@/lib/AppContext';
 import { useWheelRows } from '@/lib/hooks';
 import type { Device, ScreenName } from '@/lib/types';
 import { RedesignShell } from './redesign/Shell';
 import { HomeScreen } from './screens/HomeScreen';
 import { RateScreen } from './screens/RateScreen';
-import { HistoryScreen } from './screens/HistoryScreen';
-import { RecapScreen } from './screens/RecapScreen';
-import { ProfileScreen } from './screens/ProfileScreen';
-import { ArtistScreen } from './screens/ArtistScreen';
-import { FriendScreen } from './screens/FriendScreen';
-import { StatsScreen } from './screens/StatsScreen';
-import { MatchScreen } from './screens/MatchScreen';
-import { GroupsScreen } from './screens/GroupsScreen';
-import { GroupScreen } from './screens/GroupScreen';
-import { FanClubScreen } from './screens/FanClubScreen';
-import { DiscoverScreen } from './screens/DiscoverScreen';
-import { SettingsScreen } from './screens/SettingsScreen';
-import { StatesScreen } from './screens/StatesScreen';
-import { LaterScreen } from './screens/LaterScreen';
-import { OnboardingScreen } from './OnboardingScreen';
+// The welcome tour is shown once per account: its own chunk too.
+const OnboardingScreen = dynamic(() => import('./OnboardingScreen').then((m) => m.OnboardingScreen));
 import { preloadDetails } from '@/lib/backgroundPreload';
 import { useScrollMemory } from '@/lib/scrollMemory';
+
+// Home and the album page are in the first bundle; every other screen is
+// its own chunk, fetched in the background right after start-up (they're
+// mounted there a moment later anyway), so the first screen comes up
+// without carrying all fourteen.
+const loadHistoryScreen = () => import('./screens/HistoryScreen').then((m) => m.HistoryScreen);
+const loadRecapScreen = () => import('./screens/RecapScreen').then((m) => m.RecapScreen);
+const loadProfileScreen = () => import('./screens/ProfileScreen').then((m) => m.ProfileScreen);
+const loadArtistScreen = () => import('./screens/ArtistScreen').then((m) => m.ArtistScreen);
+const loadFriendScreen = () => import('./screens/FriendScreen').then((m) => m.FriendScreen);
+const loadStatsScreen = () => import('./screens/StatsScreen').then((m) => m.StatsScreen);
+const loadMatchScreen = () => import('./screens/MatchScreen').then((m) => m.MatchScreen);
+const loadGroupsScreen = () => import('./screens/GroupsScreen').then((m) => m.GroupsScreen);
+const loadGroupScreen = () => import('./screens/GroupScreen').then((m) => m.GroupScreen);
+const loadFanClubScreen = () => import('./screens/FanClubScreen').then((m) => m.FanClubScreen);
+const loadDiscoverScreen = () => import('./screens/DiscoverScreen').then((m) => m.DiscoverScreen);
+const loadSettingsScreen = () => import('./screens/SettingsScreen').then((m) => m.SettingsScreen);
+const loadStatesScreen = () => import('./screens/StatesScreen').then((m) => m.StatesScreen);
+const loadLaterScreen = () => import('./screens/LaterScreen').then((m) => m.LaterScreen);
+const SCREEN_LOADERS = [loadHistoryScreen, loadRecapScreen, loadProfileScreen, loadArtistScreen, loadFriendScreen, loadStatsScreen, loadMatchScreen, loadGroupsScreen, loadGroupScreen, loadFanClubScreen, loadDiscoverScreen, loadSettingsScreen, loadStatesScreen, loadLaterScreen];
+const HistoryScreen = dynamic(loadHistoryScreen);
+const RecapScreen = dynamic(loadRecapScreen);
+const ProfileScreen = dynamic(loadProfileScreen);
+const ArtistScreen = dynamic(loadArtistScreen);
+const FriendScreen = dynamic(loadFriendScreen);
+const StatsScreen = dynamic(loadStatsScreen);
+const MatchScreen = dynamic(loadMatchScreen);
+const GroupsScreen = dynamic(loadGroupsScreen);
+const GroupScreen = dynamic(loadGroupScreen);
+const FanClubScreen = dynamic(loadFanClubScreen);
+const DiscoverScreen = dynamic(loadDiscoverScreen);
+const SettingsScreen = dynamic(loadSettingsScreen);
+const StatesScreen = dynamic(loadStatesScreen);
+const LaterScreen = dynamic(loadLaterScreen);
 
 // Every screen mounts the first time it's opened (or when the background
 // preload gets to it) and stays mounted after
@@ -58,6 +80,13 @@ const STEP_MS = 700;
 export function AppShell() {
   const { state, me } = useApp();
   useWheelRows();
+
+  // Fetch the other screens' code once the first one is up.
+  useEffect(() => {
+    const warm = () => { for (const load of SCREEN_LOADERS) load().catch(() => {}); };
+    const ric = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
+    if (ric) ric(warm, { timeout: 1500 }); else setTimeout(warm, 300);
+  }, []);
 
   // A screen mounts the first time it's opened and then stays mounted
   // (hidden), so its state still survives switching away and back. Mounting

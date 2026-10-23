@@ -25,7 +25,8 @@ for (const [name, url] of SCREENS) {
     await page.goto(url);
     const view = screen(page);
     await expect(view.locator('h1').first()).toBeAttached();
-    await expect(view.locator('.tile').first()).toBeVisible();
+    // A card, or a shelf of them (Discover is shelves only).
+    await expect(view.locator('.tile, .hrow').first()).toBeVisible();
     await expect(view).not.toHaveText(/^\s*$/);
     await page.waitForTimeout(1500); // late requests
     await expectNoHorizontalScroll(page);

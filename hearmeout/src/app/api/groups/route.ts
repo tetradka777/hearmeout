@@ -53,17 +53,15 @@ export async function GET() {
   const summaries: GroupSummary[] = [];
   for (const g of groups || []) {
     const memberIds = (allMembers || []).filter((m) => m.group_id === g.id).map((m) => m.user_id as string);
-    const { count } = await admin
-      .from('ratings')
-      .select('*', { count: 'exact', head: true })
-      .in('user_id', memberIds)
-      .gte('created_at', since);
+    // Ratings this week, from the month's rows already read (was one count
+    // query per group, one after another).
+    const memberSet = new Set(memberIds);
+    const count = (monthRatings || []).filter((r) => memberSet.has(r.user_id as string) && (r.created_at as string) >= since).length;
     const members = memberIds.map((id) => userById.get(id)).filter((u): u is NonNullable<typeof u> => !!u);
     const ranked = members
       .map((user) => ({ user, hours: Math.round(((hoursByUser.get(user.id) || 0) / 3600000) * 10) / 10 }))
       .sort((a, b) => b.hours - a.hours);
     const topListener = ranked.length && ranked[0].hours > 0 ? ranked[0] : null;
-    const memberSet = new Set(memberIds);
     const ratings = visibleRatings.filter((r) => memberSet.has(r.user_id as string));
     const coverAlbumIds = [...ratings].sort((a, b) => Number(b.stars) - Number(a.stars))
       .map((r) => r.album_id as string).filter((id, i, all) => all.indexOf(id) === i).slice(0, 3);

@@ -15,8 +15,8 @@ function albumOf(track: QueueTrack): string | null {
 }
 
 // Look a track up ahead of time so play starts without waiting.
-export function prefetchQueueTrack(track: QueueTrack): void {
-  prefetchTrackPreview(track.artist, track.title, albumOf(track));
+export function prefetchQueueTrack(track: QueueTrack, audio = true): void {
+  prefetchTrackPreview(track.artist, track.title, albumOf(track), audio);
 }
 
 type PlayerValue = {

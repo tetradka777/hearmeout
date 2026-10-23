@@ -4,10 +4,11 @@
    ?auth= at module load, before the first history entry rewrites "/"). */
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
-import { pickLanguage, translate, type TranslationKey } from '@/lib/i18n';
+import { loadLanguage, pickLanguage, translate, type TranslationKey } from '@/lib/i18n';
 
 export async function generateMetadata(): Promise<Metadata> {
   const lang = pickLanguage((await headers()).get('accept-language'));
+  await loadLanguage(lang);
   return { title: `${translate(lang, 'privacy.title')} — HearMeOut` };
 }
 
@@ -28,6 +29,7 @@ const NOTE_KEYS: TranslationKey[] = ['privacy.item2', 'privacy.item3', 'privacy.
 // prototype: crumb, eyebrow, H1, tiles).
 export default async function PrivacyPage() {
   const lang = pickLanguage((await headers()).get('accept-language'));
+  await loadLanguage(lang);
   const t = (key: TranslationKey) => translate(lang, key);
   return (
     <div className="rd">

@@ -1,17 +1,19 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { LANGUAGES, pickLanguage, translate, type Language, type TranslationKey } from './i18n';
+import { LANGUAGES, loadLanguage, pickLanguage, translate, type Language, type TranslationKey } from './i18n';
 import fs from 'node:fs';
 import path from 'node:path';
 
 // The dictionaries aren't exported; probe them through translate(): every
-// key of the reference (ru) set must translate to a non-empty string that
+// key of the reference (en) set must translate to a non-empty string that
 // isn't the key itself, and keep the same {placeholders} in every language.
 const keys = (() => {
   const src = fs.readFileSync(path.join(__dirname, 'i18n.ts'), 'utf8');
   const en = src.slice(src.indexOf('const en = {'), src.indexOf('\n};', src.indexOf('const en = {')));
   return [...en.matchAll(/^ {2}'([^']+)':/gm)].map((m) => m[1] as TranslationKey);
 })();
+
+test.before(() => Promise.all(LANGUAGES.map(loadLanguage)));
 
 test('dictionary keys were found', () => assert.ok(keys.length > 500, `only ${keys.length} keys`));
 

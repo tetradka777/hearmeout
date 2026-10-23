@@ -45,7 +45,20 @@ async function fetchLastPlay(admin: SupabaseClient, userId: string): Promise<{ l
 
 // Awards (lib/monthAwards.ts) this person won this calendar month within
 // their own circle — themself plus their friends.
+// Every play of the month across the whole friend circle: heavy, and the
+// month's awards barely move in minutes, so kept 10 minutes per person.
+const AWARDS_TTL_MS = 10 * 60 * 1000;
+const awardsMemo = new Map<string, { at: number; awards: { label: string; detail: string }[] }>();
 async function fetchCircleAwards(admin: SupabaseClient, userId: string, friends: ApiUser[], self: ApiUser): Promise<{ label: string; detail: string }[]> {
+  const hit = awardsMemo.get(userId);
+  if (hit && Date.now() - hit.at < AWARDS_TTL_MS) return hit.awards;
+  const awards = await computeCircleAwards(admin, userId, friends, self);
+  awardsMemo.set(userId, { at: Date.now(), awards });
+  if (awardsMemo.size > 2000) awardsMemo.delete(awardsMemo.keys().next().value as string);
+  return awards;
+}
+
+async function computeCircleAwards(admin: SupabaseClient, userId: string, friends: ApiUser[], self: ApiUser): Promise<{ label: string; detail: string }[]> {
   const circle = [self, ...friends];
   const ids = circle.map((u) => u.id);
   const monthStart = new Date();
@@ -100,7 +113,8 @@ export async function getUserProfile(
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
 
-  const [{ data: user, error: userErr }, { data: ratings }, { data: genreRows }, { data: todayRows }, lastPlay, isOpenProfile] = await Promise.all([
+  const isSelf = !!viewerId && viewerId === userId;
+  const [{ data: user, error: userErr }, { data: ratings }, { data: genreRows }, { data: todayRows }, lastPlay, isOpenProfile, isMutualFriend, privacyMap] = await Promise.all([
     admin.from('users').select('id, name, handle, avatar_url, created_at').eq('id', userId).maybeSingle(),
     admin.from('ratings').select('album_id, stars, review, tags, created_at, is_private').eq('user_id', userId).order('created_at', { ascending: false }),
     // Genre shares (taste fingerprint, match %) from the 5000 most recent
@@ -109,13 +123,13 @@ export async function getUserProfile(
     admin.from('listening_events').select('duration_ms').eq('user_id', userId).gte('played_at', startOfDay.toISOString()),
     fetchLastPlay(admin, userId),
     fetchIsOpenProfile(admin, userId),
+    !isSelf && viewerId ? isFriendOf(admin, userId, viewerId) : Promise.resolve(false),
+    isSelf ? Promise.resolve(null) : fetchPrivacy(admin, [userId]),
   ]);
 
   if (userErr) throw userErr;
   if (!user) return null;
 
-  const isSelf = !!viewerId && viewerId === userId;
-  const isMutualFriend = !isSelf && !!viewerId && await isFriendOf(admin, userId, viewerId);
   // Demo fixture accounts (see demoAccounts.ts) are open to everyone — the
   // whole point is letting a friendless user try the comparison feature.
   const isOpen = isSelf || isMutualFriend || isDemoAccountId(userId);
@@ -160,7 +174,7 @@ export async function getUserProfile(
   // Settings → Privacy, applied for everyone but the owner: "Ratings
   // visible to friends" off hides scores (list, top 4, average);
   // "Show what I'm playing" off hides now playing and last played.
-  const privacy = isSelf ? DEFAULT_PRIVACY : ((await fetchPrivacy(admin, [userId])).get(userId) ?? DEFAULT_PRIVACY);
+  const privacy = isSelf ? DEFAULT_PRIVACY : (privacyMap?.get(userId) ?? DEFAULT_PRIVACY);
   const showScores = isSelf || privacy.ratingsVisible;
   const showListening = isSelf || privacy.shareLive;
 
@@ -211,10 +225,12 @@ export async function getUserProfile(
       isPrivate: !!r.is_private,
       previousStars: null,
     }));
-    const { data: friendRows } = await admin
-      .from('friendships')
-      .select('friend:friend_id(id, name, handle, avatar_url)')
-      .eq('user_id', userId);
+    const [{ data: friendRows }, since] = await Promise.all([
+      admin.from('friendships').select('friend:friend_id(id, name, handle, avatar_url)').eq('user_id', userId),
+      !isSelf && viewerId
+        ? admin.from('friendships').select('created_at').eq('user_id', viewerId).eq('friend_id', userId).maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
     profile.friends = (friendRows || [])
       .map((row) => {
         const f = row.friend as unknown as { id: string; name: string; handle: string; avatar_url: string | null } | null;
@@ -225,12 +241,7 @@ export async function getUserProfile(
     if (!isSelf) {
       profile.lastPlayed = showListening ? lastPlay.last : null;
       const self: ApiUser = { id: user.id, name: user.name, handle: user.handle, avatarUrl: user.avatar_url };
-      const [since, awards] = await Promise.all([
-        viewerId
-          ? admin.from('friendships').select('created_at').eq('user_id', viewerId).eq('friend_id', userId).maybeSingle()
-          : Promise.resolve({ data: null }),
-        fetchCircleAwards(admin, userId, profile.friends, self),
-      ]);
+      const awards = await fetchCircleAwards(admin, userId, profile.friends, self);
       profile.friendsSince = (since.data?.created_at as string | undefined) ?? null;
       profile.awards = awards;
     }

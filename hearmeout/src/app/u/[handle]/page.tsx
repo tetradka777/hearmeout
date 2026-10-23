@@ -7,7 +7,7 @@ import { fmt1 } from '@/lib/numberFormat';
 import { headers } from 'next/headers';
 import { loadPublicProfile } from '@/lib/publicProfile';
 import { getCurrentUserId } from '@/lib/identity';
-import { pickLanguage, translate, type Language, type TranslationKey } from '@/lib/i18n';
+import { loadLanguage, pickLanguage, translate, type Language, type TranslationKey } from '@/lib/i18n';
 
 // Plain server component, deliberately outside AppProvider/AppGate — this
 // is the one page in the app reachable without logging in, so a rating
@@ -22,7 +22,9 @@ import { pickLanguage, translate, type Language, type TranslationKey } from '@/l
 // Open Graph image next to this file (opengraph-image.tsx).
 
 async function requestLanguage(): Promise<Language> {
-  return pickLanguage((await headers()).get('accept-language'));
+  const lang = pickLanguage((await headers()).get('accept-language'));
+  await loadLanguage(lang);
+  return lang;
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ handle: string }> }): Promise<Metadata> {

@@ -37,12 +37,13 @@ export function fetchTrackPreview(artistName: string, trackTitle: string, albumS
 }
 
 // Look a track's preview up now so pressing play doesn't wait for it, and
-// let the browser start downloading the audio too.
+// let the browser start downloading the audio too (`audio: false`: only the
+// lookup, for a screen that isn't open yet — no megabytes in the background).
 const warmedAudio = new Set<string>();
-export function prefetchTrackPreview(artistName: string, trackTitle: string, albumSpotifyId?: string | null): void {
+export function prefetchTrackPreview(artistName: string, trackTitle: string, albumSpotifyId?: string | null, audio = true): void {
   fetchTrackPreview(artistName, trackTitle, albumSpotifyId)
     .then((tr) => {
-      if (tr?.preview && typeof window !== 'undefined' && !warmedAudio.has(tr.preview)) {
+      if (audio && tr?.preview && typeof window !== 'undefined' && !warmedAudio.has(tr.preview)) {
         warmedAudio.add(tr.preview);
         const a = new Audio();
         a.preload = 'auto';
