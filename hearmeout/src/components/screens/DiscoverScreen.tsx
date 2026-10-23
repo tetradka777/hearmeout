@@ -25,7 +25,7 @@ import { usePaged } from '@/lib/usePaged';
 // lesser-known artists, genre tops, full catalog+sort, reviews worth
 // reading); a query shows album/artist/people/open-library results.
 
-const GENRES = ['Всё', 'Rock', 'Hip-Hop', 'Electronic', 'R&B', 'Pop', 'Latin'];
+const GENRES = ['all', 'Rock', 'Hip-Hop', 'Electronic', 'R&B', 'Pop', 'Latin'];
 type Filter = 'all' | 'albums' | 'artists' | 'people';
 
 type PersonResult = { id: string; name: string; handle: string; avatarUrl: string | null; score?: number; sharedAlbums?: number };
@@ -165,11 +165,11 @@ function TopRatedShelf({ genre }: { genre: string }) {
     .map(([id]) => id), [albumRatings]);
   const albumOf = (id: string) => liveAlbums[id] || albums.find((a) => a.id === id || a.spotifyId === id);
   const usable = ranked.filter((id) => !failedAlbumIds[id]);
-  const range = usable.slice(0, (limit + 10) * (genre === 'Всё' ? 1 : 4));
+  const range = usable.slice(0, (limit + 10) * (genre === 'all' ? 1 : 4));
   useEnsureAlbums(range);
   const list = range
     .map((id) => ({ id, a: albumOf(id) }))
-    .filter((x): x is { id: string; a: Album } => !!x.a && (genre === 'Всё' || x.a.genreBucket === genre))
+    .filter((x): x is { id: string; a: Album } => !!x.a && (genre === 'all' || x.a.genreBucket === genre))
     .slice(0, limit);
   const done = limit >= usable.length;
   if (!list.length) {
@@ -234,7 +234,7 @@ export function DiscoverScreen(_props: { device: Device }) {
 
   const albumResults = useMemo(() => {
     if (!q) return [];
-    return albums.filter((a) => (a.title.toLowerCase().includes(q) || a.artist.toLowerCase().includes(q)) && (genreFilter === 'Всё' || a.genreBucket === genreFilter));
+    return albums.filter((a) => (a.title.toLowerCase().includes(q) || a.artist.toLowerCase().includes(q)) && (genreFilter === 'all' || a.genreBucket === genreFilter));
   }, [albums, q, genreFilter]);
 
   const artistResults = useMemo(() => {
@@ -249,7 +249,7 @@ export function DiscoverScreen(_props: { device: Device }) {
       byName.set(key, entry);
     }
     return [...byName.values()]
-      .filter((e) => e.name.toLowerCase().includes(q) && (genreFilter === 'Всё' || e.genres.has(genreFilter)))
+      .filter((e) => e.name.toLowerCase().includes(q) && (genreFilter === 'all' || e.genres.has(genreFilter)))
       .map((e) => ({ name: e.name, avg: e.count ? e.sum / e.count : null }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [albums, albumRatings, q, genreFilter]);
@@ -294,7 +294,7 @@ export function DiscoverScreen(_props: { device: Device }) {
       <div className="chips" role="group" aria-label={t('discover.genreAria')}>
         {GENRES.map((g) => (
           <button key={g} className={`chip ${g === genreFilter ? 'on' : ''}`} onClick={() => setActiveGenre(g)}>
-            {g === 'Всё' ? t('catalog.genreAll') : g}
+            {g === 'all' ? t('catalog.genreAll') : g}
           </button>
         ))}
       </div>
@@ -362,7 +362,7 @@ export function DiscoverScreen(_props: { device: Device }) {
 
           {filter !== 'albums' && <GenreTopArtists onlyGenre={genreFilter} sub={regionLabel} />}
 
-          {filter !== 'albums' && <ObscureAlbums genre={genreFilter === 'Всё' ? 'Electronic' : genreFilter} sub={`${genreFilter === 'Всё' ? 'Electronic' : genreFilter} · ${t('discover.obscureSubtitle', { region: regionLabel })}`} />}
+          {filter !== 'albums' && <ObscureAlbums genre={genreFilter === 'all' ? 'Electronic' : genreFilter} sub={`${genreFilter === 'all' ? 'Electronic' : genreFilter} · ${t('discover.obscureSubtitle', { region: regionLabel })}`} />}
 
         </>
       )}

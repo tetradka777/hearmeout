@@ -278,7 +278,7 @@ const initialState: AppState = {
   recapOrigin: 'catalog',
   historyOrigin: null,
   searchQuery: '',
-  activeGenre: 'Всё',
+  activeGenre: 'all',
   sortBy: 'year',
   ratingValue: 0,
   ratingDraftText: '',

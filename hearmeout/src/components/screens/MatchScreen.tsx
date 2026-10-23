@@ -173,7 +173,7 @@ export function MatchScreen(_props: { device: Device }) {
   // A bare month name is nominative in Russian ("с сентябрь"); day + month
   // gives the genitive the sentence needs ("с 5 сентября").
   const trendDate = history && history.length >= 2
-    ? new Date(history[0].date).toLocaleDateString(toLocale(language), language === 'ru' ? { day: 'numeric', month: 'long' } : { month: 'long' })
+    ? new Date(history[0].date).toLocaleDateString(toLocale(language), { month: 'long' })
     : '';
 
   const leaderboard: { id: string; name: string; hours: number; user: ApiUser | null }[] = [

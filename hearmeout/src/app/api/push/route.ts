@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { LANGUAGES } from '@/lib/i18n';
 import { getCurrentUserId } from '@/lib/identity';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { pushConfigured } from '@/lib/push';
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
   if (!/^https:\/\//.test(endpoint) || endpoint.length > 1000 || !p256dh || !auth || p256dh.length > 200 || auth.length > 100) {
     return NextResponse.json({ error: 'invalid_payload' }, { status: 400 });
   }
-  const language = ['ru', 'en', 'fr', 'es', 'de'].includes(body?.language) ? body.language : null;
+  const language = (LANGUAGES as readonly string[]).includes(body?.language) ? body.language : null;
   const { error } = await supabaseAdmin()
     .from('push_subscriptions')
     .upsert({ user_id: userId, endpoint, p256dh, auth, language }, { onConflict: 'endpoint' });

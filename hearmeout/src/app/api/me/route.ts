@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { LANGUAGES, normalizeLanguage } from '@/lib/i18n';
 import { cookies } from 'next/headers';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId, IDENTITY_COOKIE } from '@/lib/identity';
@@ -64,7 +65,7 @@ export async function GET() {
     connections: { spotify: connSet.has('spotify'), appleMusic: connSet.has('apple_music') },
     playsCount: playsCount ?? 0,
     friends,
-    language: (prefs?.language as Me['language']) || 'en',
+    language: normalizeLanguage(prefs?.language),
     region: prefs?.region ?? DEFAULT_REGION,
     regionAuto: regionAuto.regionAuto,
     detectedRegion: regionAuto.detectedRegion,
@@ -121,7 +122,7 @@ export async function PATCH(request: NextRequest) {
     }
     patch[column] = v || null;
   }
-  if (typeof body?.language === 'string' && ['ru', 'en', 'fr', 'es', 'de'].includes(body.language)) patch.language = body.language;
+  if (typeof body?.language === 'string' && (LANGUAGES as readonly string[]).includes(body.language)) patch.language = body.language;
   if ('region' in (body ?? {})) patch.region = typeof body.region === 'string' && /^[A-Z]{2}$/.test(body.region) ? body.region : null;
   if (typeof body?.isOpenProfile === 'boolean') patch.is_open_profile = body.isOpenProfile;
   if (typeof body?.design === 'string' && isDesign(body.design)) patch.design = body.design;

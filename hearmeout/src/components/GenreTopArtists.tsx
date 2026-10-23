@@ -14,7 +14,7 @@ const STEP = 10;
 // as an endless shelf of photo cards (Spotify's genre search, 10 a page).
 export function GenreTopArtists({ onlyGenre, sub }: { onlyGenre?: string; sub?: string }) {
   const { t, me, openSpotifyArtist } = useApp();
-  const list = onlyGenre && onlyGenre !== 'Всё' ? GENRES.filter((g) => g === onlyGenre) : GENRES;
+  const list = onlyGenre && onlyGenre !== 'all' ? GENRES.filter((g) => g === onlyGenre) : GENRES;
   const [picked, setPicked] = useState(list[0]);
   const genre = list.includes(picked) ? picked : list[0];
   const market = me?.region ? `&market=${encodeURIComponent(me.region)}` : '';

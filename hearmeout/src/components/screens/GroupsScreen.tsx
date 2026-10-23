@@ -15,20 +15,13 @@ import { CoverWall } from '../ui/Visual';
 import { useCachedJson } from '@/lib/cachedJson';
 
 // vGroups() "since march": the month, plus the year outside the current one.
-// Russian takes the genitive ("с марта"), which Intl only produces next to
-// a day, so the month part is cut out of a day+month format. German keeps
-// its capitalised nouns; the rest are lowercased like the prototype.
+// German keeps its capitalised nouns; the rest are lowercased like the
+// prototype.
 export function sinceLabel(iso: string, language: Language): string {
   const d = new Date(iso);
   const loc = toLocale(language);
   const thisYear = d.getFullYear() === new Date().getFullYear();
-  let label: string;
-  if (language === 'ru') {
-    const month = new Intl.DateTimeFormat(loc, { day: 'numeric', month: 'long' }).formatToParts(d).find((x) => x.type === 'month')?.value ?? '';
-    label = thisYear ? month : `${month} ${d.getFullYear()}`;
-  } else {
-    label = new Intl.DateTimeFormat(loc, thisYear ? { month: 'long' } : { month: 'long', year: 'numeric' }).format(d);
-  }
+  const label = new Intl.DateTimeFormat(loc, thisYear ? { month: 'long' } : { month: 'long', year: 'numeric' }).format(d);
   return language === 'de' ? label : label.toLowerCase();
 }
 
