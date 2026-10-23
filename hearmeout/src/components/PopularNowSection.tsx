@@ -17,7 +17,7 @@ type Item = ChartAlbumLite & { spotifyId?: string };
 export function PopularNowSection({ genre }: { genre?: string }) {
   const { t, me, albumRatings, openAlbum, showToast } = useApp();
   const region = me?.region ? encodeURIComponent(me.region) : '';
-  const fits = (a: { genreBucket: string | null }) => !genre || genre === 'Всё' || a.genreBucket === genre;
+  const fits = (a: { genreBucket: string | null }) => !genre || genre === 'all' || a.genreBucket === genre;
   const { items, done, failed, more } = usePaged<Item, number>(async (page) => {
     if (page === null) {
       const top = await cachedJson<ChartAlbum[]>(`/api/charts/albums${region ? `?region=${region}` : ''}`);

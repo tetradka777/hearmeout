@@ -1,6 +1,6 @@
 import webpush from 'web-push';
 import { supabaseAdmin } from './supabaseAdmin';
-import { translate, type Language, type TranslationKey } from './i18n';
+import { normalizeLanguage, translate, type Language, type TranslationKey } from './i18n';
 import { logServerError } from './errorLog';
 
 // Web push (migration 027's push_subscriptions). Needs VAPID keys in the
@@ -40,7 +40,7 @@ export async function sendToSubscriptions(subs: Sub[], msg: PushMessage): Promis
   const admin = supabaseAdmin();
   let sent = 0;
   await Promise.all(subs.map(async (s) => {
-    const lang = (['ru', 'en', 'fr', 'es', 'de'].includes(s.language ?? '') ? s.language : 'en') as Language;
+    const lang = normalizeLanguage(s.language);
     const payload = JSON.stringify({
       title: translate(lang, msg.titleKey, msg.vars),
       body: translate(lang, msg.bodyKey, msg.vars),

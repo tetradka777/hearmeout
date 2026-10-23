@@ -9,16 +9,15 @@ import path from 'node:path';
 // isn't the key itself, and keep the same {placeholders} in every language.
 const keys = (() => {
   const src = fs.readFileSync(path.join(__dirname, 'i18n.ts'), 'utf8');
-  const ru = src.slice(src.indexOf('const ru = {'), src.indexOf('\n};', src.indexOf('const ru = {')));
-  return [...ru.matchAll(/^ {2}'([^']+)':/gm)].map((m) => m[1] as TranslationKey);
+  const en = src.slice(src.indexOf('const en = {'), src.indexOf('\n};', src.indexOf('const en = {')));
+  return [...en.matchAll(/^ {2}'([^']+)':/gm)].map((m) => m[1] as TranslationKey);
 })();
 
 test('dictionary keys were found', () => assert.ok(keys.length > 500, `only ${keys.length} keys`));
 
 // A translation may use fewer variables than English (a language can drop
 // a count it doesn't need), never one the code doesn't pass. Inline plural
-// forms {n|one|few|many} count as the variable n: three forms in Russian,
-// two (one|other) elsewhere.
+// forms {n|one|other} count as the variable n: two forms in every language.
 test('every key is translated in every language, with known placeholders', () => {
   const vars = (s: string) => new Set([...s.matchAll(/\{(\w+)(?:\|[^}]*)?\}/g)].map((m) => m[1]));
   for (const key of keys) {
@@ -28,7 +27,7 @@ test('every key is translated in every language, with known placeholders', () =>
       assert.ok(text && text !== key, `${lang}: ${key} missing`);
       for (const v of vars(text)) assert.ok(ref.has(v), `${lang}: ${key} uses {${v}}, which English doesn't`);
       for (const m of text.matchAll(/\{\w+\|([^}]*)\}/g)) {
-        assert.equal(m[1].split('|').length, lang === 'ru' ? 3 : 2, `${lang}: ${key} plural forms`);
+        assert.equal(m[1].split('|').length, 2, `${lang}: ${key} plural forms`);
       }
       assert.equal(text.replace(/\{\w+(?:\|[^}]*)?\}/g, '').match(/[{}]/), null, `${lang}: ${key} stray brace`);
     }
@@ -36,9 +35,8 @@ test('every key is translated in every language, with known placeholders', () =>
 });
 
 test('inline plurals', () => {
-  assert.equal(translate('ru', 'time.yearsAgo', { n: 1 }), '1 год назад');
-  assert.equal(translate('ru', 'time.yearsAgo', { n: 3 }), '3 года назад');
-  assert.equal(translate('ru', 'time.yearsAgo', { n: 11 }), '11 лет назад');
+  assert.equal(translate('en', 'time.yearsAgo', { n: 1 }), '1y ago');
+  assert.equal(translate('en', 'time.yearsAgo', { n: 3 }), '3y ago');
   assert.equal(translate('fr', 'time.yearsAgo', { n: 1 }), 'il y a 1 an');
   assert.equal(translate('fr', 'time.yearsAgo', { n: 2 }), 'il y a 2 ans');
   // An already formatted count picks its form by value.

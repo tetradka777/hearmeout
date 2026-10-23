@@ -17,11 +17,11 @@ const loadInviter = cache(async (id: string): Promise<InviterInfo | null> => {
   return data ? { id: data.id, name: data.name, handle: data.handle, avatarUrl: data.avatar_url } : null;
 });
 
-// No Accept-Language at all is a link-preview bot (Telegram, VK): Russian,
+// No Accept-Language at all is a link-preview bot (Telegram, VK): English,
 // like the site's own preview (lib/siteMeta.ts).
 async function requestLanguage(): Promise<Language> {
   const header = (await headers()).get('accept-language');
-  return header ? pickLanguage(header) : 'ru';
+  return header ? pickLanguage(header) : 'en';
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const description = translate(lang, 'invite.body', { name: inviter.name.split(' ')[0] });
   // openGraph/twitter replace the layout's whole objects, so the preview
   // image has to be repeated here.
-  const images = previewImages(lang === 'ru' ? 'ru' : 'en');
+  const images = previewImages('en');
   return { title, description, openGraph: { title, description, images: images.og }, twitter: { card: 'summary_large_image', title, description, images: images.twitter } };
 }
 
