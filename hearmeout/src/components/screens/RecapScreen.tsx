@@ -114,9 +114,12 @@ export function RecapScreen(_props: { device: Device }) {
       markRecapSeen(completedWeekRange(0, me.weekStart).start.toISOString().slice(0, 10));
     }
   }, [state.activeScreen, isMe, me, period, offset]);
+  // Mounted in the background: only look the songs up; the audio itself
+  // starts downloading once the recap is open.
+  const recapOpen = state.activeScreen === 'recap';
   useEffect(() => {
-    for (const s of [autoSong, weekSong, monthSong]) if (s) prefetchQueueTrack({ title: s.title, artist: s.artist, albumId: s.albumId });
-  }, [autoSong, weekSong, monthSong]);
+    for (const s of [autoSong, weekSong, monthSong]) if (s) prefetchQueueTrack({ title: s.title, artist: s.artist, albumId: s.albumId }, recapOpen);
+  }, [autoSong, weekSong, monthSong, recapOpen]);
   useEffect(() => {
     if (state.activeScreen !== 'recap') {
       if (autoplayed.current && quiet) close();

@@ -4,6 +4,7 @@
    the point: it starts the app fresh after a crash. */
 import { useEffect, useState } from 'react';
 import { pickLanguage, translate, type Language, type TranslationKey } from '@/lib/i18n';
+import { useLoadedLanguage } from '@/lib/useLoadedLanguage';
 import { reportClientError } from '@/lib/reportClientError';
 
 // A render error anywhere in the app: a friendly page in the site's style
@@ -16,7 +17,8 @@ export default function AppError({ error, reset }: { error: Error & { digest?: s
     setLanguage(pickLanguage([document.documentElement.lang || navigator.language]));
     reportClientError(error.message || 'render error', error.stack || error.digest || null);
   }, [error]);
-  const t = (key: TranslationKey) => translate(language, key);
+  const textLanguage = useLoadedLanguage(language);
+  const t = (key: TranslationKey) => translate(textLanguage, key);
   return (
     <div className="rd">
       <div className="wrap" style={{ paddingTop: 48 }}>

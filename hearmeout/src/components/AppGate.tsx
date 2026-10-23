@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import { AppShell } from './AppShell';
 import { RegisterModal } from './RegisterModal';
-import { pickLanguage, translate, type TranslationKey } from '@/lib/i18n';
+import { loadLanguage, pickLanguage, translate, type TranslationKey } from '@/lib/i18n';
 
 // The prototype's JOKES (reference/app.js), localized. The splash shows
 // before the account (and its language) is known, so the browser's
@@ -16,7 +16,10 @@ const JOKE_KEYS: TranslationKey[] = ['splash.joke1', 'splash.joke2', 'splash.jok
 function useLoadingPhrase() {
   const [phrase, setPhrase] = useState(translate('en', JOKE_KEYS[0]));
   useEffect(() => {
-    setPhrase(translate(pickLanguage(navigator.languages), JOKE_KEYS[Math.floor(Math.random() * JOKE_KEYS.length)]));
+    const lang = pickLanguage(navigator.languages);
+    const key = JOKE_KEYS[Math.floor(Math.random() * JOKE_KEYS.length)];
+    setPhrase(translate('en', key));
+    void loadLanguage(lang).then(() => setPhrase(translate(lang, key)));
   }, []);
   return phrase;
 }
