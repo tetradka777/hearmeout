@@ -824,6 +824,8 @@ const de: Dict = {
   'login.switchToRegister': 'neu hier? erstelle ein Konto',
 
   'app.loading': 'lädt …',
+  'rotate.title': 'dreh dein Handy hochkant',
+  'rotate.body': 'hearmeout funktioniert nur im Hochformat.',
 
   'obscure.loading': 'wir graben Geheimtipps aus …',
   'genreTop.loading': 'lädt …',

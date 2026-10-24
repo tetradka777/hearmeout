@@ -824,6 +824,8 @@ const fr: Dict = {
   'login.switchToRegister': 'nouveau ici ? crée un compte',
 
   'app.loading': 'chargement…',
+  'rotate.title': 'remets ton téléphone à la verticale',
+  'rotate.body': 'hearmeout fonctionne uniquement en mode portrait.',
 
   'obscure.loading': 'on déterre des artistes sous le radar…',
   'genreTop.loading': 'chargement…',

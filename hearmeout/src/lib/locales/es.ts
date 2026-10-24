@@ -824,6 +824,8 @@ const es: Dict = {
   'login.switchToRegister': '¿Eres nuevo? crea una cuenta',
 
   'app.loading': 'cargando…',
+  'rotate.title': 'pon el móvil en vertical',
+  'rotate.body': 'hearmeout solo funciona en vertical.',
 
   'obscure.loading': 'buscando artistas poco conocidos…',
   'genreTop.loading': 'cargando…',
