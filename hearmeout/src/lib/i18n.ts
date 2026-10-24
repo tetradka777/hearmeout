@@ -1311,6 +1311,7 @@ const en = {
   'fanclub.nothingYet': 'members haven’t played anything yet',
   'fanclub.loadError': 'couldn’t open the fan club',
   'fanclub.back': 'back',
+  'fanclub.releasesTitle': 'fan club releases',
   'recap.pageTitle': 'recap',
 };
 
