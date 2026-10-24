@@ -50,7 +50,7 @@ type AuthStatus = 'loading' | 'anonymous' | 'ready';
 // history entry and URL, so the browser's own back/forward buttons work
 // everywhere on the site, not just on "content" pages.
 const ALL_SCREENS = new Set<ScreenName>([
-  'catalog', 'rate', 'history', 'recap', 'profile', 'artist', 'friend', 'match', 'stats', 'groups', 'group', 'fanclub', 'discover', 'settings', 'later',
+  'catalog', 'rate', 'history', 'recap', 'profile', 'artist', 'friend', 'match', 'stats', 'groups', 'group', 'fanclub', 'concerts', 'discover', 'settings', 'later',
 ]);
 
 // What's stored as `history.state` for one entry — enough to restore that
@@ -66,6 +66,8 @@ type ScreenSnapshot = {
   viewingGroupId?: string;
   fanClubId?: string;
   fanClubName?: string;
+  concertsName?: string;
+  concertsArtistId?: string;
   recapViewUserId?: string;
   recapOrigin?: ScreenName;
   artistId?: string;
@@ -85,6 +87,7 @@ function urlForSnapshot(snap: Omit<ScreenSnapshot, 'hmoDepth'>): string {
     case 'friend': return `/?screen=friend&id=${encodeURIComponent(snap.viewingUserId || '')}`;
     case 'group': return `/?screen=group&id=${encodeURIComponent(snap.viewingGroupId || '')}`;
     case 'fanclub': return `/?screen=fanclub&id=${encodeURIComponent(snap.fanClubId || '')}&name=${encodeURIComponent(snap.fanClubName || '')}`;
+    case 'concerts': return `/?screen=concerts&name=${encodeURIComponent(snap.concertsName || '')}${snap.concertsArtistId ? `&id=${encodeURIComponent(snap.concertsArtistId)}` : ''}`;
     case 'recap': return `/?screen=recap&id=${encodeURIComponent(snap.recapViewUserId || '')}`;
     case 'artist': return `/?screen=artist&id=${encodeURIComponent(snap.artistId || '')}&source=${snap.artistSource}&name=${encodeURIComponent(snap.artistName || '')}`;
     default: return `/?screen=${snap.activeScreen}`;
@@ -124,6 +127,8 @@ type AppState = {
   viewingGroupId: string;
   // The fan club page: the artist's Spotify id and name.
   viewingFanClub: { id: string; name: string } | null;
+  // One artist's concerts page (from Discover → concerts).
+  viewingConcerts: { name: string; id: string | null } | null;
   recapPeriod: RecapPeriod;
   recapSeasonKey: string | null;
   recapOffset: number;
@@ -179,6 +184,7 @@ type AppContextValue = {
   viewFriend: (id: string) => void;
   viewGroup: (id: string) => void;
   openFanClub: (id: string, name: string) => void;
+  openConcerts: (name: string, id: string | null) => void;
   // `period` switches the recap to that period's latest window (the Home
   // and Stats recap tiles open the weekly recap, spec 6.12); omitted, the
   // screen keeps whatever period it was last on.
@@ -250,6 +256,7 @@ const initialState: AppState = {
   viewingUserId: '',
   viewingGroupId: '',
   viewingFanClub: null,
+  viewingConcerts: null,
   recapPeriod: 'week',
   recapSeasonKey: null,
   recapOffset: 0,
@@ -289,9 +296,10 @@ function restyleAfterThemeChange(): void {
 // period opens on its latest finished window (a month on last month; a
 // season is picked on the recap screen). "day" isn't offered any more and
 // falls back to the week.
-function recapWindow(p: RecapPeriod): { recapPeriod: RecapPeriod; recapSeasonKey: null; recapOffset: number } {
-  const period = p === 'day' ? 'week' : p;
-  return { recapPeriod: period, recapSeasonKey: null, recapOffset: period === 'month' ? -1 : 0 };
+// Recaps are weekly only (last week and the week before): any period asked
+// for — a Home or Stats tile, a ?period= link — opens last week.
+function recapWindow(_p: RecapPeriod): { recapPeriod: RecapPeriod; recapSeasonKey: null; recapOffset: number } {
+  return { recapPeriod: 'week', recapSeasonKey: null, recapOffset: 0 };
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -725,6 +733,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const openFanClub = useCallback((id: string, name: string) => {
     patch({ viewingFanClub: { id, name }, activeScreen: 'fanclub', navAction: 'push' });
     pushScreenHistory({ activeScreen: 'fanclub', fanClubId: id, fanClubName: name });
+  }, [patch]);
+  const openConcerts = useCallback((name: string, id: string | null) => {
+    patch({ viewingConcerts: { name, id }, activeScreen: 'concerts', navAction: 'push' });
+    pushScreenHistory({ activeScreen: 'concerts', concertsName: name, concertsArtistId: id ?? undefined });
   }, [patch]);
   const viewGroup = useCallback((id: string) => {
     patch({ viewingGroupId: id, activeScreen: 'group', navAction: 'push' });
@@ -1198,6 +1210,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         viewingUserId: snap.viewingUserId ?? s.viewingUserId,
         viewingGroupId: snap.viewingGroupId ?? s.viewingGroupId,
         viewingFanClub: snap.fanClubId ? { id: snap.fanClubId, name: snap.fanClubName || '' } : s.viewingFanClub,
+        viewingConcerts: snap.concertsName ? { name: snap.concertsName, id: snap.concertsArtistId ?? null } : s.viewingConcerts,
         recapViewUserId: snap.recapViewUserId ?? s.recapViewUserId,
         recapOrigin: snap.recapOrigin ?? s.recapOrigin,
         navAction: 'pop',
@@ -1229,6 +1242,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           viewingGroupId: only('group'),
           fanClubId: only('fanclub'),
           fanClubName: screen === 'fanclub' ? params.get('name') ?? undefined : undefined,
+          concertsName: screen === 'concerts' ? params.get('name') ?? undefined : undefined,
+          concertsArtistId: only('concerts'),
           recapViewUserId: only('recap'),
           artistId: only('artist'),
           artistName: params.get('name') ?? undefined,
@@ -1259,7 +1274,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AppContextValue>(() => ({
     state, language: state.language, t, albums: ALBUMS, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds,
     myRatings, feed, setFeed, lovedItems, toggleLoved, laterItems, toggleLaterAlbum, toggleLaterTrack, removeLaterItem, removeAllLater, friendRequests, recapCache, recapLocked, reviewsVersion,
-    showScreen, viewHistory, goBack, openAlbum, viewFriend, viewGroup, openFanClub, openRecap, closeRecap,
+    showScreen, viewHistory, goBack, openAlbum, viewFriend, viewGroup, openFanClub, openConcerts, openRecap, closeRecap,
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, setRecapOffset, recapSeasons,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, logoutEverywhere, deleteAccount,
@@ -1268,7 +1283,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds,
     myRatings, feed, setFeed, lovedItems, toggleLoved, laterItems, toggleLaterAlbum, toggleLaterTrack, removeLaterItem, removeAllLater, friendRequests, recapCache, recapLocked, reviewsVersion, showScreen, viewHistory, goBack, openAlbum,
     setRecapSeasonKey, setRecapOffset, recapSeasons,
-    viewFriend, viewGroup, openFanClub, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
+    viewFriend, viewGroup, openFanClub, openConcerts, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, logoutEverywhere, deleteAccount,
     updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateLanguage, updateRegion, updateRegionAuto, updateOpenProfile, updateAppearance, updatePrivacy,

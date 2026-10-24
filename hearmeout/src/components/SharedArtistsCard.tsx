@@ -75,7 +75,6 @@ export function SharedArtistsCard({ names, shown, title, empty }: { names: strin
       {names.length ? (
         <div className="sha13">
           {list.map((n) => <Cell key={n} name={n} onColor={onColor} onOpen={() => openArtist(n)} />)}
-          {names.length > shown && <span className="more13"><span>+{names.length - shown}</span></span>}
         </div>
       ) : <p className="muted" style={{ fontWeight: 600 }}>{empty}</p>}
     </div>

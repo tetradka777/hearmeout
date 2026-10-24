@@ -8,6 +8,8 @@ import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { ApiUser, Device, DiscoverMatchPerson, PublicProfile, StatsData } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
+import { blurStyle } from '@/lib/imageColor';
+import { sizedImage } from '@/lib/imageSize';
 import { computeMatch } from '@/lib/matchScore';
 import { cachedJson, peekJson, useCachedJson } from '@/lib/cachedJson';
 import { sharedArtists } from '@/lib/sharedArtists';
@@ -24,7 +26,7 @@ type FriendInfo = RawInfo & { score: number | null };
 const EMPTY_INFO: RawInfo = { profile: null, stats6m: null, weekHours: null };
 
 const sharedArtistNames = sharedArtists;
-const SHARED_SHOWN = 8;
+const SHARED_SHOWN = 6;
 
 // countUp() in reference/app.js: the hero percentage counts up to its value
 // over 450ms (ease-out cubic), replayed whenever the value changes or the
@@ -72,6 +74,17 @@ function MatchHero({ me, friend, children }: { me: Who | null; friend: Who | nul
     ['--a2' as string]: friend?.avatarUrl ? `url('${friend.avatarUrl}')` : 'none',
   } as CSSProperties;
   return <div className="tile mh16" style={style}>{children}</div>;
+}
+
+// The weekly leaderboard over the colours of its top three: each one's
+// glow behind their place on the podium (second left, first middle, third
+// right).
+function LeaderboardTile({ people, children }: { people: (ApiUser | null)[]; children: ReactNode }) {
+  const c1 = usePersonColor(people[0] ?? { id: 'lb1', name: '1', avatarUrl: null });
+  const c2 = usePersonColor(people[1] ?? { id: 'lb2', name: '2', avatarUrl: null });
+  const c3 = usePersonColor(people[2] ?? { id: 'lb3', name: '3', avatarUrl: null });
+  const style = { ['--l1' as string]: c1, ['--l2' as string]: people[1] ? c2 : c1, ['--l3' as string]: people[2] ? c3 : people[1] ? c2 : c1 } as CSSProperties;
+  return <div className="tile lb10 lb19" style={style}>{children}</div>;
 }
 
 export function MatchScreen(_props: { device: Device }) {
@@ -159,8 +172,6 @@ export function MatchScreen(_props: { device: Device }) {
     );
   }
 
-  const pct = activeInfo?.score ?? null;
-  const filled = pct != null ? Math.round(pct / 5) : 0;
   const sharedArt = sharedArtistNames(myStats6m, activeInfo?.stats6m ?? null);
 
   const myScoreByAlbum = new Map(myRatings.map((r) => [r.albumId, r.stars] as const));
@@ -168,10 +179,10 @@ export function MatchScreen(_props: { device: Device }) {
     .filter((r) => myScoreByAlbum.has(r.albumId))
     .map((r) => ({ albumId: r.albumId, mine: myScoreByAlbum.get(r.albumId)!, theirs: r.stars }))
     .sort((a, b) => Math.abs(b.mine - b.theirs) - Math.abs(a.mine - a.theirs));
+  const gapAlbum = gaps[0] ? liveAlbums[gaps[0].albumId] || albums.find((x) => x.id === gaps[0].albumId) : undefined;
+  const gapCover = gapAlbum ? spotifyCovers[gapAlbum.id] || gapAlbum.cover || null : null;
 
   const trendDelta = history && history.length >= 2 ? Math.round(history[history.length - 1].pct - history[0].pct) : null;
-  // A bare month name is nominative in Russian ("с сентябрь"); day + month
-  // gives the genitive the sentence needs ("с 5 сентября").
   const trendDate = history && history.length >= 2
     ? new Date(history[0].date).toLocaleDateString(toLocale(language), { month: 'long' })
     : '';
@@ -212,9 +223,6 @@ export function MatchScreen(_props: { device: Device }) {
           <span className="num pct">{shownPct ?? '–'}</span>{shownPct != null && <span className="num pcts">%</span>}
         </div>
         <p style={{ fontWeight: 800, marginTop: 16 }}>{t('match.tasteMatchSummary', { count: sharedArt.length })}</p>
-        <div className="dotm" role="img" aria-label={t('match.percentMatchAria', { pct: pct ?? 0 })}>
-          {Array.from({ length: 20 }, (_, i) => <i key={i} className={i < filled ? 'f' : ''} />)}
-        </div>
         <div className="acts">
           <button className="btn" onClick={() => active && viewFriend(active.id)}>{t('match.viewProfile', { name: active?.name ?? '' })}</button>
         </div>
@@ -222,7 +230,8 @@ export function MatchScreen(_props: { device: Device }) {
 
       <div className="sec two">
         <div>
-          <div className="tile t-soft2">
+          {/* Over the blurred cover of the album you two are furthest apart on. */}
+          <div className="tile bh15 dis19" style={blurStyle(gapCover ? sizedImage(gapCover, 300) ?? gapCover : null)}>
             <h2>{t('match.whereYouDisagree')}</h2>
             {gaps.length ? gaps.map((g) => {
               const a = liveAlbums[g.albumId] || albums.find((x) => x.id === g.albumId);
@@ -249,10 +258,10 @@ export function MatchScreen(_props: { device: Device }) {
           </div>
         </div>
         <div className="stack">
-          {/* The most played shared artists only, the rest as a count. */}
+          {/* The six most played shared artists. */}
           <SharedArtistsCard names={sharedArt} shown={SHARED_SHOWN} title={t('match.sharedArtistsTitle')} empty={t('match.noSharedArtists')} />
           {/* Weekly leaderboard (rev 11): the top three, and how far you are from first. */}
-          <div className="tile lb10">
+          <LeaderboardTile people={leaderboard.slice(0, 3).map((l) => l.user ?? (me ? { id: me.id, name: me.name, handle: me.handle, avatarUrl: me.avatarUrl } : null))}>
             <div className="hd10"><div><h2 style={{ margin: 0 }}>{t('match.weeklyLeaderboard')}</h2><small className="muted" style={{ fontWeight: 700 }}>{t('match.leaderboardSub')}</small></div></div>
             <Podium
               label={t('match.weeklyLeaderboard')}
@@ -268,7 +277,7 @@ export function MatchScreen(_props: { device: Device }) {
             />
             {myRank >= 3 && <p className="gap10"><i className="ic ic-medal" /><span>{t('match.yourPlace', { n: myRank + 1, h: fmtHours(leaderboard[myRank].hours) })}</span></p>}
             {gapHint && <p className="gap10"><i className="ic ic-trend" /><span>{gapHint}</span></p>}
-          </div>
+          </LeaderboardTile>
         </div>
       </div>
 

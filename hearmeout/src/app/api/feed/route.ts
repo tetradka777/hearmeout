@@ -36,18 +36,20 @@ export async function GET(request: NextRequest) {
       ? admin.from('users').select('id, name, handle, avatar_url').in('id', friendIds)
       : Promise.resolve({ data: [] as { id: string; name: string; handle: string; avatar_url: string | null }[] }),
     friendIds.length
-      ? admin.from('ratings').select('user_id, album_id, stars, review, created_at, is_private').in('user_id', friendIds).gte('created_at', weekAgo).order('created_at', { ascending: false }).limit(300)
+      ? admin.from('ratings').select('user_id, album_id, stars, review, created_at, is_private').in('user_id', friendIds).gte('created_at', monthAgo).order('created_at', { ascending: false }).limit(1000)
       : Promise.resolve({ data: [] as { user_id: string; album_id: string; stars: number; review: string | null; created_at: string; is_private: boolean | null }[] }),
     admin.from('ratings').select('album_id, stars').eq('user_id', userId),
     friendIds.length
       ? admin.from('listening_events').select('user_id, track_id, track_title, artist, album_id, cover_url, played_at').in('user_id', friendIds).gte('played_at', dayStart.toISOString()).order('played_at', { ascending: false }).limit(300)
       : Promise.resolve({ data: [] as { user_id: string; track_id: string | null; track_title: string | null; artist: string | null; album_id: string | null; cover_url: string | null; played_at: string }[] }),
     admin.from('listening_events').select('duration_ms, artist, album_id, cover_url, played_at, track_title').eq('user_id', userId).gte('played_at', dayStart.toISOString()),
-    // "Rate what you played": the viewer's own recently played albums, most
-    // recent first, deduped. Filtering out already-rated ones happens on the
-    // client (it already holds the full rating list).
+    // "Rate what you played": the viewer's own albums of the last two weeks
+    // up to the end of yesterday, most recent first, deduped — so the row
+    // changes once a day, not with every track. Filtering out already-rated
+    // ones happens on the client (it already holds the full rating list).
     admin.from('listening_events').select('album_id, played_at').eq('user_id', userId).not('album_id', 'is', null)
-      .gte('played_at', new Date(now - 5 * 24 * 60 * 60 * 1000).toISOString()).order('played_at', { ascending: false }).limit(200),
+      .gte('played_at', new Date(dayStart.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString()).lt('played_at', dayStart.toISOString())
+      .order('played_at', { ascending: false }).limit(1000),
     fetchPrivacy(admin, friendIds),
   ]);
 
@@ -64,7 +66,7 @@ export async function GET(request: NextRequest) {
   for (const row of myRecentPlays || []) {
     const id = row.album_id as string;
     if (!recentAlbumIds.includes(id)) recentAlbumIds.push(id);
-    if (recentAlbumIds.length >= 8) break;
+    if (recentAlbumIds.length >= 40) break;
   }
 
   const userById = new Map<string, ApiUser>(
@@ -77,7 +79,10 @@ export async function GET(request: NextRequest) {
   // don't appear as rating events or in the hero; "Show what I'm playing"
   // off keeps their plays out of first-play events.
   const flags = (id: string) => privacy.get(id) ?? DEFAULT_PRIVACY;
-  const visibleFriendRatings = (friendRatings || []).filter((r) => !r.is_private && flags(r.user_id).ratingsVisible);
+  // A month of ratings for "trending" (a week alone left it nearly empty);
+  // the events and the hero use the last week of them.
+  const monthFriendRatings = (friendRatings || []).filter((r) => !r.is_private && flags(r.user_id).ratingsVisible);
+  const visibleFriendRatings = monthFriendRatings.filter((r) => r.created_at >= weekAgo);
 
   // Rating-with-review events: friends' recent written reviews.
   const ratingEvents: FeedEvent[] = visibleFriendRatings
@@ -154,9 +159,9 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Trending in your circle: this week's friend ratings by album.
+  // Trending in your circle: the last month's friend ratings by album.
   const byAlbum = new Map<string, { raters: Set<string>; sum: number; n: number }>();
-  for (const r of visibleFriendRatings) {
+  for (const r of monthFriendRatings) {
     const cur = byAlbum.get(r.album_id) || { raters: new Set<string>(), sum: 0, n: 0 };
     cur.raters.add(r.user_id);
     cur.sum += Number(r.stars);
@@ -166,7 +171,7 @@ export async function GET(request: NextRequest) {
   const trending = [...byAlbum.entries()]
     .map(([albumId, v]) => ({ albumId, count: v.raters.size, avg: Math.round((v.sum / v.n) * 10) / 10 }))
     .sort((a, b) => b.count - a.count || b.avg - a.avg)
-    .slice(0, 5);
+    .slice(0, 10);
 
   // Your day so far: the play times, and the track on repeat (2+ plays).
   const todayPlays = (mySessionRows || []).map((r) => r.played_at as string);
