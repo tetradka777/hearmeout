@@ -44,6 +44,8 @@ export function formatRelative(iso: string, language: Language): string {
 // '(Soundtrack From …)', '[Deluxe]', ' - Remastered 2011'. The full title
 // stays for screen readers and the album page.
 export function shortTitle(title: string): string {
-  const short = title.replace(/\s*[([][^)\]]*[)\]]/g, '').replace(/\s+-\s+.*$/, '').trim();
+  // Brackets that open the title are part of the name ("(What's The Story)
+  // Morning Glory?"): only ones after some text go.
+  const short = title.replace(/(?<=\S)\s*[([][^)\]]*[)\]]/g, '').replace(/\s+-\s+.*$/, '').trim();
   return short || title;
 }
