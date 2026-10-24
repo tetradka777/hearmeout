@@ -460,3 +460,74 @@
    feed and review cards are gone too — just the rounded cover. */
 .rd .rvc15 .alb13 .cvb,.rd .fdc15 .asd .cvb{border:0;background:none;border-radius:14px}
 .rd .rvc15 .alb13 .cvb .cov,.rd .rvc15 .alb13 .cvb>button,.rd .fdc15 .asd .cvb .cov{border-radius:14px}
+
+/* Discover → concerts: an artist's shows as a listening card — how many
+   big on the left, the artist's photo round on the right. */
+.rd .cnc19 .cnn{display:flex;flex-direction:column;align-items:flex-start;color:#fff;text-align:left;margin:0 0 8px}
+.rd .cnc19 .cnn b{font:800 clamp(54px,15vw,72px)/.9 var(--font-display);letter-spacing:-.04em}
+.rd .cnc19 .cnn span{font-size:18px;font-weight:700;margin-top:4px}
+.rd .cnc19 .asd .cav{display:block;width:100%;line-height:0}
+.rd .cnc19 .asd .aav{width:100%!important;height:auto!important;aspect-ratio:1;font-size:clamp(34px,10vw,52px)!important;box-shadow:0 0 0 4px rgba(255,255,255,.18)}
+
+/* One artist's concerts page: the artist over their blurred photo, then
+   every date as a row. */
+.rd .cnh19{display:flex;gap:22px;align-items:center;flex-wrap:wrap;padding:24px;isolation:isolate;outline:0;color:#fff;--tfg:#fff;background:#1e1d1c}
+.rd .cnh19::before{content:'';position:absolute;inset:-24px;z-index:-1;background:var(--cvbg,none) center/cover no-repeat;filter:blur(20px) saturate(1.15);opacity:.9}
+.rd .cnh19::after{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(170deg,rgba(18,18,18,.3),rgba(18,18,18,.7))}
+.rd .cnh19 .g{flex:1;min-width:200px;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.rd .cnh19 .k{margin:0;font-size:12px;font-weight:800;letter-spacing:.12em;opacity:.75}
+.rd .cnh19 h1{margin:0;font:800 clamp(34px,8vw,56px)/1 var(--font-display);letter-spacing:-.03em}
+.rd .cnh19 .m{margin:0 0 6px;font-weight:700;opacity:.85}
+.rd .cnh19 .btn{--bb:#fff;--bf:#141414}
+.rd .cnh19 .aav{box-shadow:0 0 0 4px rgba(255,255,255,.2)}
+.rd .cnl19{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;margin-top:16px}
+.rd .cnl19 .cn{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:var(--r);background:#1e1d1c;color:#fff;text-decoration:none;min-width:0}
+.rd .cnl19 a.cn:hover{background:#2a2826}
+.rd .cnl19 .dt{flex:none;width:58px;height:62px;border-radius:14px;background:var(--acc);color:var(--onacc);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.rd .cnl19 .dt b{font:800 26px/1 var(--font-display)}
+.rd .cnl19 .dt small{font-weight:800;font-size:12px;margin-top:2px}
+.rd .cnl19 .g{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
+.rd .cnl19 .g b{font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .cnl19 .g small{font-weight:600;opacity:.7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .cnl19 .g .vn{opacity:.55}
+.rd .cnl19 .tk{flex:none;font-weight:800;font-size:13px;padding:6px 12px;border-radius:99px;background:rgba(255,255,255,.12)}
+@media (max-width:420px){.rd .cnl19{grid-template-columns:minmax(0,1fr)}.rd .cnl19 .tk{display:none}}
+
+/* Recap: its colour over the whole page while it's open. */
+.rd .rbg19{position:fixed;inset:0;z-index:0;pointer-events:none;background:var(--rc1)}
+.rd:has(.rbg19) main{color:#FFF7EA}
+.rd:has(.rbg19) .rsh13{padding-left:0;padding-right:0;background:transparent!important}
+.rd:has(.rbg19) .rsh13 .st>div{background:rgba(0,0,0,.14)}
+
+/* Match: a lower percentage card without the dot meter. */
+.rd .tile.mh16{padding:22px 24px}
+.rd .tile.mh16 .pct{font-size:clamp(84px,22vw,150px)}
+.rd .tile.mh16 .pcts{font-size:clamp(34px,8vw,56px)}
+.rd .tile.mh16 p{margin-bottom:0}
+.rd .tile.mh16 .acts{margin-top:14px}
+/* "Where you disagree" over the blurred cover of the widest gap. */
+.rd .dis19 .gap{border-top:0;background:rgba(0,0,0,.28);border-radius:calc(var(--r) - 6px);padding:12px;margin-top:10px}
+.rd .dis19 .gap .muted{color:rgba(255,255,255,.75)}
+.rd .dis19 .tr{background:rgba(255,255,255,.2)}
+/* Shared artists: six at most, in one row on a computer, two of three on
+   a phone. */
+.rd .tile.sac15{padding:18px 20px}
+.rd .tile.sac15 h2{margin-bottom:10px}
+.rd .tile.sac15 .sha13{grid-template-columns:repeat(6,minmax(0,1fr));gap:10px 8px}
+@media (max-width:560px){.rd .tile.sac15 .sha13{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* Weekly leaderboard over the colours of its top three. */
+.rd .tile.lb19{outline:0;color:#fff;--tfg:#fff;--fg:#fff;background:
+  radial-gradient(85% 65% at 12% 18%,color-mix(in srgb,var(--l2) 70%,transparent),transparent 70%),
+  radial-gradient(85% 65% at 88% 28%,color-mix(in srgb,var(--l3) 70%,transparent),transparent 70%),
+  radial-gradient(110% 85% at 50% 100%,color-mix(in srgb,var(--l1) 90%,transparent),transparent 72%),
+  #1e1d1c}
+.rd .tile.lb19::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(18,17,16,.35),rgba(18,17,16,.1) 55%,rgba(18,17,16,.3));pointer-events:none;z-index:0}
+.rd .tile.lb19 .muted{color:rgba(255,255,255,.72)}
+.rd .dkc13.rvc15.cnc19.has-asd{grid-template-columns:minmax(0,1fr) 48%}
+.rd .cnc19>.bd{align-self:end}
+.rd .cnc19>.hd:empty{display:none}
+.rd .dkc13.rvc15.cnc19.has-asd{grid-template-areas:"bd asd" "ex ex" "ft ft";grid-template-rows:minmax(0,1fr) auto auto;padding-top:16px}
+.rd .cnc19 .cna{display:block;color:#fff;text-align:left;font:800 20px/1.1 var(--font-body);letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.rd .cnc19>.ex .m15{margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rd .hrow.sr14>.cnc19{width:min(300px,78vw)}
+@media (max-width:560px){.rd .tile.sac15 .sha13 .aav{width:52px!important;height:52px!important}}

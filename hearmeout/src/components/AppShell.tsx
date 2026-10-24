@@ -30,8 +30,9 @@ const loadFanClubScreen = () => import('./screens/FanClubScreen').then((m) => m.
 const loadDiscoverScreen = () => import('./screens/DiscoverScreen').then((m) => m.DiscoverScreen);
 const loadSettingsScreen = () => import('./screens/SettingsScreen').then((m) => m.SettingsScreen);
 const loadStatesScreen = () => import('./screens/StatesScreen').then((m) => m.StatesScreen);
+const loadConcertsScreen = () => import('./screens/ConcertsScreen').then((m) => m.ConcertsScreen);
 const loadLaterScreen = () => import('./screens/LaterScreen').then((m) => m.LaterScreen);
-const SCREEN_LOADERS = [loadHistoryScreen, loadRecapScreen, loadProfileScreen, loadArtistScreen, loadFriendScreen, loadStatsScreen, loadMatchScreen, loadGroupsScreen, loadGroupScreen, loadFanClubScreen, loadDiscoverScreen, loadSettingsScreen, loadStatesScreen, loadLaterScreen];
+const SCREEN_LOADERS = [loadConcertsScreen, loadHistoryScreen, loadRecapScreen, loadProfileScreen, loadArtistScreen, loadFriendScreen, loadStatsScreen, loadMatchScreen, loadGroupsScreen, loadGroupScreen, loadFanClubScreen, loadDiscoverScreen, loadSettingsScreen, loadStatesScreen, loadLaterScreen];
 const HistoryScreen = dynamic(loadHistoryScreen);
 const RecapScreen = dynamic(loadRecapScreen);
 const ProfileScreen = dynamic(loadProfileScreen);
@@ -46,6 +47,7 @@ const DiscoverScreen = dynamic(loadDiscoverScreen);
 const SettingsScreen = dynamic(loadSettingsScreen);
 const StatesScreen = dynamic(loadStatesScreen);
 const LaterScreen = dynamic(loadLaterScreen);
+const ConcertsScreen = dynamic(loadConcertsScreen);
 
 // Every screen mounts the first time it's opened (or when the background
 // preload gets to it) and stays mounted after
@@ -64,6 +66,7 @@ const SCREENS: { name: ScreenName; Component: ComponentType<{ device: Device }> 
   { name: 'groups', Component: GroupsScreen },
   { name: 'group', Component: GroupScreen },
   { name: 'fanclub', Component: FanClubScreen },
+  { name: 'concerts', Component: ConcertsScreen },
   { name: 'discover', Component: DiscoverScreen },
   { name: 'settings', Component: SettingsScreen },
   { name: 'states', Component: StatesScreen },
@@ -127,6 +130,7 @@ export function AppShell() {
     : state.activeScreen === 'friend' ? `friend:${state.viewingUserId ?? ''}`
     : state.activeScreen === 'group' ? `group:${state.viewingGroupId ?? ''}`
     : state.activeScreen === 'fanclub' ? `fanclub:${state.viewingFanClub?.id ?? ''}`
+    : state.activeScreen === 'concerts' ? `concerts:${state.viewingConcerts?.name ?? ''}`
     : state.activeScreen === 'artist' ? `artist:${state.currentArtist?.id ?? ''}`
     : state.activeScreen === 'recap' ? `recap:${state.recapViewUserId}`
     : state.activeScreen;

@@ -1,10 +1,12 @@
 'use client';
 
 import { useCachedJson } from '@/lib/cachedJson';
-import { useOpenArtist } from './ui/ArtistName';
-import { ArtistShelfCard, Shelf } from './ui/SuperCards';
+import { ArtistAvatar } from './ui/ArtistName';
+import { DarkCard, Shelf } from './ui/SuperCards';
+import { useArtistPhoto } from '@/lib/artistPhotos';
 import { useApp } from '@/lib/AppContext';
 import { toLocale, regionDisplayName } from '@/lib/i18n';
+import type { Concert } from '@/lib/concerts';
 import type { ConcertFeedItem } from '@/app/api/concerts/route';
 
 // Discover → "Concerts": your most-listened artists first, then the most
@@ -12,13 +14,11 @@ import type { ConcertFeedItem } from '@/app/api/concerts/route';
 // the server has no TICKETMASTER_API_KEY or nothing is announced.
 export function ConcertsFeed() {
   const { t, language, me } = useApp();
-  const openArtist = useOpenArtist();
   const region = me?.region ?? null;
   // Through the browser's shared cache: shown at once on a later visit.
   const data = useCachedJson<{ configured: boolean; items: ConcertFeedItem[] }>(me ? `/api/concerts${region ? `?country=${encodeURIComponent(region)}` : ''}` : null).data;
 
   if (!data || !data.configured || !data.items.length) return null;
-  const loc = toLocale(language);
   const groups: ['yours' | 'popular', string][] = [['yours', t('concerts.yours')], ['popular', t('concerts.popular')]];
 
   return (
@@ -33,26 +33,39 @@ export function ConcertsFeed() {
             sub={region ? t('concerts.subRegion', { region: regionDisplayName(region, language) }) : t('concerts.subWorld')}
           >
             {[...new Map(rows.map((c) => [c.artist, rows.filter((x) => x.artist === c.artist)])).entries()].map(([artist, shows]) => (
-              // One card per artist, every date under it.
-              <div className="cc14" key={artist}>
-                <ArtistShelfCard name={artist} id={shows[0].artistId} sub={t('concerts.datesN', { n: shows.length })} onClick={() => openArtist(artist, shows[0].artistId)} />
-                <ul className="cdl15">
-                  {shows.map((c) => {
-                    const d = new Date(`${c.date}T00:00:00Z`);
-                    const place = [c.city, c.country && c.country !== region ? regionDisplayName(c.country, language) : null].filter(Boolean).join(', ') || c.venue || '';
-                    const label = `${d.toLocaleDateString(loc, { day: 'numeric', month: 'short', timeZone: 'UTC' })} · ${place}`;
-                    return (
-                      <li key={c.id}>
-                        {c.url ? <a href={c.url} target="_blank" rel="noreferrer">{label}</a> : <span>{label}</span>}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
+              <ConcertCard key={artist} artist={artist} id={shows[0].artistId} count={shows.length} next={[...shows].sort((a, b) => (a.date < b.date ? -1 : 1))[0]} />
             ))}
           </Shelf>
         );
       })}
     </>
+  );
+}
+
+// One artist's shows as a card like Home's listening cards: how many shows
+// big on the left ("5+" past five), the artist's photo round on the
+// right and blurred behind, their name and the next show under both. Opens
+// the artist's own concerts page.
+function ConcertCard({ artist, id, count, next }: { artist: string; id: string | null; count: number; next: Concert }) {
+  const { t, language, me, openConcerts } = useApp();
+  const photo = useArtistPhoto(artist, true, id);
+  const open = () => openConcerts(artist, id);
+  const d = new Date(`${next.date}T00:00:00Z`);
+  const place = [next.city, next.country && next.country !== me?.region ? regionDisplayName(next.country, language) : null].filter(Boolean).join(', ') || next.venue || '';
+  return (
+    <DarkCard
+      cover={photo}
+      className="rvc15 fdc15 cnc19"
+      head={null}
+      extra={<><button className="cna" onClick={open}>{artist}</button><p className="m15">{t('concerts.next')} {d.toLocaleDateString(toLocale(language), { day: 'numeric', month: 'short', timeZone: 'UTC' })}{place ? ` · ${place}` : ''}</p></>}
+      onOpen={open}
+      openText
+      aside={<button className="cav" onClick={open} aria-label={artist} tabIndex={-1}><ArtistAvatar name={artist} id={id} photo={photo} size={132} /></button>}
+    >
+      <button className="cnn" onClick={open}>
+        <b>{count > 5 ? '5+' : count}</b>
+        <span>{t('concerts.showsWord', { n: count })}</span>
+      </button>
+    </DarkCard>
   );
 }

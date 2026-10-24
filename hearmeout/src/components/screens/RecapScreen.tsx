@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useCachedJson } from '@/lib/cachedJson';
 import { lastSeasons } from '@/lib/seasons';
 import { PlayRing } from '../redesign/PreviewButton';
@@ -28,7 +29,6 @@ const RECAP_AWARD_ICON: Record<string, string> = {
   awardStreak: 'flame', awardScout: 'target', awardStuck: 'repeat', awardTimeTraveler: 'clock',
 };
 
-const PERIODS: RecapPeriod[] = ['week', 'month', 'season'];
 const PERIOD_KEY: Record<RecapPeriod, TranslationKey> = { day: 'recap.day', week: 'recap.week', month: 'recap.month', season: 'recap.season' };
 
 
@@ -59,7 +59,7 @@ function rangeLabel(r: RecapData | undefined, period: RecapPeriod, seasonKey: st
 export function RecapScreen(_props: { device: Device }) {
   const {
     state, t, language, me, albums, liveAlbums, ensureRecap, recapCache, recapLocked, closeRecap,
-    setRecapPeriod, setRecapSeasonKey, setRecapOffset, openAlbum, openSpotifyArtist,
+    setRecapSeasonKey, setRecapOffset, openAlbum, openSpotifyArtist,
     viewFriend, openRecap, showScreen, showToast, shareRecapWithFriends,
   } = useApp();
   const { currentTrack, playing, quiet, toggle, playQueue, close } = usePlayer();
@@ -106,8 +106,7 @@ export function RecapScreen(_props: { device: Device }) {
   // Also your week's and month's songs (what Home and Stats open), as soon
   // as those recaps are loaded.
   const weekSong = me ? recapCache[`${me.id}:week`]?.topSongs[0] : undefined;
-  const monthSong = me ? recapCache[`${me.id}:month`]?.topSongs[0] : undefined;
-  useEffect(() => { if (me) { ensureRecap('me', 'week'); ensureRecap('me', 'month'); } }, [me, ensureRecap]);
+  useEffect(() => { if (me) ensureRecap('me', 'week'); }, [me, ensureRecap]);
   // Opening your latest week shrinks Home's recap card to one line.
   useEffect(() => {
     if (state.activeScreen === 'recap' && isMe && me && period === 'week' && offset === 0) {
@@ -118,8 +117,8 @@ export function RecapScreen(_props: { device: Device }) {
   // starts downloading once the recap is open.
   const recapOpen = state.activeScreen === 'recap';
   useEffect(() => {
-    for (const s of [autoSong, weekSong, monthSong]) if (s) prefetchQueueTrack({ title: s.title, artist: s.artist, albumId: s.albumId }, recapOpen);
-  }, [autoSong, weekSong, monthSong, recapOpen]);
+    for (const s of [autoSong, weekSong]) if (s) prefetchQueueTrack({ title: s.title, artist: s.artist, albumId: s.albumId }, recapOpen);
+  }, [autoSong, weekSong, recapOpen]);
   useEffect(() => {
     if (state.activeScreen !== 'recap') {
       if (autoplayed.current && quiet) close();
@@ -184,32 +183,13 @@ export function RecapScreen(_props: { device: Device }) {
   // recap (same period and window) — migration 021.
   const sendToFriends = () => { shareRecapWithFriends(period, offset); };
 
-  let subChips = null;
-  if (period === 'week') {
-    subChips = (
-      <div className="chips" role="group" aria-label={t('recap.week')}>
-        <button className={`chip${offset === 0 ? ' on' : ''}`} onClick={() => setRecapOffset(0)}>{t('recap.lastWeek')}</button>
-        <button className={`chip${offset === -1 ? ' on' : ''}`} onClick={() => setRecapOffset(-1)}>{t('recap.weekBeforeLast')}</button>
-      </div>
-    );
-  } else if (isSeason) {
-    subChips = (
-        <div className="chips" role="group" aria-label={t('recap.season')}>
-          {finishedSeasons.map((s) => (
-            <button key={s.key} className={`chip${state.recapSeasonKey === s.key ? ' on' : ''}`} onClick={() => setRecapSeasonKey(s.key)}>
-              {t(`season.${s.season}` as TranslationKey)} {s.year}
-            </button>
-          ))}
-        </div>
-      );
-  } else {
-    subChips = (
-      <div className="chips">
-        <button className={`chip${offset === -1 ? ' on' : ''}`} onClick={() => setRecapOffset(-1)}>{t('recap.lastMonth')}</button>
-        <button className={`chip${offset === -2 ? ' on' : ''}`} onClick={() => setRecapOffset(-2)}>{t('recap.monthBeforeLast')}</button>
-      </div>
-    );
-  }
+  // Weekly recaps only: last week and the week before.
+  const subChips = (
+    <div className="chips" role="group" aria-label={t('recap.week')} style={{ marginTop: 8 }}>
+      <button className={`chip${offset === 0 ? ' on' : ''}`} onClick={() => setRecapOffset(0)}>{t('recap.lastWeek')}</button>
+      <button className={`chip${offset === -1 ? ' on' : ''}`} onClick={() => setRecapOffset(-1)}>{t('recap.weekBeforeLast')}</button>
+    </div>
+  );
 
   const top = (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
@@ -246,18 +226,19 @@ export function RecapScreen(_props: { device: Device }) {
     const i = me.friends.findIndex((f) => f.id === targetId);
     return me.friends[(i + 1) % me.friends.length];
   })() : null;
+  // The recap's colour behind the whole page (fixed to the screen, so on the
+  // shell, not inside the moving screen) while it's open.
+  const backdrop = state.activeScreen === 'recap' && r && typeof document !== 'undefined' && document.querySelector('.rd')
+    ? createPortal(<div className="rbg19" style={recapToneStyle(r)} aria-hidden="true" />, document.querySelector('.rd')!)
+    : null;
   const vibeTitle = line ? `${line.lead}${line.em ? ` ${line.em}` : ''}` : undefined;
 
   return (
     <>
       <h1 className="sr">{t('recap.pageTitle')}</h1>
       {top}
-      <div className="chips" role="group" aria-label={t('recap.periodLabel')} style={{ marginTop: 8 }}>
-        {PERIODS.map((p) => (
-          <button key={p} className={`chip${period === p ? ' on' : ''}`} aria-pressed={period === p} onClick={() => setRecapPeriod(p)}>{t(PERIOD_KEY[p])}</button>
-        ))}
-      </div>
       {subChips}
+      {backdrop}
 
       {!r || !line ? (
         <p className="muted" style={{ marginTop: 14 }}>{t('recap.loading')}</p>
