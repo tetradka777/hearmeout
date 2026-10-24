@@ -10,6 +10,9 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: '/',
     scope: '/',
     display: 'standalone',
+    // Phones: upright only (an installed app really locks; in a browser tab
+    // the layout shows a 'turn your phone' screen instead, see layout.tsx).
+    orientation: 'portrait',
     background_color: '#F6EFE0',
     theme_color: '#F6EFE0',
     icons: [

@@ -552,3 +552,17 @@
 .rd .rvc15 .alb13 .tt,.rd .fdc15 .ft15{display:block;overflow:visible;-webkit-line-clamp:unset}
 .rd .rvc15 .alb13 .tt>span,.rd .fdc15 .ft15>span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:break-word;hyphens:none}
 .rd .fdc15 .ft15>span{-webkit-line-clamp:3}
+
+/* Phones are upright only: turned sideways, a "turn your phone" screen
+   covers the site (a browser tab can't lock the rotation; the installed
+   app is locked by the manifest). Tablets and computers aren't touched. */
+.rot19{display:none}
+@media (orientation:landscape) and (max-height:520px) and (pointer:coarse){
+  html,body{overflow:hidden}
+  .rot19{display:flex;position:fixed;inset:0;z-index:1000;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center;background:var(--bg);color:var(--fg);font-family:var(--font-body)}
+  .rot19 b{font:800 26px/1.1 var(--font-display);letter-spacing:-.02em}
+  .rot19 span{font-weight:600;opacity:.7}
+  .rot19i{width:34px;height:56px;border:3px solid currentColor;border-radius:9px;margin-bottom:8px;animation:rot19 2.4s ease-in-out infinite}
+}
+@keyframes rot19{0%,25%{transform:rotate(90deg)}55%,100%{transform:rotate(0)}}
+@media (prefers-reduced-motion:reduce){.rot19i{animation:none}}

@@ -830,6 +830,8 @@ const en = {
   'login.switchToRegister': 'new here? create an account',
 
   'app.loading': 'loading…',
+  'rotate.title': 'turn your phone upright',
+  'rotate.body': 'hearmeout works in portrait only.',
 
   'obscure.loading': 'digging up under-the-radar artists…',
   'genreTop.loading': 'loading…',

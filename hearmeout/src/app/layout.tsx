@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
-import { pickLanguage } from "@/lib/i18n";
+import { loadLanguage, pickLanguage, translate } from "@/lib/i18n";
 import { previewLang, siteMetadata } from "@/lib/siteMeta";
 import { ErrorReporter } from "@/components/ErrorReporter";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
@@ -62,6 +62,7 @@ if (location.hostname === 'localhost') {
 // server; inside the app AppContext switches it to the account language.
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const lang = pickLanguage((await headers()).get("accept-language"));
+  await loadLanguage(lang);
   return (
     <html
       lang={lang}
@@ -78,6 +79,13 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <ErrorReporter />
         <ServiceWorkerRegister />
         {children}
+        {/* A phone turned sideways: the site is made for upright only, and a
+            browser tab can't lock the rotation (styles: rev15.css .rot19). */}
+        <div className="rot19" aria-hidden="true">
+          <i className="rot19i" />
+          <b>{translate(lang, "rotate.title")}</b>
+          <span>{translate(lang, "rotate.body")}</span>
+        </div>
       </body>
     </html>
   );
