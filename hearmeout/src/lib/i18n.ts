@@ -82,7 +82,6 @@ const en = {
   'discover.nothingFoundDesc': 'no album, artist or person matches “{query}”.',
   'discover.openLibraryHeading': 'from the open library',
   'discover.openLibrarySubtitle': 'not in our catalog yet. shown with a simple view and no community ratings.',
-  'discover.obscureSubtitle': 'picked for {region} from live streaming data.',
   'discover.noneInGenre': 'nothing in this genre yet.',
   'discover.reviewsWorthReading': 'reviews worth reading',
 
@@ -840,7 +839,6 @@ const en = {
   'app.loading': 'loading…',
 
   'obscure.loading': 'digging up under-the-radar artists…',
-  'obscure.empty': 'nothing found',
   'genreTop.loading': 'loading…',
   'genreTop.empty': 'no artists yet',
   'generic.loadError': "couldn't load",
@@ -1313,6 +1311,9 @@ const en = {
   'concerts.next': 'next',
   'concerts.back': 'discover',
   'concerts.tickets': 'tickets',
+  'rising.sub': 'our picks first, then artists whose fans keep growing',
+  'rising.pick': 'our pick',
+  'rising.grew': '+{pct}% fans in 2 weeks',
   'recap.lastWeek': 'last week',
   'recap.weekBeforeLast': 'the week before',
   'recap.monthBeforeLast': 'the month before',

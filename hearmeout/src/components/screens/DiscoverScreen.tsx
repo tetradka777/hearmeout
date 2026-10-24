@@ -13,7 +13,7 @@ import { regionDisplayName } from '@/lib/i18n';
 import { LiveLibrarySearch } from '../LiveLibrarySearch';
 import { PopularNowSection } from '../PopularNowSection';
 import { ConcertsFeed } from '../ConcertsFeed';
-import { ObscureAlbums } from '../ObscureAlbums';
+import { RisingArtists } from '../RisingArtists';
 import { GenreTopArtists } from '../GenreTopArtists';
 import { MascotIcon } from '../redesign/icons';
 import { cachedJson, peekJson, cachedPage } from '@/lib/cachedJson';
@@ -362,7 +362,7 @@ export function DiscoverScreen(_props: { device: Device }) {
 
           {filter !== 'albums' && <GenreTopArtists onlyGenre={genreFilter} sub={regionLabel} />}
 
-          {filter !== 'albums' && <ObscureAlbums genre={genreFilter === 'all' ? 'Electronic' : genreFilter} sub={`${genreFilter === 'all' ? 'Electronic' : genreFilter} · ${t('discover.obscureSubtitle', { region: regionLabel })}`} />}
+          {filter !== 'albums' && <RisingArtists />}
 
         </>
       )}

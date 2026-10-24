@@ -76,7 +76,6 @@ const de: Dict = {
   'discover.nothingFoundDesc': 'zu „{query}“ gibt es weder ein Album noch einen Artist noch eine Person.',
   'discover.openLibraryHeading': 'aus der offenen Bibliothek',
   'discover.openLibrarySubtitle': 'noch nicht in unserem Katalog. vereinfachte Ansicht, ohne Community-Bewertungen.',
-  'discover.obscureSubtitle': 'für die Region {region} aus aktuellen Streaming-Daten zusammengestellt.',
   'discover.noneInGenre': 'in diesem Genre ist noch nichts los.',
   'discover.reviewsWorthReading': 'rezensionen, die sich lohnen',
 
@@ -834,7 +833,6 @@ const de: Dict = {
   'app.loading': 'lädt …',
 
   'obscure.loading': 'wir graben Geheimtipps aus …',
-  'obscure.empty': 'nichts gefunden',
   'genreTop.loading': 'lädt …',
   'genreTop.empty': 'noch keine Artists',
   'generic.loadError': 'laden fehlgeschlagen',
@@ -1307,6 +1305,9 @@ const de: Dict = {
   'concerts.next': 'nächstes',
   'concerts.back': 'entdecken',
   'concerts.tickets': 'Tickets',
+  'rising.sub': 'zuerst unsere Tipps, dann Artists, deren Fans stetig mehr werden',
+  'rising.pick': 'unser Tipp',
+  'rising.grew': '+{pct} % Fans in 2 Wochen',
   'recap.lastWeek': 'letzte woche',
   'recap.weekBeforeLast': 'vorletzte woche',
   'recap.monthBeforeLast': 'vorletzter monat',

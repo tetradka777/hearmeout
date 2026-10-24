@@ -111,7 +111,6 @@ export const GENRE_SEARCH_KEYWORD: Record<string, string> = {
 };
 
 export type CatalogArtist = { id: string; name: string; photo: string | null };
-export type CatalogAlbum = { id: string; title: string; artist: string; artistId: string | null; cover: string | null; spotifyUrl: string; year: number | null };
 
 type SpotifyAlbumSearchItem = {
   id: string;
@@ -121,18 +120,6 @@ type SpotifyAlbumSearchItem = {
   external_urls: { spotify: string };
   release_date?: string;
 };
-
-function toCatalogAlbum(a: SpotifyAlbumSearchItem): CatalogAlbum {
-  return {
-    id: a.id,
-    title: a.name,
-    artist: a.artists.map((x) => x.name).join(', '),
-    artistId: a.artists?.[0]?.id ?? null,
-    cover: a.images?.[0]?.url ?? null,
-    spotifyUrl: a.external_urls.spotify,
-    year: a.release_date ? parseInt(a.release_date.slice(0, 4), 10) : null,
-  };
-}
 
 // `market` biases/filters results toward what's actually available in that
 // country on Spotify.
@@ -151,22 +138,6 @@ export async function fetchGenreTopArtists(genreBucket: string, limit = 8, marke
     name: a.name,
     photo: a.images?.[0]?.url ?? null,
   }));
-}
-
-// "Малоизвестные исполнители": Spotify doesn't expose a monthly-listeners
-// field over the public API, so this uses tag:hipster — Spotify's own
-// bottom-10%-popularity search filter — as the closest real substitute.
-export async function fetchObscureAlbums(genreBucket: string, limit = 10, market?: string | null): Promise<CatalogAlbum[]> {
-  const keyword = GENRE_SEARCH_KEYWORD[genreBucket] ?? genreBucket.toLowerCase();
-  // Two pages (development mode caps a page at 10), minus background-noise,
-  // sleep and study albums, which fill the low-popularity end of a search.
-  const page = (offset: number) => {
-    const params: Record<string, string> = { q: `tag:hipster ${keyword}`, type: 'album', limit: '10', offset: String(offset) };
-    if (isValidMarket(market)) params.market = market;
-    return spotifyGet('/search', params).then((d) => (d.albums?.items || []) as Parameters<typeof toCatalogAlbum>[0][]);
-  };
-  const [first, second] = await Promise.all([page(0), page(10).catch(() => [])]);
-  return [...first, ...second].map(toCatalogAlbum).filter((a) => !isFunctionalAudio(a.title, a.artist)).slice(0, limit);
 }
 
 // White/brown noise, sleep, relaxation, study and similar "functional"
@@ -433,10 +404,3 @@ export async function genreArtistsPage(genreBucket: string, offset: number, mark
   return (data.artists?.items || []).map((a: { id: string; name: string; images: { url: string }[] }) => ({ id: a.id, name: a.name, photo: a.images?.[0]?.url ?? null }));
 }
 
-export async function obscureAlbumsPage(genreBucket: string, offset: number, market?: string | null): Promise<CatalogAlbum[]> {
-  const keyword = GENRE_SEARCH_KEYWORD[genreBucket] ?? genreBucket.toLowerCase();
-  const params: Record<string, string> = { q: `tag:hipster ${keyword}`, type: 'album', limit: '10', offset: String(offset) };
-  if (isValidMarket(market)) params.market = market;
-  const d = await spotifyGet('/search', params);
-  return ((d.albums?.items || []) as Parameters<typeof toCatalogAlbum>[0][]).map(toCatalogAlbum).filter((a) => !isFunctionalAudio(a.title, a.artist));
-}

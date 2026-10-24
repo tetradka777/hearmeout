@@ -71,6 +71,15 @@ async function read(key: string): Promise<Entry | null> {
   return e;
 }
 
+// Store a value directly (a job's own state, e.g. a history it appends to).
+export async function storeSpotifyCache(key: string, payload: unknown, ttlSeconds: number): Promise<void> {
+  const now = Date.now();
+  memSet(key, { payload, expires: now + ttlSeconds * 1000 });
+  await supabaseAdmin().from('spotify_cache').upsert({
+    key, payload, fetched_at: new Date(now).toISOString(), expires_at: new Date(now + ttlSeconds * 1000).toISOString(),
+  });
+}
+
 // Whatever is stored under key, however old, without fetching (null if
 // nothing is) — for fallbacks while an upstream API is unavailable.
 export async function peekSpotifyCache<T>(key: string): Promise<T | null> {
