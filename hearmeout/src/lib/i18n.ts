@@ -270,7 +270,6 @@ const en = {
   'catalog.popularNow': 'popular now',
   'catalog.topRated': 'top rated by the community',
   'catalog.obscureArtists': 'lesser-known artists',
-  'catalog.genreTops': 'top artists by genre',
   'catalog.fullCatalog': 'full catalog',
 
   'rate.tagsCount': '{n} of {max}',
@@ -834,8 +833,6 @@ const en = {
   'rotate.body': 'hearmeout works in portrait only.',
 
   'obscure.loading': 'digging up under-the-radar artists…',
-  'genreTop.loading': 'loading…',
-  'genreTop.empty': 'no artists yet',
   'generic.loadError': "couldn't load",
 
   'toast.ratingUpdated': 'changes saved',

@@ -16,7 +16,7 @@ import { sharedArtists } from '@/lib/sharedArtists';
 import { toLocale } from '@/lib/i18n';
 import { CoverArt } from '../ui/CoverArt';
 import { MascotIcon } from '../redesign/icons';
-import { Podium } from '../ui/Podium';
+import { LeaderboardTile, Podium } from '../ui/Podium';
 import { MATCH_FRIEND_EVENT, takeRecentEvent } from '@/lib/uiEvents';
 import { CoverWall, PersonCards } from '../ui/Visual';
 import { PROFILE_TAB_EVENT } from '@/lib/uiEvents';
@@ -74,17 +74,6 @@ function MatchHero({ me, friend, children }: { me: Who | null; friend: Who | nul
     ['--a2' as string]: friend?.avatarUrl ? `url('${friend.avatarUrl}')` : 'none',
   } as CSSProperties;
   return <div className="tile mh16" style={style}>{children}</div>;
-}
-
-// The weekly leaderboard over the colours of its top three: each one's
-// glow behind their place on the podium (second left, first middle, third
-// right).
-function LeaderboardTile({ people, children }: { people: (ApiUser | null)[]; children: ReactNode }) {
-  const c1 = usePersonColor(people[0] ?? { id: 'lb1', name: '1', avatarUrl: null });
-  const c2 = usePersonColor(people[1] ?? { id: 'lb2', name: '2', avatarUrl: null });
-  const c3 = usePersonColor(people[2] ?? { id: 'lb3', name: '3', avatarUrl: null });
-  const style = { ['--l1' as string]: c1, ['--l2' as string]: people[1] ? c2 : c1, ['--l3' as string]: people[2] ? c3 : people[1] ? c2 : c1 } as CSSProperties;
-  return <div className="tile lb10 lb19" style={style}>{children}</div>;
 }
 
 export function MatchScreen(_props: { device: Device }) {

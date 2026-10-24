@@ -566,3 +566,26 @@
 }
 @keyframes rot19{0%,25%{transform:rotate(90deg)}55%,100%{transform:rotate(0)}}
 @media (prefers-reduced-motion:reduce){.rot19i{animation:none}}
+
+/* Chips on the dark coloured cards: see-through with the card's text
+   colour, the chosen one cream (they were cream on cream). */
+.rd main .tile:not(.setgrid .tile):not(.alp17 .tile) .chip{background:color-mix(in srgb,currentColor 14%,transparent);color:inherit;outline:0}
+.rd main .tile:not(.setgrid .tile):not(.alp17 .tile) .chip.on{background:#FFF7EA;color:#181513}
+
+/* Group page: the numbers strip in the hero; taste over the closest pair's
+   colours. */
+.rd .ghero9 .gst19{grid-column:1/-1;margin-top:4px;background:rgba(0,0,0,.22);color:#fff}
+.rd .ghero9 .gst19>div+div{border-left-color:rgba(255,255,255,.18)}
+.rd .ghero9 .gst19 b .u{display:inline;font-size:.55em;margin-left:2px;opacity:.8}
+.rd .tile.pt19{outline:0;color:#fff;--tfg:#fff;--fg:#fff;background:linear-gradient(135deg,color-mix(in srgb,var(--g1) 72%,#141210),color-mix(in srgb,var(--g2) 72%,#141210))}
+.rd .tile.pt19 .muted{color:rgba(255,255,255,.75)}
+.rd .tile.pt19 .big13{color:#fff;text-shadow:0 4px 24px rgba(0,0,0,.25)}
+.rd .tile.pt19 .meter{background:rgba(255,255,255,.22)}
+.rd .tile.pt19 .meter i{background:#fff}
+.rd .tst13 .pr13 .avs .dot{width:36px;height:36px;font-size:14px;box-shadow:0 0 0 2px rgba(255,255,255,.8)}
+.rd .tst13 .pr13 .avs .dot+.dot{margin-left:-12px;box-shadow:0 0 0 2px rgba(255,255,255,.8)}
+/* Member circles on the group's coloured cards: solid, so letters don't
+   show through each other. */
+.rd .tst13 .pr13 .avs .dot,.rd .ghero9 .dot{background-color:#2a2622;color:#FFF7EA;background-size:cover;background-position:center}
+.rd .ghero9 .dot{width:36px;height:36px;font-size:14px;box-shadow:0 0 0 2px rgba(255,255,255,.7)}
+.rd .lb19 .mem13 .fl13{color:#FFC86E}

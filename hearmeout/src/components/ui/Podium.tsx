@@ -46,3 +46,25 @@ export function Podium({ entries, label }: { entries: PodiumEntry[]; label: stri
     </div>
   );
 }
+
+type Who = { id: string; name: string; avatarUrl: string | null };
+
+// A leaderboard card over the colours of its top three: each one's glow
+// behind their place on the podium (second left, first middle, third
+// right). Styles: rev15.css .lb19.
+export function LeaderboardTile({ people, className = '', children }: { people: (Who | null)[]; className?: string; children: ReactNode }) {
+  const c1 = usePersonColor(people[0] ?? { id: 'lb1', name: '1', avatarUrl: null });
+  const c2 = usePersonColor(people[1] ?? { id: 'lb2', name: '2', avatarUrl: null });
+  const c3 = usePersonColor(people[2] ?? { id: 'lb3', name: '3', avatarUrl: null });
+  const style = { ['--l1' as string]: c1, ['--l2' as string]: people[1] ? c2 : c1, ['--l3' as string]: people[2] ? c3 : people[1] ? c2 : c1 } as CSSProperties;
+  return <div className={`tile lb10 lb19 ${className}`.trim()} style={style}>{children}</div>;
+}
+
+// Two people's colours from one side of a card to the other (a pair that
+// matches best, a duel). Styles: rev15.css .pt19.
+export function PairTile({ a, b, className = '', children }: { a: Who | null; b: Who | null; className?: string; children: ReactNode }) {
+  const ca = usePersonColor(a ?? { id: 'pa', name: 'a', avatarUrl: null });
+  const cb = usePersonColor(b ?? { id: 'pb', name: 'b', avatarUrl: null });
+  const style = { ['--g1' as string]: ca, ['--g2' as string]: cb } as CSSProperties;
+  return <div className={`tile pt19 ${className}`.trim()} style={style}>{children}</div>;
+}
