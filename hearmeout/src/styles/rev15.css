@@ -497,7 +497,14 @@
 .rd .rbg19{position:fixed;inset:0;z-index:0;pointer-events:none;background:var(--rc1)}
 .rd:has(.rbg19) main{color:#FFF7EA}
 .rd:has(.rbg19) .rsh13{padding-left:0;padding-right:0;background:transparent!important}
-.rd:has(.rbg19) .rsh13 .st>div{background:rgba(0,0,0,.14)}
+/* The numbers: one darker strip with dividers (each number had its own
+   square box inside the rounded strip). */
+.rd:has(.rbg19) .rsh13 .st{background:rgba(0,0,0,.16);border:0;overflow:hidden}
+.rd:has(.rbg19) .rsh13 .st>div{background:none}
+/* Friends' recaps on a recap-coloured page: a darker card with a light
+   edge, so one in the same colour (two pop weeks) doesn't melt into it. */
+.rd:has(.rbg19) .tile.rcf13.t-rc{background:color-mix(in srgb,var(--rc1) 78%,#000)}
+.rd:has(.rbg19) .tile.rcf13{outline:1.5px solid rgba(255,247,234,.28);outline-offset:-1.5px;box-shadow:0 10px 28px rgba(0,0,0,.18)}
 
 /* Match: a lower percentage card without the dot meter. */
 .rd .tile.mh16{padding:22px 24px}
