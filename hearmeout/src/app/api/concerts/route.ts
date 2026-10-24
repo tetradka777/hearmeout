@@ -2,20 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserId } from '@/lib/identity';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { fetchAllRows } from '@/lib/supabasePaginate';
-import { concertsConfigured, cachedArtistConcerts, regionFirst, type Concert } from '@/lib/concerts';
-import { ALBUMS } from '@/lib/data';
+import { concertsConfigured, cachedArtistConcerts, popularConcerts, regionFirst, type Concert } from '@/lib/concerts';
 
-export type ConcertFeedItem = Concert & { artist: string; artistId: string | null; group: 'yours' | 'popular' };
+export type ConcertFeedItem = Concert & { artist: string; artistId: string | null; group: 'yours' | 'popular'; photo?: string | null };
 
-const YOURS = 8;        // most-listened artists, last 6 months
-const POPULAR = 10;     // most-streamed artists from the catalog's kworb ranking
+const YOURS = 15;       // most-listened artists, last 6 months
+const POPULAR = 40;     // headliners of Ticketmaster's most relevant music events
 const PER_ARTIST = 30;  // concerts per artist (all of them, near enough: the card lists every date)
 
 // Discover → "Concerts": your most-listened artists first (by time played
-// over the last six months), then the most popular artists (the catalog's
-// all-time Spotify streaming rank). Within each artist, shows in the
-// viewer's country come first, then the rest of the world by date —
-// nothing is filtered out by region.
+// over the last six months), then the most popular concerts — Ticketmaster's
+// own most relevant music events in your country (worldwide when that gives
+// few), grouped by headliner. Within each of your artists, shows in the
+// viewer's country come first, then the rest of the world by date.
 export async function GET(request: NextRequest) {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
@@ -46,25 +45,28 @@ export async function GET(request: NextRequest) {
   const idOf = new Map(yoursRanked.map((a) => [a.name, a.id]));
   const taken = new Set(yours.map((n) => n.toLowerCase()));
 
-  const popular: string[] = [];
-  for (const a of [...ALBUMS].filter((x) => x.popularRank != null).sort((x, y) => (x.popularRank ?? 0) - (y.popularRank ?? 0))) {
-    const name = a.artist.split(',')[0].trim();
-    if (taken.has(name.toLowerCase())) continue;
-    taken.add(name.toLowerCase());
-    popular.push(name);
-    if (popular.length >= POPULAR) break;
-  }
-
   // Sequential, so a cold cache stays under Ticketmaster's 5 requests/s.
   const items: ConcertFeedItem[] = [];
-  const lists: [string, 'yours' | 'popular'][] = [...yours.map((n) => [n, 'yours'] as [string, 'yours']), ...popular.map((n) => [n, 'popular'] as [string, 'popular'])];
-  for (const [artist, group] of lists) {
+  for (const artist of yours) {
     try {
       const concerts = regionFirst(await cachedArtistConcerts(artist, idOf.get(artist) ?? null), country);
-      for (const c of concerts.slice(0, PER_ARTIST)) items.push({ ...c, artist, artistId: idOf.get(artist) ?? null, group });
+      for (const c of concerts.slice(0, PER_ARTIST)) items.push({ ...c, artist, artistId: idOf.get(artist) ?? null, group: 'yours' });
     } catch {
       // One artist failing (rate limit, odd name) shouldn't hide the rest.
     }
+  }
+  try {
+    const local = await popularConcerts(country);
+    const lists = local.length >= POPULAR || !country ? local : [...local, ...(await popularConcerts(null))];
+    let n = 0;
+    for (const { artist, photo, concerts } of lists) {
+      if (n >= POPULAR || taken.has(artist.toLowerCase())) continue;
+      taken.add(artist.toLowerCase());
+      n++;
+      for (const c of regionFirst(concerts, country).slice(0, PER_ARTIST)) items.push({ ...c, artist, artistId: null, group: 'popular', photo });
+    }
+  } catch {
+    // Popular concerts are extra; your own artists still show.
   }
   return NextResponse.json({ configured: true, items });
 }

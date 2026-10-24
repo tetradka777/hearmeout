@@ -1305,6 +1305,7 @@ const es: Dict = {
   'fanclub.nothingYet': 'los miembros aún no han escuchado nada',
   'fanclub.loadError': 'no se pudo abrir el club de fans',
   'fanclub.back': 'atrás',
+  'fanclub.releasesTitle': 'lanzamientos de tus fan clubs',
   'recap.pageTitle': 'resumen',
 };
 

@@ -32,7 +32,7 @@ export function ConcertsFeed() {
             title={`${t('concerts.title')} · ${label}`}
           >
             {[...new Map(rows.map((c) => [c.artist, rows.filter((x) => x.artist === c.artist)])).entries()].map(([artist, shows]) => (
-              <ConcertCard key={artist} artist={artist} id={shows[0].artistId} count={shows.length} next={[...shows].sort((a, b) => (a.date < b.date ? -1 : 1))[0]} />
+              <ConcertCard key={artist} artist={artist} id={shows[0].artistId} known={shows[0].photo ?? null} count={shows.length} next={[...shows].sort((a, b) => (a.date < b.date ? -1 : 1))[0]} />
             ))}
           </Shelf>
         );
@@ -45,9 +45,11 @@ export function ConcertsFeed() {
 // big on the left ("5+" past five), the artist's photo round on the
 // right and blurred behind, their name and the next show under both. Opens
 // the artist's own concerts page.
-function ConcertCard({ artist, id, count, next }: { artist: string; id: string | null; count: number; next: Concert }) {
+function ConcertCard({ artist, id, known, count, next }: { artist: string; id: string | null; known: string | null; count: number; next: Concert }) {
   const { t, language, me, openConcerts } = useApp();
-  const photo = useArtistPhoto(artist, true, id);
+  // Popular acts come with Ticketmaster's photo; others are looked up.
+  const looked = useArtistPhoto(artist, !known, id);
+  const photo = known || looked;
   const open = () => openConcerts(artist, id);
   const d = new Date(`${next.date}T00:00:00Z`);
   const place = [next.city, next.country && next.country !== me?.region ? regionDisplayName(next.country, language) : null].filter(Boolean).join(', ') || next.venue || '';

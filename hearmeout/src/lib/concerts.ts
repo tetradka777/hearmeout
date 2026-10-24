@@ -35,7 +35,7 @@ async function tm(path: string, params: Record<string, string>): Promise<Record<
   return res.json();
 }
 
-type TmAttraction = { id: string; name: string; externalLinks?: { spotify?: { url?: string }[] } };
+type TmAttraction = { id: string; name: string; externalLinks?: { spotify?: { url?: string }[] }; images?: { url: string; ratio?: string; width?: number }[] };
 type TmEvent = {
   id: string;
   name: string;
@@ -115,4 +115,41 @@ export function regionFirst(list: Concert[], countryCode: string | null): Concer
 // hours, whoever asks.
 export function cachedArtistConcerts(artistName: string, spotifyArtistId?: string | null): Promise<Concert[]> {
   return withSpotifyCache(`concerts:v4:${artistName.toLowerCase()}:${spotifyArtistId ?? ''}`, 12 * 3600, () => fetchArtistConcerts(artistName, spotifyArtistId));
+}
+
+// The most relevant upcoming music events (Ticketmaster's own ranking) in a
+// country, or worldwide, grouped by headliner: Discover's popular concerts.
+// Two pages of 200 events, one request each, cached 12 hours per country —
+// many artists for two requests instead of a lookup per artist.
+export type PopularConcerts = { artist: string; photo: string | null; concerts: Concert[] }[];
+export function popularConcerts(countryCode: string | null): Promise<PopularConcerts> {
+  const cc = countryCode && /^[A-Z]{2}$/.test(countryCode) ? countryCode : null;
+  return withSpotifyCache(`tm-popular:v1:${cc ?? 'world'}`, 12 * 3600, async () => {
+    const byArtist = new Map<string, { artist: string; photo: string | null; concerts: Concert[] }>();
+    for (const page of ['0', '1']) {
+      const params: Record<string, string> = { classificationName: 'music', sort: 'relevance,desc', size: '200', page };
+      if (cc) params.countryCode = cc;
+      const events = await tm('/events.json', params).catch(() => null);
+      const items = ((events?._embedded as { events?: TmEvent[] } | undefined)?.events) || [];
+      for (const e of items) {
+        const head = e._embedded?.attractions?.[0];
+        if (!head || !e.dates?.start?.localDate || /parking|shuttle|upgrade|voucher|add-on|hotel package|tribute|vip package/i.test(e.name)) continue;
+        const key = head.name.toLowerCase();
+        const v = e._embedded?.venues?.[0];
+        // The act's own Ticketmaster photo (square-ish, not too small): no
+        // Spotify lookup for dozens of artists.
+        const img = (head.images || []).filter((i) => (i.ratio === '1_1' || i.ratio === '4_3') && (i.width ?? 0) >= 300).sort((x, y) => (x.width ?? 0) - (y.width ?? 0))[0];
+        const cur = byArtist.get(key) || { artist: head.name, photo: img?.url ?? null, concerts: [] };
+        if (cur.concerts.some((c) => c.date === e.dates!.start!.localDate && c.city === (v?.city?.name ?? null))) continue;
+        cur.concerts.push({
+          id: e.id, date: e.dates.start.localDate, time: e.dates.start.localTime ?? null, name: e.name,
+          venue: v?.name ?? null, city: v?.city?.name ?? null, country: v?.country?.countryCode ?? null, url: e.url ?? null,
+        });
+        byArtist.set(key, cur);
+      }
+      if (items.length < 200) break;
+    }
+    for (const a of byArtist.values()) a.concerts.sort((x, y) => x.date.localeCompare(y.date));
+    return [...byArtist.values()];
+  });
 }

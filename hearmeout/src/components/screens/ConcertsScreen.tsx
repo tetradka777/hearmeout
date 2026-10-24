@@ -18,7 +18,9 @@ export function ConcertsScreen(_props: { device: Device }) {
   const who = state.viewingConcerts;
   const region = me?.region ?? null;
   const feed = useCachedJson<{ configured: boolean; items: ConcertFeedItem[] }>(me && who ? `/api/concerts${region ? `?country=${encodeURIComponent(region)}` : ''}` : null);
-  const photo = useArtistPhoto(who?.name ?? '', !!who, who?.id);
+  const known = (feed.data?.items || []).find((c) => c.artist === who?.name && c.photo)?.photo ?? null;
+  const looked = useArtistPhoto(who?.name ?? '', !!who && !known, who?.id);
+  const photo = known || looked;
   if (!who) return null;
   const shows = (feed.data?.items || []).filter((c) => c.artist === who.name).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
   const id = who.id ?? shows[0]?.artistId ?? null;
