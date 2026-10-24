@@ -39,3 +39,11 @@ export function formatRelative(iso: string, language: Language): string {
   if (months < 12) return translate(language, 'time.monthsAgo', { n: months });
   return translate(language, 'time.yearsAgo', { n: Math.floor(days / 365) });
 }
+
+// A title without the extras that make it endless on a card: '(feat. …)',
+// '(Soundtrack From …)', '[Deluxe]', ' - Remastered 2011'. The full title
+// stays for screen readers and the album page.
+export function shortTitle(title: string): string {
+  const short = title.replace(/\s*[([][^)\]]*[)\]]/g, '').replace(/\s+-\s+.*$/, '').trim();
+  return short || title;
+}

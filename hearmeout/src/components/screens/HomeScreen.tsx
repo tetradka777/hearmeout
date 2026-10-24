@@ -12,7 +12,7 @@ import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { ApiUser, Device, FeedEvent, FeedResponse, PublicProfile, RecapData } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
-import { userAvatarStyle, formatRelative } from '@/lib/format';
+import { userAvatarStyle, formatRelative, shortTitle } from '@/lib/format';
 import { MascotIcon } from '../redesign/icons';
 import { MATCH_FRIEND_EVENT } from '@/lib/uiEvents';
 import { useFriendScores } from '@/lib/useFriendScores';
@@ -200,7 +200,7 @@ function FeedRow({ event }: { event: FeedEvent }) {
     >
       {/* After Superfan's listening cards: big title, a white line, a grey
           line, the framed cover on the right. */}
-      {open ? <button className="ft15" onClick={open}>{title}</button> : <h3 className="ft15">{title}</h3>}
+      {open ? <button className="ft15" onClick={open} aria-label={title}><span>{shortTitle(title)}</span></button> : <h3 className="ft15"><span>{shortTitle(title)}</span></h3>}
       {(right || sub) && <p className="s15">{right}{right && sub ? ' · ' : ''}{sub}</p>}
       {meta && <p className="m15">{meta}</p>}
     </DarkCard>

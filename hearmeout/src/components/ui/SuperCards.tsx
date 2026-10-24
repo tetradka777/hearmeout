@@ -5,7 +5,7 @@ import { useApp } from '@/lib/AppContext';
 import { usePlayer } from '@/lib/PlayerContext';
 import { fmt1 } from '@/lib/numberFormat';
 import { quoted } from '@/lib/i18n';
-import { userAvatarStyle, formatRelative } from '@/lib/format';
+import { userAvatarStyle, formatRelative, shortTitle } from '@/lib/format';
 import { isReviewTagId, REVIEW_TAG_LABEL_KEY } from '@/lib/reviewTags';
 import { sizedImage } from '@/lib/imageSize';
 import { CoverArt } from './CoverArt';
@@ -103,7 +103,7 @@ export function ReviewCard({ user, createdAt, stars, review, tags, albumId, show
             <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="cov" px={60} style={{ width: 60, height: 60 }} />
           </button>
           <span className="g">
-            <button className="tt" onClick={() => openAlbum(albumId)}>{a.title}</button>
+            <button className="tt" onClick={() => openAlbum(albumId)} aria-label={a.title}><span>{shortTitle(a.title)}</span></button>
             <small><ArtistName name={a.artist} id={a.artistId} size={16} /></small>
           </span>
           {firstTrack && (

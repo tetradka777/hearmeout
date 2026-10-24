@@ -538,3 +538,10 @@
 @media (min-width:1000px){
   .rd .two>.sec,.rd .two>*>.sec:first-child{margin-top:0}
 }
+
+/* Long album titles on review and feed cards: shortened in code and
+   clamped on the text inside the button (iOS Safari ignores line-clamp on
+   a button itself, so a long soundtrack title pushed the review out). */
+.rd .rvc15 .alb13 .tt,.rd .fdc15 .ft15{display:block;overflow:visible;-webkit-line-clamp:unset}
+.rd .rvc15 .alb13 .tt>span,.rd .fdc15 .ft15>span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:break-word;hyphens:none}
+.rd .fdc15 .ft15>span{-webkit-line-clamp:3}
