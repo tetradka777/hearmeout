@@ -1,6 +1,7 @@
 import { useApp } from '@/lib/AppContext';
 import { useCachedJson } from '@/lib/cachedJson';
 import { toLocale, type Language } from '@/lib/i18n';
+import { shortTitle } from '@/lib/format';
 import type { TickerNewsItem } from '@/lib/tickerNews';
 import type { TickerNewsResponse } from '@/app/api/ticker/route';
 
@@ -85,9 +86,3 @@ export function useTickerEvents(): TickerEvent[] {
   return events;
 }
 
-// A release's title without the extras that make a strip item endless:
-// '(feat. …)', '[from …]', ' - single'.
-function shortTitle(title: string): string {
-  const short = title.replace(/\s*[([][^)\]]*[)\]]/g, '').replace(/\s+-\s+.*$/, '').trim();
-  return short || title;
-}
