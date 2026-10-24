@@ -531,3 +531,10 @@
 .rd .cnc19>.ex .m15{margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rd .hrow.sr14>.cnc19{width:min(300px,78vw)}
 @media (max-width:560px){.rd .tile.sac15 .sha13 .aav{width:52px!important;height:52px!important}}
+
+/* Two sections side by side start on one line: a section in a column
+   doesn't bring its own top margin (it pushed "rate what you played" ~44px
+   below "your day so far"). */
+@media (min-width:1000px){
+  .rd .two>.sec,.rd .two>*>.sec:first-child{margin-top:0}
+}
