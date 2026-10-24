@@ -38,13 +38,12 @@ export function PopularNowSection({ genre }: { genre?: string }) {
     return (
       <section className="sh14">
         <div className="hd"><h2>{t('catalog.popularNow')}</h2></div>
-        <p className="muted sb">{t('catalog.popularNowSubtitle')}</p>
         <p className="muted" style={{ fontWeight: 600 }}>{done || failed ? t('discover.noneInGenre') : t('app.loading')}</p>
       </section>
     );
   }
   return (
-    <Shelf title={t('catalog.popularNow')} sub={t('catalog.popularNowSubtitle')} onMore={more} done={done}>
+    <Shelf title={t('catalog.popularNow')} onMore={more} done={done}>
       {items.map((a, i) => {
         const community = a.spotifyId ? albumRatings[a.spotifyId] : undefined;
         return (

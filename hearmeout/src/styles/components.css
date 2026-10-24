@@ -60,8 +60,8 @@ html { background: var(--bg); -webkit-text-size-adjust: 100%; text-size-adjust: 
   .rd.hasmp .toast, .rd.hasnp .toast { bottom: 100px; }
 }
 .rd .logo { display: flex; align-items: center; gap: 8px; font: 800 24px/1 var(--font-display); letter-spacing: -.05em; }
-.rd .logo .mk { width: 26px; height: 26px; border-radius: 50%; background: var(--fg); position: relative; flex: none; }
-.rd .logo .mk::after { content: ''; position: absolute; inset: 7px; border-radius: 50%; background: var(--acc); }
+.rd .logo .mk { width: 30px; height: 30px; border-radius: 9px; background: url('/hearmeout-mark.svg') center / cover no-repeat; position: relative; flex: none; }
+.rd .logo .mk::after { content: none; }
 .rd .mobtop { display: flex; justify-content: space-between; align-items: center; padding: 16px 0 10px; }
 .rd .nav { display: none; position: sticky; top: 12px; z-index: 30; align-items: center; gap: 12px; margin: 12px 0 18px; padding: 8px 10px 8px 18px; background: var(--paper); outline: var(--bw) solid var(--tb); outline-offset: calc(var(--bw) * -1); border-radius: 999px; }
 .rd .nav nav { display: flex; gap: 2px; margin: 0 auto; }
@@ -451,7 +451,7 @@ html { background: var(--bg); -webkit-text-size-adjust: 100%; text-size-adjust: 
 @keyframes rd-spin { to { transform: rotate(360deg); } }
 .rd .splash { position: fixed; inset: 0; z-index: 300; display: grid; place-items: center; align-content: center; gap: 18px; text-align: center; transition: opacity .5s; min-height: 0; }
 .rd .splash.out { opacity: 0; pointer-events: none; }
-.rd .splash .logo { font-size: 40px; } .rd .splash .logo .mk { width: 34px; height: 34px; } .rd .splash .logo .mk::after { inset: 9px; }
+.rd .splash .logo { font-size: 40px; } .rd .splash .logo .mk { width: 42px; height: 42px; border-radius: 12px; }
 .rd .splash p { max-width: 30ch; }
 .rd .eqs.big .eq { height: 34px; gap: 5px; } .rd .eqs.big .eq b { width: 7px; }
 .rd .lc { width: 100%; height: auto; display: block; }

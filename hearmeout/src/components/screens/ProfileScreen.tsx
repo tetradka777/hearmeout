@@ -134,14 +134,12 @@ function TasteTab({ list }: { list: RatingRecord[] }) {
     <div className="bento b3">
       <div className="tile s2">
         <h2>{t('profile.taste')}</h2>
-        <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 12px' }}>{t('profile.tasteFingerprintSubtitle')}</p>
         {fp.length ? (
           <ScoreBars items={fp.slice(0, 6).map((x) => ({ name: x.g, score: x.avg, sub: t('profile.ratedN', { n: x.n }) }))} />
         ) : <p className="muted" style={{ fontWeight: 600 }}>{t('profile.fingerprintEmpty')}</p>}
       </div>
       <div className="tile">
         <h2>{t('profile.favoriteGenres')}</h2>
-        <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 12px' }}>{t('profile.favoriteGenresSubtitle')}</p>
         {genres.length ? (
           <GenreMix items={genres.slice(0, 6).map((g) => ({ name: g.g, pct: g.pct }))} />
         ) : <p className="muted" style={{ fontWeight: 600 }}>{t('profile.notEnoughData')}</p>}
@@ -210,7 +208,6 @@ function AwardsTab({ onGoToFriends }: { onGoToFriends: () => void }) {
     <div className="bento b3">
       <div className="tile s2">
         <h2>{t('profile.yourAwards')}</h2>
-        <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 12px' }}>{t('profile.awardsSub')}</p>
         {data === null ? <span className="muted">{t('awards.computing')}</span> : <AwardGallery earned={data.mine} showLocked />}
       </div>
       <div className="tile t-soft2">

@@ -9,7 +9,6 @@ import { userAvatarStyle } from '@/lib/format';
 import { CoverArt } from '../ui/CoverArt';
 import { AlbumShelfCard, ReviewCard, Shelf } from '../ui/SuperCards';
 import { FanClubsForYou } from '../FanClubs';
-import { regionDisplayName } from '@/lib/i18n';
 import { LiveLibrarySearch } from '../LiveLibrarySearch';
 import { PopularNowSection } from '../PopularNowSection';
 import { ConcertsFeed } from '../ConcertsFeed';
@@ -199,7 +198,7 @@ function TopRatedShelf({ genre }: { genre: string }) {
 }
 
 export function DiscoverScreen(_props: { device: Device }) {
-  const { t, language, me, state, albums, albumRatings, setSearchQuery, setActiveGenre, showScreen } = useApp();
+  const { t, me, state, albums, albumRatings, setSearchQuery, setActiveGenre } = useApp();
   const [filter, setFilter] = useState<Filter>('all');
   const [people, setPeople] = useState<PersonResult[] | null>(null);
   const [mbFound, setMbFound] = useState<boolean | null>(null);
@@ -263,7 +262,6 @@ export function DiscoverScreen(_props: { device: Device }) {
     { key: 'people', label: t('discover.filterPeople') },
   ];
 
-  const regionLabel = me.region ? regionDisplayName(me.region, language) : t('discover.globalRegion');
 
   const albumsContribute = filter === 'all' || filter === 'albums';
   const artistsContribute = filter === 'all' || filter === 'artists';
@@ -298,9 +296,6 @@ export function DiscoverScreen(_props: { device: Device }) {
           </button>
         ))}
       </div>
-      <p className="muted" style={{ fontWeight: 600, margin: '-4px 0 22px' }}>
-        {t('discover.picksForPrefix')} <b>{regionLabel}</b>. <button className="link" onClick={() => showScreen('settings')}>{t('discover.changeRegion')}</button>
-      </p>
 
       {showLive ? (
         <>
@@ -325,7 +320,6 @@ export function DiscoverScreen(_props: { device: Device }) {
           {mbContributes && mbFound !== false && (
             <>
               <h2 style={{ marginTop: 26 }}>{t('discover.openLibraryHeading')}</h2>
-              <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 12px' }}>{t('discover.openLibrarySubtitle')}</p>
               <LiveLibrarySearch key={query.trim()} query={query.trim()} onResult={setMbFound} />
             </>
           )}
@@ -360,7 +354,7 @@ export function DiscoverScreen(_props: { device: Device }) {
 
           {filter !== 'artists' && <SiteReviewsShelf />}
 
-          {filter !== 'albums' && <GenreTopArtists onlyGenre={genreFilter} sub={regionLabel} />}
+          {filter !== 'albums' && <GenreTopArtists onlyGenre={genreFilter} />}
 
           {filter !== 'albums' && <RisingArtists />}
 

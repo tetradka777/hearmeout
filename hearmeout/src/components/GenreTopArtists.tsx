@@ -12,7 +12,7 @@ const STEP = 10;
 
 // "Top artists by genre": the genres as chips, the chosen genre's artists
 // as an endless shelf of photo cards (Spotify's genre search, 10 a page).
-export function GenreTopArtists({ onlyGenre, sub }: { onlyGenre?: string; sub?: string }) {
+export function GenreTopArtists({ onlyGenre }: { onlyGenre?: string }) {
   const { t, me, openSpotifyArtist } = useApp();
   const list = onlyGenre && onlyGenre !== 'all' ? GENRES.filter((g) => g === onlyGenre) : GENRES;
   const [picked, setPicked] = useState(list[0]);
@@ -33,14 +33,13 @@ export function GenreTopArtists({ onlyGenre, sub }: { onlyGenre?: string; sub?: 
     return (
       <section className="sh14">
         <div className="hd"><h2>{t('catalog.genreTops')}</h2></div>
-        {sub && <p className="muted sb">{sub}</p>}
         {chips}
         <p className="muted">{failed ? t('generic.loadError') : done ? t('genreTop.empty') : t('genreTop.loading')}</p>
       </section>
     );
   }
   return (
-    <Shelf title={t('catalog.genreTops')} sub={sub} top={chips} onMore={more} done={done}>
+    <Shelf title={t('catalog.genreTops')} top={chips} onMore={more} done={done}>
       {items.map((ar, i) => (
         <ArtistShelfCard key={ar.id} name={ar.name} id={ar.id} photo={ar.photo} sub={`#${i + 1} · ${genre}`} onClick={() => openSpotifyArtist(ar.id, ar.name)} />
       ))}

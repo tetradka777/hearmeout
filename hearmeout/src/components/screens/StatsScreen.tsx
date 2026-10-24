@@ -390,7 +390,7 @@ export function StatsScreen(_props: { device: Device }) {
             </div>
 
             <div className="tile t-c5 s2">
-              <div className="hd10"><div><h2 style={{ margin: 0 }}>{t('stats.topAlbums')}</h2><small className="muted" style={{ fontWeight: 700 }}>{t('stats.topAlbumsSub')}</small></div></div>
+              <div className="hd10"><div><h2 style={{ margin: 0 }}>{t('stats.topAlbums')}</h2></div></div>
               {data.topAlbums?.length ? (
                 <div className="alg13">
                   {data.topAlbums.map((a, i) => {

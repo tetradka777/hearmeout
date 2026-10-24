@@ -381,7 +381,7 @@ function TrendingSection() {
   const known = useAlbums(list.map((x) => x.albumId));
   if (!known.length) return null;
   return (
-    <Shelf title={t('home.trendingTitle')} sub={t('home.trendingSub')}>
+    <Shelf title={t('home.trendingTitle')}>
       {known.map(({ id, album }, i) => {
         const x = list.find((y) => y.albumId === id)!;
         return (

@@ -13,7 +13,7 @@ import type { ConcertFeedItem } from '@/app/api/concerts/route';
 // popular ones; your country's shows lead within each artist. Hidden when
 // the server has no TICKETMASTER_API_KEY or nothing is announced.
 export function ConcertsFeed() {
-  const { t, language, me } = useApp();
+  const { t, me } = useApp();
   const region = me?.region ?? null;
   // Through the browser's shared cache: shown at once on a later visit.
   const data = useCachedJson<{ configured: boolean; items: ConcertFeedItem[] }>(me ? `/api/concerts${region ? `?country=${encodeURIComponent(region)}` : ''}` : null).data;
@@ -30,7 +30,6 @@ export function ConcertsFeed() {
           <Shelf
             key={g}
             title={`${t('concerts.title')} · ${label}`}
-            sub={region ? t('concerts.subRegion', { region: regionDisplayName(region, language) }) : t('concerts.subWorld')}
           >
             {[...new Map(rows.map((c) => [c.artist, rows.filter((x) => x.artist === c.artist)])).entries()].map(([artist, shows]) => (
               <ConcertCard key={artist} artist={artist} id={shows[0].artistId} count={shows.length} next={[...shows].sort((a, b) => (a.date < b.date ? -1 : 1))[0]} />

@@ -67,7 +67,6 @@ export function FanClubScreen(_props: { device: Device }) {
 
           <div className="sec">
             <h2>{t('fanclub.onRepeat')}</h2>
-            <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 12px' }}>{t('fanclub.onRepeatSub')}</p>
             {data.tracks.length ? (
               <CoverWall items={data.tracks.map((tr, i) => ({
                 key: `${i}-${tr.title}`, cover: tr.cover, title: tr.title, sub: t('fanclub.listenersN', { n: tr.listeners }),
