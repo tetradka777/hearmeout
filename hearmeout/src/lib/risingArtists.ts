@@ -1,5 +1,5 @@
 import { peekSpotifyCache, storeSpotifyCache } from './spotifyCache';
-import { deezerArtistByName, deezerArtistIdForName, deezerGet } from './deezerServer';
+import { deezerArtistIdForName, deezerGet } from './deezerServer';
 import { inBackground } from './spotifyPriority';
 import { logServerError } from './errorLog';
 
@@ -132,17 +132,14 @@ export function maybeUpdateRising(): void {
 
 export type RisingResponse = { pinned: { name: string; id: string; photo: string | null }[]; rising: RisingArtist[] };
 
-// What Discover shows: the picks (a Deezer photo only when the name is
-// unique there — "Miley" has namesakes, its photo comes the usual way) and
-// the current list.
+// What Discover shows: the picks and the current list. The picks' photos
+// come by their Spotify id (the usual artist-photo lookup): a Deezer artist
+// with the same name can be someone else, which put wrong faces on them.
 export async function risingArtists(): Promise<RisingResponse> {
   maybeUpdateRising();
-  const [pinned, list] = await Promise.all([
-    Promise.all(PINNED.map(async ({ name, id }) => {
-      const dz = await deezerArtistByName(name).catch(() => null);
-      return { name, id, photo: dz?.exact && (dz.namesakes ?? 1) <= 1 ? dz.photo : null };
-    })),
-    peekSpotifyCache<RisingList>(LIST_KEY),
-  ]);
-  return { pinned, rising: (list?.artists ?? []).filter((a) => !pinnedSet.has(a.name.toLowerCase())) };
+  const list = await peekSpotifyCache<RisingList>(LIST_KEY);
+  return {
+    pinned: PINNED.map(({ name, id }) => ({ name, id, photo: null })),
+    rising: (list?.artists ?? []).filter((a) => !pinnedSet.has(a.name.toLowerCase())),
+  };
 }

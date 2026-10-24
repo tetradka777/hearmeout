@@ -384,7 +384,6 @@ export function FriendScreen({ device: _device }: { device: Device }) {
         {isFullView && (
           <div className="tile s3">
             <h2>{t('friend.latestRatings')}</h2>
-            <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 8px' }}>{t('friend.latestRatingsSubtitle')}</p>
             {f.recentRatings!.length
               ? <CoverWall items={[...f.recentRatings!].sort((a, b) => b.stars - a.stars).slice(0, 12).map((r) => wall(r.albumId, myScoreByAlbum.has(r.albumId) ? `${t('friend.you')} ${fmt1(myScoreByAlbum.get(r.albumId)!)}` : undefined, fmt1(r.stars)))} />
               : <p className="muted" style={{ fontWeight: 600 }}>{t('profile.noRatingsYet')}</p>}

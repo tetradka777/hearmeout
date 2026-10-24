@@ -23,7 +23,7 @@ export function RisingArtists() {
     );
   }
   return (
-    <Shelf title={t('catalog.obscureArtists')} sub={t('rising.sub')}>
+    <Shelf title={t('catalog.obscureArtists')}>
       {data.pinned.map((a) => (
         <ArtistShelfCard key={`p:${a.id}`} name={a.name} id={a.id} photo={a.photo} sub={t('rising.pick')} onClick={() => openArtist(a.name, a.id)} />
       ))}

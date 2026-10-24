@@ -262,7 +262,7 @@ export function MatchScreen(_props: { device: Device }) {
           <SharedArtistsCard names={sharedArt} shown={SHARED_SHOWN} title={t('match.sharedArtistsTitle')} empty={t('match.noSharedArtists')} />
           {/* Weekly leaderboard (rev 11): the top three, and how far you are from first. */}
           <LeaderboardTile people={leaderboard.slice(0, 3).map((l) => l.user ?? (me ? { id: me.id, name: me.name, handle: me.handle, avatarUrl: me.avatarUrl } : null))}>
-            <div className="hd10"><div><h2 style={{ margin: 0 }}>{t('match.weeklyLeaderboard')}</h2><small className="muted" style={{ fontWeight: 700 }}>{t('match.leaderboardSub')}</small></div></div>
+            <div className="hd10"><div><h2 style={{ margin: 0 }}>{t('match.weeklyLeaderboard')}</h2></div></div>
             <Podium
               label={t('match.weeklyLeaderboard')}
               entries={leaderboard.map((l) => ({
