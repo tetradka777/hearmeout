@@ -264,7 +264,6 @@ const de: Dict = {
   'catalog.popularNow': 'gerade beliebt',
   'catalog.topRated': 'von der Community am besten bewertet',
   'catalog.obscureArtists': 'geheimtipps',
-  'catalog.genreTops': 'top-Artists nach Genre',
   'catalog.fullCatalog': 'gesamtkatalog',
 
   'rate.tagsCount': '{n} von {max}',
@@ -828,8 +827,6 @@ const de: Dict = {
   'rotate.body': 'hearmeout funktioniert nur im Hochformat.',
 
   'obscure.loading': 'wir graben Geheimtipps aus …',
-  'genreTop.loading': 'lädt …',
-  'genreTop.empty': 'noch keine Artists',
   'generic.loadError': 'laden fehlgeschlagen',
 
   'toast.ratingUpdated': 'änderungen gespeichert',

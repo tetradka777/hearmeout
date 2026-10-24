@@ -264,7 +264,6 @@ const fr: Dict = {
   'catalog.popularNow': 'populaire en ce moment',
   'catalog.topRated': 'les mieux notés par la communauté',
   'catalog.obscureArtists': 'artistes méconnus',
-  'catalog.genreTops': 'les meilleurs artistes par genre',
   'catalog.fullCatalog': 'catalogue complet',
 
   'rate.tagsCount': '{n} sur {max}',
@@ -828,8 +827,6 @@ const fr: Dict = {
   'rotate.body': 'hearmeout fonctionne uniquement en mode portrait.',
 
   'obscure.loading': 'on déterre des artistes sous le radar…',
-  'genreTop.loading': 'chargement…',
-  'genreTop.empty': 'pas encore d’artistes',
   'generic.loadError': 'impossible de charger',
 
   'toast.ratingUpdated': 'modifications enregistrées',

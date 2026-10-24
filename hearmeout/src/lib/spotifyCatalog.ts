@@ -97,21 +97,6 @@ async function spotifyGet(path: string, params: Record<string, string>) {
   return res.json();
 }
 
-// Genre bucket -> a plain-text keyword that actually returns on-genre
-// results from Spotify search (some canonical genre names, like "hip hop"
-// with a space or "rap", return noise — these are the ones that tested
-// clean against the live API).
-export const GENRE_SEARCH_KEYWORD: Record<string, string> = {
-  Rock: 'rock',
-  'Hip-Hop': 'hiphop',
-  Electronic: 'electronic',
-  'R&B': 'r&b',
-  Pop: 'pop',
-  Latin: 'latin',
-};
-
-export type CatalogArtist = { id: string; name: string; photo: string | null };
-
 type SpotifyAlbumSearchItem = {
   id: string;
   name: string;
@@ -120,25 +105,6 @@ type SpotifyAlbumSearchItem = {
   external_urls: { spotify: string };
   release_date?: string;
 };
-
-// `market` biases/filters results toward what's actually available in that
-// country on Spotify.
-function isValidMarket(market?: string | null): market is string {
-  return !!market && /^[A-Z]{2}$/.test(market);
-}
-
-// Real top artists per genre bucket, via the genre: search field filter.
-export async function fetchGenreTopArtists(genreBucket: string, limit = 8, market?: string | null): Promise<CatalogArtist[]> {
-  const keyword = GENRE_SEARCH_KEYWORD[genreBucket] ?? genreBucket.toLowerCase();
-  const params: Record<string, string> = { q: `genre:${keyword}`, type: 'artist', limit: String(limit) };
-  if (isValidMarket(market)) params.market = market;
-  const data = await spotifyGet('/search', params);
-  return (data.artists?.items || []).map((a: { id: string; name: string; images: { url: string }[] }) => ({
-    id: a.id,
-    name: a.name,
-    photo: a.images?.[0]?.url ?? null,
-  }));
-}
 
 // White/brown noise, sleep, relaxation, study and similar "functional"
 // audio: not music anyone rates.
@@ -392,15 +358,5 @@ export async function searchSpotifyArtistPhotoExact(name: string): Promise<{ fou
   const want = name.trim().toLowerCase();
   const hit = (data.artists?.items || []).find((a: { name: string }) => a.name.toLowerCase() === want) as { images?: { url: string }[] } | undefined;
   return { found: !!hit, photo: hit?.images?.[0]?.url ?? null };
-}
-
-// One page (10, development mode's cap) of a genre's top artists or of its
-// lesser-known albums, for the endless shelves on Discover.
-export async function genreArtistsPage(genreBucket: string, offset: number, market?: string | null): Promise<CatalogArtist[]> {
-  const keyword = GENRE_SEARCH_KEYWORD[genreBucket] ?? genreBucket.toLowerCase();
-  const params: Record<string, string> = { q: `genre:${keyword}`, type: 'artist', limit: '10', offset: String(offset) };
-  if (isValidMarket(market)) params.market = market;
-  const data = await spotifyGet('/search', params);
-  return (data.artists?.items || []).map((a: { id: string; name: string; images: { url: string }[] }) => ({ id: a.id, name: a.name, photo: a.images?.[0]?.url ?? null }));
 }
 

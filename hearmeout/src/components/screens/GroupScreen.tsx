@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Podium } from '../ui/Podium';
+import { LeaderboardTile, PairTile, Podium } from '../ui/Podium';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import { invitePath } from '@/lib/pendingInvite';
@@ -10,7 +10,7 @@ import { userAvatarStyle, formatRelative } from '@/lib/format';
 import { toLocale, pluralForKey } from '@/lib/i18n';
 import { CoverArt } from '../ui/CoverArt';
 import { useCachedJson } from '@/lib/cachedJson';
-import { Phrase, TintBox } from '../ui/Visual';
+import { TintBox } from '../ui/Visual';
 import { blurStyle } from '@/lib/imageColor';
 import { sinceLabel } from './GroupsScreen';
 
@@ -102,6 +102,13 @@ export function GroupScreen({ device: _device }: { device: Device }) {
   // The page's top card over its best album's cover, blurred.
   const heroAlbum = heroCovers[0] ? albumMeta(heroCovers[0].albumId) : undefined;
   const heroCover = heroAlbum ? spotifyCovers[heroAlbum.id] || heroAlbum.cover : null;
+  const coverOf = (id: string | undefined, fallback?: string | null) => {
+    const a = id ? albumMeta(id) : undefined;
+    return (a ? spotifyCovers[a.id] || a.cover : null) || fallback || null;
+  };
+  const leadCandidate = [...detail.vote.candidates].sort((x, y) => y.count - x.count)[0];
+  const leadCover = coverOf(leadCandidate?.albumId);
+  const actCover = coverOf(detail.activity[0]?.albumId, detail.activity[0]?.cover);
 
   return (
     <>
@@ -139,20 +146,17 @@ export function GroupScreen({ device: _device }: { device: Device }) {
             <small>{t('groups.heroTopAlbums')}</small>
           </div>
         )}
-      </div>
-
-      {/* The group's numbers as one phrase. */}
-      <div style={{ margin: '14px 0 4px' }}>
-        <Phrase parts={[
-          [`${Math.round(totalHours)} ${t('unit.h')}`, t(period === 'week' ? 'groups.listenedWeek' : 'groups.listenedMonth')],
-          [totalRatingsThisMonth, t('groups.ratingsThisMonth')],
-          [groupAvgScore ? `★ ${fmt1(groupAvgScore)}` : '–', t('groups.figAvg')],
-        ]} />
+        {/* The group's numbers as one strip across the hero. */}
+        <div className="st15 gst19">
+          <div><b>{Math.round(totalHours)}<small className="u">{t('unit.h')}</small></b><small>{t(period === 'week' ? 'groups.listenedWeek' : 'groups.listenedMonth')}</small></div>
+          <div><b>{totalRatingsThisMonth}</b><small>{t('groups.ratingsThisMonth')}</small></div>
+          <div><b>{groupAvgScore ? `★ ${fmt1(groupAvgScore)}` : '–'}</b><small>{t('groups.figAvg')}</small></div>
+        </div>
       </div>
 
       <div className="bento b3">
         {/* Who listened most: the top three on a podium, everyone under it. */}
-        <div className="tile t-c1 s2">
+        <LeaderboardTile className="s2" people={detail.leaderboard.slice(0, 3).map((r) => r.user)}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
             <h2 style={{ margin: 0 }}>{t('groups.leaderboard')}</h2>
             <div className="chips" style={{ margin: 0 }} role="group" aria-label={t('recap.periodLabel')}>
@@ -185,10 +189,11 @@ export function GroupScreen({ device: _device }: { device: Device }) {
               );
             })}
           </div>
-        </div>
+        </LeaderboardTile>
 
-        {/* Group taste: the average match, the closest and the furthest pair. */}
-        <div className="tile t-c3 tst13">
+        {/* Group taste: the average match, the closest and the furthest pair,
+            over the colours of the closest two. */}
+        <PairTile className="tst13" a={detail.taste?.closest?.a ?? null} b={detail.taste?.closest?.b ?? null}>
           <h2>{t('groups.tasteTitle')}</h2>
           <span className="big13">{detail.taste?.avgMatch != null ? `${detail.taste.avgMatch}%` : '–'}</span>
           <p className="muted" style={{ fontWeight: 700 }}>{t('groups.tasteAvg')}</p>
@@ -207,9 +212,10 @@ export function GroupScreen({ device: _device }: { device: Device }) {
               </div>
             );
           })}
-        </div>
+        </PairTile>
 
-        <div className="tile t-ink glow s3">
+        {/* The vote over the blurred cover of the album that leads it. */}
+        <div className={`tile s3 ${leadCover ? 'bh15' : 't-ink glow'}`} style={blurStyle(leadCover)}>
           <span className="pill">{t('groups.voteOpen')}</span>
           <h2 style={{ margin: '14px 0 4px' }}>{t('groups.voteForMonth', { month: voteMonth.toLocaleDateString(toLocale(language), { month: 'long' }) })}</h2>
           <p className="muted" style={{ fontWeight: 600, marginBottom: 16 }}>
@@ -237,8 +243,8 @@ export function GroupScreen({ device: _device }: { device: Device }) {
           ) : <p className="muted" style={{ fontWeight: 600 }}>{t('groups.noCandidates')}</p>}
         </div>
 
-        {/* Latest ratings as covers you swipe through. */}
-        <div className="tile t-c4 s3">
+        {/* Latest ratings as covers you swipe through, over the latest one. */}
+        <div className={`tile s3 ${actCover ? 'bh15' : 't-c4'}`} style={blurStyle(actCover)}>
           <h2>{t('groups.activity')}</h2>
           {detail.activity.length ? (
             <div className="hrow act13">
