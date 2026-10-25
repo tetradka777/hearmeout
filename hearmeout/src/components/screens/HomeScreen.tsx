@@ -406,17 +406,36 @@ function FriendsLovedSection() {
   const list = (data || []).filter((r) => !rated.has(r.albumId));
   const known = useAlbums(list.map((x) => x.albumId));
   if (!known.length) return null;
+  // One card, not another shelf of covers (the trending shelf is right
+  // under it): the top five as rows over the first one's blurred cover,
+  // who loved each as faces, their average big.
+  const top = known.slice(0, 5);
+  const first = top[0].album;
+  const bg = spotifyCovers[first.id] || first.cover;
   return (
-    <Shelf title={t('home.friendsLovedTitle')}>
-      {known.map(({ id, album }) => {
-        const x = list.find((y) => y.albumId === id)!;
-        const names = x.fans.map((f) => f.name);
-        return (
-          <AlbumShelfCard key={id} cover={spotifyCovers[album.id] || album.cover} title={album.title} artist={album.artist} artistId={album.artistId}
-            badge={`★ ${fmt1(x.avg)}`} meta={names.length > 1 ? t('home.lovedByMany', { name: names[0], n: names.length - 1 }) : t('home.lovedBy', { name: names[0] ?? '' })} onClick={() => openAlbum(album.id)} />
-        );
-      })}
-    </Shelf>
+    <section className="sh14 fp19">
+      <div className="hd"><h2>{t('home.friendsLovedTitle')}</h2></div>
+      <div className="tile bh15" style={blurStyle(bg ? sizedImage(bg, 300) ?? bg : null)}>
+        {top.map(({ id, album }) => {
+          const x = list.find((y) => y.albumId === id)!;
+          const names = x.fans.map((f) => f.name);
+          return (
+            <button key={id} className="r" onClick={() => openAlbum(album.id)}>
+              <CoverArt url={spotifyCovers[album.id] || album.cover} fallbackLetter={album.artist[0] || '?'} className="cov" px={120} style={{ width: 60, height: 60, flex: 'none' }} />
+              <span className="g">
+                <b>{shortTitle(album.title)}</b>
+                <small><ArtistName name={album.artist} id={album.artistId} size={14} /></small>
+                <small className="who">{names.length > 1 ? t('home.lovedByMany', { name: names[0], n: names.length - 1 }) : t('home.lovedBy', { name: names[0] ?? '' })}</small>
+              </span>
+              <span className="fans" aria-hidden="true">
+                {x.fans.slice(0, 3).map((f) => <span key={f.id} className="dot" style={{ ...userAvatarStyle(f), backgroundSize: 'cover' }}>{!f.avatarUrl && f.name[0]?.toUpperCase()}</span>)}
+              </span>
+              <span className="sc">★ {fmt1(x.avg)}</span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 

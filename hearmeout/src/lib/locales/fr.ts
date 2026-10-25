@@ -1348,7 +1348,7 @@ const fr: Dict = {
   'track.saveFailed': 'impossible d\'enregistrer la note',
   'track.clear': 'effacer',
   'track.best': 'meilleur morceau',
-  'home.friendsLovedTitle': 'tes amis ont adoré, pas toi encore',
+  'home.friendsLovedTitle': 'choix de tes amis',
   'home.lovedBy': '{name} a adoré',
   'home.lovedByMany': '{name} et {n} autres',
   'recap.year': 'année',

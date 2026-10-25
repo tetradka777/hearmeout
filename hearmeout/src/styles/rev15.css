@@ -677,3 +677,21 @@
 .rd .rq19 .acts{justify-content:center}
 .rd .rq19 .end{display:flex;flex-direction:column;align-items:center;gap:12px;padding:20px 0}
 .rd .rq19 .end .ic{width:40px;height:40px;color:var(--acct)}
+
+/* Home: picks from friends — one card of rows over a blurred cover. */
+.rd .fp19 .tile{display:flex;flex-direction:column;gap:2px;padding:10px 12px}
+.rd .fp19 .r{display:flex;align-items:center;gap:12px;width:100%;padding:8px 6px;border-radius:14px;color:#fff;text-align:left}
+.rd .fp19 .r+.r{border-top:1px solid rgba(255,255,255,.12);border-radius:0}
+.rd .fp19 .r .cov{border-radius:10px}
+.rd .fp19 .g{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.rd .fp19 .g b{font:800 16px/1.2 var(--font-display);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .fp19 .g small{color:rgba(255,255,255,.75);font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .fp19 .g small .arl,.rd .fp19 .g small .arn{color:inherit}
+.rd .fp19 .g .who{color:rgba(255,255,255,.6);font-size:12px}
+.rd .fp19 .fans{display:flex;flex:none}
+.rd .fp19 .fans .dot{width:28px;height:28px;font-size:12px;background-color:#2a2622;color:#FFF7EA;box-shadow:0 0 0 2px rgba(255,255,255,.8)}
+.rd .fp19 .fans .dot+.dot{margin-left:-9px}
+.rd .fp19 .sc{flex:none;padding:5px 10px;border-radius:99px;background:var(--acc);color:var(--onacc);font:800 14px/1 var(--font-display)}
+@media (max-width:420px){.rd .fp19 .fans{display:none}}
+.rd .fp19 .tile>button.r{display:flex;flex-direction:row!important;align-items:center!important;justify-content:flex-start}
+.rd .fp19 .tile>button.r>.sc{align-self:center;width:auto}
