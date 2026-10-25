@@ -25,8 +25,6 @@ import { usePaged } from '@/lib/usePaged';
 // lesser-known artists, genre tops, full catalog+sort, reviews worth
 // reading); a query shows album/artist/people/open-library results.
 
-const GENRES = ['all', 'Rock', 'Hip-Hop', 'Electronic', 'R&B', 'Pop', 'Latin'];
-type Filter = 'all' | 'albums' | 'artists' | 'people';
 
 type PersonResult = { id: string; name: string; handle: string; avatarUrl: string | null; score?: number; sharedAlbums?: number };
 
@@ -199,23 +197,18 @@ function TopRatedShelf({ genre }: { genre: string }) {
 }
 
 export function DiscoverScreen(_props: { device: Device }) {
-  const { t, me, state, albums, albumRatings, setSearchQuery, setActiveGenre } = useApp();
-  const [filter, setFilter] = useState<Filter>('all');
+  const { t, me, state, albums, albumRatings, setSearchQuery } = useApp();
   const [people, setPeople] = useState<PersonResult[] | null>(null);
   const [mbFound, setMbFound] = useState<boolean | null>(null);
   const [discoverPeople, setDiscoverPeople] = useState<DiscoverMatchPerson[] | null>(() => peekJson<{ people: DiscoverMatchPerson[] }>('/api/match/discover')?.people ?? null);
 
   const query = state.searchQuery;
   const q = query.trim().toLowerCase();
-  const genreFilter = state.activeGenre;
   const showLive = q.length >= 2;
 
   useEffect(() => {
     setMbFound(null);
-    // People are only part of the "all" and "people" segments (redesign
-    // fix B25) — this used to check the opposite, so the People chip never
-    // actually searched and stayed on "Searching…" forever.
-    if (!showLive || (filter !== 'all' && filter !== 'people')) { setPeople(null); return; }
+    if (!showLive) { setPeople(null); return; }
     let cancelled = false;
     const timer = setTimeout(() => {
       fetch(`/api/users/search?q=${encodeURIComponent(query.trim())}`)
@@ -223,7 +216,7 @@ export function DiscoverScreen(_props: { device: Device }) {
         .then((d) => { if (!cancelled) setPeople(d); });
     }, 220);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [query, showLive, filter]);
+  }, [query, showLive]);
 
   useEffect(() => {
     if (!me || showLive) return;
@@ -234,49 +227,32 @@ export function DiscoverScreen(_props: { device: Device }) {
 
   const albumResults = useMemo(() => {
     if (!q) return [];
-    return albums.filter((a) => (a.title.toLowerCase().includes(q) || a.artist.toLowerCase().includes(q)) && (genreFilter === 'all' || a.genreBucket === genreFilter));
-  }, [albums, q, genreFilter]);
+    return albums.filter((a) => a.title.toLowerCase().includes(q) || a.artist.toLowerCase().includes(q));
+  }, [albums, q]);
 
   const artistResults = useMemo(() => {
     if (!q) return [];
-    const byName = new Map<string, { name: string; sum: number; count: number; genres: Set<string> }>();
+    const byName = new Map<string, { name: string; sum: number; count: number }>();
     for (const a of albums) {
       const key = a.artist.toLowerCase();
-      const entry = byName.get(key) || { name: a.artist, sum: 0, count: 0, genres: new Set<string>() };
-      entry.genres.add(a.genreBucket);
+      const entry = byName.get(key) || { name: a.artist, sum: 0, count: 0 };
       const r = albumRatings[a.id];
       if (r) { entry.sum += r.avg; entry.count += 1; }
       byName.set(key, entry);
     }
     return [...byName.values()]
-      .filter((e) => e.name.toLowerCase().includes(q) && (genreFilter === 'all' || e.genres.has(genreFilter)))
+      .filter((e) => e.name.toLowerCase().includes(q))
       .map((e) => ({ name: e.name, avg: e.count ? e.sum / e.count : null }))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [albums, albumRatings, q, genreFilter]);
+  }, [albums, albumRatings, q]);
 
   if (!me) return null;
 
-  const FILTERS: { key: Filter; label: string }[] = [
-    { key: 'all', label: t('discover.filterAll') },
-    { key: 'albums', label: t('discover.filterAlbums') },
-    { key: 'artists', label: t('discover.filterArtists') },
-    { key: 'people', label: t('discover.filterPeople') },
-  ];
-
-
-  const albumsContribute = filter === 'all' || filter === 'albums';
-  const artistsContribute = filter === 'all' || filter === 'artists';
-  const peopleContribute = filter === 'all' || filter === 'people';
-  const mbContributes = filter !== 'people' && showLive;
-
-  const peopleLoading = peopleContribute && people === null;
-  const mbLoading = mbContributes && mbFound === null;
-  const stillLoading = peopleLoading || mbLoading;
-
-  const hasAlbums = albumsContribute && albumResults.length > 0;
-  const hasArtists = artistsContribute && artistResults.length > 0;
-  const hasPeople = peopleContribute && !!people && people.length > 0;
-  const hasMb = mbContributes && mbFound === true;
+  const stillLoading = people === null || mbFound === null;
+  const hasAlbums = albumResults.length > 0;
+  const hasArtists = artistResults.length > 0;
+  const hasPeople = !!people && people.length > 0;
+  const hasMb = mbFound === true;
   const anyResults = hasAlbums || hasArtists || hasPeople || hasMb;
   const showNothingFound = showLive && !stillLoading && !anyResults;
 
@@ -285,18 +261,6 @@ export function DiscoverScreen(_props: { device: Device }) {
       {/* Search first (after Superfan); the page title stays for screen readers. */}
       <h1 className="sr">{t('discover.title')}</h1>
       <input className="field srch14" type="search" placeholder={t('discover.searchPlaceholder')} aria-label={t('discover.searchAria')} value={query} onChange={(e) => setSearchQuery(e.target.value)} />
-      <div className="chips" role="group" aria-label={t('discover.whatToShow')}>
-        {FILTERS.map((f) => (
-          <button key={f.key} className={`chip ${filter === f.key ? 'on' : ''}`} onClick={() => setFilter(f.key)}>{f.label}</button>
-        ))}
-      </div>
-      <div className="chips" role="group" aria-label={t('discover.genreAria')}>
-        {GENRES.map((g) => (
-          <button key={g} className={`chip ${g === genreFilter ? 'on' : ''}`} onClick={() => setActiveGenre(g)}>
-            {g === 'all' ? t('catalog.genreAll') : g}
-          </button>
-        ))}
-      </div>
 
       {showLive ? (
         <>
@@ -312,13 +276,13 @@ export function DiscoverScreen(_props: { device: Device }) {
               <div className="tile t-soft2">{artistResults.map((a) => <ArtistChip key={a.name} name={a.name} avg={a.avg} />)}</div>
             </>
           )}
-          {peopleContribute && hasPeople && (
+          {hasPeople && (
             <>
               <h2 style={{ marginTop: 26 }}>{t('discover.people')}</h2>
               <div className="tile">{(people as PersonResult[]).map((p) => <PersonRow key={p.id} person={p} />)}</div>
             </>
           )}
-          {mbContributes && mbFound !== false && (
+          {mbFound !== false && (
             <>
               <h2 style={{ marginTop: 26 }}>{t('discover.openLibraryHeading')}</h2>
               <LiveLibrarySearch key={query.trim()} query={query.trim()} onResult={setMbFound} />
@@ -333,33 +297,24 @@ export function DiscoverScreen(_props: { device: Device }) {
             </div>
           )}
         </>
-      ) : filter === 'people' ? (
-        <>
-          <h2>{t('discover.peopleYouMayKnow')}</h2>
-          <div className="tile">
-            {discoverPeople === null ? <p className="muted" style={{ fontWeight: 600 }}>{t('discover.searching')}</p>
-              : discoverPeople.length ? discoverPeople.map((p) => <PersonRow key={p.id} person={p} />)
-              : <p className="muted" style={{ fontWeight: 600 }}>{t('match.allFriendsMatched')}</p>}
-          </div>
-        </>
       ) : (
         <>
-          {/* Shelves of big cards (after Superfan's search page). */}
-          {filter !== 'artists' && <PopularNowSection genre={genreFilter} />}
-
-          {filter !== 'albums' && <FanClubsForYou />}
-          {filter !== 'artists' && <FanClubReleases />}
-          {filter !== 'artists' && <ComingSoon />}
-
-          {filter !== 'albums' && <ConcertsFeed />}
-
-          {filter !== 'artists' && <TopRatedShelf genre={genreFilter} />}
-
-          {filter !== 'artists' && <SiteReviewsShelf />}
-
-
-          {filter !== 'albums' && <RisingArtists />}
-
+          {/* Shelves of big cards. */}
+          <PopularNowSection genre="all" />
+          <FanClubsForYou />
+          <FanClubReleases />
+          <ComingSoon />
+          <ConcertsFeed />
+          <TopRatedShelf genre="all" />
+          <SiteReviewsShelf />
+          <RisingArtists />
+          {/* People you may know (it was behind the "people" chip). */}
+          {discoverPeople && discoverPeople.length > 0 && (
+            <section className="sh14">
+              <div className="hd"><h2>{t('discover.peopleYouMayKnow')}</h2></div>
+              <div className="tile">{discoverPeople.slice(0, 8).map((p) => <PersonRow key={p.id} person={p} />)}</div>
+            </section>
+          )}
         </>
       )}
     </>
