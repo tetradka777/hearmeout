@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { useApp } from '@/lib/AppContext';
 import { formatRelative, userAvatarStyle } from '@/lib/format';
 import type { AppNotification, RecapPeriod } from '@/lib/types';
-import type { TranslationKey } from '@/lib/i18n';
+import { quoted, type TranslationKey } from '@/lib/i18n';
 import { CloseIcon } from '../ui/Icons';
 import { CoverArt } from '../ui/CoverArt';
 
@@ -34,7 +34,7 @@ export function NotificationsModal({ onClose }: { onClose: () => void }) {
 
   const open = (n: AppNotification) => {
     onClose();
-    if (n.kind === 'release') {
+    if (n.kind === 'release' || n.kind === 'album') {
       if (n.payload.albumId) openAlbum(n.payload.albumId);
     } else if (!n.actor) {
       return;
@@ -61,11 +61,13 @@ export function NotificationsModal({ onClose }: { onClose: () => void }) {
         </div>
         {notifications.items.length ? notifications.items.map((n) => (
           <button className="row" key={n.id} onClick={() => open(n)} style={{ width: '100%', textAlign: 'left', fontWeight: n.read ? 600 : 800 }}>
-            {n.kind === 'release' || !n.actor
+            {n.kind === 'release' || n.kind === 'album' || !n.actor
               ? <CoverArt url={n.payload.cover ?? undefined} fallbackLetter={(n.payload.artist || '?')[0]} className="cov" style={{ width: 34, height: 34, flex: 'none' }} />
               : <span className="avt" style={{ ...userAvatarStyle(n.actor), width: 34, height: 34, fontSize: 14 }}>{n.actor.name[0]?.toUpperCase()}</span>}
             <span className="g">
-              <b>{n.kind === 'release' || !n.actor
+              <b>{n.kind === 'album' && n.actor
+                ? t('notify.albumFrom', { name: n.actor.name, title: n.payload.title ?? '' })
+                : n.kind === 'release' || !n.actor
                 ? t('notify.newRelease', { artist: n.payload.artist ?? '', title: n.payload.title ?? '' })
                 : n.kind === 'comment'
                   ? t('notify.comment', { name: n.actor.name, text: n.payload.preview ?? '' })
@@ -74,9 +76,10 @@ export function NotificationsModal({ onClose }: { onClose: () => void }) {
                 : n.kind === 'hi'
                   ? t('notify.hiFrom', { name: n.actor.name })
                   : t('notify.recapFrom', { name: n.actor.name, period: t(PERIOD_KEY[n.payload.period ?? 'week']).toLowerCase() })}</b>
+              {n.kind === 'album' && n.payload.note && <small className="nt19">{quoted(language, n.payload.note)}</small>}
               <small className="muted" style={{ fontWeight: 600 }}>{formatRelative(n.createdAt, language)}</small>
             </span>
-            {(n.kind === 'recap' || n.kind === 'release' || n.kind === 'comment' || n.kind === 'reaction') && <span className="tag">{t('notify.open')}</span>}
+            {(n.kind === 'recap' || n.kind === 'release' || n.kind === 'album' || n.kind === 'comment' || n.kind === 'reaction') && <span className="tag">{t('notify.open')}</span>}
           </button>
         )) : <p className="muted" style={{ fontWeight: 600 }}>{t('notify.empty')}</p>}
       </div>

@@ -629,3 +629,28 @@
 .rd .stk19 b{font:800 16px/1 var(--font-display)}
 .rd .stk19 span{opacity:.75}
 .rd .stk19.ok{background:color-mix(in srgb,#9BE15D 22%,transparent)}
+
+/* Share album window. */
+.rd .sha19{display:flex;flex-direction:column;gap:12px}
+.rd .sha19 .hd{display:flex;align-items:center;gap:12px}
+.rd .sha19 .hd .g{flex:1;min-width:0}
+.rd .sha19 .hd h2{margin:0}
+.rd .sha19 .hd small{display:block;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .sha19 .k{margin:4px 0 0;font-size:12px;font-weight:800;letter-spacing:.1em;opacity:.7}
+.rd .sha19 .frs{display:flex;flex-wrap:wrap;gap:10px;max-height:40vh;overflow:auto;padding:2px}
+.rd .sha19 .frs button{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;width:68px;color:inherit;padding:6px 2px;border-radius:14px}
+.rd .sha19 .frs button.on{background:color-mix(in srgb,var(--acc) 18%,transparent);outline:2px solid var(--acc);outline-offset:-2px}
+.rd .sha19 .frs .dot{width:44px;height:44px;font-size:17px}
+.rd .sha19 .frs small{font-size:11px;font-weight:700;max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .sha19 .frs .ic{position:absolute;top:2px;right:6px;width:16px;height:16px;color:var(--acc)}
+.rd .nt19{display:block;font-weight:600;font-style:italic;opacity:.85;margin:2px 0}
+/* Phone tracklist with track scores: tighter, no duration, so the row
+   (play, bookmark, score) fits the card. */
+.rd .trw19 .rowlink .g{min-width:0}
+@media (max-width:480px){
+  .rd .trw19 .row.trk,.rd .trw19 .rowlink{gap:8px}
+  .rd .trw19 .rowlink>small.muted{display:none}
+  .rd .trw19 .ib{width:34px;height:34px}
+  .rd .trw19 .ts19{min-width:38px;height:34px;margin-left:0;padding:0 6px}
+  .rd .tse19{padding-left:28px}
+}
