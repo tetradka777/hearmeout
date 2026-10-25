@@ -680,7 +680,7 @@
 
 /* Home: picks from friends — one wide card, one album at a time; swipe the
    cover up/down (or the arrows / dots on the right) to change it. */
-.rd .fp20 .crd{position:relative;padding:18px 52px 18px 18px;min-height:236px;display:flex;align-items:stretch}
+.rd .fp20 .crd{position:relative;padding:18px 34px 18px 18px;min-height:236px;display:flex;align-items:stretch}
 .rd .fp20 .in{flex:1;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center}
 .rd .fp20 .in.up{animation:fp20up .32s ease-out}
 .rd .fp20 .in.down{animation:fp20dn .32s ease-out}
@@ -698,14 +698,14 @@
 .rd .fp20 .fans .dot{width:34px;height:34px;font-size:14px;background-color:#2a2622;color:#FFF7EA;box-shadow:0 0 0 2px rgba(255,255,255,.85)}
 .rd .fp20 .fans .dot+.dot{margin-left:-10px}
 .rd .fp20 .who{color:rgba(255,255,255,.8);font-weight:700;font-size:13px}
-.rd .fp20 .pnv{position:absolute;top:0;bottom:0;right:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
-.rd .fp20 .pnv .ar{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.16);color:#fff}
-.rd .fp20 .pnv .ar .ic{width:16px;height:16px}
-.rd .fp20 .pnv .ar.up .ic{transform:rotate(-90deg)}
-.rd .fp20 .pnv .ar.dn .ic{transform:rotate(90deg)}
+.rd .fp20 .pnv{position:absolute;top:0;bottom:0;right:12px;width:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
 .rd .fp20 .dots{display:flex;flex-direction:column;gap:5px}
 .rd .fp20 .dots button{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.35);padding:0}
 .rd .fp20 .dots button.on{background:#fff;height:16px;border-radius:99px}
 @media (prefers-reduced-motion:reduce){.rd .fp20 .in.up,.rd .fp20 .in.down{animation:none}}
 @media (max-width:420px){.rd .fp20 .r{max-width:110px}.rd .fp20 .sc{font-size:20px;padding:7px 11px}}
-.rd .fp20 .pnv{width:30px}.rd .fp20 .pnv .ar{flex:none;padding:0;min-width:0}
+/* While dragged the card follows the finger; let go, it settles back. */
+.rd .fp20 .in{transition:transform .22s ease-out,opacity .22s ease-out}
+.rd .fp20 .in.drg{transition:none;animation:none}
+.rd .fp20 .cv.sw{cursor:grab;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.rd .fp20 .cv.sw .cov{pointer-events:none}
