@@ -17,6 +17,9 @@ import type { QueueTrack } from '@/lib/PlayerContext';
 import { usePlayer, prefetchQueueTrack } from '@/lib/PlayerContext';
 import { albumFriendsUrl, useAlbumJson } from '@/lib/useAlbumJson';
 import { AlbumReviews } from '../AlbumReviews';
+import { TrackScoreButton, TrackScoreEditor } from '../TrackScore';
+import { useCachedJson } from '@/lib/cachedJson';
+import type { TrackRatingsResponse } from '@/app/api/track-ratings/route';
 import { AlbumRatingDistribution } from '../AlbumRatingDistribution';
 import { AlbumTagsSummary } from '../AlbumTagsSummary';
 import { PersonCards, Phrase, TintBox } from '../ui/Visual';
@@ -83,6 +86,12 @@ export function RateScreen({ device: _device }: { device: Device }) {
   const playIds = a ? [a.id, a.spotifyId].filter(Boolean).join(',') : '';
   const myPlays = useAlbumJson<{ plays: number }>(playIds && me ? `/api/me/album-plays?ids=${encodeURIComponent(playIds)}` : null)?.plays ?? null;
 
+  // Track scores (yours, friends' averages, the best track) and which
+  // track's slider is open.
+  const trackScores = useCachedJson<TrackRatingsResponse>(state.currentAlbumId && me ? `/api/track-ratings?albumId=${encodeURIComponent(state.currentAlbumId)}` : null);
+  const [openTrack, setOpenTrack] = useState<number | null>(null);
+  useEffect(() => setOpenTrack(null), [state.currentAlbumId]);
+
   const [text, setText] = useState(state.ratingDraftText);
   useEffect(() => setText(state.ratingDraftText), [state.currentAlbumId, state.ratingDraftText]);
 
@@ -139,11 +148,14 @@ export function RateScreen({ device: _device }: { device: Device }) {
         const isRowCurrent = currentTrack?.albumId === a.id && currentTrack?.title === tr;
         const isRowPlaying = isRowCurrent && playing;
         const trackSaved = laterItems.some((li) => li.type === 'track' && li.albumId === a.id && li.trackIndex === i);
+        const ts = trackScores.data?.ready ? trackScores.data : null;
+        const n = i + 1;
         return (
-          <div className={`row trk${isRowCurrent ? ' cur' : ''}`} key={`${i}-${tr}`}>
+          <div key={`${i}-${tr}`} className="trw19">
+          <div className={`row trk${isRowCurrent ? ' cur' : ''}`}>
             <button className="rowlink" onClick={() => playQueue(trackQueue, i)} onPointerEnter={() => prefetchQueueTrack(trackQueue[i])} onFocus={() => prefetchQueueTrack(trackQueue[i])} aria-label={t('album.playPreviewOf', { title: tr })}>
               <span className="num" style={{ fontSize: 20, width: 24, opacity: 0.8 }}>{i + 1}</span>
-              <span className="g"><b>{tr}</b></span>
+              <span className="g"><b>{tr}</b>{ts?.best === n && <small className="bst19"><i className="ic ic-medal" aria-hidden="true" /> {t('track.best')}</small>}</span>
               {fmtDur(a.trackDurations?.[i]) && <small className="muted" style={{ fontWeight: 700 }}>{fmtDur(a.trackDurations?.[i])}</small>}
               <span className="ib ticn">{isRowPlaying ? <span className="eq"><b /><b /><b /></span> : <PlayIcon size={14} />}</span>
             </button>
@@ -155,6 +167,9 @@ export function RateScreen({ device: _device }: { device: Device }) {
             >
               <BookmarkIcon />
             </button>
+            {ts && <TrackScoreButton mine={ts.mine[n] ?? null} friends={ts.friends[n] ?? null} open={openTrack === n} onToggle={() => setOpenTrack(openTrack === n ? null : n)} />}
+          </div>
+          {ts && openTrack === n && <TrackScoreEditor key={`${a.id}:${n}`} albumId={a.id} trackNumber={n} title={tr} mine={ts.mine[n] ?? null} onSaved={() => trackScores.reload()} />}
           </div>
         );
       })}

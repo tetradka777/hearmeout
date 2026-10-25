@@ -9,7 +9,7 @@ import type { TranslationKey } from '@/lib/i18n';
 import { CloseIcon } from '../ui/Icons';
 import { CoverArt } from '../ui/CoverArt';
 
-const PERIOD_KEY: Record<RecapPeriod, TranslationKey> = { day: 'recap.day', week: 'recap.week', month: 'recap.month', season: 'recap.season' };
+const PERIOD_KEY: Record<RecapPeriod, TranslationKey> = { day: 'recap.day', week: 'recap.week', month: 'recap.month', season: 'recap.season', year: 'recap.year' };
 const REACTION_KEY: Record<string, TranslationKey> = { heart: 'social.rHeart', flame: 'social.rFlame', spark: 'social.rSpark', repeat: 'social.rRepeat', star: 'social.rStar' };
 
 // In-app notifications list (migration 021), opened from the avatar menu.

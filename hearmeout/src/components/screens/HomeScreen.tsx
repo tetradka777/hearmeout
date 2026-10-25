@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import type { Recommendation } from '@/app/api/recommendations/route';
 import { blurStyle, tintStyle } from '@/lib/imageColor';
 import { sizedImage } from '@/lib/imageSize';
 import { recapToneStyle } from '@/lib/recapTone';
@@ -22,6 +23,8 @@ import { cachedJson, peekJson, useCachedJson } from '@/lib/cachedJson';
 import { computeMatch } from '@/lib/matchScore';
 import { DEMO_PROFILES } from '@/lib/demoAccounts';
 import { RECAP_SEEN_EVENT, recapSeenWeek } from '@/lib/recapSeen';
+import { yearRecapOpen, yearRecapYear } from '@/lib/yearRecap';
+import { ratingStreak } from '@/lib/streak';
 import { ImportNudge } from '../ConnectionBlocks';
 import { PROFILE_TAB_EVENT } from '@/lib/uiEvents';
 import { CoverWall, usePersonColor } from '../ui/Visual';
@@ -393,6 +396,56 @@ function TrendingSection() {
   );
 }
 
+// Albums your friends loved (4.5+) that you haven't rated or played, most
+// loved first; who loved it under each.
+function FriendsLovedSection() {
+  const { t, openAlbum, spotifyCovers, myRatings } = useApp();
+  const { data } = useCachedJson<Recommendation[]>('/api/recommendations');
+  const rated = useMemo(() => new Set(myRatings.map((r) => r.albumId)), [myRatings]);
+  const list = (data || []).filter((r) => !rated.has(r.albumId));
+  const known = useAlbums(list.map((x) => x.albumId));
+  if (!known.length) return null;
+  return (
+    <Shelf title={t('home.friendsLovedTitle')}>
+      {known.map(({ id, album }) => {
+        const x = list.find((y) => y.albumId === id)!;
+        const names = x.fans.map((f) => f.name);
+        return (
+          <AlbumShelfCard key={id} cover={spotifyCovers[album.id] || album.cover} title={album.title} artist={album.artist} artistId={album.artistId}
+            badge={`★ ${fmt1(x.avg)}`} meta={names.length > 1 ? t('home.lovedByMany', { name: names[0], n: names.length - 1 }) : t('home.lovedBy', { name: names[0] ?? '' })} onClick={() => openAlbum(album.id)} />
+        );
+      })}
+    </Shelf>
+  );
+}
+
+// Your rating streak: days in a row you rated something, and a nudge when
+// today doesn't count yet.
+function StreakLine() {
+  const { t, myRatings } = useApp();
+  const { days, ratedToday } = useMemo(() => ratingStreak(myRatings.map((r) => r.createdAt), new Date().getTimezoneOffset()), [myRatings]);
+  if (days < 1) return null;
+  return (
+    <p className={`stk19${ratedToday ? ' ok' : ''}`}>
+      <i className="ic ic-flame" aria-hidden="true" />
+      <b>{t('streak.days', { n: days })}</b>
+      <span>{ratedToday ? t('streak.today') : t('streak.keep')}</span>
+    </p>
+  );
+}
+
+// December and January: the year in review, one tap from Home.
+function YearCard() {
+  const { t, openRecap } = useApp();
+  return (
+    <button className="tile yr19" onClick={() => openRecap('me', 'year')}>
+      <span className="k">{t('recap.yearKicker')}</span>
+      <b>{t('recap.yearTitle', { year: yearRecapYear() })}</b>
+      <span className="op">{t('recap.friendOpen')} →</span>
+    </button>
+  );
+}
+
 export function HomeScreen(_props: { device: Device }) {
   const { t, me, setFeed, ensureRecap, recapCache } = useApp();
   const feedUrl = `/api/feed?tz=${new Date().getTimezoneOffset()}`;
@@ -432,6 +485,8 @@ export function HomeScreen(_props: { device: Device }) {
         {!seen && <RecapCard r={r} week={week} />}
       </div>
       {seen && r && <RecapStrip r={r} week={week} />}
+      {yearRecapOpen() && <YearCard />}
+      <StreakLine />
 
       <ImportNudge />
 
@@ -444,6 +499,7 @@ export function HomeScreen(_props: { device: Device }) {
         <RateTile />
       </div>
 
+      <FriendsLovedSection />
       <TrendingSection />
     </>
   );

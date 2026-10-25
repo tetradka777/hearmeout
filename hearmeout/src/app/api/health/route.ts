@@ -4,6 +4,8 @@ import { maybeRunAutoSync } from '@/lib/autoSync';
 import { maybeSendWeeklyRecaps } from '@/lib/weeklyRecapPush';
 import { maybeNotifyReleases } from '@/lib/releaseNotify';
 import { maybeUpdateRising } from '@/lib/risingArtists';
+import { maybeSendReleaseReminders } from '@/lib/releaseCalendar';
+import { maybeSendStreakReminders } from '@/lib/streakPush';
 
 // Keep-alive target (cron-job.org / UptimeRobot / the GitHub Actions ping):
 // any incoming request keeps Render's free instance awake. Once an hour it
@@ -26,6 +28,12 @@ export async function GET() {
   maybeSendWeeklyRecaps();
   // New releases by people's artists, every 3 hours (lib/releaseNotify).
   maybeNotifyReleases();
+  // Lesser-known artists: today's Deezer fan counts (lib/risingArtists).
+  maybeUpdateRising();
+  // "Remind me on release day" (lib/releaseCalendar), hourly.
+  maybeSendReleaseReminders();
+  // "Keep your rating streak" at 19:00 local (lib/streakPush).
+  maybeSendStreakReminders();
   if (Date.now() - lastRun > EVERY_MS) {
     lastRun = Date.now();
     try {

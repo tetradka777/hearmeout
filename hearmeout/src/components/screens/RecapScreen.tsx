@@ -15,6 +15,7 @@ import { toLocale, type Language, type TranslationKey } from '@/lib/i18n';
 import { recapLine } from '@/lib/recapLine';
 import { completedWeekRange, isoWeekNumber } from '@/lib/weeks';
 import { markRecapSeen } from '@/lib/recapSeen';
+import { yearRecapOpen, yearRecapYear } from '@/lib/yearRecap';
 import { parseSeasonKey } from '@/lib/seasons';
 import { drawStoryCard } from '@/lib/posterCanvas';
 import { CoverArt } from '../ui/CoverArt';
@@ -29,7 +30,7 @@ const RECAP_AWARD_ICON: Record<string, string> = {
   awardStreak: 'flame', awardScout: 'target', awardStuck: 'repeat', awardTimeTraveler: 'clock',
 };
 
-const PERIOD_KEY: Record<RecapPeriod, TranslationKey> = { day: 'recap.day', week: 'recap.week', month: 'recap.month', season: 'recap.season' };
+const PERIOD_KEY: Record<RecapPeriod, TranslationKey> = { day: 'recap.day', week: 'recap.week', month: 'recap.month', season: 'recap.season', year: 'recap.year' };
 
 
 function recapKey(targetId: string, period: RecapPeriod, seasonKey: string | null, offset: number): string {
@@ -46,6 +47,7 @@ function rangeLabel(r: RecapData | undefined, period: RecapPeriod, seasonKey: st
   const start = new Date(r.range.start);
   if (period === 'day') return start.toLocaleDateString(loc, { day: 'numeric', month: 'long', timeZone: 'UTC' });
   if (period === 'month') return start.toLocaleDateString(loc, { month: 'long', year: 'numeric', timeZone: 'UTC' });
+  if (period === 'year') return String(start.getUTCFullYear());
   const last = new Date((r.range.end ? new Date(r.range.end).getTime() : Date.now()) - 86400000);
   const fmt = (d: Date) => d.toLocaleDateString(loc, { day: 'numeric', month: 'short', timeZone: 'UTC' });
   return `${fmt(start)} – ${fmt(last)}`;
@@ -59,7 +61,7 @@ function rangeLabel(r: RecapData | undefined, period: RecapPeriod, seasonKey: st
 export function RecapScreen(_props: { device: Device }) {
   const {
     state, t, language, me, albums, liveAlbums, ensureRecap, recapCache, recapLocked, closeRecap,
-    setRecapSeasonKey, setRecapOffset, openAlbum, openSpotifyArtist,
+    setRecapPeriod, setRecapSeasonKey, setRecapOffset, openAlbum, openSpotifyArtist,
     viewFriend, openRecap, showScreen, showToast, shareRecapWithFriends,
   } = useApp();
   const { currentTrack, playing, quiet, toggle, playQueue, close } = usePlayer();
@@ -142,7 +144,7 @@ export function RecapScreen(_props: { device: Device }) {
   const weekNumber = (o: number) => isoWeekNumber(completedWeekRange(o, me.weekStart).start);
   const range = rangeLabel(r, period, seasonKey, language, t);
   const line = r ? recapLine(r, language, t) : null;
-  const pill = period === 'week' ? t('recap.weekPill', { n: weekNumber(offset) }) : t(PERIOD_KEY[period]).toLowerCase();
+  const pill = period === 'week' ? t('recap.weekPill', { n: weekNumber(offset) }) : period === 'year' ? t('recap.yearPill', { year: yearRecapYear() }) : t(PERIOD_KEY[period]).toLowerCase();
   const hours = r ? Math.round(r.minutes / 60) : 0;
 
   const storyNumbers = r ? [
@@ -183,11 +185,13 @@ export function RecapScreen(_props: { device: Device }) {
   // recap (same period and window) — migration 021.
   const sendToFriends = () => { shareRecapWithFriends(period, offset); };
 
-  // Weekly recaps only: last week and the week before.
+  // Last week and the week before; in December and January also the year.
+  const week = (o: number) => { if (period !== 'week') setRecapPeriod('week'); setRecapOffset(o); };
   const subChips = (
     <div className="chips" role="group" aria-label={t('recap.week')} style={{ marginTop: 8 }}>
-      <button className={`chip${offset === 0 ? ' on' : ''}`} onClick={() => setRecapOffset(0)}>{t('recap.lastWeek')}</button>
-      <button className={`chip${offset === -1 ? ' on' : ''}`} onClick={() => setRecapOffset(-1)}>{t('recap.weekBeforeLast')}</button>
+      <button className={`chip${period === 'week' && offset === 0 ? ' on' : ''}`} onClick={() => week(0)}>{t('recap.lastWeek')}</button>
+      <button className={`chip${period === 'week' && offset === -1 ? ' on' : ''}`} onClick={() => week(-1)}>{t('recap.weekBeforeLast')}</button>
+      {yearRecapOpen() && <button className={`chip${period === 'year' ? ' on' : ''}`} onClick={() => setRecapPeriod('year')}>{t('recap.yearChip', { year: yearRecapYear() })}</button>}
     </div>
   );
 

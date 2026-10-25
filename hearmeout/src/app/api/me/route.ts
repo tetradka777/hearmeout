@@ -20,7 +20,7 @@ export async function GET() {
   const admin = supabaseAdmin();
   // Everything at once: the play count, invite code and notification
   // switches used to be read one after another after this.
-  const [profile, { data: prefs }, { data: conns }, { data: friendRows }, isOpenProfile, regionAuto, { count: playsCount }, { data: codeRow }, { data: notifyRow }] = await Promise.all([
+  const [profile, { data: prefs }, { data: conns }, { data: friendRows }, isOpenProfile, regionAuto, { count: playsCount }, { data: codeRow }, { data: notifyRow }, { data: pinnedRow }] = await Promise.all([
     getUserProfile(admin, userId, userId),
     admin.from('users').select('language, region, auth_user_id, banner_url, design, mode, palette, ticker_enabled, motion_enabled, time_format, week_start, ratings_visible, share_live, public_reviews, discoverable').eq('id', userId).maybeSingle(),
     admin.from('connections').select('provider').eq('user_id', userId),
@@ -34,6 +34,8 @@ export async function GET() {
     // Release notification switches (migration 028), apart so a missing
     // column can't break the rest of the account.
     admin.from('users').select('notify_releases_mine, notify_releases_popular').eq('id', userId).maybeSingle(),
+    // Pinned top 4 (migration 031), apart for the same reason.
+    admin.from('users').select('pinned_albums, tz_offset').eq('id', userId).maybeSingle(),
   ]);
 
   if (!profile) return NextResponse.json({ error: 'not_found' }, { status: 404 });
@@ -87,6 +89,8 @@ export async function GET() {
     discoverable: prefs?.discoverable !== false,
     notifyReleasesMine: (notifyRow as { notify_releases_mine?: boolean } | null)?.notify_releases_mine !== false,
     notifyReleasesPopular: (notifyRow as { notify_releases_popular?: boolean } | null)?.notify_releases_popular === true,
+    pinnedAlbums: ((pinnedRow as { pinned_albums?: string[] | null } | null)?.pinned_albums ?? null) || null,
+    tzOffset: (pinnedRow as { tz_offset?: number | null } | null)?.tz_offset ?? null,
   };
   return NextResponse.json(me);
 }
@@ -159,6 +163,18 @@ export async function PATCH(request: NextRequest) {
   if (Object.keys(notifyPatch).length) {
     const { error: notifyErr } = await admin.from('users').update(notifyPatch).eq('id', userId);
     if (notifyErr) return NextResponse.json({ error: notifyErr.message }, { status: 500 });
+  }
+  // The device's time zone (migration 031), for the streak reminder.
+  if (Number.isInteger(body?.tzOffset) && Math.abs(body.tzOffset) <= 840) {
+    await admin.from('users').update({ tz_offset: body.tzOffset }).eq('id', userId);
+  }
+  // Pinned top 4 (migration 031): up to four album ids, or null for the
+  // automatic pick.
+  if ('pinnedAlbums' in (body ?? {})) {
+    const v = body.pinnedAlbums;
+    const ids = Array.isArray(v) ? [...new Set(v.filter((x: unknown) => typeof x === 'string' && /^[\w:.-]{1,64}$/.test(x)) as string[])].slice(0, 4) : null;
+    const { error: pinErr } = await admin.from('users').update({ pinned_albums: ids && ids.length ? ids : null }).eq('id', userId);
+    if (pinErr) return NextResponse.json({ error: pinErr.message }, { status: 500 });
   }
   if (!Object.keys(patch).length) return NextResponse.json({ ok: true });
 

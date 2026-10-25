@@ -31,7 +31,7 @@ export type AlbumReview = {
   user: { name: string; handle: string; avatarUrl: string | null };
 };
 
-export type RecapPeriod = 'day' | 'week' | 'month' | 'season';
+export type RecapPeriod = 'day' | 'week' | 'month' | 'season' | 'year';
 
 export type SeasonName = 'winter' | 'spring' | 'summer' | 'autumn';
 export type SeasonOption = { key: string; year: number; season: SeasonName };
@@ -135,6 +135,10 @@ export type Me = PublicProfile & {
   // Settings → Notifications: new releases (migration 028).
   notifyReleasesMine: boolean;
   notifyReleasesPopular: boolean;
+  // Profile top 4 picked by hand (migration 031); null = the best scores.
+  pinnedAlbums: string[] | null;
+  // The account's time zone (getTimezoneOffset minutes; migration 031).
+  tzOffset: number | null;
 };
 
 export type FriendRequest = { id: number; user: ApiUser; createdAt: string };

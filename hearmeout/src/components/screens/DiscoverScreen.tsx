@@ -10,6 +10,7 @@ import { CoverArt } from '../ui/CoverArt';
 import { AlbumShelfCard, ReviewCard, Shelf } from '../ui/SuperCards';
 import { FanClubsForYou } from '../FanClubs';
 import { FanClubReleases } from '../FanClubReleases';
+import { ComingSoon } from '../ComingSoon';
 import { LiveLibrarySearch } from '../LiveLibrarySearch';
 import { PopularNowSection } from '../PopularNowSection';
 import { ConcertsFeed } from '../ConcertsFeed';
@@ -348,6 +349,7 @@ export function DiscoverScreen(_props: { device: Device }) {
 
           {filter !== 'albums' && <FanClubsForYou />}
           {filter !== 'artists' && <FanClubReleases />}
+          {filter !== 'artists' && <ComingSoon />}
 
           {filter !== 'albums' && <ConcertsFeed />}
 
