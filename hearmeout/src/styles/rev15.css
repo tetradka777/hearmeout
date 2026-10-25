@@ -719,3 +719,34 @@
 .rd .rq19 .cvb{display:block!important}
 .rd .t4p19 .grd button{display:block!important}
 .rd .t4p19 .grd button>small{display:block;margin-top:4px}
+
+/* Home: friends as player cards — the blurred cover of what they're playing
+   (or their colour) behind, the match as a ring around the photo, a live
+   dot, their top genre, the track at the bottom. */
+.rd .hrow.fr13row{align-items:stretch}
+.rd .hrow.fr13row>.fc20{width:172px;flex:none}
+.rd .tile.fc20{position:relative;isolation:isolate;overflow:hidden;outline:0;display:flex!important;flex-direction:column;align-items:center;gap:4px;padding:16px 12px 12px;min-height:236px;text-align:center;color:#fff;--tfg:#fff;--fg:#fff;background:linear-gradient(165deg,color-mix(in srgb,var(--tint,#3d3a36) 82%,#141210),color-mix(in srgb,var(--tint,#3d3a36) 40%,#0f0d0c))}
+.rd .tile.fc20.hasbg::before{content:'';position:absolute;inset:-20px;z-index:-1;background:var(--cvbg) center/cover no-repeat;filter:blur(22px) saturate(1.2);opacity:.75}
+.rd .tile.fc20.hasbg::after{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(14,12,11,.25),rgba(14,12,11,.72))}
+.rd .fc20 .fcp{position:relative;width:92px;height:92px;display:grid;place-items:center;flex:none}
+.rd .fc20 .fcp svg{position:absolute;inset:0;width:92px;height:92px;transform:rotate(-90deg)}
+.rd .fc20 .fcp .rt{fill:none;stroke:rgba(255,255,255,.18);stroke-width:5}
+.rd .fc20 .fcp .rv{fill:none;stroke:var(--hi,#F2C14E);stroke-width:5;stroke-linecap:round}
+.rd .fc20 .fcp .avt{width:70px;height:70px;font-size:28px;background-color:#2a2622;color:#FFF7EA}
+.rd .fc20 .fcp .lv{position:absolute;right:8px;bottom:8px;width:14px;height:14px;border-radius:50%;background:#4ADE80;box-shadow:0 0 0 3px rgba(14,12,11,.8);animation:fc20p 1.6s ease-in-out infinite}
+@keyframes fc20p{50%{box-shadow:0 0 0 3px rgba(14,12,11,.8),0 0 0 7px rgba(74,222,128,.25)}}
+.rd .fc20 .nm{font:800 18px/1.15 var(--font-display);margin-top:6px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .fc20 .mt{font-size:13px;font-weight:700;color:rgba(255,255,255,.75)}
+.rd .fc20 .mt b{color:#fff;font:800 15px/1 var(--font-display)}
+.rd .fc20 .gn{margin-top:2px;padding:3px 10px;border-radius:99px;background:rgba(255,255,255,.16);font-size:11px;font-weight:800;text-transform:lowercase}
+.rd .fc20 .np{margin-top:auto;display:flex;align-items:center;gap:8px;width:100%;padding:7px;border-radius:12px;background:rgba(0,0,0,.28);text-align:left}
+.rd .fc20 .np .cov{border-radius:7px}
+.rd .fc20 .np .g{min-width:0;display:flex;flex-direction:column}
+.rd .fc20 .np small{font-size:10px;font-weight:800;color:rgba(255,255,255,.65)}
+.rd .fc20 .np small.on{color:#4ADE80}
+.rd .fc20 .np b{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .tile.fc20.add{background:transparent;color:var(--fg);--tfg:var(--fg);outline:2px dashed color-mix(in srgb,var(--fg) 30%,transparent);outline-offset:-2px;justify-content:center}
+.rd .fc20.add .fcp .avt{background:color-mix(in srgb,var(--fg) 10%,transparent);color:var(--fg);font-size:34px}
+.rd .fc20.add .mt{color:inherit;opacity:.65}
+@media (prefers-reduced-motion:reduce){.rd .fc20 .fcp .lv{animation:none}}
+.rd .fc20 .fcp .avt{box-shadow:none!important;outline:0!important;border:0!important}
