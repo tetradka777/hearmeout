@@ -745,8 +745,12 @@
 .rd .fc20 .np small{font-size:10px;font-weight:800;color:rgba(255,255,255,.65)}
 .rd .fc20 .np small.on{color:#4ADE80}
 .rd .fc20 .np b{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rd .tile.fc20.add{background:transparent;color:var(--fg);--tfg:var(--fg);outline:2px dashed color-mix(in srgb,var(--fg) 30%,transparent);outline-offset:-2px;justify-content:center}
-.rd .fc20.add .fcp .avt{background:color-mix(in srgb,var(--fg) 10%,transparent);color:var(--fg);font-size:34px}
-.rd .fc20.add .mt{color:inherit;opacity:.65}
+/* The add card takes the page text colour (the card rule above sets --fg to
+   white, which made it white on cream: invisible). */
+.rd .tile.fc20.add{background:transparent;color:var(--ink);outline:2px dashed color-mix(in srgb,currentColor 35%,transparent);outline-offset:-2px;justify-content:center}
+[data-mode="dark"] .rd .tile.fc20.add{color:var(--cream)}
+.rd .fc20.add .fcp .avt{background:color-mix(in srgb,currentColor 10%,transparent);color:inherit;font-size:34px}
+.rd .fc20.add .mt,.rd .fc20.add .nm{color:inherit}.rd .fc20.add .mt{opacity:.65}
 @media (prefers-reduced-motion:reduce){.rd .fc20 .fcp .lv{animation:none}}
 .rd .fc20 .fcp .avt{box-shadow:none!important;outline:0!important;border:0!important}
+.rd main .tile.fc20.add{outline:2px dashed color-mix(in srgb,currentColor 35%,transparent)!important;outline-offset:-2px!important}
