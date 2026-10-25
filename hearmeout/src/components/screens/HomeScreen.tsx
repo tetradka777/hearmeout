@@ -26,6 +26,7 @@ import { yearRecapOpen, yearRecapYear } from '@/lib/yearRecap';
 import { ratingStreak } from '@/lib/streak';
 import { ImportNudge } from '../ConnectionBlocks';
 import { RateQueueCard } from '../RateQueue';
+import { invitePath } from '@/lib/pendingInvite';
 import { FriendsPicksCard } from '../FriendsPicksCard';
 import { PROFILE_TAB_EVENT } from '@/lib/uiEvents';
 import { CoverWall, usePersonColor } from '../ui/Visual';
@@ -284,12 +285,22 @@ function FriendCard({ user, demo, pct }: { user: ApiUser; demo: boolean; pct: nu
 }
 
 function FriendsList() {
-  const { t, me, showScreen } = useApp();
+  const { t, me, showScreen, showToast } = useApp();
   const scores = useFriendScores(me, 50);
   const demo = !!me && me.friends.length === 0;
   const people = demo ? DEMO_PROFILES : (me?.friends ?? []);
   if (!me) return null;
   const openFriendsTab = () => { showScreen('profile'); window.dispatchEvent(new CustomEvent(PROFILE_TAB_EVENT, { detail: 'friends' })); };
+  // The add card sends your invite link: the phone's share sheet, else the
+  // clipboard, else the friends tab (add by handle there).
+  const shareInvite = async () => {
+    const url = `${window.location.origin}${invitePath(me)}`;
+    const text = t('friends.inviteLinkMessage', { name: me.name.split(' ')[0] });
+    if (navigator.share) {
+      try { await navigator.share({ url, text }); return; } catch (e) { if ((e as Error)?.name === 'AbortError') return; }
+    }
+    try { await navigator.clipboard.writeText(`${text} ${url}`); showToast(t('toast.inviteCopied')); } catch { openFriendsTab(); }
+  };
   return (
     <div className="sec">
       <div className="hd10">
@@ -307,10 +318,10 @@ function FriendsList() {
       )}
       <div className="hrow fr13row" style={{ marginTop: 12 }}>
         {people.map((f) => <DemoAwareCard key={f.id} user={f} demo={demo} pct={scores[f.id]?.pct ?? null} myGenres={me.genres} />)}
-        <button className="tile fc20 add" onClick={openFriendsTab}>
+        <button className="tile fc20 add" onClick={shareInvite}>
           <span className="fcp"><span className="avt">+</span></span>
           <b className="nm">{t('friends.addFriendsTile')}</b>
-          <span className="mt">{t('friends.byHandleOrLink')}</span>
+          <span className="mt">{t('friends.sendInviteLink')}</span>
         </button>
       </div>
     </div>
