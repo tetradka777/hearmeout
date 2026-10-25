@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ArtistAvatar, useOpenArtist } from '../ui/ArtistName';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { PROFILE_TAB_EVENT, takeRecentEvent } from '@/lib/uiEvents';
@@ -128,7 +129,13 @@ function TasteTab({ list }: { list: RatingRecord[] }) {
     return [...g.entries()].map(([k, v]) => ({ g: k, avg: v.reduce((a, b) => a + b, 0) / v.length, n: v.length })).sort((a, b) => b.avg - a.avg);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [list]);
-  const top4 = [...list].sort((a, b) => b.stars - a.stars).slice(0, 4);
+  // Your own pick when you made one, else your four best scores.
+  const pinned = me?.pinnedAlbums ?? null;
+  const scoreOf = new Map(list.map((r) => [r.albumId, r.stars] as const));
+  const top4 = pinned?.length
+    ? pinned.map((albumId) => ({ albumId, stars: scoreOf.get(albumId) ?? null }))
+    : [...list].sort((a, b) => b.stars - a.stars).slice(0, 4).map((r) => ({ albumId: r.albumId, stars: r.stars as number | null }));
+  const [picking, setPicking] = useState(false);
   const genres = me?.genres ?? [];
   return (
     <div className="bento b3">
@@ -145,7 +152,10 @@ function TasteTab({ list }: { list: RatingRecord[] }) {
         ) : <p className="muted" style={{ fontWeight: 600 }}>{t('profile.notEnoughData')}</p>}
       </div>
       <div className="tile s3">
-        <h2>{t('profile.top4')}</h2>
+        <div className="hd10">
+          <h2 style={{ margin: 0 }}>{t('profile.top4')}</h2>
+          {list.length > 0 && <button className="btn ghost" onClick={() => setPicking(true)}>{t('top4.edit')}</button>}
+        </div>
         {top4.length ? (
           <div className="t4">
             {top4.map((r) => {
@@ -154,7 +164,7 @@ function TasteTab({ list }: { list: RatingRecord[] }) {
                 <button key={r.albumId} onClick={() => openAlbum(r.albumId)} style={{ textAlign: 'left', color: 'inherit' }}>
                   <div className="cvw">
                     <CoverArt url={a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" px={170} style={{ width: '100%', aspectRatio: '1' }} />
-                    <span className="bdg">{fmt1(r.stars)}</span>
+                    {r.stars != null && <span className="bdg">{fmt1(r.stars)}</span>}
                   </div>
                   <b style={{ display: 'block', marginTop: 8, fontSize: 14 }}>{a.title}</b>
                 </button>
@@ -163,7 +173,54 @@ function TasteTab({ list }: { list: RatingRecord[] }) {
           </div>
         ) : <p className="muted" style={{ fontWeight: 600 }}>{t('profile.noRatingsYet')}</p>}
       </div>
+      {picking && <Top4Picker list={list} initial={pinned ?? top4.map((x) => x.albumId)} onClose={() => setPicking(false)} />}
     </div>
+  );
+}
+
+// Picking the profile's top 4: your rated albums best first, tap to add or
+// remove (the order you tap is the order shown), save or go back to the
+// automatic pick.
+function Top4Picker({ list, initial, onClose }: { list: RatingRecord[]; initial: string[]; onClose: () => void }) {
+  const { t, updatePinnedAlbums, showToast } = useApp();
+  const albumOf = useAlbumOf();
+  const [sel, setSel] = useState<string[]>(initial.slice(0, 4));
+  const [busy, setBusy] = useState(false);
+  const albums = [...list].sort((a, b) => b.stars - a.stars);
+  const toggle = (id: string) => setSel((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : cur.length >= 4 ? cur : [...cur, id]));
+  const save = async (ids: string[] | null) => {
+    setBusy(true);
+    const ok = await updatePinnedAlbums(ids);
+    setBusy(false);
+    showToast(ok ? t('top4.saved') : t('top4.failed'));
+    if (ok) onClose();
+  };
+  if (typeof document === 'undefined' || !document.querySelector('.rd')) return null;
+  return createPortal(
+    <div className="modalbg" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="modal tile t4p19" role="dialog" aria-modal="true" aria-labelledby="t4pt">
+        <h2 id="t4pt" style={{ marginBottom: 4 }}>{t('top4.pickTitle')}</h2>
+        <p className="muted" style={{ fontWeight: 600, marginBottom: 12 }}>{t('top4.pickHint', { n: sel.length })}</p>
+        <div className="grd">
+          {albums.map((r) => {
+            const a = albumOf(r.albumId);
+            const at = sel.indexOf(r.albumId);
+            return (
+              <button key={r.albumId} className={at >= 0 ? 'on' : ''} onClick={() => toggle(r.albumId)} aria-pressed={at >= 0} aria-label={a.title}>
+                <CoverArt url={a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" px={120} style={{ width: '100%', aspectRatio: '1' }} />
+                {at >= 0 && <span className="n">{at + 1}</span>}
+                <small>{a.title}</small>
+              </button>
+            );
+          })}
+        </div>
+        <div className="acts">
+          <button className="btn" disabled={busy || !sel.length} onClick={() => save(sel)}>{t('top4.save')}</button>
+          <button className="btn ghost" disabled={busy} onClick={() => save(null)}>{t('top4.auto')}</button>
+        </div>
+      </div>
+    </div>,
+    document.querySelector('.rd')!,
   );
 }
 

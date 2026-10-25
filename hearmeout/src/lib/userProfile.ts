@@ -114,7 +114,7 @@ export async function getUserProfile(
   startOfDay.setHours(0, 0, 0, 0);
 
   const isSelf = !!viewerId && viewerId === userId;
-  const [{ data: user, error: userErr }, { data: ratings }, { data: genreRows }, { data: todayRows }, lastPlay, isOpenProfile, isMutualFriend, privacyMap] = await Promise.all([
+  const [{ data: user, error: userErr }, { data: ratings }, { data: genreRows }, { data: todayRows }, lastPlay, isOpenProfile, isMutualFriend, privacyMap, { data: pinnedRow }] = await Promise.all([
     admin.from('users').select('id, name, handle, avatar_url, created_at').eq('id', userId).maybeSingle(),
     admin.from('ratings').select('album_id, stars, review, tags, created_at, is_private').eq('user_id', userId).order('created_at', { ascending: false }),
     // Genre shares (taste fingerprint, match %) from the 5000 most recent
@@ -125,6 +125,8 @@ export async function getUserProfile(
     fetchIsOpenProfile(admin, userId),
     !isSelf && viewerId ? isFriendOf(admin, userId, viewerId) : Promise.resolve(false),
     isSelf ? Promise.resolve(null) : fetchPrivacy(admin, [userId]),
+    // The top 4 they picked themselves (migration 031; an error = none).
+    admin.from('users').select('pinned_albums').eq('id', userId).maybeSingle(),
   ]);
 
   if (userErr) throw userErr;
@@ -185,7 +187,10 @@ export async function getUserProfile(
   // everyone but its owner — it still counts toward the owner's own totals
   // above, but never surfaces in a list someone else can read through.
   const visibleRatingsList = isSelf ? ratingsList : ratingsList.filter((r) => !r.is_private);
-  const top4Albums = !showScores ? [] : [...visibleRatingsList].sort((a, b) => Number(b.stars) - Number(a.stars)).slice(0, 4).map((r) => r.album_id as string);
+  // Their own pick when they made one (it's a choice, not scores), else
+  // their four best scores.
+  const pinned = ((pinnedRow as { pinned_albums?: string[] | null } | null)?.pinned_albums ?? []).slice(0, 4);
+  const top4Albums = pinned.length ? pinned : !showScores ? [] : [...visibleRatingsList].sort((a, b) => Number(b.stars) - Number(a.stars)).slice(0, 4).map((r) => r.album_id as string);
 
   const genreCounts = new Map<string, number>();
   for (const row of genreRows || []) {

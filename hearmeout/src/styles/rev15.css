@@ -589,3 +589,43 @@
 .rd .tst13 .pr13 .avs .dot,.rd .ghero9 .dot{background-color:#2a2622;color:#FFF7EA;background-size:cover;background-position:center}
 .rd .ghero9 .dot{width:36px;height:36px;font-size:14px;box-shadow:0 0 0 2px rgba(255,255,255,.7)}
 .rd .lb19 .mem13 .fl13{color:#FFC86E}
+
+/* Profile top 4 picker. */
+.rd .t4p19{width:min(560px,100%)}
+.rd .t4p19 .grd{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;max-height:52vh;overflow:auto;padding:2px}
+@media (max-width:480px){.rd .t4p19 .grd{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.rd .t4p19 .grd button{position:relative;display:flex;flex-direction:column;gap:4px;color:inherit;text-align:left;border-radius:12px;padding:3px}
+.rd .t4p19 .grd button.on{outline:3px solid var(--acc);outline-offset:-1px}
+.rd .t4p19 .grd .n{position:absolute;top:8px;left:8px;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--acc);color:var(--onacc);font:800 13px/1 var(--font-display)}
+.rd .t4p19 .grd small{font-size:11px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Track scores in the tracklist. */
+.rd .trw19{display:flex;flex-direction:column}
+.rd .ts19{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:44px;height:40px;padding:0 8px;border-radius:12px;color:inherit;background:color-mix(in srgb,currentColor 8%,transparent);margin-left:6px}
+.rd .ts19 .v{display:flex;align-items:center;gap:3px;font:800 13px/1 var(--font-display)}
+.rd .ts19 .v .ic{width:15px;height:15px;opacity:.55}
+.rd .ts19.on .v .ic{opacity:1;color:var(--acct)}
+.rd .ts19 small{font-size:10px;font-weight:700;opacity:.65;white-space:nowrap;margin-top:2px}
+.rd .ts19.op{outline:2px solid var(--acct);outline-offset:-2px}
+.rd .tse19{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 6px 12px 40px}
+.rd .tse19 .num{font-size:20px;min-width:32px}
+.rd .tse19 .btn{padding:6px 12px;font-size:13px}
+.rd .bst19{display:inline-flex;align-items:center;gap:3px;margin-left:8px;padding:2px 8px;border-radius:99px;background:var(--acc);color:var(--onacc);font-size:11px;font-weight:800;vertical-align:2px}
+.rd .bst19 .ic{width:12px;height:12px}
+
+/* Home: the year in review card (December and January). */
+.rd .tile.yr19{display:flex;flex-direction:column;align-items:flex-start;gap:6px;width:100%;margin-top:14px;text-align:left;outline:0;color:#fff;--tfg:#fff;background:linear-gradient(120deg,#3346C2,#7B2D72 55%,#C93C78)}
+.rd .tile.yr19 .k{font-size:12px;font-weight:800;letter-spacing:.12em;opacity:.8}
+.rd .tile.yr19 b{font:800 clamp(28px,7vw,46px)/1.02 var(--font-display);letter-spacing:-.03em}
+.rd .tile.yr19 .op{font-weight:800;opacity:.85}
+/* Discover → coming soon: a bell on each cover to be reminded. */
+.rd .bell19{width:34px;height:34px;background:rgba(18,17,16,.62);color:#fff;outline:0}
+.rd .bell19.on{background:var(--acc);color:var(--onacc)}
+.rd .bell19 .ic{width:16px;height:16px}
+
+/* Home: the rating streak line. */
+.rd .stk19{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:14px 0 0;padding:10px 16px;border-radius:99px;background:color-mix(in srgb,#F2A65A 22%,transparent);font-weight:700;width:fit-content;max-width:100%}
+.rd .stk19 .ic{width:18px;height:18px;color:#E46B2E}
+.rd .stk19 b{font:800 16px/1 var(--font-display)}
+.rd .stk19 span{opacity:.75}
+.rd .stk19.ok{background:color-mix(in srgb,#9BE15D 22%,transparent)}

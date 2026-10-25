@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { setNumberLanguage } from './numberFormat';
 import { ALBUMS } from './data';
 import { normalizeLanguage, pickLanguage, translate, type Language, type TranslationKey } from './i18n';
+import { yearRecapOffset, yearRecapOpen } from './yearRecap';
 import { useLoadedLanguage } from './useLoadedLanguage';
 import { clearStatsCache } from './statsClientCache';
 import { jsonAge, peekJson, setJsonCacheOwner, storeJson } from './cachedJson';
@@ -222,6 +223,7 @@ type AppContextValue = {
     design: Design; mode: Mode; palette: PaletteId; tickerEnabled: boolean; motionEnabled: boolean;
     timeFormat: TimeFormat; weekStart: WeekStart;
   }>) => Promise<void>;
+  updatePinnedAlbums: (ids: string[] | null) => Promise<boolean>;
   updatePrivacy: (updates: Partial<{
     ratingsVisible: boolean; shareLive: boolean; publicReviews: boolean; discoverable: boolean;
     notifyReleasesMine: boolean; notifyReleasesPopular: boolean;
@@ -296,9 +298,11 @@ function restyleAfterThemeChange(): void {
 // period opens on its latest finished window (a month on last month; a
 // season is picked on the recap screen). "day" isn't offered any more and
 // falls back to the week.
-// Recaps are weekly only (last week and the week before): any period asked
-// for — a Home or Stats tile, a ?period= link — opens last week.
-function recapWindow(_p: RecapPeriod): { recapPeriod: RecapPeriod; recapSeasonKey: null; recapOffset: number } {
+// Recaps are weekly (last week and the week before) plus the year in
+// review in December and January: any other period asked for — a Home or
+// Stats tile, a ?period= link — opens last week.
+function recapWindow(p: RecapPeriod): { recapPeriod: RecapPeriod; recapSeasonKey: null; recapOffset: number } {
+  if (p === 'year' && yearRecapOpen()) return { recapPeriod: 'year', recapSeasonKey: null, recapOffset: yearRecapOffset() };
   return { recapPeriod: 'week', recapSeasonKey: null, recapOffset: 0 };
 }
 
@@ -368,6 +372,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     storeJson('/api/me', data);
     setMe(data);
     patch({ authStatus: 'ready', language: data.language });
+    // Keep the account's time zone current (the evening streak reminder).
+    const tz = new Date().getTimezoneOffset();
+    if (data.tzOffset !== tz) fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tzOffset: tz }) }).catch(() => {});
   }, [patch]);
 
   const refreshAlbumRatings = useCallback(async () => {
@@ -930,6 +937,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) });
   }, []);
 
+  // Profile top 4 by hand (null = automatic). True when it was saved.
+  const updatePinnedAlbums = useCallback(async (ids: string[] | null): Promise<boolean> => {
+    let before: string[] | null = null;
+    setMe((m) => { before = m?.pinnedAlbums ?? null; return m ? { ...m, pinnedAlbums: ids && ids.length ? ids.slice(0, 4) : null } : m; });
+    const res = await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pinnedAlbums: ids }) }).catch(() => null);
+    // Not saved: back to what was there.
+    if (!res?.ok) setMe((m) => (m ? { ...m, pinnedAlbums: before } : m));
+    return !!res?.ok;
+  }, []);
+
   const addFriend = useCallback(async (handle: string) => {
     const res = await fetch('/api/friends', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle }) });
     const data = await res.json().catch(() => ({}));
@@ -1251,7 +1268,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         });
         // A recap link may name its period (the weekly recap push does).
         const period = params.get('period');
-        if (screen === 'recap' && (period === 'day' || period === 'week' || period === 'month' || period === 'season')) {
+        if (screen === 'recap' && (period === 'day' || period === 'week' || period === 'month' || period === 'season' || period === 'year')) {
           setState((s) => ({ ...s, ...recapWindow(period) }));
         }
       } else {
@@ -1278,7 +1295,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, setRecapOffset, recapSeasons,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, logoutEverywhere, deleteAccount,
-    updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateLanguage, updateRegion, updateRegionAuto, updateOpenProfile, updateAppearance, updatePrivacy,
+    updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateLanguage, updateRegion, updateRegionAuto, updateOpenProfile, updateAppearance, updatePrivacy, updatePinnedAlbums,
     addFriend, respondToFriendRequest, removeFriend, notifications, markNotificationsRead, sendHi, shareRecapWithFriends, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds,
     myRatings, feed, setFeed, lovedItems, toggleLoved, laterItems, toggleLaterAlbum, toggleLaterTrack, removeLaterItem, removeAllLater, friendRequests, recapCache, recapLocked, reviewsVersion, showScreen, viewHistory, goBack, openAlbum,
@@ -1286,7 +1303,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     viewFriend, viewGroup, openFanClub, openConcerts, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, logoutEverywhere, deleteAccount,
-    updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateLanguage, updateRegion, updateRegionAuto, updateOpenProfile, updateAppearance, updatePrivacy,
+    updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateLanguage, updateRegion, updateRegionAuto, updateOpenProfile, updateAppearance, updatePrivacy, updatePinnedAlbums,
     addFriend, respondToFriendRequest, removeFriend, notifications, markNotificationsRead, sendHi, shareRecapWithFriends, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

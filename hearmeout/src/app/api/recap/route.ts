@@ -63,6 +63,11 @@ export async function GET(request: NextRequest) {
     const { start, end } = completedWeekRange(Math.min(0, offset), url.searchParams.get('weekStart') === 'sun' ? 'sun' : 'mon', now);
     since = start.toISOString();
     until = end.toISOString();
+  } else if (period === 'year') {
+    // The year in review: this calendar year (offset 0) or an earlier one.
+    const y = now.getUTCFullYear() + Math.min(0, offset);
+    since = new Date(Date.UTC(y, 0, 1)).toISOString();
+    until = new Date(Date.UTC(y + 1, 0, 1)).toISOString();
   } else if (period === 'month') {
     const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + offset, 1));
     since = start.toISOString();
@@ -93,7 +98,8 @@ export async function GET(request: NextRequest) {
       .gte('played_at', since);
     if (until) q = q.lt('played_at', until);
     return q.order('played_at', { ascending: false }).order('id', { ascending: false }).range(from, to);
-  }, 50000, 6);
+  // A whole year of plays is a lot more rows than a week.
+  }, period === 'year' ? 150000 : 50000, period === 'year' ? 8 : 6);
   if (error) return NextResponse.json({ error }, { status: 500 });
   const minutes = Math.round(rows.reduce((s, r) => s + (r.duration_ms || 0), 0) / 60000);
   const uniqueArtists = new Set(rows.map((r) => r.artist_id || r.artist).filter(Boolean)).size;
