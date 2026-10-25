@@ -1334,8 +1334,11 @@ export function languageLoaded(language: Language): boolean {
 }
 
 export function loadLanguage(language: Language): Promise<void> {
-  if (DICTS[language] || language === 'en') return Promise.resolve();
-  return (loading[language] ??= LOADERS[language]().then((m) => { DICTS[language] = m.default; }, () => { delete loading[language]; }));
+  // A language that's no longer offered (an account or browser cache from
+  // before Russian was removed) has no loader: English then.
+  const load = (LOADERS as Partial<Record<Language, () => Promise<{ default: Dict }>>>)[language];
+  if (DICTS[language] || !load) return Promise.resolve();
+  return (loading[language] ??= load().then((m) => { DICTS[language] = m.default; }, () => { delete loading[language]; }));
 }
 
 const PLURAL_RULES: Partial<Record<Language, Intl.PluralRules>> = {};

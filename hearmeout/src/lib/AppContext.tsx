@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { setNumberLanguage } from './numberFormat';
 import { ALBUMS } from './data';
-import { pickLanguage, translate, type Language, type TranslationKey } from './i18n';
+import { normalizeLanguage, pickLanguage, translate, type Language, type TranslationKey } from './i18n';
 import { useLoadedLanguage } from './useLoadedLanguage';
 import { clearStatsCache } from './statsClientCache';
 import { jsonAge, peekJson, setJsonCacheOwner, storeJson } from './cachedJson';
@@ -486,7 +486,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const cachedMe = peekJson<Me>('/api/me');
     if (cachedMe) {
       setMe(cachedMe);
-      patch({ authStatus: 'ready', language: cachedMe.language });
+      patch({ authStatus: 'ready', language: normalizeLanguage(cachedMe.language) });
       const ratings = peekJson<RatingRecord[]>('/api/ratings/mine');
       if (ratings) setMyRatings(ratings);
       const loved = peekJson<{ items?: LovedItem[] }>('/api/loved');
