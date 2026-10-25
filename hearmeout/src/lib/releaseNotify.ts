@@ -24,7 +24,7 @@ const CHECK_EVERY_MS = 3 * 60 * 60 * 1000;
 const FRESH_DAYS = 2;
 const MINE_ARTISTS = 10;
 const POPULAR_ARTISTS = 30;
-const PER_DAY = 2;
+const PER_DAY = 4;
 const MAX_LOOKUPS = 300;
 const dayMs = 86400000;
 
