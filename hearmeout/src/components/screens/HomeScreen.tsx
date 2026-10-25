@@ -252,17 +252,29 @@ function FriendCard({ user, demo, pct }: { user: ApiUser; demo: boolean; pct: nu
   if (demo && failed) return null; // a demo profile missing from this database
   const play = profile?.nowPlaying || profile?.lastPlayed || null;
   const live = !!profile?.nowPlaying;
+  const genre = profile?.genres?.[0]?.g ?? null;
+  // The match as a ring around the photo (r = 40, so the length is ~251).
+  const ring = 2 * Math.PI * 40;
+  const bg = play?.cover ? sizedImage(play.cover, 300) ?? play.cover : null;
   return (
-    <button className="tile fr13 tn15" style={tintStyle(color)} onClick={() => viewFriend(user.id)}>
+    <button className={`tile fc20${bg ? ' hasbg' : ''}`} style={{ ...tintStyle(color), ...(bg ? { ['--cvbg' as string]: `url('${bg}')` } : null) }} onClick={() => viewFriend(user.id)}>
       {demo && <span className="tag dm13">{t('friends.demoTag')}</span>}
-      <span className="avt" style={{ ...userAvatarStyle(user), backgroundSize: 'cover' }}>{!user.avatarUrl && user.name[0]?.toUpperCase()}</span>
-      <b className="nm13">{user.name}</b>
-      <span className="pc13"><b className="num">{pct != null ? `${pct}%` : '—'}</b><small>{t('home.matchWord')}</small></span>
+      <span className="fcp">
+        <svg viewBox="0 0 92 92" aria-hidden="true">
+          <circle cx="46" cy="46" r="40" className="rt" />
+          {pct != null && <circle cx="46" cy="46" r="40" className="rv" strokeDasharray={`${(ring * Math.max(0, Math.min(100, pct))) / 100} ${ring}`} />}
+        </svg>
+        <span className="avt" style={{ ...userAvatarStyle(user), backgroundSize: 'cover' }}>{!user.avatarUrl && user.name[0]?.toUpperCase()}</span>
+        {live && <i className="lv" aria-label={t('friend.listeningNow')} />}
+      </span>
+      <b className="nm">{user.name}</b>
+      {pct != null && <span className="mt"><b>{pct}%</b> {t('home.matchWord')}</span>}
+      {genre && <span className="gn">{genre}</span>}
       {play && (
-        <span className="np13">
-          <CoverArt url={play.cover ?? undefined} fallbackLetter={play.artist[0] || '?'} className="cov" px={36} style={{ width: 36, height: 36 }} />
+        <span className="np">
+          <CoverArt url={play.cover ?? undefined} fallbackLetter={play.artist[0] || '?'} className="cov" px={64} style={{ width: 34, height: 34, flex: 'none' }} />
           <span className="g">
-            <small className={live ? 'live13' : 'muted'}>{live ? t('friend.listeningNow') : formatRelative(play.startedAt, language)}</small>
+            <small className={live ? 'on' : ''}>{live ? t('friend.listeningNow') : formatRelative(play.startedAt, language)}</small>
             <b>{play.title}</b>
           </span>
         </span>
@@ -295,10 +307,10 @@ function FriendsList() {
       )}
       <div className="hrow fr13row" style={{ marginTop: 12 }}>
         {people.map((f) => <DemoAwareCard key={f.id} user={f} demo={demo} pct={scores[f.id]?.pct ?? null} myGenres={me.genres} />)}
-        <button className="tile t-soft2 fr13 add13" onClick={openFriendsTab}>
-          <span className="avt">+</span>
-          <b className="nm13">{t('friends.addFriendsTile')}</b>
-          <small className="muted" style={{ fontWeight: 700 }}>{t('friends.byHandleOrLink')}</small>
+        <button className="tile fc20 add" onClick={openFriendsTab}>
+          <span className="fcp"><span className="avt">+</span></span>
+          <b className="nm">{t('friends.addFriendsTile')}</b>
+          <span className="mt">{t('friends.byHandleOrLink')}</span>
         </button>
       </div>
     </div>
