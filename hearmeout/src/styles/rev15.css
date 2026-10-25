@@ -654,3 +654,26 @@
   .rd .trw19 .ts19{min-width:38px;height:34px;margin-left:0;padding:0 6px}
   .rd .tse19{padding-left:28px}
 }
+
+/* Rating queue: Home card and the one-album-at-a-time window. */
+.rd .tile.rqc19{display:flex;align-items:center;gap:14px;width:100%;margin-top:14px;text-align:left;outline:0;color:#fff;--tfg:#fff;background:linear-gradient(120deg,#2E6FA8,#5B3FB0)}
+.rd .rqc19 .cvs{display:flex;flex:none}
+.rd .rqc19 .cvs .cov{border-radius:12px;box-shadow:0 0 0 3px rgba(255,255,255,.85)}
+.rd .rqc19 .cvs .cov+.cov{margin-left:-22px}
+.rd .rqc19 .g{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.rd .rqc19 .g b{font:800 18px/1.15 var(--font-display)}
+.rd .rqc19 .g small{opacity:.8;font-weight:600}
+.rd .rqc19 .op{flex:none;font-weight:800}
+@media (max-width:480px){.rd .rqc19{flex-wrap:wrap}.rd .rqc19 .op{width:100%}}
+.rd .rq19{width:min(420px,100%);display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px}
+.rd .rq19 .hd{display:flex;justify-content:space-between;align-items:center;width:100%}
+.rd .rq19 .hd h2{margin:0}
+.rd .rq19 .pg{margin:0;font-size:13px;font-weight:700;opacity:.7}
+.rd .rq19 .cvb{width:min(260px,70vw);margin:6px 0;border-radius:18px;overflow:hidden;line-height:0}
+.rd .rq19 .tt{font:800 22px/1.15 var(--font-display);letter-spacing:-.02em}
+.rd .rq19 .pl{font-weight:700;opacity:.7}
+.rd .rq19 .sl{display:flex;align-items:center;gap:12px;margin:10px 0 4px}
+.rd .rq19 .sl .num{font-size:26px;min-width:44px}
+.rd .rq19 .acts{justify-content:center}
+.rd .rq19 .end{display:flex;flex-direction:column;align-items:center;gap:12px;padding:20px 0}
+.rd .rq19 .end .ic{width:40px;height:40px;color:var(--acct)}
