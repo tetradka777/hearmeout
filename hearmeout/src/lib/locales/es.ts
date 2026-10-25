@@ -1348,7 +1348,7 @@ const es: Dict = {
   'track.saveFailed': 'no se pudo guardar la nota',
   'track.clear': 'borrar',
   'track.best': 'mejor canción',
-  'home.friendsLovedTitle': 'a tus amigos les encantó, tú no lo has oído',
+  'home.friendsLovedTitle': 'elegidos por amigos',
   'home.lovedBy': 'a {name} le encantó',
   'home.lovedByMany': '{name} y {n} más',
   'recap.year': 'año',

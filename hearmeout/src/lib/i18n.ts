@@ -1354,7 +1354,7 @@ const en = {
   'track.saveFailed': 'couldn\'t save the score',
   'track.clear': 'clear',
   'track.best': 'best track',
-  'home.friendsLovedTitle': 'friends loved, you haven\'t heard',
+  'home.friendsLovedTitle': 'picks from friends',
   'home.lovedBy': '{name} loved it',
   'home.lovedByMany': '{name} and {n} more',
   'recap.year': 'year',
