@@ -1293,7 +1293,6 @@ const es: Dict = {
   'rising.pick': 'nuestra elección',
   'rising.grew': '+{pct} % de fans en 2 semanas',
   'recap.lastWeek': 'la semana pasada',
-  'recap.weekBeforeLast': 'la semana anterior',
   'recap.monthBeforeLast': 'el mes anterior',
   'fanclub.eyebrow': 'club de fans',
   'fanclub.leave': 'salir del club',

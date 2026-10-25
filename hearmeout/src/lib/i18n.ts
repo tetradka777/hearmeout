@@ -1299,7 +1299,6 @@ const en = {
   'rising.pick': 'our pick',
   'rising.grew': '+{pct}% fans in 2 weeks',
   'recap.lastWeek': 'last week',
-  'recap.weekBeforeLast': 'the week before',
   'recap.monthBeforeLast': 'the month before',
   'fanclub.eyebrow': 'fan club',
   'fanclub.leave': 'leave the club',
