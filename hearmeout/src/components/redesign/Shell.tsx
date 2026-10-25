@@ -60,7 +60,7 @@ const NAV_GROUP: Record<ScreenName, ScreenName | null> = {
 // Statistics isn't in the menu: it opens from the profile.
 const TAB_SCREENS: ScreenName[] = ['catalog', 'match', 'discover', 'groups'];
 const TAB_LABEL: Partial<Record<ScreenName, TranslationKey>> = {
-  catalog: 'nav.home', match: 'tab.match', discover: 'nav.find', groups: 'nav.groups',
+  catalog: 'nav.home', match: 'nav.match', discover: 'nav.discover', groups: 'nav.groups',
 };
 const TAB_ICON: Partial<Record<ScreenName, ReactNode>> = {
   catalog: <HomeIcon />, match: <PeopleIcon />, discover: <CompassSearchIcon />, groups: <GroupsIcon />,
