@@ -9,7 +9,8 @@ import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
-import { HeartIcon, PlayIcon, BookmarkIcon } from '../ui/Icons';
+import { HeartIcon, PlayIcon, BookmarkIcon, ShareIcon } from '../ui/Icons';
+import { ShareAlbumModal } from '../ShareAlbumModal';
 import { Stars, StarSlider } from '../redesign/Stars';
 import { PreviewButton } from '../redesign/PreviewButton';
 import { pluralForKey } from '@/lib/i18n';
@@ -90,6 +91,7 @@ export function RateScreen({ device: _device }: { device: Device }) {
   // track's slider is open.
   const trackScores = useCachedJson<TrackRatingsResponse>(state.currentAlbumId && me ? `/api/track-ratings?albumId=${encodeURIComponent(state.currentAlbumId)}` : null);
   const [openTrack, setOpenTrack] = useState<number | null>(null);
+  const [sharing, setSharing] = useState(false);
   useEffect(() => setOpenTrack(null), [state.currentAlbumId]);
 
   const [text, setText] = useState(state.ratingDraftText);
@@ -183,10 +185,12 @@ export function RateScreen({ device: _device }: { device: Device }) {
   const backdrop = state.activeScreen === 'rate' && cover && typeof document !== 'undefined' && document.querySelector('.rd')
     ? createPortal(<div className="abg17" style={blurStyle(sizedImage(cover, 640) ?? cover)} aria-hidden="true" />, document.querySelector('.rd')!)
     : null;
+  const shareModal = sharing ? <ShareAlbumModal album={{ id: a.id, title: a.title, artist: a.artist, cover: cover || null }} onClose={() => setSharing(false)} /> : null;
 
   return (
     <div className="alp17">
       {backdrop}
+      {shareModal}
       {chips}
       <div className="two">
         <div className="stack">
@@ -208,6 +212,7 @@ export function RateScreen({ device: _device }: { device: Device }) {
             <button className={`btn ghost love${albumLoved ? ' on' : ''}`} aria-pressed={albumLoved} aria-label={albumLoved ? t('album.removeFromLoved') : t('album.addToLoved')} onClick={() => toggleLoved('album', a.title, a.artist, a.spotifyId ?? null, spotifyCovers[a.id] || a.cover || null)}>
               <HeartIcon /> {albumLoved ? t('album.loved') : t('album.love')}
             </button>
+            <button className="btn ghost love" onClick={() => setSharing(true)}><ShareIcon /> {t('share.button')}</button>
             {openSpotifyUrl && <a className="btn ghost" href={openSpotifyUrl} target="_blank" rel="noreferrer">{t('album.openInSpotify')}</a>}
           </div>
           {a.tracklist.length > 0 && (
