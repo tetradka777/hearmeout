@@ -224,23 +224,31 @@ export type ArtistDetail = {
   fans: number | null;
 };
 
+// One Spotify artist (name and photo), fetched once and shared: the artist
+// page, the name lookup and the avatars all used to ask Spotify for the same
+// /artists/{id} under their own cache keys. 30 days; null when Spotify
+// doesn't know the id.
+type SpotifyArtistRaw = { id: string; name: string; photo: string | null } | null;
+function spotifyArtistRaw(id: string): Promise<SpotifyArtistRaw> {
+  return withSpotifyCache(`sp-artist-raw:v1:${id}`, 30 * 86400, async () => {
+    const token = await getSpotifyAppToken();
+    const res = await spotifyFetch(`https://api.spotify.com/v1/artists/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+    if (res.status === 404 || res.status === 400) return null;
+    if (!res.ok) throw new Error(`Spotify request failed (/artists/${id}): ${res.status}`);
+    const a = await res.json();
+    return { id: a.id as string, name: a.name as string, photo: (a.images?.[0]?.url as string | undefined) ?? null };
+  });
+}
+
 // Just the name, for lookups keyed by artist id (no Deezer calls).
 export async function fetchSpotifyArtistName(id: string): Promise<string | null> {
-  const token = await getSpotifyAppToken();
-  const res = await spotifyFetch(`https://api.spotify.com/v1/artists/${id}`, { headers: { Authorization: `Bearer ${token}` } });
-  if (res.status === 404 || res.status === 400) return null;
-  if (!res.ok) throw new Error(`Spotify request failed (/artists/${id}): ${res.status}`);
-  return (await res.json()).name ?? null;
+  return (await spotifyArtistRaw(id))?.name ?? null;
 }
 
 export async function fetchSpotifyArtistDetail(id: string): Promise<ArtistDetail | null> {
-  const token = await getSpotifyAppToken();
-  const res = await spotifyFetch(`https://api.spotify.com/v1/artists/${id}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`Spotify request failed (/artists/${id}): ${res.status}`);
-  const a = await res.json();
+  const raw = await spotifyArtistRaw(id);
+  if (!raw) return null;
+  const a = { id: raw.id, name: raw.name, images: raw.photo ? [{ url: raw.photo }] : [] };
   // Deezer's artist only when its albums match this artist's (namesakes).
   const albums = await withSpotifyCache(`artistalbums:v1:${id}`, 86400, () => fetchArtistAlbumsSplit(id)).catch(() => null);
   const titles = albums ? [...albums.released, ...albums.upcoming].map((al) => al.title) : [];
@@ -302,12 +310,28 @@ export type ArtistTopTrack = { id: string; title: string; durationMs: number; al
 // preview player finds the exact recording on Deezer by it). Single-track
 // lookups still work in development mode; album track lists don't carry it.
 export async function fetchSpotifyTrackIsrc(id: string): Promise<string | null> {
-  const token = await getSpotifyAppToken();
-  const res = await spotifyFetch(`https://api.spotify.com/v1/tracks/${id}`, { headers: { Authorization: `Bearer ${token}` } });
-  if (res.status === 404 || res.status === 400) return null;
-  if (!res.ok) throw new Error(`Spotify request failed (/tracks/${id}): ${res.status}`);
-  const t = await res.json();
-  return (t.external_ids?.isrc as string | undefined) ?? null;
+  return (await spotifyTrackRaw(id))?.isrc ?? null;
+}
+
+// One Spotify track, fetched once and shared by the preview player (ISRC)
+// and the history fill-in (album side). 180 days; null for a track Spotify
+// doesn't know.
+type SpotifyTrackRaw = { isrc: string | null; cover: string | null; albumId: string | null; artistId: string | null; year: number | null } | null;
+function spotifyTrackRaw(id: string): Promise<SpotifyTrackRaw> {
+  return withSpotifyCache(`sp-track-raw:v1:${id}`, 180 * 86400, async () => {
+    const token = await getSpotifyAppToken();
+    const res = await spotifyFetch(`https://api.spotify.com/v1/tracks/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+    if (res.status === 404 || res.status === 400) return null;
+    if (!res.ok) throw new Error(`Spotify request failed (/tracks/${id}): ${res.status}`);
+    const t = await res.json();
+    return {
+      isrc: (t.external_ids?.isrc as string | undefined) ?? null,
+      cover: (t.album?.images?.[0]?.url as string | undefined) ?? null,
+      albumId: (t.album?.id as string | undefined) ?? null,
+      artistId: (t.artists?.[0]?.id as string | undefined) ?? null,
+      year: t.album?.release_date ? parseInt(String(t.album.release_date).slice(0, 4), 10) : null,
+    };
+  });
 }
 
 // The album side of a track (for filling in imported listening history):
@@ -315,17 +339,8 @@ export async function fetchSpotifyTrackIsrc(id: string): Promise<string | null> 
 // doesn't know (local files, removed tracks).
 export type TrackAlbumInfo = { cover: string | null; albumId: string | null; artistId: string | null; year: number | null };
 export async function fetchSpotifyTrackAlbum(id: string): Promise<TrackAlbumInfo | null> {
-  const token = await getSpotifyAppToken();
-  const res = await spotifyFetch(`https://api.spotify.com/v1/tracks/${id}`, { headers: { Authorization: `Bearer ${token}` } });
-  if (res.status === 404 || res.status === 400) return null;
-  if (!res.ok) throw new Error(`Spotify request failed (/tracks/${id}): ${res.status}`);
-  const data = await res.json();
-  return {
-    cover: (data.album?.images?.[0]?.url as string | undefined) ?? null,
-    albumId: (data.album?.id as string | undefined) ?? null,
-    artistId: (data.artists?.[0]?.id as string | undefined) ?? null,
-    year: data.album?.release_date ? parseInt(String(data.album.release_date).slice(0, 4), 10) : null,
-  };
+  const t = await spotifyTrackRaw(id);
+  return t ? { cover: t.cover, albumId: t.albumId, artistId: t.artistId, year: t.year } : null;
 }
 
 // Track search by artist and title; the caller decides which hit (if any)
@@ -346,11 +361,7 @@ export async function searchSpotifyTracks(artist: string, title: string): Promis
 // this one — never a merely similar name, so a small artist doesn't get a
 // famous one's face. null when there's no such artist or no picture.
 export async function fetchSpotifyArtistPhoto(id: string): Promise<string | null> {
-  const token = await getSpotifyAppToken();
-  const res = await spotifyFetch(`https://api.spotify.com/v1/artists/${id}`, { headers: { Authorization: `Bearer ${token}` } });
-  if (res.status === 404 || res.status === 400) return null;
-  if (!res.ok) throw new Error(`Spotify request failed (/artists/${id}): ${res.status}`);
-  return (await res.json()).images?.[0]?.url ?? null;
+  return (await spotifyArtistRaw(id))?.photo ?? null;
 }
 
 export async function searchSpotifyArtistPhotoExact(name: string): Promise<{ found: boolean; photo: string | null }> {
