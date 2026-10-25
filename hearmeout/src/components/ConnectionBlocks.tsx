@@ -3,6 +3,8 @@
 import { useRef, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import { SETTINGS_SECTION_EVENT } from '@/lib/uiEvents';
+import { storeJson } from '@/lib/cachedJson';
+import { RateQueueModal } from './RateQueue';
 
 // importHtml(): three steps, a file button, and a report after the upload.
 export function ImportTile() {
@@ -10,6 +12,7 @@ export function ImportTile() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [report, setReport] = useState<{ files: number; imported: number; skipped: number; errors: string[] } | null>(null);
+  const [queueOpen, setQueueOpen] = useState(false);
   const onFiles = async (files: File[]) => {
     if (!files.length || busy) return;
     setBusy(true);
@@ -17,6 +20,11 @@ export function ImportTile() {
     const res = await importStreamingHistory(files);
     setBusy(false);
     if (res) setReport({ files: files.length, imported: res.imported, skipped: res.skipped, errors: res.errors || [] });
+    // The rating queue from the history just imported (not a 5-minute-old copy).
+    if (res?.imported) {
+      const q = await fetch('/api/rate-queue?fresh=1').then((r) => (r.ok ? r.json() : null)).catch(() => null);
+      if (q) storeJson('/api/rate-queue', q);
+    }
     if (inputRef.current) inputRef.current.value = '';
   };
   return (
@@ -42,8 +50,10 @@ export function ImportTile() {
           <b>{t('settings.importFinished')}</b><br />
           {t('settings.importReport', { files: report.files, plays: report.imported.toLocaleString(), skipped: report.skipped })}
           {report.errors.length > 0 && <><br /><span className="ferr" style={{ display: 'inline' }}>{t('settings.importErrors', { list: report.errors.join(', ') })}</span></>}
+          {report.imported > 0 && <><br /><button className="btn" style={{ marginTop: 10 }} onClick={() => setQueueOpen(true)}>{t('queue.afterImport')}</button></>}
         </div>
       )}
+      {queueOpen && <RateQueueModal onClose={() => setQueueOpen(false)} />}
     </div>
   );
 }

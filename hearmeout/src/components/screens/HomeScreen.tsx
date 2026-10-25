@@ -26,6 +26,7 @@ import { RECAP_SEEN_EVENT, recapSeenWeek } from '@/lib/recapSeen';
 import { yearRecapOpen, yearRecapYear } from '@/lib/yearRecap';
 import { ratingStreak } from '@/lib/streak';
 import { ImportNudge } from '../ConnectionBlocks';
+import { RateQueueCard } from '../RateQueue';
 import { PROFILE_TAB_EVENT } from '@/lib/uiEvents';
 import { CoverWall, usePersonColor } from '../ui/Visual';
 import { useAlbum, useAlbums } from '@/lib/useAlbum';
@@ -489,6 +490,7 @@ export function HomeScreen(_props: { device: Device }) {
       <StreakLine />
 
       <ImportNudge />
+      <RateQueueCard />
 
       <FeedSection />
 
