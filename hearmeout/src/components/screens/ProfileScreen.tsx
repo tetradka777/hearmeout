@@ -19,6 +19,7 @@ import { useFriendScores } from '@/lib/useFriendScores';
 import type { TranslationKey } from '@/lib/i18n';
 import { useLaterPlay } from './LaterScreen';
 import { Initial } from '../ui/Initial';
+import { AddFriendCard, FriendPlayerCard } from '../FriendPlayerCard';
 import { cachedJson, peekJson, useCachedJson } from '@/lib/cachedJson';
 import { AwardGallery } from '../AwardGallery';
 import { CoverWall, GenreMix, PersonCards, Phrase, ScoreBars, usePersonColor } from '../ui/Visual';
@@ -327,11 +328,8 @@ function ListeningTab() {
 }
 
 function FriendsTab() {
-  const { t, me, friendRequests, respondToFriendRequest, viewFriend, addFriend, showToast } = useApp();
+  const { t, me, friendRequests, respondToFriendRequest, viewFriend, showToast } = useApp();
   const scores = useFriendScores(me, 50);
-  const [handle, setHandle] = useState('');
-  const [err, setErr] = useState('');
-  const [busy, setBusy] = useState(false);
   const [qr, setQr] = useState<string | null>(null);
   const [showQr, setShowQr] = useState(false);
   if (!me) return null;
@@ -339,15 +337,6 @@ function FriendsTab() {
   const inviteUrl = typeof window !== 'undefined' ? `${window.location.origin}${invitePath(me)}` : invitePath(me);
   const inviteLabel = inviteUrl.replace(/^https?:\/\//, '');
 
-  const add = async () => {
-    const h = handle.trim().replace(/^@/, '').toLowerCase();
-    if (!/^[a-z0-9_]{3,20}$/.test(h)) { setErr(t('login.handleFormat')); return; }
-    setErr('');
-    setBusy(true);
-    await addFriend(h);
-    setBusy(false);
-    setHandle('');
-  };
   const share = async () => {
     const text = t('friends.inviteLinkMessage', { name: me.name.split(' ')[0] });
     if (navigator.share) {
@@ -370,7 +359,8 @@ function FriendsTab() {
 
   return (
     <div className="bento b3">
-      <div className="tile s2">
+      {(incoming.length > 0 || outgoing.length > 0) && (
+      <div className="tile s3">
         <h2>{t('friends.incomingRequests')}</h2>
         {incoming.length > 0 && <p className="muted" style={{ fontWeight: 800, fontSize: 13, margin: '0 0 4px' }}>{t('friends.incomingL')}</p>}
         {incoming.map((r) => (
@@ -394,28 +384,16 @@ function FriendsTab() {
             <button className="btn ghost" style={{ padding: '8px 16px' }} onClick={() => respondToFriendRequest(r.id, 'cancel')}>{t('friends.cancel')}</button>
           </div>
         ))}
-        {!incoming.length && !outgoing.length && <p className="muted" style={{ fontWeight: 600 }}>{t('friends.noPending')}</p>}
       </div>
+      )}
 
-      <div className="tile">
-        <h2>{t('friends.addAFriend')}</h2>
-        <label htmlFor="addh">{t('friends.handleLabel')}</label>
-        <form style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }} onSubmit={(e) => { e.preventDefault(); if (!busy) add(); }}>
-          <input className="field" id="addh" placeholder={t('friends.handlePlaceholder')} style={{ flex: 1, minWidth: 160 }} value={handle} onChange={(e) => { setHandle(e.target.value); setErr(''); }} />
-          <button className="btn" type="submit" disabled={busy}>{t('friends.add')}</button>
-        </form>
-        <p className="ferr" role="alert">{err}</p>
-      </div>
-
-      <div className="tile s2">
+      <div className="s2 fcg20w">
         <h2>{t('profile.friends')}</h2>
-        {me.friends.length ? (
-          <PersonCards grid people={me.friends.map((f) => ({
-            id: f.id, name: f.name, avatarUrl: f.avatarUrl, onClick: () => viewFriend(f.id),
-            value: scores[f.id]?.pct != null ? `${scores[f.id]!.pct}%` : undefined,
-            sub: t('friends.sharedArtistsN', { n: scores[f.id]?.shared ?? 0 }),
-          }))} />
-        ) : <EmptyTile plain title={t('friends.empty')} body={t('friends.emptyBody')} />}
+        {!me.friends.length && <p className="muted" style={{ fontWeight: 600, marginBottom: 12 }}>{t('friends.emptyBody')}</p>}
+        <div className="fcg20">
+          {me.friends.map((f) => <FriendPlayerCard key={f.id} user={f} pct={scores[f.id]?.pct ?? null} />)}
+          <AddFriendCard />
+        </div>
       </div>
 
       <div className="tile t-ac">

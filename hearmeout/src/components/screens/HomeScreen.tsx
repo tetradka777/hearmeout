@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { blurStyle, tintStyle } from '@/lib/imageColor';
+import { blurStyle } from '@/lib/imageColor';
 import { sizedImage } from '@/lib/imageSize';
 import { recapToneStyle } from '@/lib/recapTone';
 import { ArtistName } from '../ui/ArtistName';
@@ -12,7 +12,7 @@ import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { ApiUser, Device, FeedEvent, FeedResponse, PublicProfile, RecapData } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
-import { userAvatarStyle, formatRelative, shortTitle } from '@/lib/format';
+import { formatRelative, shortTitle } from '@/lib/format';
 import { MascotIcon } from '../redesign/icons';
 import { MATCH_FRIEND_EVENT } from '@/lib/uiEvents';
 import { useFriendScores } from '@/lib/useFriendScores';
@@ -26,10 +26,10 @@ import { yearRecapOpen, yearRecapYear } from '@/lib/yearRecap';
 import { ratingStreak } from '@/lib/streak';
 import { ImportNudge } from '../ConnectionBlocks';
 import { RateQueueCard } from '../RateQueue';
-import { invitePath } from '@/lib/pendingInvite';
+import { AddFriendCard, FriendPlayerCard } from '../FriendPlayerCard';
 import { FriendsPicksCard } from '../FriendsPicksCard';
 import { PROFILE_TAB_EVENT } from '@/lib/uiEvents';
-import { CoverWall, usePersonColor } from '../ui/Visual';
+import { CoverWall } from '../ui/Visual';
 import { useAlbum, useAlbums } from '@/lib/useAlbum';
 
 // Home (prototype rev 8–11, redesign/v7): the hot take and the week's recap
@@ -241,66 +241,13 @@ function FeedSection() {
 
 // ----- Friends: a row of cards you swipe through -----
 
-// One friend: photo, name, the match and what they play now (or last),
-// with that album's cover.
-function FriendCard({ user, demo, pct }: { user: ApiUser; demo: boolean; pct: number | null }) {
-  const { t, language, viewFriend } = useApp();
-  const { data: profile, failed } = useCachedJson<PublicProfile>(`/api/users/${user.id}`);
-  // Each friend in their own colour (their photo's, or their tone). Hooks
-  // before the early return: a hook after it crashed the page (React #300)
-  // when a demo profile turned out missing.
-  const color = usePersonColor(user);
-  if (demo && failed) return null; // a demo profile missing from this database
-  const play = profile?.nowPlaying || profile?.lastPlayed || null;
-  const live = !!profile?.nowPlaying;
-  const genre = profile?.genres?.[0]?.g ?? null;
-  // The match as a ring around the photo (r = 40, so the length is ~251).
-  const ring = 2 * Math.PI * 40;
-  const bg = play?.cover ? sizedImage(play.cover, 300) ?? play.cover : null;
-  return (
-    <button className={`tile fc20${bg ? ' hasbg' : ''}`} style={{ ...tintStyle(color), ...(bg ? { ['--cvbg' as string]: `url('${bg}')` } : null) }} onClick={() => viewFriend(user.id)}>
-      {demo && <span className="tag dm13">{t('friends.demoTag')}</span>}
-      <span className="fcp">
-        <svg viewBox="0 0 92 92" aria-hidden="true">
-          <circle cx="46" cy="46" r="40" className="rt" />
-          {pct != null && <circle cx="46" cy="46" r="40" className="rv" strokeDasharray={`${(ring * Math.max(0, Math.min(100, pct))) / 100} ${ring}`} />}
-        </svg>
-        <span className="avt" style={{ ...userAvatarStyle(user), backgroundSize: 'cover' }}>{!user.avatarUrl && user.name[0]?.toUpperCase()}</span>
-        {live && <i className="lv" aria-label={t('friend.listeningNow')} />}
-      </span>
-      <b className="nm">{user.name}</b>
-      {pct != null && <span className="mt"><b>{pct}%</b> {t('home.matchWord')}</span>}
-      {genre && <span className="gn">{genre}</span>}
-      {play && (
-        <span className="np">
-          <CoverArt url={play.cover ?? undefined} fallbackLetter={play.artist[0] || '?'} className="cov" px={64} style={{ width: 34, height: 34, flex: 'none' }} />
-          <span className="g">
-            <small className={live ? 'on' : ''}>{live ? t('friend.listeningNow') : formatRelative(play.startedAt, language)}</small>
-            <b>{play.title}</b>
-          </span>
-        </span>
-      )}
-    </button>
-  );
-}
-
 function FriendsList() {
-  const { t, me, showScreen, showToast } = useApp();
+  const { t, me, showScreen } = useApp();
   const scores = useFriendScores(me, 50);
   const demo = !!me && me.friends.length === 0;
   const people = demo ? DEMO_PROFILES : (me?.friends ?? []);
   if (!me) return null;
   const openFriendsTab = () => { showScreen('profile'); window.dispatchEvent(new CustomEvent(PROFILE_TAB_EVENT, { detail: 'friends' })); };
-  // The add card sends your invite link: the phone's share sheet, else the
-  // clipboard, else the friends tab (add by handle there).
-  const shareInvite = async () => {
-    const url = `${window.location.origin}${invitePath(me)}`;
-    const text = t('friends.inviteLinkMessage', { name: me.name.split(' ')[0] });
-    if (navigator.share) {
-      try { await navigator.share({ url, text }); return; } catch (e) { if ((e as Error)?.name === 'AbortError') return; }
-    }
-    try { await navigator.clipboard.writeText(`${text} ${url}`); showToast(t('toast.inviteCopied')); } catch { openFriendsTab(); }
-  };
   return (
     <div className="sec">
       <div className="hd10">
@@ -318,11 +265,7 @@ function FriendsList() {
       )}
       <div className="hrow fr13row" style={{ marginTop: 12 }}>
         {people.map((f) => <DemoAwareCard key={f.id} user={f} demo={demo} pct={scores[f.id]?.pct ?? null} myGenres={me.genres} />)}
-        <button className="tile fc20 add" onClick={shareInvite}>
-          <span className="fcp"><span className="avt">+</span></span>
-          <b className="nm">{t('friends.addFriendsTile')}</b>
-          <span className="mt">{t('friends.sendInviteLink')}</span>
-        </button>
+        <AddFriendCard />
       </div>
     </div>
   );
@@ -332,7 +275,7 @@ function FriendsList() {
 function DemoAwareCard({ user, demo, pct, myGenres }: { user: ApiUser; demo: boolean; pct: number | null; myGenres: Parameters<typeof computeMatch>[0] }) {
   const profile = useCachedJson<PublicProfile>(demo ? `/api/users/${user.id}` : null).data;
   const shown = demo ? (profile ? computeMatch(myGenres, profile.genres) : null) : pct;
-  return <FriendCard user={user} demo={demo} pct={shown} />;
+  return <FriendPlayerCard user={user} demo={demo} pct={shown} />;
 }
 
 // ----- Your day so far + rate what you played (two columns) -----
