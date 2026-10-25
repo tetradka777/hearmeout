@@ -754,3 +754,8 @@
 @media (prefers-reduced-motion:reduce){.rd .fc20 .fcp .lv{animation:none}}
 .rd .fc20 .fcp .avt{box-shadow:none!important;outline:0!important;border:0!important}
 .rd main .tile.fc20.add{outline:2px dashed color-mix(in srgb,currentColor 35%,transparent)!important;outline-offset:-2px!important}
+
+/* Profile → friends: the same player cards in a grid. */
+.rd .fcg20w h2{margin:0 0 12px}
+.rd .fcg20{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:12px}
+.rd .fcg20>.fc20{width:auto}
