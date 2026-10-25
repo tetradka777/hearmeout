@@ -19,7 +19,7 @@ const REACTION_KEY: Record<string, TranslationKey> = { heart: 'social.rHeart', f
 // Portaled into .rd for the same reason as the New group modal: screens
 // animate a transform, which would trap position:fixed.
 export function NotificationsModal({ onClose }: { onClose: () => void }) {
-  const { t, language, me, notifications, markNotificationsRead, viewFriend, openRecap, setRecapOffset, openAlbum, viewGroup } = useApp();
+  const { t, language, me, notifications, markNotificationsRead, viewFriend, openRecap, openAlbum, viewGroup } = useApp();
 
   useEffect(() => {
     markNotificationsRead();
@@ -46,7 +46,6 @@ export function NotificationsModal({ onClose }: { onClose: () => void }) {
       else if (type === 'award') viewGroup(a);
     } else if (n.kind === 'recap') {
       openRecap(n.actor.id, n.payload.period ?? 'week');
-      if (n.payload.offset) setRecapOffset(n.payload.offset);
     } else {
       viewFriend(n.actor.id);
     }

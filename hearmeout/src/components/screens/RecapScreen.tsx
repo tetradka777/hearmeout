@@ -61,7 +61,7 @@ function rangeLabel(r: RecapData | undefined, period: RecapPeriod, seasonKey: st
 export function RecapScreen(_props: { device: Device }) {
   const {
     state, t, language, me, albums, liveAlbums, ensureRecap, recapCache, recapLocked, closeRecap,
-    setRecapPeriod, setRecapSeasonKey, setRecapOffset, openAlbum, openSpotifyArtist,
+    setRecapPeriod, setRecapSeasonKey, openAlbum, openSpotifyArtist,
     viewFriend, openRecap, showScreen, showToast, shareRecapWithFriends,
   } = useApp();
   const { currentTrack, playing, quiet, toggle, playQueue, close } = usePlayer();
@@ -185,15 +185,13 @@ export function RecapScreen(_props: { device: Device }) {
   // recap (same period and window) — migration 021.
   const sendToFriends = () => { shareRecapWithFriends(period, offset); };
 
-  // Last week and the week before; in December and January also the year.
-  const week = (o: number) => { if (period !== 'week') setRecapPeriod('week'); setRecapOffset(o); };
-  const subChips = (
+  // Last week only; in December and January a switch to the year too.
+  const subChips = yearRecapOpen() ? (
     <div className="chips" role="group" aria-label={t('recap.week')} style={{ marginTop: 8 }}>
-      <button className={`chip${period === 'week' && offset === 0 ? ' on' : ''}`} onClick={() => week(0)}>{t('recap.lastWeek')}</button>
-      <button className={`chip${period === 'week' && offset === -1 ? ' on' : ''}`} onClick={() => week(-1)}>{t('recap.weekBeforeLast')}</button>
-      {yearRecapOpen() && <button className={`chip${period === 'year' ? ' on' : ''}`} onClick={() => setRecapPeriod('year')}>{t('recap.yearChip', { year: yearRecapYear() })}</button>}
+      <button className={`chip${period === 'week' ? ' on' : ''}`} onClick={() => setRecapPeriod('week')}>{t('recap.lastWeek')}</button>
+      <button className={`chip${period === 'year' ? ' on' : ''}`} onClick={() => setRecapPeriod('year')}>{t('recap.yearChip', { year: yearRecapYear() })}</button>
     </div>
-  );
+  ) : null;
 
   const top = (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>

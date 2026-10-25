@@ -1293,7 +1293,6 @@ const fr: Dict = {
   'rising.pick': 'notre coup de cœur',
   'rising.grew': '+{pct} % de fans en 2 semaines',
   'recap.lastWeek': 'la semaine dernière',
-  'recap.weekBeforeLast': 'la semaine d’avant',
   'recap.monthBeforeLast': 'le mois d’avant',
   'fanclub.eyebrow': 'fan club',
   'fanclub.leave': 'quitter le club',
