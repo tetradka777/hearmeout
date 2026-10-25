@@ -709,3 +709,13 @@
 .rd .fp20 .in.drg{transition:none;animation:none}
 .rd .fp20 .cv.sw{cursor:grab;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .rd .fp20 .cv.sw .cov{pointer-events:none}
+/* The cover is a fixed square, not width + aspect-ratio: inside the
+   site-wide "button with a cover" flex column, iOS Safari squashed it into
+   a thin strip. */
+.rd .fp20 .cv{--cvs:clamp(110px,34vw,150px);display:block!important;width:var(--cvs);height:var(--cvs);flex:none;padding:0}
+.rd .fp20 .cv>.cov{display:block;width:100%;height:100%}
+/* Same iOS Safari squash in the rating queue and the top 4 picker: their
+   cover buttons stay plain blocks. */
+.rd .rq19 .cvb{display:block!important}
+.rd .t4p19 .grd button{display:block!important}
+.rd .t4p19 .grd button>small{display:block;margin-top:4px}

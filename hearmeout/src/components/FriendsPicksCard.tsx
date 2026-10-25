@@ -93,7 +93,7 @@ export function FriendsPicksCard() {
               onPointerCancel={() => { drag.current = null; setDy(0); }}
               onClick={() => { if (!swiped.current) openAlbum(album.id); swiped.current = false; }}
             >
-              <CoverArt url={cover} fallbackLetter={album.artist[0] || '?'} className="cov" px={300} style={{ width: '100%', aspectRatio: '1' }} />
+              <CoverArt url={cover} fallbackLetter={album.artist[0] || '?'} className="cov" px={300} style={{ width: '100%', height: '100%' }} />
             </button>
             <button className="tt" onClick={() => openAlbum(album.id)}>{shortTitle(album.title)}</button>
             <span className="ar"><ArtistName name={album.artist} id={album.artistId} size={15} /></span>
