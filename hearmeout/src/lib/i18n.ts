@@ -1311,6 +1311,8 @@ const en = {
   'fanclub.loadError': 'couldn’t open the fan club',
   'fanclub.back': 'back',
   'fanclub.releasesTitle': 'fan club releases',
+  'picks.prev': 'previous pick',
+  'picks.next': 'next pick',
   'queue.title': 'rate your most played',
   'queue.progress': '{done} rated · {left} to go',
   'queue.played': '{n} {n|play|plays} · {h} h',

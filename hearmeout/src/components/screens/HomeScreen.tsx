@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { Recommendation } from '@/app/api/recommendations/route';
 import { blurStyle, tintStyle } from '@/lib/imageColor';
 import { sizedImage } from '@/lib/imageSize';
 import { recapToneStyle } from '@/lib/recapTone';
@@ -27,6 +26,7 @@ import { yearRecapOpen, yearRecapYear } from '@/lib/yearRecap';
 import { ratingStreak } from '@/lib/streak';
 import { ImportNudge } from '../ConnectionBlocks';
 import { RateQueueCard } from '../RateQueue';
+import { FriendsPicksCard } from '../FriendsPicksCard';
 import { PROFILE_TAB_EVENT } from '@/lib/uiEvents';
 import { CoverWall, usePersonColor } from '../ui/Visual';
 import { useAlbum, useAlbums } from '@/lib/useAlbum';
@@ -397,48 +397,6 @@ function TrendingSection() {
   );
 }
 
-// Albums your friends loved (4.5+) that you haven't rated or played, most
-// loved first; who loved it under each.
-function FriendsLovedSection() {
-  const { t, openAlbum, spotifyCovers, myRatings } = useApp();
-  const { data } = useCachedJson<Recommendation[]>('/api/recommendations');
-  const rated = useMemo(() => new Set(myRatings.map((r) => r.albumId)), [myRatings]);
-  const list = (data || []).filter((r) => !rated.has(r.albumId));
-  const known = useAlbums(list.map((x) => x.albumId));
-  if (!known.length) return null;
-  // One card, not another shelf of covers (the trending shelf is right
-  // under it): the top five as rows over the first one's blurred cover,
-  // who loved each as faces, their average big.
-  const top = known.slice(0, 5);
-  const first = top[0].album;
-  const bg = spotifyCovers[first.id] || first.cover;
-  return (
-    <section className="sh14 fp19">
-      <div className="hd"><h2>{t('home.friendsLovedTitle')}</h2></div>
-      <div className="tile bh15" style={blurStyle(bg ? sizedImage(bg, 300) ?? bg : null)}>
-        {top.map(({ id, album }) => {
-          const x = list.find((y) => y.albumId === id)!;
-          const names = x.fans.map((f) => f.name);
-          return (
-            <button key={id} className="r" onClick={() => openAlbum(album.id)}>
-              <CoverArt url={spotifyCovers[album.id] || album.cover} fallbackLetter={album.artist[0] || '?'} className="cov" px={120} style={{ width: 60, height: 60, flex: 'none' }} />
-              <span className="g">
-                <b>{shortTitle(album.title)}</b>
-                <small><ArtistName name={album.artist} id={album.artistId} size={14} /></small>
-                <small className="who">{names.length > 1 ? t('home.lovedByMany', { name: names[0], n: names.length - 1 }) : t('home.lovedBy', { name: names[0] ?? '' })}</small>
-              </span>
-              <span className="fans" aria-hidden="true">
-                {x.fans.slice(0, 3).map((f) => <span key={f.id} className="dot" style={{ ...userAvatarStyle(f), backgroundSize: 'cover' }}>{!f.avatarUrl && f.name[0]?.toUpperCase()}</span>)}
-              </span>
-              <span className="sc">★ {fmt1(x.avg)}</span>
-            </button>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
 // Your rating streak: days in a row you rated something, and a nudge when
 // today doesn't count yet.
 function StreakLine() {
@@ -520,7 +478,7 @@ export function HomeScreen(_props: { device: Device }) {
         <RateTile />
       </div>
 
-      <FriendsLovedSection />
+      <FriendsPicksCard />
       <TrendingSection />
     </>
   );
