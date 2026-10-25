@@ -678,20 +678,34 @@
 .rd .rq19 .end{display:flex;flex-direction:column;align-items:center;gap:12px;padding:20px 0}
 .rd .rq19 .end .ic{width:40px;height:40px;color:var(--acct)}
 
-/* Home: picks from friends — one card of rows over a blurred cover. */
-.rd .fp19 .tile{display:flex;flex-direction:column;gap:2px;padding:10px 12px}
-.rd .fp19 .r{display:flex;align-items:center;gap:12px;width:100%;padding:8px 6px;border-radius:14px;color:#fff;text-align:left}
-.rd .fp19 .r+.r{border-top:1px solid rgba(255,255,255,.12);border-radius:0}
-.rd .fp19 .r .cov{border-radius:10px}
-.rd .fp19 .g{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
-.rd .fp19 .g b{font:800 16px/1.2 var(--font-display);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rd .fp19 .g small{color:rgba(255,255,255,.75);font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rd .fp19 .g small .arl,.rd .fp19 .g small .arn{color:inherit}
-.rd .fp19 .g .who{color:rgba(255,255,255,.6);font-size:12px}
-.rd .fp19 .fans{display:flex;flex:none}
-.rd .fp19 .fans .dot{width:28px;height:28px;font-size:12px;background-color:#2a2622;color:#FFF7EA;box-shadow:0 0 0 2px rgba(255,255,255,.8)}
-.rd .fp19 .fans .dot+.dot{margin-left:-9px}
-.rd .fp19 .sc{flex:none;padding:5px 10px;border-radius:99px;background:var(--acc);color:var(--onacc);font:800 14px/1 var(--font-display)}
-@media (max-width:420px){.rd .fp19 .fans{display:none}}
-.rd .fp19 .tile>button.r{display:flex;flex-direction:row!important;align-items:center!important;justify-content:flex-start}
-.rd .fp19 .tile>button.r>.sc{align-self:center;width:auto}
+/* Home: picks from friends — one wide card, one album at a time; swipe the
+   cover up/down (or the arrows / dots on the right) to change it. */
+.rd .fp20 .crd{position:relative;padding:18px 52px 18px 18px;min-height:236px;display:flex;align-items:stretch}
+.rd .fp20 .in{flex:1;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center}
+.rd .fp20 .in.up{animation:fp20up .32s ease-out}
+.rd .fp20 .in.down{animation:fp20dn .32s ease-out}
+@keyframes fp20up{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
+@keyframes fp20dn{from{opacity:0;transform:translateY(-28px)}to{opacity:1;transform:none}}
+.rd .fp20 .l{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0}
+.rd .fp20 .cv{display:block;width:clamp(110px,34vw,150px);line-height:0;border-radius:16px;overflow:hidden;touch-action:none;cursor:grab;box-shadow:0 10px 26px rgba(0,0,0,.35)}
+.rd .fp20 .cv .cov{border-radius:16px}
+.rd .fp20 .tt{color:#fff;text-align:left;font:800 19px/1.15 var(--font-display);letter-spacing:-.01em;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .fp20 .l .ar{color:rgba(255,255,255,.75);font-weight:600;max-width:100%;overflow:hidden}
+.rd .fp20 .l .ar .arl,.rd .fp20 .l .ar .arn{color:inherit}
+.rd .fp20 .r{display:flex;flex-direction:column;align-items:flex-end;gap:10px;text-align:right;max-width:140px}
+.rd .fp20 .sc{padding:8px 14px;border-radius:99px;background:var(--acc);color:var(--onacc);font:800 24px/1 var(--font-display)}
+.rd .fp20 .fans{display:flex}
+.rd .fp20 .fans .dot{width:34px;height:34px;font-size:14px;background-color:#2a2622;color:#FFF7EA;box-shadow:0 0 0 2px rgba(255,255,255,.85)}
+.rd .fp20 .fans .dot+.dot{margin-left:-10px}
+.rd .fp20 .who{color:rgba(255,255,255,.8);font-weight:700;font-size:13px}
+.rd .fp20 .pnv{position:absolute;top:0;bottom:0;right:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.rd .fp20 .pnv .ar{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.16);color:#fff}
+.rd .fp20 .pnv .ar .ic{width:16px;height:16px}
+.rd .fp20 .pnv .ar.up .ic{transform:rotate(-90deg)}
+.rd .fp20 .pnv .ar.dn .ic{transform:rotate(90deg)}
+.rd .fp20 .dots{display:flex;flex-direction:column;gap:5px}
+.rd .fp20 .dots button{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.35);padding:0}
+.rd .fp20 .dots button.on{background:#fff;height:16px;border-radius:99px}
+@media (prefers-reduced-motion:reduce){.rd .fp20 .in.up,.rd .fp20 .in.down{animation:none}}
+@media (max-width:420px){.rd .fp20 .r{max-width:110px}.rd .fp20 .sc{font-size:20px;padding:7px 11px}}
+.rd .fp20 .pnv{width:30px}.rd .fp20 .pnv .ar{flex:none;padding:0;min-width:0}
