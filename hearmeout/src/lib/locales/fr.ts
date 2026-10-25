@@ -1305,8 +1305,6 @@ const fr: Dict = {
   'fanclub.loadError': 'impossible d’ouvrir le fan club',
   'fanclub.back': 'retour',
   'fanclub.releasesTitle': 'sorties de tes fan-clubs',
-  'picks.prev': 'choix précédent',
-  'picks.next': 'choix suivant',
   'queue.title': 'note tes plus écoutés',
   'queue.progress': '{done} notés · encore {left}',
   'queue.played': '{n} {n|écoute|écoutes} · {h} h',
