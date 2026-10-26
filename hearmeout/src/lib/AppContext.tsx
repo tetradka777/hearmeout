@@ -1058,6 +1058,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // kept in the browser (lib/albumStore) for the next visit.
   const albumQueue = useRef<Map<string, string>>(new Map());
   const albumQueueTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const albumRetries = useRef<Map<string, number>>(new Map());
+  const flushAlbumRef = useRef<() => void>(() => {});
   const flushAlbumQueue = useCallback(() => {
     albumQueueTimer.current = null;
     const batch = [...albumQueue.current.entries()];
@@ -1066,12 +1068,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const part = batch.slice(i, i + 60);
       fetch('/api/spotify/albums', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: part.map(([, target]) => target) }) })
         .then((res) => (res.ok ? res.json() : null))
-        .then((d: { albums?: Record<string, AlbumDetail | null> } | null) => {
+        .then((d: { albums?: Record<string, AlbumDetail | null>; pending?: string[] } | null) => {
           const got: Record<string, Album> = {};
           const failed: string[] = [];
+          const pending = new Set(d?.pending || []);
           for (const [id, target] of part) {
-            requestedAlbumIds.current.delete(id);
             const detail = d?.albums?.[target];
+            // Still loading on the server (the known albums came back
+            // without waiting for it): asked again shortly, a few times.
+            const tries = albumRetries.current.get(id) ?? 0;
+            if (!detail && pending.has(target) && tries < 4) {
+              albumRetries.current.set(id, tries + 1);
+              albumQueue.current.set(id, target);
+              if (!albumQueueTimer.current) albumQueueTimer.current = setTimeout(() => flushAlbumRef.current(), 800);
+              continue;
+            }
+            albumRetries.current.delete(id);
+            requestedAlbumIds.current.delete(id);
             if (detail) got[id] = albumDetailToAlbum(detail, id);
             else failed.push(id);
           }
@@ -1089,6 +1102,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         });
     }
   }, []);
+
+  useEffect(() => { flushAlbumRef.current = flushAlbumQueue; }, [flushAlbumQueue]);
 
   const ensureLiveAlbum = useCallback((id: string, spotifyId?: string) => {
     if (!id || requestedAlbumIds.current.has(id) || knownAlbumIds.current.has(id)) return;

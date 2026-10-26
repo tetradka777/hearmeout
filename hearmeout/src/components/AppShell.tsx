@@ -77,8 +77,10 @@ const SCREENS: { name: ScreenName; Component: ComponentType<{ device: Device }> 
 // loads its data (and its covers) while hidden, so opening it later shows
 // everything at once instead of starting the requests then.
 const BACKGROUND_SCREENS: ScreenName[] = ['stats', 'match', 'groups', 'profile', 'recap', 'discover', 'history', 'later'];
-const FIRST_DELAY_MS = 1200;
-const STEP_MS = 700;
+// Late enough that the first screen's own data and covers go first (on the
+// small server every request of the background batch competes with them).
+const FIRST_DELAY_MS = 2500;
+const STEP_MS = 900;
 
 export function AppShell() {
   const { state, me } = useApp();

@@ -89,6 +89,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         setStatus('ready');
         audio.src = tr.preview;
         audio.play().catch(() => {});
+        // The next one in the queue is looked up meanwhile (not downloaded).
+        const after = queue[index + 1];
+        if (after) prefetchQueueTrack(after, false);
       })
       .catch(() => { if (requestToken.current === myToken) setStatus('unavailable'); });
     // eslint-disable-next-line react-hooks/exhaustive-deps

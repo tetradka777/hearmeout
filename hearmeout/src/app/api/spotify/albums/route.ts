@@ -6,6 +6,10 @@ import { peekSpotifyCacheMany, withSpotifyCache } from '@/lib/spotifyCache';
 const MAX_IDS = 60;
 const SPOTIFY_ID = /^[0-9A-Za-z]{22}$/;
 const TTL = 180 * 86400;
+// How long the answer waits for albums nobody asked for before: briefly when
+// it already has others to show, longer when it has nothing yet.
+const BUDGET_WITH_HITS_MS = 400;
+const BUDGET_MS = 3000;
 
 // Many albums in one request (a wall of covers used to fire one request
 // per album): every cached album comes from one database query, and only
@@ -31,8 +35,12 @@ export async function POST(request: NextRequest) {
     } else missing.push(id);
   }
 
+  // The known albums don't wait for the unknown ones: after the budget
+  // (above) the answer goes out with what's there, the rest keep loading
+  // here and are listed as `pending` — the client asks for them again
+  // shortly and gets them from the cache.
   let next = 0;
-  await Promise.all(Array.from({ length: Math.min(3, missing.length) }, async () => {
+  const work = Promise.all(Array.from({ length: Math.min(6, missing.length) }, async () => {
     while (next < missing.length) {
       const id = missing[next++];
       try {
@@ -42,5 +50,10 @@ export async function POST(request: NextRequest) {
       }
     }
   }));
-  return NextResponse.json({ albums });
+  let done = !missing.length;
+  void work.then(() => { done = true; });
+  if (!done) await Promise.race([work, new Promise((r) => setTimeout(r, missing.length < ids.length ? BUDGET_WITH_HITS_MS : BUDGET_MS))]);
+  // Finished: anything still absent failed (left out, as before).
+  const pending = done ? [] : missing.filter((id) => !(id in albums));
+  return NextResponse.json({ albums: { ...albums }, pending });
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { usePlayer, type QueueTrack } from '@/lib/PlayerContext';
+import { prefetchQueueTrack, usePlayer, type QueueTrack } from '@/lib/PlayerContext';
 import { useApp } from '@/lib/AppContext';
 
 // The 30-second preview control (spec 7.3, 14 #7): a 60px ring, progress
@@ -46,6 +46,9 @@ export function PreviewButton({ tracks, index = 0, size = 60 }: { tracks: QueueT
       className={`pvbtn${isPlaying ? ' playing' : ''}`}
       style={{ width: size, height: size }}
       onClick={() => (isCurrent ? toggle() : playQueue(tracks, index))}
+      // The lookup starts at the touch (or hover), a moment before the click.
+      onPointerEnter={() => { if (track && !isCurrent) prefetchQueueTrack(track); }}
+      onPointerDown={() => { if (track && !isCurrent) prefetchQueueTrack(track); }}
       aria-label={isPlaying ? t('player.pausePreview') : t('player.playPreview')}
     >
       <svg viewBox="0 0 60 60">
