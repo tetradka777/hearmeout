@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
+import { computeMatch } from '@/lib/matchScore';
 import { computeMonthAwards, scoutAward, stuckAward, timeTravelerAward, type AwardEvent } from '@/lib/monthAwards';
 import { DEFAULT_PRIVACY, fetchPrivacy } from '@/lib/privacy';
 import { fetchAllRows } from '@/lib/supabasePaginate';
 import { cachedGroupDetail, storeGroupDetail } from '@/lib/groupDetailCache';
-import type { ApiUser, GroupAward, GroupDetail, GroupLeaderboardPeriod, GroupMemberStats, GroupPastAwards, GroupRecord, GroupTopAlbum, GroupVoteCandidate } from '@/lib/types';
+import type { ApiUser, GroupAward, GroupDetail, GroupLeaderboardPeriod, GroupMemberStats, GroupPastAwards, GroupRecord, GroupTastePair, GroupTopAlbum, GroupVoteCandidate } from '@/lib/types';
 
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const userId = await getCurrentUserId();
@@ -298,6 +299,33 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   }
   if (hotTake && hotTake.gap > 0) records.push({ label: 'recordHotTake', holder: userById.get(hotTake.id) || null, value: `±${hotTake.gap.toFixed(1)}` });
 
+  // Group taste (spec 6.6 item 10): average pairwise genre-overlap match
+  // across every member pair, from the same 30-day genre data as the
+  // Genre explorer award above.
+  const genreSharesByUser = new Map<string, { g: string; pct: number }[]>();
+  for (const [userKey, counts] of genreCountsByUser.entries()) {
+    const total = [...counts.values()].reduce((s, n) => s + n, 0);
+    genreSharesByUser.set(userKey, [...counts.entries()].map(([g, n]) => ({ g, pct: total ? Math.round((n / total) * 100) : 0 })));
+  }
+  const pairs: GroupTastePair[] = [];
+  for (let i = 0; i < members.length; i++) {
+    for (let j = i + 1; j < members.length; j++) {
+      const a = members[i], b = members[j];
+      const sharesA = genreSharesByUser.get(a.id), sharesB = genreSharesByUser.get(b.id);
+      if (!sharesA || !sharesB) continue;
+      const pct = computeMatch(sharesA, sharesB);
+      if (pct != null) pairs.push({ a, b, pct });
+    }
+  }
+  const taste = pairs.length
+    ? {
+        avgMatch: Math.round(pairs.reduce((s, p) => s + p.pct, 0) / pairs.length),
+        closest: [...pairs].sort((a, b) => b.pct - a.pct)[0],
+        furthest: [...pairs].sort((a, b) => a.pct - b.pct)[0],
+        pairs: pairs.map((p) => ({ a: p.a.id, b: p.b.id, pct: p.pct })),
+      }
+    : null;
+
   // Album-of-the-month vote (spec 6.6 item 8): candidates are the group's
   // most-rated albums this month, not members — see migration_016.
   const voteCandidateAlbums = topAlbums.slice(0, 3).map((a) => a.albumId);
@@ -341,7 +369,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   const detail: GroupDetail = {
     id: group.id, name: group.name, createdBy: group.created_by, createdAt: group.created_at,
     members, memberStats, awards, pastAwards, activity, leaderboard, leaderboardPeriod,
-    records, topAlbums, vote, muted,
+    records, topAlbums, taste, vote, muted,
   };
   storeGroupDetail(id, userId, leaderboardPeriod, detail);
   return NextResponse.json(detail);
