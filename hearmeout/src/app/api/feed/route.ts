@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { fetchAllRows } from '@/lib/supabasePaginate';
 import { getCurrentUserId } from '@/lib/identity';
@@ -21,15 +22,48 @@ type FriendRow = { id: string; name: string; handle: string; avatar_url: string 
 type FriendRating = { user_id: string; album_id: string; stars: number; review: string | null; created_at: string; is_private: boolean | null };
 type FriendPlay = { user_id: string; track_id: string | null; track_title: string | null; artist: string | null; album_id: string | null; cover_url: string | null; played_at: string };
 
-async function build(userId: string, tzMin: number): Promise<FeedResponse> {
-  const admin = supabaseAdmin();
-  const friendIds = await friendIdsOf(admin, userId);
+type SessionRow = { duration_ms: number | null; artist: string | null; album_id: string | null; cover_url: string | null; played_at: string; track_title: string | null };
+type Raw = {
+  friendUsers: FriendRow[];
+  friendRatings: FriendRating[];
+  myRatings: { album_id: string; stars: number }[];
+  todayEvents: FriendPlay[];
+  olderEvents: { user_id: string; track_id: string | null; track_title: string | null }[];
+  mySessionRows: SessionRow[];
+  myRecentPlays: { album_id: string }[];
+};
 
-  const now = Date.now();
-  const local = new Date(now - tzMin * 60000);
-  const dayStart = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate()) + tzMin * 60000);
-  const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
-  const monthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
+// One call to the database function feed_raw (migration 033) instead of two
+// or three trips one after another. Until the migration is applied (or if
+// the call fails) the feed reads the tables itself, as before; a missing
+// function is not asked again for 10 minutes.
+let rpcMissingUntil = 0;
+async function readViaFunction(admin: SupabaseClient, userId: string, dayStart: Date): Promise<Raw | null> {
+  if (Date.now() < rpcMissingUntil) return null;
+  const { data, error } = await admin.rpc('feed_raw', { p_user: userId, p_day_start: dayStart.toISOString() });
+  if (error || !data) {
+    if (error && (error.code === 'PGRST202' || error.code === '42883')) rpcMissingUntil = Date.now() + 10 * 60 * 1000;
+    return null;
+  }
+  const d = data as {
+    friends: FriendRow[]; friend_ratings: FriendRating[]; my_ratings: { album_id: string; stars: number }[];
+    today: FriendPlay[]; seen: { user_id: string; k: string }[]; my_session: SessionRow[]; my_recent: { album_id: string }[];
+  };
+  return {
+    friendUsers: d.friends,
+    friendRatings: d.friend_ratings.map((r) => ({ ...r, stars: Number(r.stars) })),
+    myRatings: d.my_ratings.map((r) => ({ ...r, stars: Number(r.stars) })),
+    todayEvents: d.today,
+    // The function already matched today's tracks to earlier plays; each
+    // match stands in for an earlier play with the same key.
+    olderEvents: d.seen.map((x) => ({ user_id: x.user_id, track_id: x.k, track_title: null })),
+    mySessionRows: d.my_session,
+    myRecentPlays: d.my_recent,
+  };
+}
+
+async function readTables(admin: SupabaseClient, userId: string, dayStart: Date, weekAgo: string, monthAgo: string): Promise<Raw> {
+  const friendIds = await friendIdsOf(admin, userId);
 
   // Everything in one wave: the two follow-up reads (earlier plays of
   // today's tracks, my scores on the albums friends rated) start as soon as
@@ -88,6 +122,24 @@ async function build(userId: string, tzMin: number): Promise<FeedResponse> {
       .gte('played_at', new Date(dayStart.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString()).lt('played_at', dayStart.toISOString())
       .order('played_at', { ascending: false }).limit(1000),
   ]);
+  return {
+    friendUsers, friendRatings, myRatings, todayEvents, olderEvents,
+    mySessionRows: (mySessionRows || []) as SessionRow[],
+    myRecentPlays: (myRecentPlays || []) as { album_id: string }[],
+  };
+}
+
+async function build(userId: string, tzMin: number): Promise<FeedResponse> {
+  const admin = supabaseAdmin();
+
+  const now = Date.now();
+  const local = new Date(now - tzMin * 60000);
+  const dayStart = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate()) + tzMin * 60000);
+  const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const monthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  const { friendUsers, friendRatings, myRatings, todayEvents, olderEvents, mySessionRows, myRecentPlays } =
+    (await readViaFunction(admin, userId, dayStart)) ?? (await readTables(admin, userId, dayStart, weekAgo, monthAgo));
   const privacy = new Map<string, PrivacyFlags>(friendUsers.map((u) => [u.id, {
     ratingsVisible: u.ratings_visible !== false,
     shareLive: u.share_live !== false,
