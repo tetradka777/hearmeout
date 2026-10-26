@@ -23,7 +23,7 @@ import { computeMatch } from '@/lib/matchScore';
 import { DEMO_PROFILES } from '@/lib/demoAccounts';
 import { RECAP_SEEN_EVENT, recapSeenWeek } from '@/lib/recapSeen';
 import { yearRecapOpen, yearRecapYear } from '@/lib/yearRecap';
-import { ratingStreak } from '@/lib/streak';
+import { ratingStreak, recentRatingDays } from '@/lib/streak';
 import { ImportNudge } from '../ConnectionBlocks';
 import { RateQueueCard } from '../RateQueue';
 import { AddFriendCard, FriendPlayerCard } from '../FriendPlayerCard';
@@ -368,16 +368,34 @@ function TrendingSection() {
 
 // Your rating streak: days in a row you rated something, and a nudge when
 // today doesn't count yet.
+// A small card: the flame, the count, the nudge, and the last seven days
+// as dots (filled = rated that day; today ringed until it counts).
 function StreakLine() {
-  const { t, myRatings } = useApp();
-  const { days, ratedToday } = useMemo(() => ratingStreak(myRatings.map((r) => r.createdAt), new Date().getTimezoneOffset()), [myRatings]);
+  const { t, language, myRatings } = useApp();
+  const { days, ratedToday, week } = useMemo(() => {
+    const dates = myRatings.map((r) => r.createdAt);
+    const tz = new Date().getTimezoneOffset();
+    return { ...ratingStreak(dates, tz), week: recentRatingDays(dates, tz) };
+  }, [myRatings]);
+  const dayLetter = useMemo(() => {
+    const f = new Intl.DateTimeFormat(toLocale(language), { weekday: 'narrow' });
+    // 4 January 1970 was a Sunday.
+    return (wd: number) => f.format(new Date(Date.UTC(1970, 0, 4 + wd, 12)));
+  }, [language]);
   if (days < 1) return null;
   return (
-    <p className={`stk19${ratedToday ? ' ok' : ''}`}>
-      <i className="ic ic-flame" aria-hidden="true" />
-      <b>{t('streak.days', { n: days })}</b>
-      <span>{ratedToday ? t('streak.today') : t('streak.keep')}</span>
-    </p>
+    <div className={`stk20${ratedToday ? ' ok' : ''}`}>
+      <span className="fl" aria-hidden="true"><i className="ic ic-flame" /></span>
+      <span className="tx">
+        <b>{t('streak.inRow', { n: days })}</b>
+        <small>{ratedToday ? t('streak.today') : t('streak.keep')}</small>
+      </span>
+      <span className="wk" aria-hidden="true">
+        {week.map((d, i) => (
+          <span key={i} className={`${d.rated ? 'on' : ''}${i === week.length - 1 ? ' td' : ''}`}><i /><small>{dayLetter(d.weekday)}</small></span>
+        ))}
+      </span>
+    </div>
   );
 }
 

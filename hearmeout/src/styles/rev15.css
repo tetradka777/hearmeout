@@ -260,11 +260,6 @@
 .rd .arc14 .aav{margin:0 auto;flex:none;background-position:center;background-size:cover}
 
 /* Group vote: every candidate the same height, buttons on one line. */
-.rd .vt15{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:640px;align-items:stretch}
-.rd .vt15 .vc{display:flex;flex-direction:column;gap:6px;min-width:0}
-.rd .vt15 .vt{font-size:14px;line-height:1.25;min-height:2.5em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:4px}
-.rd .vt15 .vc>small{min-height:2.6em}
-.rd .vt15 .vc>.btn{margin-top:auto}
 
 /* Fan club page header: the artist's photo big on a coloured card. */
 .rd .fch15{display:flex;gap:22px;align-items:center;flex-wrap:wrap;padding:24px}
@@ -319,9 +314,6 @@
 .rd .tile.mh16 .dotm i.f{background:#fff}
 .rd .tile.mh16 .btn{--bb:#fff;--bf:#141414}
 .rd .tile.mh16 .pill{background:rgba(255,255,255,.2);color:#fff}
-.rd .vt15 .vc.tn15{padding:8px 8px 10px;border-radius:16px;color:var(--cfg)}
-.rd .vt15 .vc.tn15 .btn{--bb:var(--cfg);--bf:var(--cdk)}
-.rd .vt15 .vc.tn15 .btn.ghost{color:var(--cfg)}
 
 /* Profile header in your colour, your photo blurred over it. */
 .rd .phd14.ph16{position:relative;overflow:hidden;isolation:isolate;background:linear-gradient(135deg,color-mix(in srgb,var(--g1) 80%,#141210),color-mix(in srgb,var(--g1) 45%,#141210));color:#fff;--bb:#fff;--bf:#141414}
@@ -624,11 +616,6 @@
 .rd .bell19 .ic{width:16px;height:16px}
 
 /* Home: the rating streak line. */
-.rd .stk19{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:14px 0 0;padding:10px 16px;border-radius:99px;background:color-mix(in srgb,#F2A65A 22%,transparent);font-weight:700;width:fit-content;max-width:100%}
-.rd .stk19 .ic{width:18px;height:18px;color:#E46B2E}
-.rd .stk19 b{font:800 16px/1 var(--font-display)}
-.rd .stk19 span{opacity:.75}
-.rd .stk19.ok{background:color-mix(in srgb,#9BE15D 22%,transparent)}
 
 /* Share album window. */
 .rd .sha19{display:flex;flex-direction:column;gap:12px}
@@ -814,3 +801,77 @@ html,body,.rd{-webkit-user-select:none;user-select:none;-webkit-touch-callout:no
 .rd .tile.bs20 .cw15{margin-top:4px}
 .rd .tile.bs20 .cw15 .tx small{color:rgba(255,255,255,.8)}
 .rd .sec.two:has(>:only-child){grid-template-columns:minmax(0,1fr)}
+/* Rating streak on Home (2026-10-26): a small card — flame badge, the count,
+   the nudge, the last seven days as dots (filled = rated, today ringed). */
+.rd .stk20{display:flex;align-items:center;gap:12px;margin:14px 0 0;padding:12px 16px 12px 12px;border-radius:22px;background:color-mix(in srgb,#F2A65A 15%,transparent);max-width:560px}
+.rd .stk20 .fl{flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:#E46B2E;color:#fff}
+.rd .stk20 .fl .ic{width:22px;height:22px}
+.rd .stk20 .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.rd .stk20 .tx b{font:800 17px/1.15 var(--font-display)}
+.rd .stk20 .tx small{font-size:13px;font-weight:700;line-height:1.25;opacity:.7}
+.rd .stk20 .wk{flex:none;display:flex;gap:6px}
+.rd .stk20 .wk>span{display:flex;flex-direction:column;align-items:center;gap:4px}
+.rd .stk20 .wk i{display:block;width:12px;height:12px;border-radius:50%;background:color-mix(in srgb,currentColor 15%,transparent)}
+.rd .stk20 .wk .on i{background:#E46B2E}
+.rd .stk20 .wk .td i{outline:2px solid #E46B2E;outline-offset:2px}
+.rd .stk20 .wk small{font-size:10px;font-weight:800;line-height:1;opacity:.5}
+@media(max-width:400px){.rd .stk20 .wk{gap:4px}.rd .stk20 .wk i{width:10px;height:10px}.rd .stk20 .tx b{font-size:16px}}
+
+/* Notifications (2026-10-26): header fixed, the list scrolls by itself;
+   a sheet from the bottom on a phone. */
+.rd .modal.nf20{display:flex;flex-direction:column;padding:0;overflow:hidden;width:min(480px,100%);max-height:min(82dvh,760px)}
+.rd .nf20 .nfh{flex:none;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:20px 20px 8px}
+.rd .nf20 .nfh h2{margin:0}
+.rd .nf20 .nfl{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:2px 10px 18px}
+.rd .nf20 .nfs{margin:12px 10px 4px;font-size:12px;font-weight:800;opacity:.55}
+.rd .nfr{display:flex;align-items:center;gap:14px;width:100%;padding:10px;border-radius:18px;text-align:left;color:inherit}
+.rd .nfr+.nfr{margin-top:2px}
+.rd .nfr:hover{background:color-mix(in srgb,currentColor 6%,transparent)}
+.rd .nfr.un{background:color-mix(in srgb,var(--acc) 13%,transparent)}
+.rd .nfr .pic{position:relative;flex:none;width:52px;height:52px}
+.rd .nfr .pic .cov{display:block!important;width:52px;height:52px;border-radius:12px}
+.rd .nfr .pic .avt{width:52px;height:52px;font-size:20px;background-size:cover;background-position:center}
+.rd .nfr .kd{position:absolute;right:-5px;bottom:-5px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--acc);color:var(--onacc);box-shadow:0 0 0 2px var(--paper)}
+.rd .nfr .kd .ic{width:13px;height:13px;vertical-align:0}
+.rd .nfr .g{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.rd .nfr .g .k{font-size:12px;font-weight:700;opacity:.6}
+.rd .nfr .g b{font-size:15px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rd .nfr .g .sub{font-size:13px;font-weight:700;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rd .nfe{text-align:center;padding:26px 16px 30px}
+.rd .nfe .bl{display:inline-grid;place-items:center;width:64px;height:64px;border-radius:50%;background:color-mix(in srgb,var(--acc) 18%,transparent);color:var(--acct);margin-bottom:12px}
+.rd .nfe .bl .ic{width:28px;height:28px}
+.rd .nfe b{display:block;font:800 20px var(--font-display)}
+.rd .nfe p{margin:6px auto 0;max-width:300px;font-weight:600}
+@media(max-width:599px){
+  .rd .modalbg.nfbg{place-items:end center;padding:0}
+  .rd .modal.nf20{width:100%;max-height:88dvh;border-radius:28px 28px 0 0;padding-bottom:env(safe-area-inset-bottom)}
+}
+
+/* Tracklist (2026-10-26): the buttons line up whatever the score says —
+   the score box has one width; "best track" sits under the title. */
+.rd .trw19 .ts19{width:60px;min-width:0;padding:0 4px}
+.rd .trw19 .rowlink .g{flex:1;display:flex;flex-direction:column;align-items:flex-start;gap:3px}
+.rd .trw19 .bst19{margin-left:0;width:fit-content}
+@media(max-width:600px){.rd .trw19 .ts19{width:52px;min-width:0}}
+
+/* Group hero (2026-10-26): its three best albums the same size. */
+.rd .hcs9{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-width:330px;margin:0 auto;align-items:start}
+.rd .hcs9 button,.rd .hcs9 button.first{width:auto;display:block!important}
+
+/* Album of the month (2026-10-26): one row per album — cover, title and
+   artist, the share of votes as a bar, the vote button at the end. */
+.rd .vt20{display:flex;flex-direction:column;gap:10px;max-width:640px}
+.rd .vt20 .vr{display:flex;align-items:center;gap:14px;padding:10px 12px 10px 10px;border-radius:20px;background:rgba(10,8,6,.32)}
+.rd .vt20 .vr.mine{background:rgba(10,8,6,.5);outline:2px solid var(--cream,#F4EDE0);outline-offset:-2px}
+.rd .vt20 .cvb{flex:none;display:block!important;width:64px;height:64px;padding:0;border-radius:12px;overflow:hidden}
+.rd .vt20 .cvb .cov{display:block;width:64px;height:64px;border-radius:12px}
+.rd .vt20 .g{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.rd .vt20 .g b{font-size:15px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rd .vt20 .g .ar20{font-size:12px;font-weight:700;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rd .vt20 .bar{display:block;height:8px;border-radius:99px;background:rgba(255,255,255,.18);overflow:hidden;margin-top:4px}
+.rd .vt20 .bar i{display:block;height:100%;border-radius:inherit;background:var(--cream,#F4EDE0);transition:width .4s}
+.rd .vt20 .c{font-size:12px;font-weight:800;opacity:.85}
+.rd .vt20 .c .ic{width:13px;height:13px;color:#FFD54A}
+.rd .vt20 .vb{flex:none;white-space:nowrap;padding:9px 16px;border-radius:99px;font:800 14px/1 var(--font-display);color:inherit;outline:2px solid color-mix(in srgb,currentColor 70%,transparent);outline-offset:-2px}
+.rd .vt20 .vb.on{background:var(--cream,#F4EDE0);color:#1e1d1c;outline:0}
+@media(max-width:420px){.rd .vt20 .vr{gap:10px}.rd .vt20 .cvb,.rd .vt20 .cvb .cov{width:54px;height:54px}.rd .vt20 .vb{padding:8px 12px;font-size:13px}}

@@ -40,7 +40,7 @@ function FriendsWhoRated({ albumId }: { albumId: string }) {
 
   return (
     <div className="tile t-soft2">
-      <h3 style={{ marginBottom: 6 }}>{t('album.friendsWhoRated')}</h3>
+      <h2>{t('album.friendsWhoRated')}</h2>
       {rows === null ? null : rows.length ? (
         <PersonCards people={rows.map((r) => ({ id: r.id, name: r.name, avatarUrl: r.avatarUrl, value: `★ ${fmt1(r.stars)}`, onClick: () => viewFriend(r.id) }))} />
       ) : (
@@ -194,7 +194,6 @@ export function RateScreen({ device: _device }: { device: Device }) {
       <div className="two">
         <div className="stack">
           <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: '100%', aspectRatio: '1' }} />
-          <FriendsWhoRated albumId={a.id} />
         </div>
         <div className="stack">
           <p className="eyebrow muted">
@@ -317,6 +316,9 @@ export function RateScreen({ device: _device }: { device: Device }) {
           <AlbumReviews albumId={a.id} refreshToken={reviewsVersion} />
         </div>
       </div>
+
+      {/* Friends who rated: at the end of the page, after the album itself. */}
+      <div className="sec"><FriendsWhoRated albumId={a.id} /></div>
     </div>
   );
 }

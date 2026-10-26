@@ -381,20 +381,20 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
           </div>
         )}
 
-        {/* Friends who listen (the albums are on the Albums tab). */}
-        {fans.length > 0 && (
-          <div className="tile t-soft2" style={{ margin: '14px 0' }}>
-            <h2>{t('artist.friendsWhoListen', { name: art.name })}</h2>
-            <PersonCards people={fans.map((f) => ({ id: f.id, name: f.name, avatarUrl: f.avatarUrl, value: `${fmtHours(f.hours)} ${t('unit.h')}`, onClick: () => viewFriend(f.id) }))} />
-          </div>
-        )}
-
         <div className="chips" style={{ margin: '18px 0' }} role="tablist">
           {TABS.map((tb) => (
             <button key={tb.key} role="tab" aria-selected={tab === tb.key} className={`chip${tab === tb.key ? ' on' : ''}`} onClick={() => setTab(tb.key)}>{tb.label}</button>
           ))}
         </div>
         {body}
+
+        {/* Friends who listen: at the end, after the music itself. */}
+        {fans.length > 0 && (
+          <div className="tile t-soft2 sec">
+            <h2>{t('artist.friendsWhoListen', { name: art.name })}</h2>
+            <PersonCards people={fans.map((f) => ({ id: f.id, name: f.name, avatarUrl: f.avatarUrl, value: `${fmtHours(f.hours)} ${t('unit.h')}`, onClick: () => viewFriend(f.id) }))} />
+          </div>
+        )}
       </>
     );
   }

@@ -11,3 +11,16 @@ export function ratingStreak(dates: string[], tzOffset: number, now = Date.now()
   while (days.has(d)) { n++; d--; }
   return { days: n, ratedToday };
 }
+
+// The last `count` days, oldest first, today last: whether anything was
+// rated that day, and the day's weekday (0 = Sunday) in the same time zone.
+export function recentRatingDays(dates: string[], tzOffset: number, count = 7, now = Date.now()): { rated: boolean; weekday: number }[] {
+  const dayOf = (ms: number) => Math.floor((ms - tzOffset * 60000) / 86400000);
+  const days = new Set(dates.map((d) => dayOf(Date.parse(d))).filter((d) => Number.isFinite(d)));
+  const today = dayOf(now);
+  // Day 0 of the epoch (1 January 1970) was a Thursday.
+  return Array.from({ length: count }, (_, i) => {
+    const d = today - (count - 1 - i);
+    return { rated: days.has(d), weekday: (((d + 4) % 7) + 7) % 7 };
+  });
+}
