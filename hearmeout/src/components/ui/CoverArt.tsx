@@ -56,6 +56,10 @@ function watch(root: Element | null, el: Element, cb: () => void): () => void {
     if (left && !left.size) { waiting.delete(el); o.unobserve(el); }
   };
 }
+// Pictures already shown once: drawn at once when they appear again (another
+// screen, a re-render), instead of waiting a frame for the observer.
+const shown = new Set<string>();
+
 function whenNear(el: Element, cb: () => void): () => void {
   if (typeof IntersectionObserver === 'undefined') { cb(); return () => {}; }
   const row = el.parentElement?.closest('.hrow') ?? null;
@@ -70,7 +74,7 @@ export function CoverArt({ url: rawUrl, fallbackLetter, className = '', style, f
   const size = px ?? (typeof style?.width === 'number' ? style.width : undefined);
   const url = size ? sizedImage(rawUrl, size) : rawUrl;
   const [failed, setFailed] = useState(false);
-  const [near, setNear] = useState(false);
+  const [near, setNear] = useState(() => !!url && shown.has(url));
   const ref = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -82,6 +86,8 @@ export function CoverArt({ url: rawUrl, fallbackLetter, className = '', style, f
   useEffect(() => {
     setFailed(false);
     if (!url || !near) return;
+    shown.add(url);
+    if (shown.size > 4000) shown.delete(shown.values().next().value!);
     const img = new window.Image();
     img.onerror = () => setFailed(true);
     img.src = url;

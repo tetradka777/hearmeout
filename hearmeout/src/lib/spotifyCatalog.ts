@@ -1,7 +1,7 @@
 import { getSpotifyAppToken } from './spotifyAppAuth';
 import { bucketForGenres } from './genreBuckets';
 import { deezerArtistFor, deezerArtistGenres, deezerGenresById, normalizeTitle } from './deezerServer';
-import { withSpotifyCache } from './spotifyCache';
+import { storeSpotifyCache, withSpotifyCache } from './spotifyCache';
 import { RateLimitError, retryAfterSeconds } from './upstreamError';
 import { logServerError } from './errorLog';
 import { supabaseAdmin } from './supabaseAdmin';
@@ -195,7 +195,26 @@ export async function fetchSpotifyAlbumDetail(id: string): Promise<AlbumDetail |
   // the bucket comes from the main artist's Deezer genres; a failure just
   // leaves the album without a bucket rather than failing the album.
   const mainArtist: string | undefined = a.artists?.[0]?.name;
-  const artistGenres = mainArtist ? await deezerArtistGenres(mainArtist).catch(() => [] as string[]) : [];
+  const genresP = mainArtist ? deezerArtistGenres(mainArtist).catch(() => [] as string[]) : Promise.resolve([] as string[]);
+  // A new artist's genres take Deezer up to four requests in a row (about a
+  // second): the album (its cover) doesn't wait longer than GENRE_WAIT_MS
+  // for them; the cached copy gets its genre as soon as they arrive.
+  const quick = await Promise.race([genresP, new Promise<null>((r) => setTimeout(() => r(null), GENRE_WAIT_MS))]);
+  const detail = albumFromSpotify(a, quick || []);
+  if (quick === null) {
+    void genresP.then((g) => {
+      if (!g.length) return;
+      // After the caller's own write of the first copy.
+      setTimeout(() => { storeSpotifyCache(`album:${id}`, albumFromSpotify(a, g), 180 * 86400).catch(() => {}); }, 3000);
+    });
+  }
+  return detail;
+}
+
+const GENRE_WAIT_MS = 400;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function albumFromSpotify(a: any, artistGenres: string[]): AlbumDetail {
   return {
     id: a.id,
     title: a.name,

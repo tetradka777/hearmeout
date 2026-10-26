@@ -74,6 +74,13 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         {process.env.NODE_ENV === "development" && <script dangerouslySetInnerHTML={{ __html: DEV_HOST_SCRIPT }} />}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        {/* Covers and 30-second previews come from these hosts: the
+            connection is opened while the page starts, not at the first
+            picture or the first press of play. */}
+        <link rel="preconnect" href="https://i.scdn.co" />
+        <link rel="preconnect" href="https://cdnt-preview.dzcdn.net" />
+        <link rel="dns-prefetch" href="https://is1-ssl.mzstatic.com" />
+        <link rel="dns-prefetch" href="https://cdn-images.dzcdn.net" />
       </head>
       <body>
         <ErrorReporter />
