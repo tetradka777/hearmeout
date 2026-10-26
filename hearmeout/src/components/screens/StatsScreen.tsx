@@ -148,8 +148,8 @@ function ListeningCalendar({ data, t, language, weekStart }: { data: StatsData; 
       <div className="cal" ref={calRef}>
         <Phrase parts={[
           [`${calendar.activeDays} / ${calendar.totalDays}`, t('stats.calDaysListened')],
-          [calendar.longestStreak, t('stats.calLongestStreak')],
-          ...(calendar.bestDay ? [[durLong(calendar.bestDay.minutes, t), `${t('stats.calBestDay')} · ${dayLabel(parseDay(calendar.bestDay.date))}`]] as [string, string][] : []),
+          ...(calendar.longestStreak > 0 ? [[calendar.longestStreak, t('stats.calLongestStreak')]] as [number, string][] : []),
+          ...(calendar.bestDay && calendar.bestDay.minutes > 0 ? [[durLong(calendar.bestDay.minutes, t), `${t('stats.calBestDay')} · ${dayLabel(parseDay(calendar.bestDay.date))}`]] as [string, string][] : []),
         ]} />
         <div className="calscroll" ref={scrollRef} data-w={gridW} data-max={gridMax}>{gridEl}</div>
         <div className="calread" aria-live="polite">

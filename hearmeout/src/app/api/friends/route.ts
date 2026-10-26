@@ -6,6 +6,7 @@ import { acceptFriendRequest } from '@/lib/friendRequests';
 import { isDemoAccountId } from '@/lib/demoAccounts';
 import { sendPush } from '@/lib/push';
 import { hit, underLimit } from '@/lib/rateLimit';
+import { forgetFriendIds } from '@/lib/friendIds';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -93,6 +94,7 @@ export async function DELETE(request: NextRequest) {
     .delete()
     .or(`and(user_id.eq.${userId},friend_id.eq.${friendId}),and(user_id.eq.${friendId},friend_id.eq.${userId})`);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  forgetFriendIds(userId, friendId);
 
   await admin
     .from('friend_requests')

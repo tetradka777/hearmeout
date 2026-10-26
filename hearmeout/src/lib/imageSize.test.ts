@@ -22,3 +22,10 @@ test('other URLs unchanged', () => {
   assert.equal(sizedImage('https://coverartarchive.org/release-group/x/front-250', 44), 'https://coverartarchive.org/release-group/x/front-250');
   assert.equal(sizedImage(null, 44), undefined);
 });
+
+test('Apple Music chart covers', () => {
+  const apple = (s: string) => `https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/ea/98/f2/ea98f2b8/093624812647.jpg/${s}.jpg`;
+  assert.equal(sizedImage(apple('400x400bb'), 24), apple('64x64bb')); // a colour sample
+  assert.equal(sizedImage(apple('400x400bb'), 120), apple('300x300bb'));
+  assert.equal(sizedImage(apple('100x100bb'), 500), apple('600x600bb')); // at most 600
+});

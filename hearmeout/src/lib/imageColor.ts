@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type CSSProperties } from 'react';
+import { sizedImage } from './imageSize';
 
 // The main colour of a picture (an artist's photo), for tinting what's
 // around it: the image drawn tiny on a canvas and averaged, with the
@@ -8,6 +9,34 @@ import { useEffect, useState, type CSSProperties } from 'react';
 // Needs the image host to allow cross-origin reads (Spotify does); when
 // it doesn't, or the picture is still loading, the answer is null.
 const cache = new Map<string, Promise<string | null>>();
+
+// Colours already worked out, kept in the browser (by picture, so it's the
+// same for every account): a cover's colour no longer costs a download on
+// the next visit. Only real answers are kept, the newest STORE_MAX.
+const STORE_KEY = 'hmo-img-colors-v1';
+const STORE_MAX = 800;
+let stored: Map<string, string> | null = null;
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+function storedColors(): Map<string, string> {
+  if (stored) return stored;
+  stored = new Map();
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) for (const [k, v] of JSON.parse(raw) as [string, string][]) stored.set(k, v);
+  } catch { /* no storage */ }
+  return stored;
+}
+function remember(key: string, color: string): void {
+  const m = storedColors();
+  m.delete(key);
+  m.set(key, color);
+  while (m.size > STORE_MAX) m.delete(m.keys().next().value!);
+  if (saveTimer) return;
+  saveTimer = setTimeout(() => {
+    saveTimer = null;
+    try { localStorage.setItem(STORE_KEY, JSON.stringify([...m])); } catch { /* full or blocked */ }
+  }, 2000);
+}
 
 function average(img: HTMLImageElement): string | null {
   const c = document.createElement('canvas');
@@ -49,17 +78,26 @@ function vivid(r: number, g: number, b: number): string {
 }
 
 export function imageColor(url: string): Promise<string | null> {
-  let p = cache.get(url);
+  // The smallest variant is plenty for a 12×12 average (64 px ≈ 3 KB
+  // instead of the 300 px ≈ 35 KB cover).
+  const src = sizedImage(url, 24) ?? url;
+  let p = cache.get(src);
   if (!p) {
-    p = new Promise((resolve) => {
+    const known = storedColors().get(src);
+    p = known ? Promise.resolve(known) : new Promise((resolve) => {
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.decoding = 'async';
-      img.onload = () => { try { resolve(average(img)); } catch { resolve(null); } };
+      img.onload = () => {
+        let c: string | null = null;
+        try { c = average(img); } catch { /* unreadable */ }
+        if (c) remember(src, c);
+        resolve(c);
+      };
       img.onerror = () => resolve(null);
-      img.src = url;
+      img.src = src;
     });
-    cache.set(url, p);
+    cache.set(src, p);
   }
   return p;
 }
@@ -96,6 +134,10 @@ export function useImageColor(url: string | null | undefined): string | null {
 export function tintStyle(color: string | null | undefined): CSSProperties | undefined {
   return color ? ({ ['--tint' as string]: color } as CSSProperties) : undefined;
 }
-export function blurStyle(url: string | null | undefined): CSSProperties | undefined {
-  return url ? ({ ['--cvbg' as string]: `url('${url}')` } as CSSProperties) : undefined;
+// Blurred, so a small picture is enough (a 640 px cover is ~125 KB, the
+// 300 px one ~35 KB and usually already loaded for the cover itself).
+// `px`: the on-screen size to pick the picture for.
+export function blurStyle(url: string | null | undefined, px = 150): CSSProperties | undefined {
+  const src = sizedImage(url, px) ?? url;
+  return src ? ({ ['--cvbg' as string]: `url('${src}')` } as CSSProperties) : undefined;
 }

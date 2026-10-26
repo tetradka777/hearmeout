@@ -81,7 +81,7 @@ export function FriendsPicksCard() {
   return (
     <section className="sh14 fp20">
       <div className="hd"><h2>{t('home.friendsLovedTitle')}</h2></div>
-      <div className="tile bh15 crd" style={blurStyle(cover ? sizedImage(cover, 300) ?? cover : null)}>
+      <div className="tile bh15 crd" style={blurStyle(cover ? sizedImage(cover, 150) ?? cover : null)}>
         <div key={id} className={`in ${dir}${dy ? ' drg' : ''}`} style={dy ? { transform: `translateY(${dy}px)`, opacity: 1 - Math.abs(dy) / 220 } : undefined}>
           <div className="l">
             <button

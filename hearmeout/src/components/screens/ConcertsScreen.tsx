@@ -26,7 +26,7 @@ export function ConcertsScreen(_props: { device: Device }) {
   const id = who.id ?? shows[0]?.artistId ?? null;
   const loc = toLocale(language);
   const thisYear = new Date().getFullYear();
-  const bg = photo ? sizedImage(photo, 300) ?? photo : null;
+  const bg = photo ? sizedImage(photo, 150) ?? photo : null;
 
   return (
     <>

@@ -10,6 +10,11 @@ import { withSpotifyCache } from '@/lib/spotifyCache';
 export type FanClub = { id: string | null; name: string; photo: string | null; members: number };
 
 const PAGE = 24;
+
+// Who you played lately, per person for ten minutes: every page of
+// suggestions used to read up to 20 000 plays again.
+const PLAYED_TTL_MS = 10 * 60 * 1000;
+const playedMemo = new Map<string, { at: number; list: { id: string; name: string; n: number }[] }>();
 // Deezer's chart ids: all, then pop, rap, rock, electronic, R&B, latin,
 // alternative, dance, metal, soul, reggae, jazz, country, classical.
 const DEEZER_CHARTS = [0, 132, 116, 152, 106, 165, 197, 85, 113, 464, 169, 144, 129, 84, 98];
@@ -68,25 +73,32 @@ export async function GET(request: NextRequest) {
   }
 
   const offset = Math.max(0, Number(params.get('suggest')) || 0);
-  const since = new Date(Date.now() - 90 * 86400000).toISOString();
-  const { rows: plays } = await fetchAllRows((f, t) => admin
-    .from('listening_events')
-    .select('artist, artist_id')
-    .eq('user_id', userId)
-    .gte('played_at', since)
-    .not('artist_id', 'is', null)
-    .order('id')
-    .range(f, t), 20000, 4);
-  const listened = new Map<string, { id: string; name: string; n: number }>();
-  for (const p of plays || []) {
-    const name = p.artist as string | null;
-    const id = p.artist_id as string;
-    if (!name || name.includes(',') || followedIds.has(id)) continue;
-    const cur = listened.get(id) || { id, name, n: 0 };
-    cur.n++;
-    listened.set(id, cur);
+  let played = playedMemo.get(userId);
+  if (!played || Date.now() - played.at > PLAYED_TTL_MS) {
+    const since = new Date(Date.now() - 90 * 86400000).toISOString();
+    const { rows: plays } = await fetchAllRows((f, t) => admin
+      .from('listening_events')
+      .select('artist, artist_id')
+      .eq('user_id', userId)
+      .gte('played_at', since)
+      .not('artist_id', 'is', null)
+      .order('id')
+      .range(f, t), 20000, 4);
+    const listened = new Map<string, { id: string; name: string; n: number }>();
+    for (const p of plays || []) {
+      const name = p.artist as string | null;
+      const id = p.artist_id as string;
+      if (!name || name.includes(',')) continue;
+      const cur = listened.get(id) || { id, name, n: 0 };
+      cur.n++;
+      listened.set(id, cur);
+    }
+    played = { at: Date.now(), list: [...listened.values()].sort((a, b) => b.n - a.n) };
+    playedMemo.set(userId, played);
+    if (playedMemo.size > 2000) playedMemo.delete(playedMemo.keys().next().value!);
   }
-  const all: { id: string | null; name: string; photo: string | null }[] = [...listened.values()].sort((a, b) => b.n - a.n).map((a) => ({ id: a.id, name: a.name, photo: null }));
+  // Clubs you've joined since are left out here, not in the stored list.
+  const all: { id: string | null; name: string; photo: string | null }[] = played.list.filter((a) => !followedIds.has(a.id)).map((a) => ({ id: a.id, name: a.name, photo: null }));
   const taken = new Set([...all.map((a) => a.name.toLowerCase()), ...followedNames]);
   for (const a of await chartArtists().catch(() => [])) {
     if (taken.has(a.name.toLowerCase())) continue;

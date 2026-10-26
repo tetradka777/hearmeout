@@ -200,7 +200,7 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
               const saved = laterItems.some((li) => li.type === 'track' && li.albumId === tr.albumId && li.trackIndex === trackIndex);
               const isCur = currentTrack?.albumId === tr.albumId && currentTrack?.title === tr.title;
               return (
-                <div className={`row poprow ptr16${tr.albumCover ? ' bh15' : ' tile t-c3'}`} key={tr.id} style={blurStyle(tr.albumCover ? sizedImage(tr.albumCover, 300) ?? tr.albumCover : null)}>
+                <div className={`row poprow ptr16${tr.albumCover ? ' bh15' : ' tile t-c3'}`} key={tr.id} style={blurStyle(tr.albumCover ? sizedImage(tr.albumCover, 150) ?? tr.albumCover : null)}>
                   <span className="num" style={{ fontSize: 22, minWidth: 28, opacity: 0.8, whiteSpace: 'nowrap' }}>{i + 1}</span>
                   <button className="rowlink" disabled={!tr.albumId} onClick={() => tr.albumId && openAlbum(tr.albumId)}>
                     <span className="g">

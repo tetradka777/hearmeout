@@ -200,6 +200,9 @@ export function GroupScreen({ device: _device }: { device: Device }) {
           {([['closest', t('groups.tasteClosestLabel')], ['furthest', t('groups.tasteFurthestLabel')]] as const).map(([k, label]) => {
             const pair = detail.taste?.[k];
             if (!pair) return null;
+            // One pair only (two people with data): it's both closest and furthest.
+            const cl = detail.taste?.closest;
+            if (k === 'furthest' && cl && ((cl.a.id === pair.a.id && cl.b.id === pair.b.id) || (cl.a.id === pair.b.id && cl.b.id === pair.a.id))) return null;
             return (
               <div className="pr13" key={k}>
                 <span className="avs"><Av u={pair.a} /><Av u={pair.b} /></span>

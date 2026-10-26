@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { sizedImage } from '@/lib/imageSize';
 import { blurStyle } from '@/lib/imageColor';
 import { ArtistName } from '../ui/ArtistName';
 import { fmt1 } from '@/lib/numberFormat';
@@ -183,7 +182,7 @@ export function RateScreen({ device: _device }: { device: Device }) {
   // The cover, blurred, behind the whole page (fixed to the screen, so it's
   // put on the shell, not inside the moving screen) while this page is open.
   const backdrop = state.activeScreen === 'rate' && cover && typeof document !== 'undefined' && document.querySelector('.rd')
-    ? createPortal(<div className="abg17" style={blurStyle(sizedImage(cover, 640) ?? cover)} aria-hidden="true" />, document.querySelector('.rd')!)
+    ? createPortal(<div className="abg17" style={blurStyle(cover, 320)} aria-hidden="true" />, document.querySelector('.rd')!)
     : null;
   const shareModal = sharing ? <ShareAlbumModal album={{ id: a.id, title: a.title, artist: a.artist, cover: cover || null }} onClose={() => setSharing(false)} /> : null;
 
@@ -226,11 +225,14 @@ export function RateScreen({ device: _device }: { device: Device }) {
               </div>
             </div>
           )}
-          <Phrase parts={[
-            [circleAvg ? `★ ${fmt1(circleAvg.avg)}` : '—', t('album.yourCircle')],
-            [ratingInfo ? `★ ${fmt1(ratingInfo.avg)}` : '—', t('album.everyoneCount', { n: ratingInfo?.count ?? 0 })],
-            [myPlays ?? '–', t('album.yourPlays')],
-          ]} />
+          {/* Only the numbers there are (no row of dashes on an album nobody rated). */}
+          {(circleAvg || ratingInfo?.count || myPlays) ? (
+            <Phrase parts={[
+              ...(circleAvg ? [[`★ ${fmt1(circleAvg.avg)}`, t('album.yourCircle')]] as [string, string][] : []),
+              ...(ratingInfo?.count ? [[`★ ${fmt1(ratingInfo.avg)}`, t('album.everyoneCount', { n: ratingInfo.count })]] as [string, string][] : []),
+              ...(myPlays ? [[myPlays, t('album.yourPlays')]] as [number, string][] : []),
+            ]} />
+          ) : null}
 
           <div className="tile ratebox">
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>

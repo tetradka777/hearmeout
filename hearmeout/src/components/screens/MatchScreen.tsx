@@ -82,7 +82,7 @@ export function MatchScreen(_props: { device: Device }) {
   // All from the shared cache (lib/cachedJson): shown at once, refreshed.
   const discover = useCachedJson<{ people: DiscoverMatchPerson[] }>(me ? '/api/match/discover' : null).data?.people ?? null;
   const myStats6m = useCachedJson<StatsData>(me ? '/api/stats?range=6m' : null).data;
-  const myWeek = useCachedJson<StatsData>(me ? '/api/stats?period=week' : null).data;
+  const myWeek = useCachedJson<StatsData>(me ? `/api/stats?period=week&weekStart=${me.weekStart}&offset=0` : null).data;
   const myWeekHours = myWeek ? myWeek.hours : null;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // "Compare with …" / Taste match rows elsewhere pick the friend here.
@@ -220,7 +220,7 @@ export function MatchScreen(_props: { device: Device }) {
       <div className="sec two">
         <div>
           {/* Over the blurred cover of the album you two are furthest apart on. */}
-          <div className="tile bh15 dis19" style={blurStyle(gapCover ? sizedImage(gapCover, 300) ?? gapCover : null)}>
+          <div className="tile bh15 dis19" style={blurStyle(gapCover ? sizedImage(gapCover, 150) ?? gapCover : null)}>
             <h2>{t('match.whereYouDisagree')}</h2>
             {gaps.length ? gaps.map((g) => {
               const a = liveAlbums[g.albumId] || albums.find((x) => x.id === g.albumId);
