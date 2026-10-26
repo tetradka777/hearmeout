@@ -768,6 +768,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const setRecapSeasonKey = useCallback((key: string | null) => patch({ recapSeasonKey: key }), [patch]);
   const setRecapOffset = useCallback((o: number) => patch({ recapOffset: o }), [patch]);
   const setRatingValue = useCallback((v: number) => patch({ ratingValue: v }), [patch]);
+
+  // The slider and the review follow the album on screen however it was
+  // opened — a link, a reload, back/forward used to keep "–" (or the
+  // previous album's score) — and pick up the saved score once the ratings
+  // arrive, unless the person already started on this one.
+  const ratingFormAlbum = useRef<string | null>(null);
+  useEffect(() => {
+    const id = state.currentAlbumId;
+    const existing = myRatings.find((r) => r.albumId === id);
+    if (ratingFormAlbum.current !== id) {
+      ratingFormAlbum.current = id;
+      patch({ ratingValue: existing ? existing.stars : 0, ratingDraftText: existing ? existing.review || '' : '' });
+      return;
+    }
+    if (existing && state.ratingValue === 0 && !state.ratingDraftText) patch({ ratingValue: existing.stars, ratingDraftText: existing.review || '' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.currentAlbumId, myRatings]);
   const setRatingDraftText = useCallback((t: string) => patch({ ratingDraftText: t }), [patch]);
 
   const ensureRecap = useCallback((userId: string, period: RecapPeriod, seasonKey?: string | null, offset = 0) => {
