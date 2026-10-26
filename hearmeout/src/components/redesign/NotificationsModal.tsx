@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp } from '@/lib/AppContext';
 import { formatRelative, userAvatarStyle } from '@/lib/format';
@@ -11,15 +11,27 @@ import { CoverArt } from '../ui/CoverArt';
 
 const PERIOD_KEY: Record<RecapPeriod, TranslationKey> = { day: 'recap.day', week: 'recap.week', month: 'recap.month', season: 'recap.season', year: 'recap.year' };
 const REACTION_KEY: Record<string, TranslationKey> = { heart: 'social.rHeart', flame: 'social.rFlame', spark: 'social.rSpark', repeat: 'social.rRepeat', star: 'social.rStar' };
+// The kind as a small icon on the picture and a word above the text.
+const KIND: Record<AppNotification['kind'], { icon: string; label: TranslationKey }> = {
+  release: { icon: 'disc', label: 'notify.kRelease' },
+  album: { icon: 'note', label: 'notify.kAlbum' },
+  hi: { icon: 'smile', label: 'notify.kHi' },
+  recap: { icon: 'spark', label: 'notify.kRecap' },
+  comment: { icon: 'chat', label: 'notify.kComment' },
+  reaction: { icon: 'heart', label: 'notify.kReaction' },
+};
 
-// In-app notifications list (migration 021), opened from the avatar menu.
-// Opening it marks everything read. A "hi" opens the friend's profile, a
-// shared recap opens that friend's recap for the shared period, a new
-// release (migration 028) opens the album.
+// In-app notifications (migration 021), opened from the bell. Opening it
+// marks everything read; what was unread at that moment stays under "new"
+// while it's open. A "hi" opens the friend's profile, a shared recap opens
+// that friend's recap, a new release (migration 028) or a shared album
+// opens the album. A sheet from the bottom on a phone, a panel on a
+// computer; the header stays put and the list scrolls on its own.
 // Portaled into .rd for the same reason as the New group modal: screens
 // animate a transform, which would trap position:fixed.
 export function NotificationsModal({ onClose }: { onClose: () => void }) {
   const { t, language, me, notifications, markNotificationsRead, viewFriend, openRecap, openAlbum, viewGroup } = useApp();
+  const [unreadAtOpen] = useState(() => new Set(notifications.items.filter((n) => !n.read).map((n) => n.id)));
 
   useEffect(() => {
     markNotificationsRead();
@@ -51,36 +63,63 @@ export function NotificationsModal({ onClose }: { onClose: () => void }) {
     }
   };
 
+  const row = (n: AppNotification) => {
+    const music = n.kind === 'release' || n.kind === 'album' || !n.actor;
+    const kind = KIND[n.kind] ?? KIND.hi;
+    // Albums: the title big, the artist under it; people: the sentence.
+    const main = music
+      ? n.payload.title ?? ''
+      : n.kind === 'comment'
+        ? t('notify.comment', { name: n.actor!.name, text: n.payload.preview ?? '' })
+      : n.kind === 'reaction'
+        ? t('notify.reaction', { name: n.actor!.name, reaction: t(REACTION_KEY[n.payload.reaction ?? ''] ?? 'social.rHeart').toLowerCase() })
+      : n.kind === 'hi'
+        ? t('notify.hiFrom', { name: n.actor!.name })
+        : t('notify.recapFrom', { name: n.actor!.name, period: t(PERIOD_KEY[n.payload.period ?? 'week']).toLowerCase() });
+    const label = n.kind === 'album' && n.actor ? t('notify.kAlbum', { name: n.actor.name }) : t(n.kind === 'release' || !n.actor ? 'notify.kRelease' : kind.label);
+    return (
+      <button className={`nfr${unreadAtOpen.has(n.id) ? ' un' : ''}`} key={n.id} onClick={() => open(n)}>
+        <span className="pic">
+          {music
+            ? <CoverArt url={n.payload.cover ?? undefined} fallbackLetter={(n.payload.artist || '?')[0]} className="cov" px={56} />
+            : <span className="avt" style={userAvatarStyle(n.actor!)}>{!n.actor!.avatarUrl && n.actor!.name[0]?.toUpperCase()}</span>}
+          <span className="kd" aria-hidden="true"><i className={`ic ic-${music ? (n.kind === 'album' ? 'note' : 'disc') : kind.icon}`} /></span>
+        </span>
+        <span className="g">
+          <small className="k">{label} · {formatRelative(n.createdAt, language)}</small>
+          <b>{main}</b>
+          {music && n.payload.artist && <small className="sub">{n.payload.artist}</small>}
+          {n.kind === 'album' && n.payload.note && <small className="nt19">{quoted(language, n.payload.note)}</small>}
+        </span>
+        <i className="ic ic-chev" aria-hidden="true" />
+      </button>
+    );
+  };
+
+  const fresh = notifications.items.filter((n) => unreadAtOpen.has(n.id));
+  const earlier = notifications.items.filter((n) => !unreadAtOpen.has(n.id));
+
   return createPortal(
-    <div className="modalbg" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="modal tile" role="dialog" aria-modal="true" aria-labelledby="ntitle">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-          <h2 id="ntitle" style={{ margin: 0 }}>{t('notify.title')}</h2>
+    <div className="modalbg nfbg" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="modal tile nf20" role="dialog" aria-modal="true" aria-labelledby="ntitle">
+        <div className="nfh">
+          <h2 id="ntitle">{t('notify.title')}</h2>
           <button className="ib" onClick={onClose} aria-label={t('recap.close')}><CloseIcon /></button>
         </div>
-        {notifications.items.length ? notifications.items.map((n) => (
-          <button className="row" key={n.id} onClick={() => open(n)} style={{ width: '100%', textAlign: 'left', fontWeight: n.read ? 600 : 800 }}>
-            {n.kind === 'release' || n.kind === 'album' || !n.actor
-              ? <CoverArt url={n.payload.cover ?? undefined} fallbackLetter={(n.payload.artist || '?')[0]} className="cov" style={{ width: 34, height: 34, flex: 'none' }} />
-              : <span className="avt" style={{ ...userAvatarStyle(n.actor), width: 34, height: 34, fontSize: 14 }}>{n.actor.name[0]?.toUpperCase()}</span>}
-            <span className="g">
-              <b>{n.kind === 'album' && n.actor
-                ? t('notify.albumFrom', { name: n.actor.name, title: n.payload.title ?? '' })
-                : n.kind === 'release' || !n.actor
-                ? t('notify.newRelease', { artist: n.payload.artist ?? '', title: n.payload.title ?? '' })
-                : n.kind === 'comment'
-                  ? t('notify.comment', { name: n.actor.name, text: n.payload.preview ?? '' })
-                : n.kind === 'reaction'
-                  ? t('notify.reaction', { name: n.actor.name, reaction: t(REACTION_KEY[n.payload.reaction ?? ''] ?? 'social.rHeart').toLowerCase() })
-                : n.kind === 'hi'
-                  ? t('notify.hiFrom', { name: n.actor.name })
-                  : t('notify.recapFrom', { name: n.actor.name, period: t(PERIOD_KEY[n.payload.period ?? 'week']).toLowerCase() })}</b>
-              {n.kind === 'album' && n.payload.note && <small className="nt19">{quoted(language, n.payload.note)}</small>}
-              <small className="muted" style={{ fontWeight: 600 }}>{formatRelative(n.createdAt, language)}</small>
-            </span>
-            {(n.kind === 'recap' || n.kind === 'release' || n.kind === 'album' || n.kind === 'comment' || n.kind === 'reaction') && <span className="tag">{t('notify.open')}</span>}
-          </button>
-        )) : <p className="muted" style={{ fontWeight: 600 }}>{t('notify.empty')}</p>}
+        <div className="nfl">
+          {notifications.items.length ? (
+            <>
+              {fresh.length > 0 && <><p className="nfs">{t('notify.new')}</p>{fresh.map(row)}</>}
+              {earlier.length > 0 && <>{fresh.length > 0 && <p className="nfs">{t('notify.earlier')}</p>}{earlier.map(row)}</>}
+            </>
+          ) : (
+            <div className="nfe">
+              <span className="bl" aria-hidden="true"><i className="ic ic-spark" /></span>
+              <b>{t('notify.empty')}</b>
+              <p className="muted">{t('notify.emptyHint')}</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>,
     document.querySelector('.rd') ?? document.body,

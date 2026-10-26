@@ -10,7 +10,6 @@ import { userAvatarStyle, formatRelative } from '@/lib/format';
 import { toLocale, pluralForKey } from '@/lib/i18n';
 import { CoverArt } from '../ui/CoverArt';
 import { useCachedJson } from '@/lib/cachedJson';
-import { TintBox } from '../ui/Visual';
 import { blurStyle } from '@/lib/imageColor';
 import { sinceLabel } from './GroupsScreen';
 
@@ -225,21 +224,33 @@ export function GroupScreen({ device: _device }: { device: Device }) {
             {t('groups.voteQuestion')} {t('groups.voteEnds', { date: voteEnd.toLocaleDateString(toLocale(language), { day: 'numeric', month: 'long' }) })}
           </p>
           {detail.vote.candidates.length ? (
-            <div className="vt15">
+            // One row per album: cover, title and artist, the share of votes
+            // as a bar, the vote button at the end (narrow cards used to wrap
+            // the title and the button and squeeze the bar away).
+            <div className="vt20">
               {detail.vote.candidates.map((c) => {
                 const a = albumMeta(c.albumId);
                 const pct = totalVotes ? Math.round((c.count / totalVotes) * 100) : 0;
                 const mine = detail.vote.myVote === c.albumId;
+                const lead = c.count > 0 && c.albumId === leadCandidate?.albumId;
                 return (
-                  <TintBox key={c.albumId} className="vc" picture={a?.cover} fallbackKey={c.albumId}>
-                    <CoverArt url={a?.cover} fallbackLetter={a?.artist[0] || '?'} className="cov" px={170} style={{ width: '100%', aspectRatio: '1' }} />
-                    <b className="vt">{a ? a.title : '…'}</b>
-                    <div className="meter" style={{ height: 10 }}><i style={{ width: `${pct}%` }} /></div>
-                    <small style={{ fontWeight: 700 }}>{t('groups.voteCount', { count: c.count, word: pluralForKey(language, c.count, 'groups.voteOne', 'groups.voteFew', 'groups.voteMany') })} · {pct}%</small>
-                    <button className={`btn${mine ? '' : ' ghost'}`} style={{ width: '100%', padding: 8 }} onClick={() => castVote(c.albumId)} aria-pressed={mine}>
+                  <div key={c.albumId} className={`vr${mine ? ' mine' : ''}`}>
+                    <button className="cvb" onClick={() => openAlbum(c.albumId)} aria-label={a?.title ?? c.albumId}>
+                      <CoverArt url={a?.cover} fallbackLetter={a?.artist[0] || '?'} className="cov" px={64} />
+                    </button>
+                    <div className="g">
+                      <b>{a ? a.title : '…'}</b>
+                      {a && <small className="ar20">{a.artist}</small>}
+                      <span className="bar"><i style={{ width: `${pct}%` }} /></span>
+                      <small className="c">
+                        {lead && <><i className="ic ic-medal" aria-hidden="true" /> </>}
+                        {t('groups.voteCount', { count: c.count, word: pluralForKey(language, c.count, 'groups.voteOne', 'groups.voteFew', 'groups.voteMany') })} · {pct}%
+                      </small>
+                    </div>
+                    <button className={`vb${mine ? ' on' : ''}`} onClick={() => castVote(c.albumId)} aria-pressed={mine}>
                       {mine ? t('groups.yourVote') : t('groups.voteBtn')}
                     </button>
-                  </TintBox>
+                  </div>
                 );
               })}
             </div>
