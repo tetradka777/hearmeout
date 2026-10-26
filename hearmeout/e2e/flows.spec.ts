@@ -29,6 +29,9 @@ test('rate an album and put the rating back', async ({ page }) => {
   await page.goto(`/?screen=rate&id=${before!.albumId}`);
   const slider = screen(page).getByRole('slider').first();
   await expect(slider).toBeVisible();
+  // The saved score has to be on the slider first: on a slow server the
+  // keys used to land before it loaded and were then overwritten by it.
+  await expect(screen(page).locator('.ratebox .bub .num')).toHaveText(before!.stars.toFixed(1));
   await slider.focus();
   // A different score than now: down by 0.3 (or up if near the bottom).
   const key = before!.stars > 1 ? 'ArrowLeft' : 'ArrowRight';
