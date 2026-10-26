@@ -27,7 +27,7 @@ export function FriendPlayerCard({ user, demo = false, pct }: { user: ApiUser; d
   const genre = profile?.genres?.[0]?.g ?? null;
   // The match as a ring around the photo (r = 40, so the length is ~251).
   const ring = 2 * Math.PI * 40;
-  const bg = play?.cover ? sizedImage(play.cover, 300) ?? play.cover : null;
+  const bg = play?.cover ? sizedImage(play.cover, 150) ?? play.cover : null;
   return (
     <button className={`tile fc20${bg ? ' hasbg' : ''}`} style={{ ...tintStyle(color), ...(bg ? { ['--cvbg' as string]: `url('${bg}')` } : null) }} onClick={() => viewFriend(user.id)}>
       {demo && <span className="tag dm13">{t('friends.demoTag')}</span>}

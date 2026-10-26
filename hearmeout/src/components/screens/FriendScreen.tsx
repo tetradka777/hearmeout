@@ -301,7 +301,7 @@ export function FriendScreen({ device: _device }: { device: Device }) {
         const a = lp.albumId ? albumOf(lp.albumId) : undefined;
         const cover = (a && (spotifyCovers[a.id] || a.cover)) || lp.cover || undefined;
         return (
-          <button className="tile bh15 lp20" style={blurStyle(cover ? sizedImage(cover, 300) ?? cover : null)} onClick={() => a && openAlbum(a.id)} disabled={!a}>
+          <button className="tile bh15 lp20" style={blurStyle(cover ? sizedImage(cover, 150) ?? cover : null)} onClick={() => a && openAlbum(a.id)} disabled={!a}>
             <CoverArt url={cover} fallbackLetter={lp.artist[0] || '?'} className="cov" px={180} style={{ width: 96, height: 96, flex: 'none' }} />
             <span className="g">
               <small>
@@ -328,21 +328,21 @@ export function FriendScreen({ device: _device }: { device: Device }) {
       {/* Taste side by side: genres on your two colours, artists over the
           photo of the first one. */}
       <div className="sec two">
-        {overlap.length > 0 && (
+        {overlap.length > 0 && f.genres.length > 0 && me.genres.length > 0 && (
           <PairTile a={me} b={f}>
             <h2>{t('friend.genreOverlap')}</h2>
             <p className="du20h"><span className="num">{sharedGenrePct}%</span> {t('friend.sharedLabel')}</p>
             <Duel you={t('friend.youLower')} them={firstName} rows={overlap.map((o) => ({ key: o.g, label: <b>{o.g}</b>, a: o.me, b: o.friend, av: `${o.me}%`, bv: `${o.friend}%` }))} max={Math.max(1, ...overlap.flatMap((o) => [o.me, o.friend]))} />
           </PairTile>
         )}
-        {artistRows.length > 0 && (
+        {artistRows.some((r) => r.them > 0) && (
           <ArtistsDuel rows={artistRows} max={maxHours} you={t('friend.youLower')} them={firstName} title={t('friend.topArtistsCompare')} unit={t('unit.h')} onOpen={(r) => r.id && openSpotifyArtist(r.id, r.name)} />
         )}
       </div>
 
       {/* Albums you both rated, over the cover of the one you split on most. */}
       {shared.length > 0 && (
-        <div className="tile bh15 bs20" style={blurStyle(gapCover ? sizedImage(gapCover, 300) ?? gapCover : null)}>
+        <div className="tile bh15 bs20" style={blurStyle(gapCover ? sizedImage(gapCover, 150) ?? gapCover : null)}>
           <h2>{t('friend.bothLabel')}</h2>
           <CoverWall row items={[
             ...(biggestGap ? [{ ...wall(biggestGap.albumId, `${t('friend.you')} ${fmt1(biggestGap.mine)} · ${firstName} ${fmt1(biggestGap.theirs)}`, fmt1(biggestGap.theirs)), key: 'gap', title: t('friend.biggestGap') }] : []),
@@ -401,10 +401,10 @@ function FriendHead({ f, demo, isFriend, firstName: _firstName, children }: { f:
   const { t, language } = useApp();
   const color = usePersonColor(f);
   const counts: [string, string][] = f.locked ? [] : [
-    [String(f.stats.ratings), t('profile.ratingsL')],
+    [String(f.stats.ratings), t('profile.ratingsL', { n: f.stats.ratings })],
     [fmt1(f.stats.avg), t('profile.avgScoreL')],
-    [String(f.stats.reviews), t('profile.reviewsL')],
-    ...(f.friends ? [[String(f.friends.length), t('profile.friendsL')] as [string, string]] : []),
+    [String(f.stats.reviews), t('profile.reviewsL', { n: f.stats.reviews })],
+    ...(f.friends ? [[String(f.friends.length), t('profile.friendsL', { n: f.friends.length })] as [string, string]] : []),
   ];
   return (
     <div className="phd14 ph16 fh20" style={{ ['--g1' as string]: color, ['--a1' as string]: f.avatarUrl ? `url('${f.avatarUrl}')` : 'none' } as CSSProperties}>
@@ -480,7 +480,7 @@ function ArtistsDuel({ rows, max, you, them, title, unit, onOpen }: {
 }) {
   const photo = useArtistPhoto(rows[0]?.name ?? '', !!rows[0], rows[0]?.id);
   return (
-    <div className="tile bh15" style={blurStyle(photo ? sizedImage(photo, 300) ?? photo : null)}>
+    <div className="tile bh15" style={blurStyle(photo ? sizedImage(photo, 150) ?? photo : null)}>
       <h2>{title}</h2>
       <Duel you={you} them={them} max={max} rows={rows.map((r) => ({
         key: r.name,

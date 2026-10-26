@@ -24,6 +24,12 @@ export function sizedImage(url: string | null | undefined, cssPx: number): strin
     }
     return url;
   }
+  // Apple Music (the charts) names any size in the file name: 400x400bb.jpg.
+  const apple = url.match(/^(https:\/\/is\d+-ssl\.mzstatic\.com\/image\/thumb\/.+\/)(\d+)x(\d+)([a-z]*)(\.(?:jpg|png|webp))$/);
+  if (apple) {
+    const size = target <= 64 ? 64 : Math.min(600, Math.ceil(target / 100) * 100);
+    return `${apple[1]}${size}x${size}${apple[4] || 'bb'}${apple[5]}`;
+  }
   const deezer = url.match(/^(https:\/\/[a-z0-9-]+\.dzcdn\.net\/images\/[a-z]+\/[0-9a-f]+\/)(\d+)x\d+(-.*)$/);
   if (deezer) {
     const size = DEEZER_SIZES.find((s) => s >= target) ?? 1000;

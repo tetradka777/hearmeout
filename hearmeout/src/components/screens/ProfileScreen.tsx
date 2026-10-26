@@ -294,7 +294,7 @@ function ListeningTab() {
   useEffect(() => {
     if (!me) return;
     let cancelled = false;
-    const url = `/api/stats?period=week&weekStart=${me.weekStart}`;
+    const url = `/api/stats?period=week&weekStart=${me.weekStart}&offset=0`;
     const stored = peekJson<StatsData>(url);
     if (stored) { setPlays(stored.recentPlays ?? []); setWeek(stored); }
     cachedJson<StatsData>(url).then((d) => { if (!cancelled) { setPlays(d?.recentPlays ?? []); setWeek(d); } });
@@ -418,7 +418,7 @@ function FriendsTab() {
 
 export function ProfileScreen(_props: { device: Device }) {
   const { t, language, me, myRatings, updateProfileName, updateProfileHandle, updateAvatar, showScreen, friendRequests, showToast } = useApp();
-  const weekStats = useCachedJson<StatsData>(me ? `/api/stats?period=week&weekStart=${me.weekStart}` : null).data;
+  const weekStats = useCachedJson<StatsData>(me ? `/api/stats?period=week&weekStart=${me.weekStart}&offset=0` : null).data;
   // The header in your colour, your photo blurred over it.
   const myColor = usePersonColor(me ?? { id: '', name: '?', avatarUrl: null });
   const [tab, setTab] = useState<ProfileTab>('ratings');
@@ -514,7 +514,7 @@ export function ProfileScreen(_props: { device: Device }) {
           <button className="btn ghost" onClick={shareProfile}>{t('profile.shareProfile')}</button>
         </div>
         <div className="pcnt">
-          {[[String(list.length), t('profile.ratingsL')], [fmt1(avg), t('profile.avgScoreL')], [String(reviews), t('profile.reviewsL')], [String(me.friends.length), t('profile.friendsL')]].map(([v, l]) => (
+          {[[String(list.length), t('profile.ratingsL', { n: list.length })], [fmt1(avg), t('profile.avgScoreL')], [String(reviews), t('profile.reviewsL', { n: reviews })], [String(me.friends.length), t('profile.friendsL', { n: me.friends.length })]].map(([v, l]) => (
             <div key={l}><span className="num">{v}</span><small>{l}</small></div>
           ))}
           <a className="pub" href={`/u/${handle}`} target="_blank" rel="noreferrer">{t('profile.previewPublicPage')} ↗</a>

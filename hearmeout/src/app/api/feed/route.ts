@@ -4,6 +4,7 @@ import { fetchAllRows } from '@/lib/supabasePaginate';
 import { getCurrentUserId } from '@/lib/identity';
 import { DEFAULT_PRIVACY, fetchPrivacy } from '@/lib/privacy';
 import type { ApiUser, FeedDisagreement, FeedEvent, FeedResponse } from '@/lib/types';
+import { friendIdsOf } from '@/lib/friendIds';
 
 // Home feed (redesign spec 6.1, 8): real friend activity plus today's
 // biggest taste disagreement. Nothing here is premium-gated.
@@ -12,8 +13,7 @@ export async function GET(request: NextRequest) {
   if (!userId) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
 
   const admin = supabaseAdmin();
-  const { data: friendRows } = await admin.from('friendships').select('friend_id').eq('user_id', userId);
-  const friendIds = (friendRows || []).map((r) => r.friend_id as string);
+  const friendIds = await friendIdsOf(admin, userId);
 
   const now = Date.now();
   // "Today" is the viewer's day (?tz = the browser's getTimezoneOffset()).

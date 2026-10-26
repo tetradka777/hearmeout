@@ -10,6 +10,7 @@ import { isInternalEmail } from '@/lib/authInternalEmail';
 import { isDesign, isMode, isPaletteId } from '@/lib/palettes';
 import { DEFAULT_REGION, detectRegionFromSpotify, fetchRegionAuto } from '@/lib/regionDetect';
 import { spotifyUserToken } from '@/lib/spotifySync';
+import { forgetFriendIds } from '@/lib/friendIds';
 
 const emailMemo = new Map<string, { at: number; email: string | null }>();
 
@@ -205,7 +206,7 @@ export async function DELETE() {
     admin.from('connections').delete().eq('user_id', userId),
     admin.from('group_members').delete().eq('user_id', userId),
     admin.from('friendships').delete().eq('user_id', userId),
-    admin.from('friendships').delete().eq('friend_id', userId),
+    admin.from('friendships').delete().eq('friend_id', userId).then((r) => { forgetFriendIds(); return r; }),
     admin.from('friend_requests').delete().eq('from_user_id', userId),
     admin.from('friend_requests').delete().eq('to_user_id', userId),
     admin.from('match_snapshots').delete().eq('user_id', userId),

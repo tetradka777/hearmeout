@@ -29,7 +29,7 @@ export function DarkCard({ cover, head, right, children, onOpen, footLeft, class
   aside?: ReactNode; extra?: ReactNode;
 }) {
   const { t } = useApp();
-  const bg = cover ? sizedImage(cover, 300) : null;
+  const bg = cover ? sizedImage(cover, 150) : null;
   return (
     <article
       className={`dkc13 ${aside ? 'has-asd ' : ''}${onOpen ? 'tap ' : ''}${className}`.trim()}

@@ -304,7 +304,7 @@ function DayTile() {
   }
   return (
     // The day over its covers, blurred (the first one), white text.
-    <div className={`tile day13${covers[0]?.cover ? ' bh15' : ''}`} style={blurStyle(covers[0]?.cover ? sizedImage(covers[0].cover, 300) ?? covers[0].cover : null)}>
+    <div className={`tile day13${covers[0]?.cover ? ' bh15' : ''}`} style={blurStyle(covers[0]?.cover ? sizedImage(covers[0].cover, 150) ?? covers[0].cover : null)}>
       <div className="hd10"><h2 style={{ margin: 0 }}>{t('home.daySoFar')}</h2></div>
       {/* The same three numbers as the recap's strip. */}
       <div className="st15">
@@ -348,7 +348,10 @@ function RateTile() {
 function TrendingSection() {
   const { t, feed, openAlbum, spotifyCovers } = useApp();
   const list = feed?.trending || [];
-  const known = useAlbums(list.map((x) => x.albumId));
+  const loaded = useAlbums(list.map((x) => x.albumId));
+  // The same album rated under its catalog id and its Spotify id shows once.
+  const seen = new Set<string>();
+  const known = loaded.filter(({ album }) => { const k = `${album.title}|${album.artist}`.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; });
   if (!known.length) return null;
   return (
     <Shelf title={t('home.trendingTitle')}>

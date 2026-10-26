@@ -10,14 +10,20 @@ import { useCachedJson } from './cachedJson';
 // the page is opened. refreshToken: bumped after the user rates, which
 // forces a fresh answer.
 export function useAlbumJson<T>(url: string | null, refreshToken = 0): T | null {
-  const { data, reload } = useCachedJson<T>(url);
+  return useAlbumJsonState<T>(url, refreshToken).data;
+}
+
+// The same with whether the last load failed (so a block can stop saying
+// "loading…" when the request didn't work).
+export function useAlbumJsonState<T>(url: string | null, refreshToken = 0): { data: T | null; failed: boolean } {
+  const { data, failed, reload } = useCachedJson<T>(url);
   const first = useRef(refreshToken);
   useEffect(() => {
     if (refreshToken === first.current) return;
     first.current = refreshToken;
     void reload();
   }, [refreshToken, reload]);
-  return data;
+  return { data, failed };
 }
 
 export const albumStatsUrl = (albumId: string) => `/api/albums/${encodeURIComponent(albumId)}/stats`;
