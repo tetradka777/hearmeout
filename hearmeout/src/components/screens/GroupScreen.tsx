@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { LeaderboardTile } from '../ui/Podium';
-import { CoverWall } from '../ui/Visual';
+import { LeaderboardTile, PairTile, Podium } from '../ui/Podium';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import { invitePath } from '@/lib/pendingInvite';
@@ -11,7 +10,6 @@ import { userAvatarStyle, formatRelative } from '@/lib/format';
 import { toLocale, pluralForKey } from '@/lib/i18n';
 import { CoverArt } from '../ui/CoverArt';
 import { useCachedJson } from '@/lib/cachedJson';
-import { useAlbums } from '@/lib/useAlbum';
 import { blurStyle } from '@/lib/imageColor';
 import { sinceLabel } from './GroupsScreen';
 
@@ -30,13 +28,6 @@ export function GroupScreen({ device: _device }: { device: Device }) {
   // opens at once; after a change here the answer is fetched again.
   const groupQuery = useCachedJson<GroupDetail>(groupId ? `/api/groups/${groupId}?period=${period}` : null);
   const detail = groupQuery.data;
-  // Every album on the page fetched together (covers, titles): the collage,
-  // the vote, the wall and the latest ratings.
-  useAlbums(detail ? [...new Set([
-    ...detail.topAlbums.map((r) => r.albumId),
-    ...detail.vote.candidates.map((c) => c.albumId),
-    ...detail.activity.slice(0, 6).map((e) => e.albumId),
-  ])] : []);
   const load = () => { groupQuery.reload(); };
   useEffect(() => { setLeavingConfirm(false); setInviteErr(''); setInviteHandle(''); setPeriod('month'); }, [groupId]);
 
@@ -106,9 +97,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
   const Av = ({ u }: { u: { name: string; avatarUrl: string | null } }) => <span className="dot" style={userAvatarStyle(u)}>{!u.avatarUrl && u.name[0]}</span>;
 
   const statOf = (id: string) => statsByUser.get(id);
-  // Up to six (four on a phone) of the month's most rated albums as the hero collage.
-  const heroCovers = detail.topAlbums.slice(0, 6);
-  const maxHours = Math.max(0, ...detail.leaderboard.map((r) => r.hours));
+  const heroCovers = detail.topAlbums.slice(0, 3);
   // The page's top card over its best album's cover, blurred.
   const heroAlbum = heroCovers[0] ? albumMeta(heroCovers[0].albumId) : undefined;
   const heroCover = heroAlbum ? spotifyCovers[heroAlbum.id] || heroAlbum.cover : null;
@@ -118,45 +107,126 @@ export function GroupScreen({ device: _device }: { device: Device }) {
   };
   const leadCandidate = [...detail.vote.candidates].sort((x, y) => y.count - x.count)[0];
   const leadCover = coverOf(leadCandidate?.albumId);
+  const actCover = coverOf(detail.activity[0]?.albumId, detail.activity[0]?.cover);
 
   return (
     <>
       <button className="crumb" onClick={() => goBack('groups')}>‹ {t('groups.allGroups')}</button>
 
-      {/* Variant A, "club magazine": the cover, then what the group decides
-          this month (the vote), then who listened, the club's wall, the
-          latest ratings, and the members with invite / mute / leave last. */}
-      <div className="gp21">
-        <div className={`tile gh21 ${heroCover ? 'bh15' : 't-ink glow'}`} style={blurStyle(heroCover)}>
-          {heroCovers.length > 0 && (
-            <div className="col" aria-hidden="true">
-              {heroCovers.map((row) => {
-                const a = albumMeta(row.albumId);
-                return <CoverArt key={row.albumId} url={coverOf(row.albumId) ?? undefined} fallbackLetter={a?.artist[0] || '?'} className="cov" px={180} />;
-              })}
-            </div>
-          )}
-          <div className="bd">
-            <span className="pill">{t('groups.privateGroup')}</span>
-            <h1 className="big">{detail.name}</h1>
-            <p className="muted">{t('groups.memberCount', { count: detail.members.length, word: pluralForKey(language, detail.members.length, 'groups.memberOne', 'groups.memberFew', 'groups.memberMany') })} · {t('groups.since', { date: sinceLabel(detail.createdAt, language) })}</p>
-            <div className="st15 gst19">
-              <div><b>{Math.round(totalHours)}<small className="u">{t('unit.h')}</small></b><small>{t(period === 'week' ? 'groups.listenedWeek' : 'groups.listenedMonth')}</small></div>
-              <div><b>{totalRatingsThisMonth}</b><small>{t('groups.ratingsThisMonth')}</small></div>
-              <div><b>{groupAvgScore ? `★ ${fmt1(groupAvgScore)}` : '–'}</b><small>{t('groups.figAvg')}</small></div>
-            </div>
+      {/* Hero: the group on the left, its three best-rated albums on the right. */}
+      <div className={`tile ghero9 ${heroCover ? 'bh15' : 't-ink glow'}`} style={blurStyle(heroCover)}>
+        <div className="gh-l">
+          <span className="pill">{t('groups.privateGroup')}</span>
+          <h1 className="big" style={{ margin: '16px 0 8px' }}>{detail.name}</h1>
+          <p className="muted" style={{ fontWeight: 700 }}>{t('groups.memberCount', { count: detail.members.length, word: pluralForKey(language, detail.members.length, 'groups.memberOne', 'groups.memberFew', 'groups.memberMany') })} · {t('groups.since', { date: sinceLabel(detail.createdAt, language) })}</p>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '16px 0' }}>
+            {detail.members.map((m) => (
+              <button key={m.id} aria-label={m.name} onClick={() => openMember(m.id)}><Av u={m} /></button>
+            ))}
+          </div>
+          <div className="acts" style={{ marginTop: 4 }}>
+            <button className="btn" onClick={copyInviteLink}>{t('groups.inviteFriends')}</button>
+            <button className="btn ghost" aria-pressed={detail.muted} onClick={toggleMute}>{detail.muted ? t('groups.muted') : t('groups.muteNotifications')}</button>
           </div>
         </div>
+        {heroCovers.length > 0 && (
+          <div className="gh-r">
+            <div className="hcs9">
+              {heroCovers.map((row, i) => {
+                const a = albumMeta(row.albumId);
+                return (
+                  <button key={row.albumId} className={i === 0 ? 'first' : ''} onClick={() => openAlbum(row.albumId)} aria-label={a?.title ?? row.albumId} title={a ? `${a.title} — ${a.artist}` : undefined}>
+                    <CoverArt url={a?.cover} fallbackLetter={a?.artist[0] || '?'} className="cov" px={112} style={{ width: '100%', aspectRatio: '1' }} />
+                    <span className="sc9">{fmt1(row.avgScore)}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <small>{t('groups.heroTopAlbums')}</small>
+          </div>
+        )}
+        {/* The group's numbers as one strip across the hero. */}
+        <div className="st15 gst19">
+          <div><b>{Math.round(totalHours)}<small className="u">{t('unit.h')}</small></b><small>{t(period === 'week' ? 'groups.listenedWeek' : 'groups.listenedMonth')}</small></div>
+          <div><b>{totalRatingsThisMonth}</b><small>{t('groups.ratingsThisMonth')}</small></div>
+          <div><b>{groupAvgScore ? `★ ${fmt1(groupAvgScore)}` : '–'}</b><small>{t('groups.figAvg')}</small></div>
+        </div>
+      </div>
 
-        {/* The vote, right under the cover: the one thing here that asks
-            for something. Over the blurred cover of the album that leads. */}
-        <div className={`tile ${leadCover ? 'bh15' : 't-ink glow'}`} style={blurStyle(leadCover)}>
+      <div className="bento b3">
+        {/* Who listened most: the top three on a podium, everyone under it. */}
+        <LeaderboardTile className="s2" people={detail.leaderboard.slice(0, 3).map((r) => r.user)}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+            <h2 style={{ margin: 0 }}>{t('groups.leaderboard')}</h2>
+            <div className="chips" style={{ margin: 0 }} role="group" aria-label={t('recap.periodLabel')}>
+              <button className={`chip${period === 'week' ? ' on' : ''}`} onClick={() => changePeriod('week')}>{t('stats.thisWeek')}</button>
+              <button className={`chip${period === 'month' ? ' on' : ''}`} onClick={() => changePeriod('month')}>{t('stats.thisMonth')}</button>
+            </div>
+          </div>
+          <Podium
+            label={t('groups.leaderboard')}
+            entries={detail.leaderboard.map((row) => ({
+              key: row.user.id,
+              name: row.user.name,
+              value: `${fmtHours(row.hours)}${t('unit.h')}`,
+              you: row.user.id === me.id,
+              avatar: { style: { ...userAvatarStyle(row.user), backgroundSize: 'cover' }, letter: !row.user.avatarUrl && row.user.name[0]?.toUpperCase() },
+              onClick: row.user.id === me.id ? undefined : () => openMember(row.user.id),
+              person: { id: row.user.id, name: row.user.name, avatarUrl: row.user.avatarUrl },
+            }))}
+          />
+          <div className="mem13">
+            {detail.leaderboard.map((row, i) => {
+              const s = statOf(row.user.id);
+              return (
+                <button key={row.user.id} onClick={() => openMember(row.user.id)}>
+                  <Av u={row.user} />
+                  <b>{i + 1}. {row.user.name}</b>
+                  <small>{fmtHours(row.hours)}{t('unit.h')}{row.user.id === detail.createdBy ? ` · ${t('groups.owner')}` : ''}</small>
+                  {s && s.streakDays > 0 && <small className="fl13"><i className="ic ic-flame" /> {t('groups.streakChip', { n: s.streakDays })}</small>}
+                </button>
+              );
+            })}
+          </div>
+        </LeaderboardTile>
+
+        {/* Group taste: the average match, the closest and the furthest pair,
+            over the colours of the closest two. */}
+        <PairTile className="tst13" a={detail.taste?.closest?.a ?? null} b={detail.taste?.closest?.b ?? null}>
+          <h2>{t('groups.tasteTitle')}</h2>
+          <span className="big13">{detail.taste?.avgMatch != null ? `${detail.taste.avgMatch}%` : '–'}</span>
+          <p className="muted" style={{ fontWeight: 700 }}>{t('groups.tasteAvg')}</p>
+          {([['closest', t('groups.tasteClosestLabel')], ['furthest', t('groups.tasteFurthestLabel')]] as const).map(([k, label]) => {
+            const pair = detail.taste?.[k];
+            if (!pair) return null;
+            // One pair only (two people with data): it's both closest and furthest.
+            const cl = detail.taste?.closest;
+            if (k === 'furthest' && cl && ((cl.a.id === pair.a.id && cl.b.id === pair.b.id) || (cl.a.id === pair.b.id && cl.b.id === pair.a.id))) return null;
+            return (
+              <div className="pr13" key={k}>
+                <span className="avs"><Av u={pair.a} /><Av u={pair.b} /></span>
+                <span className="g">
+                  <small className="muted" style={{ fontWeight: 800 }}>{label}</small>
+                  <b>{t('groups.pairNames', { a: pair.a.name, b: pair.b.name })}</b>
+                  <span className="meter"><i style={{ width: `${pair.pct}%` }} /></span>
+                </span>
+                <span className="num">{pair.pct}%</span>
+              </div>
+            );
+          })}
+        </PairTile>
+
+        {/* The vote over the blurred cover of the album that leads it. */}
+        <div className={`tile s3 ${leadCover ? 'bh15' : 't-ink glow'}`} style={blurStyle(leadCover)}>
           <span className="pill">{t('groups.voteOpen')}</span>
           <h2 style={{ margin: '14px 0 4px' }}>{t('groups.voteForMonth', { month: voteMonth.toLocaleDateString(toLocale(language), { month: 'long' }) })}</h2>
           <p className="muted" style={{ fontWeight: 600, marginBottom: 16 }}>
             {t('groups.voteQuestion')} {t('groups.voteEnds', { date: voteEnd.toLocaleDateString(toLocale(language), { day: 'numeric', month: 'long' }) })}
           </p>
           {detail.vote.candidates.length ? (
+            // One row per album: cover, title and artist, the share of votes
+            // as a bar, the vote button at the end (narrow cards used to wrap
+            // the title and the button and squeeze the bar away).
             <div className="vt20">
               {detail.vote.candidates.map((c) => {
                 const a = albumMeta(c.albumId);
@@ -187,114 +257,52 @@ export function GroupScreen({ device: _device }: { device: Device }) {
           ) : <p className="muted" style={{ fontWeight: 600 }}>{t('groups.noCandidates')}</p>}
         </div>
 
-        <div className="bento b3 gb21">
-          {/* Who listened most: everyone as a row with a bar of their hours,
-              in the colours of the top three. */}
-          <LeaderboardTile className="s2" people={detail.leaderboard.slice(0, 3).map((r) => r.user)}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-              <h2 style={{ margin: 0 }}>{t('groups.leaderboard')}</h2>
-              <div className="chips" style={{ margin: 0 }} role="group" aria-label={t('recap.periodLabel')}>
-                <button className={`chip${period === 'week' ? ' on' : ''}`} onClick={() => changePeriod('week')}>{t('stats.thisWeek')}</button>
-                <button className={`chip${period === 'month' ? ' on' : ''}`} onClick={() => changePeriod('month')}>{t('stats.thisMonth')}</button>
-              </div>
-            </div>
-            <div className="lr21">
-              {detail.leaderboard.map((row, i) => {
-                const s = statOf(row.user.id);
-                const pct = maxHours ? Math.max(4, Math.round((row.hours / maxHours) * 100)) : 0;
+        {/* Latest ratings as covers you swipe through, over the latest one. */}
+        <div className={`tile s3 ${actCover ? 'bh15' : 't-c4'}`} style={blurStyle(actCover)}>
+          <h2>{t('groups.activity')}</h2>
+          {detail.activity.length ? (
+            <div className="hrow act13">
+              {detail.activity.map((ev, i) => {
+                const a = albumMeta(ev.albumId);
                 return (
-                  <button key={row.user.id} className={`r${row.user.id === me.id ? ' you' : ''}`} onClick={() => openMember(row.user.id)}>
-                    <span className="n">{i + 1}</span>
-                    <Av u={row.user} />
-                    <span className="g">
-                      <b>
-                        {row.user.name}
-                        {row.user.id === detail.createdBy && <small> · {t('groups.owner')}</small>}
-                        {s && s.streakDays > 0 && <small className="fl"> <i className="ic ic-flame" aria-hidden="true" /> {s.streakDays}</small>}
-                      </b>
-                      <span className="bar"><i style={{ width: `${pct}%` }} /></span>
-                    </span>
-                    <span className="h">{fmtHours(row.hours)}{t('unit.h')}</span>
+                  <button className="act13c" key={i} onClick={() => openAlbum(ev.albumId)}>
+                    <div className="cvw">
+                      <CoverArt url={a?.cover ?? ev.cover ?? undefined} fallbackLetter={(a?.artist ?? ev.albumArtist)[0] || '?'} className="cov" px={150} style={{ width: '100%', aspectRatio: '1' }} />
+                      <Av u={ev.user} />
+                      <span className="sc13">{fmt1(ev.stars)}</span>
+                    </div>
+                    <b>{a?.title ?? ev.albumTitle}</b>
+                    <small className="muted">{ev.user.name} {ev.type === 'review' ? t('groups.wroteAbout') : t('groups.rated')}</small>
+                    <small className="muted">{formatRelative(ev.createdAt, language)}</small>
                   </button>
                 );
               })}
             </div>
-          </LeaderboardTile>
+          ) : <p className="muted" style={{ fontWeight: 600 }}>{t('groups.noActivity')}</p>}
+        </div>
 
-          {/* The latest ratings as a short list. */}
-          <div className="tile af21">
-            <h2>{t('groups.activity')}</h2>
-            {detail.activity.length ? (
-              <div className="ls">
-                {detail.activity.slice(0, 6).map((ev, i) => {
-                  const a = albumMeta(ev.albumId);
-                  return (
-                    <button className="r" key={i} onClick={() => openAlbum(ev.albumId)}>
-                      <span className="cvw">
-                        <CoverArt url={a?.cover ?? ev.cover ?? undefined} fallbackLetter={(a?.artist ?? ev.albumArtist)[0] || '?'} className="cov" px={48} />
-                        <Av u={ev.user} />
-                      </span>
-                      <span className="g">
-                        <b>{a?.title ?? ev.albumTitle}</b>
-                        <small>{ev.user.name} {ev.type === 'review' ? t('groups.wroteAbout') : t('groups.rated')} · {formatRelative(ev.createdAt, language)}</small>
-                      </span>
-                      <span className="scr">★ {fmt1(ev.stars)}</span>
-                    </button>
-                  );
-                })}
+        {/* Managing the group: invite by handle, leave. */}
+        <div className="tile t-soft2 s3">
+          <div className="mng13">
+            <div className="inv">
+              <label htmlFor="ginv" style={{ fontWeight: 800 }}>{t('groups.inviteByHandle')}</label>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
+                <input className="field" id="ginv" style={{ flex: 1, minWidth: 150 }} placeholder={t('friends.handlePlaceholder')} value={inviteHandle} aria-invalid={!!inviteErr} aria-describedby="ginverr" onChange={(e) => setInviteHandle(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') invite(); }} />
+                <button className="btn" onClick={invite}>{t('groups.invite')}</button>
               </div>
-            ) : <p className="muted" style={{ fontWeight: 600 }}>{t('groups.noActivity')}</p>}
-          </div>
-
-          {/* The club's wall: this month's most rated albums, covers with
-              the group's average. */}
-          {detail.topAlbums.length > 0 && (
-            <div className="tile s3 wl21">
-              <h2>{t('groups.heroTopAlbums')}</h2>
-              <CoverWall row items={detail.topAlbums.map((row) => {
-                const a = albumMeta(row.albumId);
-                return { key: row.albumId, cover: coverOf(row.albumId), title: a?.title ?? '…', artist: a?.artist ?? null, artistId: a?.artistId ?? null, badge: fmt1(row.avgScore), onClick: () => openAlbum(row.albumId) };
-              })} />
+              <p className="ferr" id="ginverr" role="alert">{inviteErr}</p>
             </div>
-          )}
-
-          {/* Members, then inviting, muting and leaving. */}
-          <div className="tile t-soft2 s3 mb21">
-            <h2>{t('groups.members')}</h2>
-            <div className="ms">
-              {detail.members.map((m) => (
-                <button key={m.id} onClick={() => openMember(m.id)}>
-                  <Av u={m} />
-                  <b>{m.name}</b>
-                  {m.id === detail.createdBy && <small>{t('groups.owner')}</small>}
-                </button>
-              ))}
-            </div>
-            <div className="acts" style={{ margin: '14px 0 18px' }}>
-              <button className="btn" onClick={copyInviteLink}>{t('groups.inviteFriends')}</button>
-              <button className="btn ghost" aria-pressed={detail.muted} onClick={toggleMute}>{detail.muted ? t('groups.muted') : t('groups.muteNotifications')}</button>
-            </div>
-            <div className="mng13">
-              <div className="inv">
-                <label htmlFor="ginv" style={{ fontWeight: 800 }}>{t('groups.inviteByHandle')}</label>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
-                  <input className="field" id="ginv" style={{ flex: 1, minWidth: 150 }} placeholder={t('friends.handlePlaceholder')} value={inviteHandle} aria-invalid={!!inviteErr} aria-describedby="ginverr" onChange={(e) => setInviteHandle(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') invite(); }} />
-                  <button className="btn" onClick={invite}>{t('groups.invite')}</button>
+            {leavingConfirm ? (
+              <div>
+                <p className="muted" style={{ fontWeight: 600, marginBottom: 10 }}>{t('groups.leaveConfirmTitle', { name: detail.name })} {t('groups.leaveConfirmBody')}</p>
+                <div className="acts" style={{ marginTop: 0 }}>
+                  <button className="btn danger" onClick={leaveGroup}>{t('groups.leaveConfirmBtn')}</button>
+                  <button className="btn ghost" onClick={() => setLeavingConfirm(false)}>{t('groups.leaveCancel')}</button>
                 </div>
-                <p className="ferr" id="ginverr" role="alert">{inviteErr}</p>
               </div>
-              {leavingConfirm ? (
-                <div>
-                  <p className="muted" style={{ fontWeight: 600, marginBottom: 10 }}>{t('groups.leaveConfirmTitle', { name: detail.name })} {t('groups.leaveConfirmBody')}</p>
-                  <div className="acts" style={{ marginTop: 0 }}>
-                    <button className="btn danger" onClick={leaveGroup}>{t('groups.leaveConfirmBtn')}</button>
-                    <button className="btn ghost" onClick={() => setLeavingConfirm(false)}>{t('groups.leaveCancel')}</button>
-                  </div>
-                </div>
-              ) : (
-                <button className="btn ghost" onClick={() => setLeavingConfirm(true)}>{t('groups.leaveGroup')}</button>
-              )}
-            </div>
+            ) : (
+              <button className="btn ghost" onClick={() => setLeavingConfirm(true)}>{t('groups.leaveGroup')}</button>
+            )}
           </div>
         </div>
       </div>
