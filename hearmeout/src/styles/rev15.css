@@ -759,3 +759,58 @@
 .rd .fcg20w h2{margin:0 0 12px}
 .rd .fcg20{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:12px}
 .rd .fcg20>.fc20{width:auto}
+
+/* Nothing on the site is selectable (long-press on a phone selected ticker
+   text); fields you type into still are. */
+html,body,.rd{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.rd :is(input,textarea,[contenteditable="true"]),:is(input,textarea){-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+
+/* A friend's profile: header in their colour, the match card, now playing
+   over its cover, taste as duels. */
+.rd .fh20 .ey{font-weight:800;opacity:.8}
+.rd .fh20 h1.pname{border:0;padding:0;margin:2px 0 0;line-height:1;font-family:var(--font-display);font-weight:800;letter-spacing:-.02em}
+.rd .fh20 .nowl{margin:10px 0 0;padding:6px 12px;border-radius:99px;background:rgba(255,255,255,.16);display:inline-flex;font-size:14px;max-width:100%}
+.rd .fh20 .pcnt .num{color:#fff}
+.rd .fh20 .pbt14:empty{display:none}
+.rd .fh20 .conf{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.rd .tile.fmh20{margin-top:14px}
+.rd .tile.fmh20 .pct{font-size:clamp(72px,18vw,124px)}
+.rd .tile.fmh20 .btn.ghost{--bb:transparent;color:#fff;border-color:rgba(255,255,255,.7);outline-color:rgba(255,255,255,.7)}
+.rd .tile.fmh20 .ph15{margin-top:14px}
+.rd .tile.fmh20 .ph15 span{background:rgba(255,255,255,.18)}
+.rd .tile.fmh20 .lc{width:100%;max-width:420px;height:auto;margin-top:12px;color:#fff;display:block}
+.rd .tile.fmh20 .axis{max-width:420px;color:rgba(255,255,255,.75)}
+.rd .fm20{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.rd .fm20 .duo{display:flex}
+.rd .fm20 .avt{width:40px;height:40px;font-size:16px;box-shadow:0 0 0 3px rgba(255,255,255,.85)}
+.rd .fm20 .avt+.avt{margin-left:-12px}
+.rd .tile.lp20{display:flex!important;flex-direction:row!important;align-items:center!important;gap:16px;width:100%;margin-top:14px;text-align:left;padding:18px}
+.rd .tile.lp20 .cov{aspect-ratio:1;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.rd .lp20 .g{display:flex;flex-direction:column;gap:3px;min-width:0}
+.rd .lp20 small{font-weight:800;display:flex;align-items:center;gap:8px}
+.rd .lp20 .tt{font:800 clamp(22px,5vw,30px)/1.05 var(--font-display);letter-spacing:-.01em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rd .lp20 .eq{height:14px}
+.rd .du20h{font-weight:800;margin:-4px 0 12px}
+.rd .du20h .num{font-size:34px;color:#fff}
+.rd .du20 .lgd{display:flex;justify-content:space-between;font-weight:800;font-size:13px;margin-bottom:6px;opacity:.85}
+.rd .du20 .lgd span{display:inline-flex;align-items:center;gap:6px}
+.rd .du20 .lgd i{width:10px;height:10px;border-radius:50%}
+.rd .du20 i.a,.rd .du20 .ba i{background:#fff}
+.rd .du20 i.b,.rd .du20 .bb i{background:repeating-linear-gradient(135deg,#fff 0 4px,rgba(255,255,255,.4) 4px 7px)}
+.rd .du20 .r{display:grid;grid-template-columns:44px 1fr 1fr 44px;align-items:center;gap:6px 0;width:100%;color:inherit;text-align:left;padding:8px 0;border-top:1px solid rgba(255,255,255,.14)}
+.rd .du20 .r:first-of-type{border-top:0}
+.rd .du20 .lb{grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;font-size:15px}
+.rd .du20 .lb b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .du20 .va,.rd .du20 .vb{font-weight:800;font-size:13px}
+.rd .du20 .vb{text-align:right}
+.rd .du20 .ba,.rd .du20 .bb{height:12px;display:flex;background:rgba(255,255,255,.14)}
+.rd .du20 .ba{justify-content:flex-end;border-radius:99px 0 0 99px;margin-right:2px}
+.rd .du20 .bb{border-radius:0 99px 99px 0}
+.rd .du20 .ba i,.rd .du20 .bb i{display:block;height:100%;min-width:3px;animation:du20 .7s var(--d,0ms) both cubic-bezier(.2,.8,.2,1)}
+.rd .du20 .ba i{border-radius:99px 0 0 99px;transform-origin:right}
+.rd .du20 .bb i{border-radius:0 99px 99px 0;transform-origin:left}
+@keyframes du20{from{transform:scaleX(0)}}
+.rd .tile.bs20{margin-top:14px}
+.rd .tile.bs20 .cw15{margin-top:4px}
+.rd .tile.bs20 .cw15 .tx small{color:rgba(255,255,255,.8)}
+.rd .sec.two:has(>:only-child){grid-template-columns:minmax(0,1fr)}
