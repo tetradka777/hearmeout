@@ -5,7 +5,8 @@ import { computeMatch } from '@/lib/matchScore';
 import { computeMonthAwards, scoutAward, stuckAward, timeTravelerAward, type AwardEvent } from '@/lib/monthAwards';
 import { DEFAULT_PRIVACY, fetchPrivacy } from '@/lib/privacy';
 import { fetchAllRows } from '@/lib/supabasePaginate';
-import { cachedGroupDetail, storeGroupDetail } from '@/lib/groupDetailCache';
+import { cachedGroupDetail, invalidateGroupDetail, storeGroupDetail } from '@/lib/groupDetailCache';
+import { readGroupCovers, validGroupCover } from '@/lib/groupCover';
 import type { ApiUser, GroupAward, GroupDetail, GroupLeaderboardPeriod, GroupMemberStats, GroupPastAwards, GroupRecord, GroupTastePair, GroupTopAlbum, GroupVoteCandidate } from '@/lib/types';
 
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -28,7 +29,10 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   const myMembership = (memberRows || []).find((m) => m.user_id === userId);
   const muted = Boolean(myMembership?.muted);
 
-  const { data: users } = await admin.from('users').select('id, name, handle, avatar_url').in('id', memberIds);
+  const [{ data: users }, covers] = await Promise.all([
+    admin.from('users').select('id, name, handle, avatar_url').in('id', memberIds),
+    readGroupCovers(admin, [id]),
+  ]);
   const members: ApiUser[] = (users || []).map((u) => ({ id: u.id, name: u.name, handle: u.handle, avatarUrl: u.avatar_url }));
   const userById = new Map(members.map((m) => [m.id, m]));
 
@@ -337,7 +341,11 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     voteCounts.set(k, (voteCounts.get(k) || 0) + 1);
   }
   const myVoteRow = (voteRows || []).find((v) => v.voter_id === userId);
-  const candidates: GroupVoteCandidate[] = voteCandidateAlbums.map((albumId) => ({ albumId, count: voteCounts.get(albumId) || 0 }));
+  const candidates: GroupVoteCandidate[] = voteCandidateAlbums.map((albumId) => ({
+    albumId,
+    count: voteCounts.get(albumId) || 0,
+    voters: (voteRows || []).filter((v) => v.candidate_id === albumId).map((v) => userById.get(v.voter_id as string)).filter((u): u is ApiUser => !!u),
+  }));
   const vote = { monthKey, myVote: myVoteRow ? (myVoteRow.candidate_id as string) : null, candidates };
 
   // Past-months awards history (spec gap): bucket the lookback-window rows
@@ -369,8 +377,26 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   const detail: GroupDetail = {
     id: group.id, name: group.name, createdBy: group.created_by, createdAt: group.created_at,
     members, memberStats, awards, pastAwards, activity, leaderboard, leaderboardPeriod,
-    records, topAlbums, taste, vote, muted,
+    records, topAlbums, taste, vote, muted, cover: covers.get(id) ?? null,
   };
   storeGroupDetail(id, userId, leaderboardPeriod, detail);
   return NextResponse.json(detail);
+}
+
+// Change the group's cover: any member may. { cover: <album cover link> |
+// <data: picture> | null } — null puts the best album of the month back.
+export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const userId = await getCurrentUserId();
+  if (!userId) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
+  const { id } = await context.params;
+  const admin = supabaseAdmin();
+  const { data: membership } = await admin.from('group_members').select('user_id').eq('group_id', id).eq('user_id', userId).maybeSingle();
+  if (!membership) return NextResponse.json({ error: 'not_a_member' }, { status: 403 });
+  const body = await request.json().catch(() => null);
+  const cover = validGroupCover(body?.cover);
+  if (cover === undefined) return NextResponse.json({ error: 'invalid_image' }, { status: 400 });
+  const { error } = await admin.from('groups').update({ cover }).eq('id', id);
+  if (error) return NextResponse.json({ error: 'not_ready' }, { status: 503 });
+  invalidateGroupDetail(id);
+  return NextResponse.json({ ok: true, cover });
 }
