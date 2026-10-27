@@ -930,3 +930,5 @@ html,body,.rd{-webkit-user-select:none;user-select:none;-webkit-touch-callout:no
    autosizing goes by the width of the block). Every event is its own block no
    wider than the strip, cut with an ellipsis, so all come out the same size. */
 .rd .ticker .grp>span{display:inline-block;max-width:min(560px,calc(100vw - 72px));overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+/* A screen whose code is still on its way (AppShell Suspense). */
+.rd .scl22{display:grid;place-items:center;min-height:50vh}
