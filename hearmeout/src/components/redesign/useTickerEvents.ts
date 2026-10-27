@@ -55,7 +55,7 @@ export function useTickerEvents(): TickerEvent[] {
   for (const [i, e] of feed.events.entries()) {
     if (events.length >= OWN_MAX) break;
     if (e.type === 'first_play') {
-      events.push({ id: `fp-${i}-${e.at}`, name: e.user.name, text: t('ticker.firstPlay', { track: e.trackTitle }) });
+      events.push({ id: `fp-${i}-${e.at}`, name: e.user.name, text: t('ticker.firstPlay', { track: shortTitle(e.trackTitle) }) });
     } else if (e.type === 'rating_review') {
       const title = albumTitle(e.albumId);
       if (title) events.push({ id: `rr-${i}-${e.at}`, name: e.user.name, text: t('ticker.rated', { album: title, stars: e.stars.toFixed(1) }) });
