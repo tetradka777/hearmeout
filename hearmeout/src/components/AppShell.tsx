@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ComponentType } from 'react';
+import { Suspense, startTransition, useEffect, useState, type ComponentType } from 'react';
 import dynamic from 'next/dynamic';
 import { useApp } from '@/lib/AppContext';
 import { useWheelRows } from '@/lib/hooks';
@@ -83,14 +83,15 @@ const FIRST_DELAY_MS = 2500;
 const STEP_MS = 900;
 
 export function AppShell() {
-  const { state, me } = useApp();
+  const { state, me, t } = useApp();
   useWheelRows();
 
-  // Fetch the other screens' code once the first one is up.
+  // Fetch the other screens' code right after the first one is up (they're
+  // small): waiting for an idle moment left a tab tapped in the first
+  // seconds waiting too.
   useEffect(() => {
-    const warm = () => { for (const load of SCREEN_LOADERS) load().catch(() => {}); };
-    const ric = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
-    if (ric) ric(warm, { timeout: 1500 }); else setTimeout(warm, 300);
+    const id = setTimeout(() => { for (const load of SCREEN_LOADERS) load().catch(() => {}); }, 0);
+    return () => clearTimeout(id);
   }, []);
 
   // A screen mounts the first time it's opened and then stays mounted
@@ -115,7 +116,9 @@ export function AppShell() {
       if (!alive) return;
       const name = BACKGROUND_SCREENS[i++];
       if (!name) { preloadDetails(me, () => alive).catch(() => {}); return; }
-      setVisited((v) => (v.has(name) ? v : new Set(v).add(name)));
+      // A transition: a tap in the meantime is handled first, not after the
+      // hidden screen's render.
+      startTransition(() => setVisited((v) => (v.has(name) ? v : new Set(v).add(name))));
       timer = setTimeout(step, STEP_MS);
     };
     timer = setTimeout(step, FIRST_DELAY_MS);
@@ -145,7 +148,14 @@ export function AppShell() {
       {state.justRegistered && <OnboardingScreen />}
       {SCREENS.map(({ name, Component }) => (
         <div key={name} style={state.activeScreen === name && !state.justRegistered ? undefined : { display: 'none' }}>
-          {(visited.has(name) || state.activeScreen === name) && <Component device={state.view} />}
+          {/* Each screen waits for its code on its own: without a boundary a
+              screen whose chunk hadn't arrived yet (opened, or mounted in the
+              background) froze the whole app until it did. */}
+          {(visited.has(name) || state.activeScreen === name) && (
+            <Suspense fallback={<div className="scl22" role="status"><span className="spin" aria-hidden="true" /><span className="sr">{t('app.loading')}</span></div>}>
+              <Component device={state.view} />
+            </Suspense>
+          )}
         </div>
       ))}
     </RedesignShell>
