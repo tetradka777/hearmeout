@@ -564,23 +564,11 @@
 .rd main .tile:not(.setgrid .tile):not(.alp17 .tile) .chip{background:color-mix(in srgb,currentColor 14%,transparent);color:inherit;outline:0}
 .rd main .tile:not(.setgrid .tile):not(.alp17 .tile) .chip.on{background:#FFF7EA;color:#181513}
 
-/* Group page: the numbers strip in the hero; taste over the closest pair's
-   colours. */
-.rd .ghero9 .gst19{grid-column:1/-1;margin-top:4px;background:rgba(0,0,0,.22);color:#fff}
-.rd .ghero9 .gst19>div+div{border-left-color:rgba(255,255,255,.18)}
-.rd .ghero9 .gst19 b .u{display:inline;font-size:.55em;margin-left:2px;opacity:.8}
 .rd .tile.pt19{outline:0;color:#fff;--tfg:#fff;--fg:#fff;background:linear-gradient(135deg,color-mix(in srgb,var(--g1) 72%,#141210),color-mix(in srgb,var(--g2) 72%,#141210))}
 .rd .tile.pt19 .muted{color:rgba(255,255,255,.75)}
 .rd .tile.pt19 .big13{color:#fff;text-shadow:0 4px 24px rgba(0,0,0,.25)}
 .rd .tile.pt19 .meter{background:rgba(255,255,255,.22)}
 .rd .tile.pt19 .meter i{background:#fff}
-.rd .tst13 .pr13 .avs .dot{width:36px;height:36px;font-size:14px;box-shadow:0 0 0 2px rgba(255,255,255,.8)}
-.rd .tst13 .pr13 .avs .dot+.dot{margin-left:-12px;box-shadow:0 0 0 2px rgba(255,255,255,.8)}
-/* Member circles on the group's coloured cards: solid, so letters don't
-   show through each other. */
-.rd .tst13 .pr13 .avs .dot,.rd .ghero9 .dot{background-color:#2a2622;color:#FFF7EA;background-size:cover;background-position:center}
-.rd .ghero9 .dot{width:36px;height:36px;font-size:14px;box-shadow:0 0 0 2px rgba(255,255,255,.7)}
-.rd .lb19 .mem13 .fl13{color:#FFC86E}
 
 /* Profile top 4 picker. */
 .rd .t4p19{width:min(560px,100%)}
@@ -854,27 +842,87 @@ html,body,.rd{-webkit-user-select:none;user-select:none;-webkit-touch-callout:no
 .rd .trw19 .bst19{margin-left:0;width:fit-content}
 @media(max-width:600px){.rd .trw19 .ts19{width:52px;min-width:0}}
 
-/* Group hero (2026-10-26): its three best albums the same size. */
-.rd .hcs9{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-width:330px;margin:0 auto;align-items:start}
-.rd .hcs9 button,.rd .hcs9 button.first{width:auto;display:block!important}
+/* Group page (2026-10-27). A picture icon (group cover). */
+.rd .ic-pic{--m:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%223%22 y=%225%22 width=%2218%22 height=%2214%22 rx=%222.5%22/%3E%3Ccircle cx=%228.5%22 cy=%2210%22 r=%221.8%22/%3E%3Cpath d=%22M21 16l-5-5-9 8%22/%3E%3C/svg%3E")}
 
-/* Album of the month (2026-10-26): one row per album — cover, title and
-   artist, the share of votes as a bar, the vote button at the end. */
-.rd .vt20{display:flex;flex-direction:column;gap:10px;max-width:640px}
-.rd .vt20 .vr{display:flex;align-items:center;gap:14px;padding:10px 12px 10px 10px;border-radius:20px;background:rgba(10,8,6,.32)}
-.rd .vt20 .vr.mine{background:rgba(10,8,6,.5);outline:2px solid var(--cream,#F4EDE0);outline-offset:-2px}
-.rd .vt20 .cvb{flex:none;display:block!important;width:64px;height:64px;padding:0;border-radius:12px;overflow:hidden}
-.rd .vt20 .cvb .cov{display:block;width:64px;height:64px;border-radius:12px}
-.rd .vt20 .g{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
-.rd .vt20 .g b{font-size:15px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rd .vt20 .g .ar20{font-size:12px;font-weight:700;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rd .vt20 .bar{display:block;height:8px;border-radius:99px;background:rgba(255,255,255,.18);overflow:hidden;margin-top:4px}
-.rd .vt20 .bar i{display:block;height:100%;border-radius:inherit;background:var(--cream,#F4EDE0);transition:width .4s}
-.rd .vt20 .c{font-size:12px;font-weight:800;opacity:.85}
-.rd .vt20 .c .ic{width:13px;height:13px;color:#FFD54A}
-.rd .vt20 .vb{flex:none;white-space:nowrap;padding:9px 16px;border-radius:99px;font:800 14px/1 var(--font-display);color:inherit;outline:2px solid color-mix(in srgb,currentColor 70%,transparent);outline-offset:-2px}
-.rd .vt20 .vb.on{background:var(--cream,#F4EDE0);color:#1e1d1c;outline:0}
-@media(max-width:420px){.rd .vt20 .vr{gap:10px}.rd .vt20 .cvb,.rd .vt20 .cvb .cov{width:54px;height:54px}.rd .vt20 .vb{padding:8px 12px;font-size:13px}}
-/* Cards that follow one another always have the bento gap between them
-   (the group hero and the grid under it touched, 2026-10-27). */
-.rd .ghero9+.bento{margin-top:14px}
+/* Hero: compact — name, faces, numbers as pills, the buttons; over the
+   group's own cover (or its best album), blurred. */
+.rd .tile.gh22{display:flex;flex-direction:column;gap:10px;padding:18px 20px 20px}
+.rd .gh22 .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.rd .gh22 .ce{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:99px;background:rgba(0,0,0,.3);color:#fff;font:800 13px/1 var(--font-body)}
+.rd .gh22 .ce .ic{width:15px;height:15px}
+.rd .gh22 h1{margin:2px 0 0;font:800 clamp(30px,7vw,46px)/1.02 var(--font-display);letter-spacing:-.03em}
+.rd .gh22 .who{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rd .gh22 .who small{font-weight:700}
+.rd .gh22 .avs{display:flex}
+.rd .gh22 .avs>*+*{margin-left:-8px}
+.rd .gh22 .avs button{padding:0;line-height:0}
+.rd .gh22 .avs .dot{width:30px;height:30px;font-size:12px;line-height:30px;background-color:#2a2622;color:#FFF7EA;background-size:cover;background-position:center;box-shadow:0 0 0 2px rgba(255,255,255,.75)}
+.rd .gh22 .avs .more{display:grid;place-items:center;font-weight:800;font-size:11px}
+.rd .gh22 .nums{display:flex;flex-wrap:wrap;gap:6px}
+.rd .gh22 .nums span{display:inline-flex;align-items:baseline;gap:6px;padding:7px 12px;border-radius:99px;background:rgba(0,0,0,.28)}
+.rd .gh22 .nums b{font:800 16px/1 var(--font-display)}
+.rd .gh22 .nums small{font-size:12px;font-weight:700}
+.rd .gh22 .acts{margin-top:4px}
+@media(min-width:900px){
+  .rd .tile.gh22{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"top top" "nm nums" "who acts";align-items:end;column-gap:28px;row-gap:10px;padding:22px 26px}
+  .rd .gh22 .top{grid-area:top}
+  .rd .gh22 h1{grid-area:nm}
+  .rd .gh22 .who{grid-area:who}
+  .rd .gh22 .nums{grid-area:nums;justify-content:flex-end}
+  .rd .gh22 .acts{grid-area:acts;justify-content:flex-end;margin:0}
+}
+
+/* The vote and who listened most: one under the other, side by side on a
+   computer; the activity grid after them. */
+.rd .gg22{display:grid;grid-template-columns:minmax(0,1fr);column-gap:24px}
+.rd .gg22>.sh14{margin-top:24px}
+.rd .gg22+.bento{margin-top:24px}
+@media(min-width:1000px){.rd .gg22{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* The vote, made like "picks from friends" (.fp20): votes, the voters'
+   faces and the vote button on the right. */
+.rd .gv22 .hd small{font-weight:700;text-align:right}
+.rd .gv22 .crd0{min-height:236px}
+.rd .gg22 .gv22 .tile{min-height:260px}
+.rd .gv22 .r .cnt{display:inline-flex;align-items:center;gap:4px;color:rgba(255,255,255,.88);font-weight:800;font-size:13px}
+.rd .gv22 .r .cnt .ic{width:14px;height:14px;color:#FFD54A}
+.rd .gv22 .vb22{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:99px;background:#FFF7EA;color:#181513;font:800 15px/1 var(--font-display);white-space:nowrap}
+.rd .gv22 .vb22.on{background:rgba(0,0,0,.3);color:#fff;outline:2px solid rgba(255,255,255,.85);outline-offset:-2px}
+.rd .gv22 .vb22 .ic{width:15px;height:15px}
+
+/* Who listened most: a column per member, as tall as their hours against
+   the leader's — the leader's solid, yours ringed in yellow. */
+.rd .lr22 .hd{align-items:center;flex-wrap:wrap}
+.rd .lr22 .tile.crd{position:relative;min-height:260px;display:flex;flex-direction:column;padding:18px 18px 16px}
+.rd .lr22 .tile.crd>*{position:relative;z-index:1}
+.rd .lr22 .tot{margin:0;font-weight:700;color:rgba(255,255,255,.8)}
+.rd .lr22 .tot b{font:800 26px/1 var(--font-display);color:#fff;margin-right:4px}
+.rd .lr22 .eq{flex:1;display:flex;align-items:stretch;justify-content:center;gap:14px;margin-top:14px;overflow-x:auto;padding:2px 2px 0}
+.rd .lr22 .eq .c{flex:0 0 64px;display:flex!important;flex-direction:column!important;align-items:center!important;gap:6px;color:inherit;padding:0;min-width:0}
+.rd .lr22 .c .h{display:inline-flex;align-items:center;gap:3px;font:800 13px/1 var(--font-display);white-space:nowrap}
+.rd .lr22 .c .h .ic{width:13px;height:13px;color:#FFD54A}
+.rd .lr22 .c .bar{flex:1;min-height:90px;width:30px;border-radius:12px;background:rgba(255,255,255,.12);display:flex;align-items:flex-end;overflow:hidden}
+.rd .lr22 .c .bar i{display:block;width:100%;border-radius:12px;background:rgba(255,255,255,.5);transition:height .5s ease-out}
+.rd .lr22 .c.lead .bar i{background:#FFF7EA}
+.rd .lr22 .c .dot{width:36px;height:36px;font-size:14px;background-color:#2a2622;color:#FFF7EA;background-size:cover;background-position:center;box-shadow:0 0 0 2px rgba(255,255,255,.6)}
+.rd .lr22 .c.you .dot{box-shadow:0 0 0 3px #FFD54A}
+.rd .lr22 .c small{display:block;max-width:64px;font-size:12px;font-weight:800;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (prefers-reduced-motion:reduce){.rd .lr22 .c .bar i{transition:none}}
+
+/* The cover picker. */
+.rd .gcm22{display:flex;flex-direction:column;gap:12px}
+.rd .gcm22 .hd{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.rd .gcm22 .hd h2{margin:0}
+.rd .gcm22 .pv{flex:none;height:96px;border-radius:18px;display:flex;align-items:flex-end;padding:14px 16px}
+.rd .gcm22 .pv b{font:800 22px/1.05 var(--font-display)}
+.rd .gcm22 .k{margin:0;font-weight:800}
+.rd .gcm22 .grd{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;max-height:210px;overflow-y:auto}
+.rd .gcm22 .grd button{position:relative;display:block!important;aspect-ratio:1;width:100%;padding:0;border-radius:10px;overflow:hidden}
+.rd .gcm22 .grd .cov{display:block;border-radius:10px}
+.rd .gcm22 .grd button.on .cov{filter:brightness(.55)}
+.rd .gcm22 .grd .ic{position:absolute;inset:0;margin:auto;width:26px;height:26px;color:#fff}
+.rd .gcm22 .acts{display:flex;flex-wrap:wrap;gap:8px;margin:0}
+.rd .gcm22 .acts .ic{width:16px;height:16px}
+.rd .gcm22 .acts .btn{padding:10px 16px;font-size:15px}
+@media(max-width:480px){.rd .gcm22 .grd{grid-template-columns:repeat(4,minmax(0,1fr))}}

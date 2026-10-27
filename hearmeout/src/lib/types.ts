@@ -259,6 +259,8 @@ export type GroupSummary = {
   // and the latest ratings.
   coverAlbumIds?: string[]; hoursWeek?: number; leadingVote?: string | null;
   recent?: { user: ApiUser; albumId: string; stars: number; at: string }[];
+  // The group's own cover (lib/groupCover), shown blurred behind the card.
+  cover?: string | null;
 };
 export type GroupMember = ApiUser;
 export type GroupAward = { label: string; winner: ApiUser | null; detail: string };
@@ -277,7 +279,8 @@ export type GroupActivityEvent = {
 // albums this calendar month, voted on by album id — not by member, which
 // is what the original site's migration_008 actually built ("monthly
 // member voting"). Replaced to match the spec.
-export type GroupVoteCandidate = { albumId: string; count: number };
+// voters: the members who voted for it (a small private group, so not secret).
+export type GroupVoteCandidate = { albumId: string; count: number; voters?: ApiUser[] };
 export type GroupVoteState = {
   monthKey: string;
   myVote: string | null;
@@ -313,6 +316,8 @@ export type GroupDetail = {
   topAlbums: GroupTopAlbum[];
   taste: GroupTaste | null;
   vote: GroupVoteState;
+  // The group's own cover (lib/groupCover); null = its best album.
+  cover?: string | null;
   // This viewer's own mute state for this group (spec gap) — per
   // group_members row, see migration_018.
   muted: boolean;

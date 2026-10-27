@@ -5,6 +5,7 @@ import { handleIlikePattern } from '@/lib/slug';
 import { isFriendOf } from '@/lib/userProfile';
 import { fetchAllRows } from '@/lib/supabasePaginate';
 import { DEFAULT_PRIVACY, fetchPrivacy } from '@/lib/privacy';
+import { readGroupCovers } from '@/lib/groupCover';
 import type { GroupSummary } from '@/lib/types';
 
 export async function GET() {
@@ -33,12 +34,13 @@ export async function GET() {
   const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const now = new Date();
   const monthKey = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
-  const [{ data: users }, { rows: weekEvents }, { rows: monthRatings }, { data: votes }, privacy] = await Promise.all([
+  const [{ data: users }, { rows: weekEvents }, { rows: monthRatings }, { data: votes }, privacy, covers] = await Promise.all([
     admin.from('users').select('id, name, handle, avatar_url').in('id', allMemberIds),
     fetchAllRows((f, t) => admin.from('listening_events').select('user_id, duration_ms').in('user_id', allMemberIds).gte('played_at', since).order('id').range(f, t)),
     fetchAllRows((f, t) => admin.from('ratings').select('user_id, album_id, stars, created_at, is_private').in('user_id', allMemberIds).gte('created_at', monthAgo).order('id').range(f, t)),
     admin.from('group_votes').select('group_id, candidate_id').in('group_id', groupIds).eq('month_key', monthKey),
     fetchPrivacy(admin, allMemberIds),
+    readGroupCovers(admin, groupIds),
   ]);
   // Ratings others may see: not "keep private", and the person's "ratings
   // visible to friends" switch on (your own always count).
@@ -72,7 +74,7 @@ export async function GET() {
       .map((r) => ({ user: userById.get(r.user_id as string)!, albumId: r.album_id as string, stars: Number(r.stars), at: r.created_at as string }))
       .filter((r) => !!r.user);
     const hoursWeek = Math.round(ranked.reduce((s, x) => s + x.hours, 0));
-    summaries.push({ id: g.id, name: g.name, memberCount: memberIds.length, newPlays: count || 0, createdAt: g.created_at as string, members, topListener, coverAlbumIds, hoursWeek, leadingVote, recent });
+    summaries.push({ id: g.id, name: g.name, memberCount: memberIds.length, newPlays: count || 0, createdAt: g.created_at as string, members, topListener, coverAlbumIds, hoursWeek, leadingVote, recent, cover: covers.get(g.id) ?? null });
   }
   return NextResponse.json(summaries);
 }

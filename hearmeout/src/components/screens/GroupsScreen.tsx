@@ -13,6 +13,7 @@ import { userAvatarStyle, formatRelative } from '@/lib/format';
 import { toLocale, pluralForKey, type Language } from '@/lib/i18n';
 import { CoverWall } from '../ui/Visual';
 import { useCachedJson } from '@/lib/cachedJson';
+import { blurStyle } from '@/lib/imageColor';
 
 // vGroups() "since march": the month, plus the year outside the current one.
 // German keeps its capitalised nouns; the rest are lowercased like the
@@ -42,7 +43,7 @@ function GroupCard({ g }: { g: GroupSummary }) {
   const last = g.recent?.[0];
   const lastAlbum = useAlbum(last?.albumId ?? null);
   return (
-    <button className={`tile gc16 ${toneClass(g.id)}`} onClick={() => viewGroup(g.id)}>
+    <button className={`tile gc16 ${g.cover ? 'bh15' : toneClass(g.id)}`} style={blurStyle(g.cover)} onClick={() => viewGroup(g.id)}>
       <span className="avs16" aria-hidden="true">
         {shown.map((m) => <span key={m.id} className="dot" style={{ ...userAvatarStyle(m), backgroundSize: 'cover' }}>{!m.avatarUrl && m.name[0]?.toUpperCase()}</span>)}
         {more > 0 && <span className="dot more">+{more}</span>}
