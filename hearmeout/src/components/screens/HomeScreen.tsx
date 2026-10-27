@@ -369,7 +369,8 @@ function TrendingSection() {
 // Your rating streak: days in a row you rated something, and a nudge when
 // today doesn't count yet.
 // A small card: the flame, the count, the nudge, and the last seven days
-// as dots (filled = rated that day; today ringed until it counts).
+// as piano keys (pressed = rated that day; today marked until it counts).
+const PIANO_BLACK_KEYS = [1, 2, 4, 5, 6];
 function StreakLine() {
   const { t, language, myRatings } = useApp();
   const { days, ratedToday, week } = useMemo(() => {
@@ -390,10 +391,11 @@ function StreakLine() {
         <b>{t('streak.inRow', { n: days })}</b>
         <small>{ratedToday ? t('streak.today') : t('streak.keep')}</small>
       </span>
-      <span className="wk" aria-hidden="true">
+      <span className="wk pk22" aria-hidden="true">
         {week.map((d, i) => (
-          <span key={i} className={`${d.rated ? 'on' : ''}${i === week.length - 1 ? ' td' : ''}`}><i /><small>{dayLetter(d.weekday)}</small></span>
+          <span key={i} className={`${d.rated ? 'on' : ''}${i === week.length - 1 ? ' td' : ''}`}><small>{dayLetter(d.weekday)}</small></span>
         ))}
+        {PIANO_BLACK_KEYS.map((k) => <b key={k} style={{ left: `${(k / 7) * 100}%` }} />)}
       </span>
     </div>
   );
