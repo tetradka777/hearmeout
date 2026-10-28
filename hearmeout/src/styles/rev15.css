@@ -949,10 +949,13 @@ html,body,.rd{-webkit-user-select:none;user-select:none;-webkit-touch-callout:no
 .rd .dc22:hover .dct{animation-play-state:paused}
 @keyframes dc22{to{transform:translateX(-50%)}}
 .rd .dc22 .dcn{display:flex;align-items:center;flex:none}
-.rd .dc22 button{display:block;padding:0 0 4px;font:800 76px/1 var(--font-display);letter-spacing:-.03em;white-space:nowrap;color:transparent;-webkit-text-stroke:1.5px var(--fg);-webkit-text-size-adjust:none;text-size-adjust:none}
+.rd .dc22 button{display:block;padding:0 0 4px;font:800 76px/1 var(--font-display);letter-spacing:-.03em;white-space:nowrap;color:var(--fg);--ol:var(--fg);-webkit-text-size-adjust:none;text-size-adjust:none}
 .rd .dc22.bk button{font-size:54px}
-.rd .dc22 button.dcp{background-size:cover;background-position:center 30%;-webkit-background-clip:text;background-clip:text}
-.rd .dc22 button:hover,.rd .dc22 button:focus-visible{-webkit-text-stroke-color:var(--acct)}
+/* Outline by shadows around the whole letter: a text stroke drew the font's
+   overlapping contours as lines through the letters. */
+.rd .dc22 button.dcp{color:transparent;background-size:cover;background-position:center 30%;-webkit-background-clip:text;background-clip:text;filter:drop-shadow(1.5px 0 0 var(--ol)) drop-shadow(-1.5px 0 0 var(--ol)) drop-shadow(0 1.5px 0 var(--ol)) drop-shadow(0 -1.5px 0 var(--ol))}
+.rd .dc22 button:hover,.rd .dc22 button:focus-visible{--ol:var(--acct);color:var(--acct)}
+.rd .dc22 button.dcp:hover,.rd .dc22 button.dcp:focus-visible{color:transparent}
 .rd .dc22 .dcs{display:block;flex:none;width:12px;height:12px;margin:0 22px;border-radius:50%;background:var(--acct)}
 @media(max-width:600px){.rd .dc22 button{font-size:60px}.rd .dc22.bk button{font-size:44px}.rd .dc22 .dcs{margin:0 16px;width:10px;height:10px}}
 @media(prefers-reduced-motion:reduce){.rd .dc22{overflow-x:auto}.rd .dc22 .dct{animation:none}}
