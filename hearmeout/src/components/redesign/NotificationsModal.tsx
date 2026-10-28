@@ -19,6 +19,7 @@ const KIND: Record<AppNotification['kind'], { icon: string; label: TranslationKe
   recap: { icon: 'spark', label: 'notify.kRecap' },
   comment: { icon: 'chat', label: 'notify.kComment' },
   reaction: { icon: 'heart', label: 'notify.kReaction' },
+  later: { icon: 'clock', label: 'notify.kLater' },
 };
 
 // In-app notifications (migration 021), opened from the bell. Opening it
@@ -46,7 +47,7 @@ export function NotificationsModal({ onClose }: { onClose: () => void }) {
 
   const open = (n: AppNotification) => {
     onClose();
-    if (n.kind === 'release' || n.kind === 'album') {
+    if (n.kind === 'release' || n.kind === 'album' || n.kind === 'later') {
       if (n.payload.albumId) openAlbum(n.payload.albumId);
     } else if (!n.actor) {
       return;
@@ -76,14 +77,14 @@ export function NotificationsModal({ onClose }: { onClose: () => void }) {
       : n.kind === 'hi'
         ? t('notify.hiFrom', { name: n.actor!.name })
         : t('notify.recapFrom', { name: n.actor!.name, period: t(PERIOD_KEY[n.payload.period ?? 'week']).toLowerCase() });
-    const label = n.kind === 'album' && n.actor ? t('notify.kAlbum', { name: n.actor.name }) : t(n.kind === 'release' || !n.actor ? 'notify.kRelease' : kind.label);
+    const label = n.kind === 'album' && n.actor ? t('notify.kAlbum', { name: n.actor.name }) : t(n.kind === 'later' ? 'notify.kLater' : n.kind === 'release' || !n.actor ? 'notify.kRelease' : kind.label);
     return (
       <button className={`nfr${unreadAtOpen.has(n.id) ? ' un' : ''}`} key={n.id} onClick={() => open(n)}>
         <span className="pic">
           {music
             ? <CoverArt url={n.payload.cover ?? undefined} fallbackLetter={(n.payload.artist || '?')[0]} className="cov" px={56} />
             : <span className="avt" style={userAvatarStyle(n.actor!)}>{!n.actor!.avatarUrl && n.actor!.name[0]?.toUpperCase()}</span>}
-          <span className="kd" aria-hidden="true"><i className={`ic ic-${music ? (n.kind === 'album' ? 'note' : 'disc') : kind.icon}`} /></span>
+          <span className="kd" aria-hidden="true"><i className={`ic ic-${n.kind === 'later' ? 'clock' : music ? (n.kind === 'album' ? 'note' : 'disc') : kind.icon}`} /></span>
         </span>
         <span className="g">
           <small className="k">{label} · {formatRelative(n.createdAt, language)}</small>

@@ -68,7 +68,10 @@ export type LovedItem = { id: number; type: LovedItemType; itemId: string | null
 // Listen later (redesign spec 13.20): a saved album, or a saved track
 // (trackIndex into that album's tracklist — null for an album-level save).
 export type LaterItemType = 'album' | 'track';
-export type LaterItem = { id: number; type: LaterItemType; albumId: string; trackIndex: number | null; title: string; artist: string | null; cover: string | null; createdAt: string };
+// remindAt / remindEvery (migration 035): the next reminder and how often it
+// repeats (null = once).
+export type LaterRepeat = 'day' | 'week' | 'month';
+export type LaterItem = { id: number; type: LaterItemType; albumId: string; trackIndex: number | null; title: string; artist: string | null; cover: string | null; createdAt: string; remindAt?: string | null; remindEvery?: LaterRepeat | null };
 
 export type NowPlaying = { title: string; artist: string; cover: string | null; startedAt: string; durationMs: number | null; albumId: string | null };
 
@@ -147,9 +150,11 @@ export type FriendRequest = { id: number; user: ApiUser; createdAt: string };
 // sharing their recap for a period (payload.period / payload.offset).
 export type AppNotification = {
   id: number;
-  kind: 'hi' | 'recap' | 'release' | 'comment' | 'reaction' | 'album';
+  kind: 'hi' | 'recap' | 'release' | 'comment' | 'reaction' | 'album' | 'later';
   // release (migration 028): albumId is a Spotify album id.
-  payload: { period?: RecapPeriod; offset?: number; albumId?: string; artist?: string; title?: string; date?: string; cover?: string | null; popular?: boolean; target?: string; preview?: string; reaction?: string; note?: string };
+  // later (migration 035): a reminder about a "listen later" item; trackIndex
+  // is set for a track.
+  payload: { trackIndex?: number | null; period?: RecapPeriod; offset?: number; albumId?: string; artist?: string; title?: string; date?: string; cover?: string | null; popular?: boolean; target?: string; preview?: string; reaction?: string; note?: string };
   createdAt: string;
   read: boolean;
   // null for a release: it comes from the site, not a person.

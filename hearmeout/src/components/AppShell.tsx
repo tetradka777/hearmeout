@@ -11,6 +11,7 @@ import { RateScreen } from './screens/RateScreen';
 // The welcome tour is shown once per account: its own chunk too.
 const OnboardingScreen = dynamic(() => import('./OnboardingScreen').then((m) => m.OnboardingScreen));
 import { preloadDetails } from '@/lib/backgroundPreload';
+import { LaterReminderHost } from './LaterReminder';
 import { markNav, whenQuiet } from '@/lib/navQuiet';
 import { useScrollMemory } from '@/lib/scrollMemory';
 
@@ -150,6 +151,7 @@ export function AppShell() {
       {/* Onboarding is a page in the main column (vOnboarding), shown in
           place of the active screen while the welcome tour is open. */}
       {state.justRegistered && <OnboardingScreen />}
+      <LaterReminderHost />
       {SCREENS.map(({ name, Component }) => (
         <div key={name} style={state.activeScreen === name && !state.justRegistered ? undefined : { display: 'none' }}>
           {/* Each screen waits for its code on its own: without a boundary a

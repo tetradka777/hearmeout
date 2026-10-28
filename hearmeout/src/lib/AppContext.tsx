@@ -8,6 +8,7 @@ import { yearRecapOffset, yearRecapOpen } from './yearRecap';
 import { useLoadedLanguage } from './useLoadedLanguage';
 import { clearStatsCache } from './statsClientCache';
 import { jsonAge, peekJson, setJsonCacheOwner, storeJson } from './cachedJson';
+import { laterRemindReady, openLaterReminder } from './laterRemind';
 import { storeAlbums, storedAlbums } from './albumStore';
 import { completedWeekRange } from './weeks';
 import type {
@@ -170,6 +171,7 @@ type AppContextValue = {
   lovedItems: LovedItem[];
   toggleLoved: (type: LovedItemType, title: string, artist?: string | null, itemId?: string | null, cover?: string | null) => Promise<void>;
   laterItems: LaterItem[];
+  refreshLater: () => Promise<void>;
   toggleLaterAlbum: (albumId: string, title: string, artist: string, cover?: string | null) => Promise<void>;
   toggleLaterTrack: (albumId: string, trackIndex: number, title: string, artist: string, cover?: string | null) => Promise<void>;
   removeLaterItem: (id: number) => Promise<boolean>;
@@ -433,9 +435,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ type: 'album', albumId, title, artist, cover: cover ?? null }),
     });
     if (!res.ok) return;
-    const { saved } = await res.json();
+    const { saved, id } = await res.json();
     await refreshLater();
     showToast(saved ? t('toast.albumSavedLater') : t('toast.removedLater'));
+    // Just saved: offer a reminder for it (lib/laterRemind).
+    if (saved && id != null && laterRemindReady()) openLaterReminder({ id, type: 'album', title, artist, cover: cover ?? null });
   }, [refreshLater, showToast, t]);
 
   const toggleLaterTrack = useCallback(async (albumId: string, trackIndex: number, title: string, artist: string, cover?: string | null) => {
@@ -445,9 +449,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ type: 'track', albumId, trackIndex, title, artist, cover: cover ?? null }),
     });
     if (!res.ok) return;
-    const { saved } = await res.json();
+    const { saved, id } = await res.json();
     await refreshLater();
     showToast(saved ? t('toast.trackSavedLater') : t('toast.removedLater'));
+    if (saved && id != null && laterRemindReady()) openLaterReminder({ id, type: 'track', title, artist, cover: cover ?? null });
   }, [refreshLater, showToast, t]);
 
   const removeLaterItem = useCallback(async (id: number) => {
@@ -1326,7 +1331,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AppContextValue>(() => ({
     state, language: state.language, t, albums: ALBUMS, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds,
-    myRatings, feed, setFeed, lovedItems, toggleLoved, laterItems, toggleLaterAlbum, toggleLaterTrack, removeLaterItem, removeAllLater, friendRequests, recapCache, recapLocked, reviewsVersion,
+    myRatings, feed, setFeed, lovedItems, toggleLoved, laterItems, refreshLater, toggleLaterAlbum, toggleLaterTrack, removeLaterItem, removeAllLater, friendRequests, recapCache, recapLocked, reviewsVersion,
     showScreen, viewHistory, goBack, openAlbum, viewFriend, viewGroup, openFanClub, openConcerts, openRecap, closeRecap,
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, setRecapOffset, recapSeasons,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
@@ -1334,7 +1339,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateLanguage, updateRegion, updateRegionAuto, updateOpenProfile, updateAppearance, updatePrivacy, updatePinnedAlbums,
     addFriend, respondToFriendRequest, removeFriend, notifications, markNotificationsRead, sendHi, shareRecapWithFriends, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds,
-    myRatings, feed, setFeed, lovedItems, toggleLoved, laterItems, toggleLaterAlbum, toggleLaterTrack, removeLaterItem, removeAllLater, friendRequests, recapCache, recapLocked, reviewsVersion, showScreen, viewHistory, goBack, openAlbum,
+    myRatings, feed, setFeed, lovedItems, toggleLoved, laterItems, refreshLater, toggleLaterAlbum, toggleLaterTrack, removeLaterItem, removeAllLater, friendRequests, recapCache, recapLocked, reviewsVersion, showScreen, viewHistory, goBack, openAlbum,
     setRecapSeasonKey, setRecapOffset, recapSeasons,
     viewFriend, viewGroup, openFanClub, openConcerts, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,
