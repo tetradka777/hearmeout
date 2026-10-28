@@ -89,10 +89,12 @@ export function usePersonColor(p: { id?: string; name: string; avatarUrl: string
 
 // A few numbers as one phrase of pills ("152 albums · 7.4 average"), not
 // a table of figures.
-export function Phrase({ parts }: { parts: [value: ReactNode, label: ReactNode][] }) {
+// `extra`: something after the numbers in the same row (a link icon).
+export function Phrase({ parts, extra }: { parts: [value: ReactNode, label: ReactNode][]; extra?: ReactNode }) {
   return (
     <p className="ph15">
       {parts.map(([v, l], i) => <span key={i}><b>{v}</b> {l}</span>)}
+      {extra}
     </p>
   );
 }

@@ -7,7 +7,10 @@ import type { Device, RatingRecord } from '@/lib/types';
 import { toLocale, pluralForKey } from '@/lib/i18n';
 import { REVIEW_TAG_LABEL_KEY } from '@/lib/reviewTags';
 import { MascotIcon } from '../redesign/icons';
-import { CoverWall, GenreFill, Phrase } from '../ui/Visual';
+import { CoverWall, GenreFill } from '../ui/Visual';
+import { CoverArt } from '../ui/CoverArt';
+import { blurStyle } from '@/lib/imageColor';
+import { shortTitle } from '@/lib/format';
 import { exportRatingsCsv } from '@/lib/csvExport';
 
 type Filter = 'all' | 'reviewed' | 'private' | 'high' | 'low';
@@ -68,8 +71,14 @@ export function HistoryScreen(_props: { device: Device }) {
     for (const r of myRatings) buckets[Math.min(50, Math.max(1, Math.round(r.stars * 10))) - 1]++;
     return buckets;
   }, [myRatings]);
-  const maxBucket = Math.max(1, ...scoreBuckets);
   const scoreMode = (scoreBuckets.indexOf(Math.max(...scoreBuckets)) + 1) / 10;
+  // The chart in half-star steps: up to 0.5, up to 1.0 … up to 5.0.
+  const halfBuckets = useMemo(() => {
+    const b = new Array(10).fill(0);
+    for (const r of myRatings) b[Math.min(9, Math.max(0, Math.ceil(r.stars * 2) - 1))]++;
+    return b;
+  }, [myRatings]);
+  const maxHalf = Math.max(1, ...halfBuckets);
 
   const vsEveryone = useMemo(() => {
     const diffs: number[] = [];
@@ -119,6 +128,9 @@ export function HistoryScreen(_props: { device: Device }) {
   ];
 
   const avgScore = myRatings.length ? myRatings.reduce((s, r) => s + r.stars, 0) / myRatings.length : 0;
+  const latest = [...myRatings].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+  const latestAlbum = latest ? albumFor(latest.albumId) : undefined;
+  const heroCover = latestAlbum ? spotifyCovers[latestAlbum.id] || latestAlbum.cover : undefined;
 
   return (
     <>
@@ -128,47 +140,66 @@ export function HistoryScreen(_props: { device: Device }) {
       >
         ‹ {t(state.historyOrigin === 'profile' ? 'history.crumbProfile' : state.historyOrigin === 'rate' ? 'history.crumbRate' : 'history.crumbHome')}
       </button>
-      <p className="eyebrow muted">{t('history.eyebrow')}</p>
       <h1 className="big">{t('history.title')}</h1>
-      <p style={{ fontWeight: 800, margin: '-6px 0 18px' }}>
-        {t('history.summary', { count: myRatings.length, albumWord: pluralForKey(language, myRatings.length, 'history.albumOne', 'history.albumFew', 'history.albumMany'), reviewed: habits.reviewed })}
-      </p>
 
-      {/* Numbers as one phrase; the moments as covers (no tables). */}
+      {/* The whole history at a glance, over the latest rated cover. */}
       {myRatings.length > 0 && (
-        <Phrase parts={[
-          [fmt1(avgScore), t('profile.averageL')],
-          [`${vsEveryone >= 0 ? '+' : '−'}${fmt1(Math.abs(vsEveryone))}`, t('history.vsEveryoneCaption')],
-          [revisedRatings.length, pluralForKey(language, revisedRatings.length, 'history.scoreRevisedOne', 'history.scoreRevisedFew', 'history.scoreRevisedMany')],
-        ]} />
-      )}
-
-      {highlights && (
-        <div className="sec">
-          <h2>{t('history.highlightsTitle')}</h2>
-          <CoverWall items={[
-            { key: 'hi', r: highlights.highest, sub: t('history.highestRated'), badge: fmt1(highlights.highest.stars) },
-            { key: 'lo', r: highlights.lowest, sub: t('history.lowestRated'), badge: fmt1(highlights.lowest.stars) },
-            ...(highlights.changedMind ? [{ key: 'ch', r: highlights.changedMind, sub: t('history.changedMind'), badge: `${fmt1(highlights.changedMind.previousStars!)}→${fmt1(highlights.changedMind.stars)}` }] : []),
-          ].map(({ key, r, sub, badge }) => wallItem(r, key, sub, badge))} />
+        <div className="tile bh15 hh23" style={blurStyle(heroCover, 300)}>
+          <p className="hhn"><b>{myRatings.length}</b> {pluralForKey(language, myRatings.length, 'history.albumOne', 'history.albumFew', 'history.albumMany')}</p>
+          <div className="st15">
+            <div><b>{fmt1(avgScore)}</b><small>{t('profile.averageL')}</small></div>
+            <div><b>{`${vsEveryone >= 0 ? '+' : '−'}${fmt1(Math.abs(vsEveryone))}`}</b><small>{t('history.vsEveryoneCaption')}</small></div>
+            <div><b>{habits.reviewed}</b><small>{t('history.reviewedL')}</small></div>
+          </div>
         </div>
       )}
 
-      <div className="bento b3">
-        <div className="tile s2">
+      {/* The moments: each card over its own blurred cover. */}
+      {highlights && (
+        <div className="sec">
+          <h2>{t('history.highlightsTitle')}</h2>
+          <div className="hl23">
+            {[
+              { key: 'hi', r: highlights.highest, sub: t('history.highestRated'), badge: fmt1(highlights.highest.stars) },
+              { key: 'lo', r: highlights.lowest, sub: t('history.lowestRated'), badge: fmt1(highlights.lowest.stars) },
+              ...(highlights.changedMind ? [{ key: 'ch', r: highlights.changedMind, sub: t('history.changedMind'), badge: `${fmt1(highlights.changedMind.previousStars!)}→${fmt1(highlights.changedMind.stars)}` }] : []),
+            ].map(({ key, r, sub, badge }) => {
+              const a = albumFor(r.albumId);
+              const cover = a ? spotifyCovers[a.id] || a.cover : undefined;
+              return (
+                <button key={key} className="tile bh15" style={blurStyle(cover)} onClick={() => openAlbum(r.albumId)} aria-label={`${sub}: ${a?.title ?? ''} — ${badge}`}>
+                  <span className="hlc"><CoverArt url={cover} fallbackLetter={a?.artist[0] || '?'} className="cov" px={150} /></span>
+                  <b className="hls">{badge}</b>
+                  <small>{sub}</small>
+                  <span className="hlt">{a ? shortTitle(a.title) : ''}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <div className="sec two">
+        <div className="tile">
           <h2>{t('history.scoreDistTitle')}</h2>
           {myRatings.length ? (
             <>
-              <div className="h50" role="img" aria-label={t('album.ratingDistribution')}>
-                {scoreBuckets.map((n, i) => <i key={i} style={{ height: `${Math.max(3, Math.round((n / maxBucket) * 100))}%` }} />)}
+              {/* Half-star steps, the count over each bar. */}
+              <div className="hd23" role="img" aria-label={t('album.ratingDistribution')}>
+                {halfBuckets.map((n, i) => (
+                  <div key={i} className={n === maxHalf ? 'on' : ''}>
+                    <small>{n || ''}</small>
+                    <i style={{ height: `${Math.max(4, Math.round((n / maxHalf) * 100))}%` }} />
+                    <span>{fmt1((i + 1) / 2)}</span>
+                  </div>
+                ))}
               </div>
-              <div className="h50ax" aria-hidden="true"><span>0.1</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
-              <p className="muted" style={{ marginTop: 10, fontSize: 14, fontWeight: 600 }}>{t('history.scoreDistModeCaption', { mode: fmt1(scoreMode) })}</p>
+              <p className="muted" style={{ marginTop: 12, fontSize: 14, fontWeight: 600 }}>{t('history.scoreDistCaption', { mode: fmt1(scoreMode) })}</p>
             </>
           ) : <p className="muted" style={{ marginTop: 10, fontSize: 14, fontWeight: 600 }}>{t('history.notEnoughForChart')}</p>}
         </div>
 
-        <div className="tile t-soft2">
+        <div className="tile">
           <h2>{t('history.favouriteTags')}</h2>
           {habits.topTags.length ? (
             <GenreFill items={habits.topTags.map(([id, count]) => ({ name: t(REVIEW_TAG_LABEL_KEY[id as keyof typeof REVIEW_TAG_LABEL_KEY]), share: count / habits.topTags[0][1] }))} />
@@ -178,15 +209,18 @@ export function HistoryScreen(_props: { device: Device }) {
 
       <div className="sec">
         <h2>{t('history.allRatingsTitle')}</h2>
-        <input className="field" type="search" style={{ maxWidth: 420, marginBottom: 12 }} placeholder={t('history.searchPlaceholder')} aria-label={t('history.searchPlaceholder')} value={state.historyQuery || ''} onChange={(e) => setHistoryQuery(e.target.value)} />
-        <div className="chips" role="group" aria-label={t('history.filterGroupLabel')}>
-          {FILTERS.map((f) => (
-            <button key={f.key} className={`chip ${filter === f.key ? 'on' : ''}`} onClick={() => setFilter(f.key)}>{f.label}</button>
-          ))}
-        </div>
-        <div className="chips" role="group" aria-label={t('history.sortGroupLabel')}>
-          <button className={`chip ${sort === 'newest' ? 'on' : ''}`} onClick={() => setSort('newest')}>{t('history.sortNewest')}</button>
-          <button className={`chip ${sort === 'oldest' ? 'on' : ''}`} onClick={() => setSort('oldest')}>{t('history.sortOldest')}</button>
+        <input className="field" type="search" style={{ marginBottom: 12 }} placeholder={t('history.searchPlaceholder')} aria-label={t('history.searchPlaceholder')} value={state.historyQuery || ''} onChange={(e) => setHistoryQuery(e.target.value)} />
+        {/* Filters and the order in one swipeable row. */}
+        <div className="chips hc23">
+          <span role="group" aria-label={t('history.filterGroupLabel')}>
+            {FILTERS.map((f) => (
+              <button key={f.key} className={`chip ${filter === f.key ? 'on' : ''}`} onClick={() => setFilter(f.key)}>{f.label}</button>
+            ))}
+          </span>
+          <span role="group" aria-label={t('history.sortGroupLabel')}>
+            <button className={`chip ${sort === 'newest' ? 'on' : ''}`} onClick={() => setSort('newest')}>{t('history.sortNewest')}</button>
+            <button className={`chip ${sort === 'oldest' ? 'on' : ''}`} onClick={() => setSort('oldest')}>{t('history.sortOldest')}</button>
+          </span>
         </div>
 
         {filtered.length ? (
@@ -198,9 +232,9 @@ export function HistoryScreen(_props: { device: Device }) {
             const label = first.toLocaleDateString(toLocale(language), first.getFullYear() === new Date().getFullYear() ? { month: 'long' } : { month: 'long', year: 'numeric' });
             return (
               <div className="sec" key={key}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10, gap: 10, flexWrap: 'wrap' }}>
+                <div className="hm23">
                   <h2 style={{ margin: 0 }}>{label}</h2>
-                  <span className="muted" style={{ fontWeight: 700 }}>{t('history.monthSummary', { count: rows.length, avg: fmt1(avg) })}</span>
+                  <span>{t('history.monthSummary', { count: rows.length, avg: fmt1(avg) })}</span>
                 </div>
                 <CoverWall items={rows.map((r) => wallItem(r, r.albumId, r.isPrivate ? t('history.privateBadge') : r.review ? t('history.reviewBadge') : undefined, r.previousStars != null ? `${fmt1(r.previousStars)}→${fmt1(r.stars)}` : fmt1(r.stars)))} />
               </div>
