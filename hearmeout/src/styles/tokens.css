@@ -15,19 +15,19 @@
   --font-body: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
-[data-palette="lemons"]{--pal:#294074;--pals:#FDEDA3;--pal:#294074;--ac:#D72E33;--on:#FFFFFF;--scl:#D72E33;--hi:#FFE45C}
-[data-palette="idea"]{--pal:#264F9E;--pals:#E1E6CF;--pal:#264F9E;--ac:#D8237A;--on:#FFFFFF;--scl:#C81F6E;--hi:#FF4FA3}
-[data-palette="bloom"]{--pal:#3E1A4F;--pals:#F1DDBE;--pal:#3E1A4F;--ac:#7E3F96;--on:#FFFFFF;--scl:#7E3F96;--hi:#D9A7F0}
-[data-palette="autumn"]{--pal:#A04740;--pals:#F4DFC6;--pal:#A04740;--ac:#EDA04A;--on:#3A1E10;--scl:#A04740;--hi:#FF9F45}
-[data-palette="rude-olive"]{--pal:#3C408D;--pals:#F8DDC1;--pal:#3C408D;--ac:#7A1F33;--on:#FFFFFF;--scl:#7A1F33;--hi:#FF6B86}
-[data-palette="periwinkle"]{--pal:#3F4285;--pals:#FBF1D0;--pal:#3F4285;--ac:#5E61A5;--on:#FBF1D0;--scl:#5E61A5;--hi:#A5A9FF}
-[data-palette="moss"]{--pal:#5B5325;--pals:#F4EBD3;--pal:#5B5325;--ac:#D9A441;--on:#3A2E08;--scl:#5B5325;--hi:#E3C74E}
-[data-palette="forest"]{--pal:#4E604A;--pals:#F5F4F4;--pal:#4E604A;--ac:#D63A2F;--on:#FFFFFF;--scl:#D33A2F;--hi:#FF5A4D}
-[data-palette="sky"]{--pal:#2F4A6B;--pals:#E3EFF1;--pal:#2F4A6B;--ac:#3D7FB8;--on:#FFFFFF;--scl:#2F6A9E;--hi:#9FD0FF}
-[data-palette="coffee"]{--pal:#645143;--pals:#F4E0C4;--pal:#645143;--ac:#D62F45;--on:#FFFFFF;--scl:#D62F45;--hi:#FF4D6A}
-[data-palette="acid"]{--pal:#15150F;--pals:#EEF6C9;--pal:#15150F;--ac:#C8FF3C;--on:#15150F;--scl:#4E6B00;--hi:#C8FF3C}
-[data-palette="grape"]{--pal:#21103F;--pals:#F0E6FF;--pal:#21103F;--ac:#B892FF;--on:#21103F;--scl:#6A3FD0;--hi:#B892FF}
-[data-palette="cherry"]{--pal:#1A1210;--pals:#FFE1E5;--pal:#1A1210;--ac:#FF3D5A;--on:#1A1210;--scl:#CF1D37;--hi:#FF4D68}
+[data-palette="lemons"]{--pal:#2B4FA0;--pals:#FDEDA3;--ac:#D72E33;--on:#FFFFFF;--scl:#D72E33;--hi:#FFE45C}
+[data-palette="idea"]{--pal:#2357C4;--pals:#E1E6CF;--ac:#D8237A;--on:#FFFFFF;--scl:#C81F6E;--hi:#FF4FA3}
+[data-palette="bloom"]{--pal:#5A2177;--pals:#F1DDBE;--ac:#7E3F96;--on:#FFFFFF;--scl:#7E3F96;--hi:#D9A7F0}
+[data-palette="autumn"]{--pal:#C2452F;--pals:#F4DFC6;--ac:#EDA04A;--on:#3A1E10;--scl:#A04740;--hi:#FF9F45}
+[data-palette="rude-olive"]{--pal:#3F45B5;--pals:#F8DDC1;--ac:#7A1F33;--on:#FFFFFF;--scl:#7A1F33;--hi:#FF6B86}
+[data-palette="periwinkle"]{--pal:#4A4FB8;--pals:#FBF1D0;--ac:#5E61A5;--on:#FBF1D0;--scl:#5E61A5;--hi:#A5A9FF}
+[data-palette="moss"]{--pal:#5F6B1E;--pals:#F4EBD3;--ac:#D9A441;--on:#3A2E08;--scl:#5B5325;--hi:#E3C74E}
+[data-palette="forest"]{--pal:#2F6B45;--pals:#F5F4F4;--ac:#D63A2F;--on:#FFFFFF;--scl:#D33A2F;--hi:#FF5A4D}
+[data-palette="sky"]{--pal:#2A62A6;--pals:#E3EFF1;--ac:#3D7FB8;--on:#FFFFFF;--scl:#2F6A9E;--hi:#9FD0FF}
+[data-palette="coffee"]{--pal:#7A4A2E;--pals:#F4E0C4;--ac:#D62F45;--on:#FFFFFF;--scl:#D62F45;--hi:#FF4D6A}
+[data-palette="acid"]{--pal:#15150F;--pals:#EEF6C9;--ac:#C8FF3C;--on:#15150F;--scl:#4E6B00;--hi:#C8FF3C}
+[data-palette="grape"]{--pal:#21103F;--pals:#F0E6FF;--ac:#B892FF;--on:#21103F;--scl:#6A3FD0;--hi:#B892FF}
+[data-palette="cherry"]{--pal:#1A1210;--pals:#FFE1E5;--ac:#FF3D5A;--on:#1A1210;--scl:#CF1D37;--hi:#FF4D68}
 
 /* Design x mode. Resolve "system" mode to light/dark in JS before setting
    data-mode (prefers-color-scheme), so first paint never flashes wrong. */
