@@ -13,7 +13,7 @@ const cache = new Map<string, Promise<string | null>>();
 // Colours already worked out, kept in the browser (by picture, so it's the
 // same for every account): a cover's colour no longer costs a download on
 // the next visit. Only real answers are kept, the newest STORE_MAX.
-const STORE_KEY = 'hmo-img-colors-v2';
+const STORE_KEY = 'hmo-img-colors-v1';
 const STORE_MAX = 800;
 let stored: Map<string, string> | null = null;
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -72,10 +72,8 @@ function vivid(r: number, g: number, b: number): string {
   }
   const l0 = (max + min) / 2;
   const s0 = d ? d / (1 - Math.abs(2 * l0 - 1)) : 0;
-  // Only a really grey picture stays greyish: an averaged photo is always
-  // washed out, so its hue is pushed to a clean, saturated colour.
-  const s = d < 0.015 ? 0.22 : Math.max(0.62, Math.min(0.9, s0 * 1.6));
-  const l = Math.max(0.48, Math.min(0.6, l0 + 0.12));
+  const s = d < 0.04 ? 0.18 : Math.max(0.5, Math.min(0.85, s0 * 1.4));
+  const l = Math.max(0.5, Math.min(0.68, l0 + 0.15));
   return `hsl(${Math.round(h)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%)`;
 }
 
