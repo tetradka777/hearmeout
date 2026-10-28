@@ -51,10 +51,12 @@ export function RisingArtists() {
   );
 }
 
-// One name of a strip with the artist's photo before it (our picks' photos
-// come by their Spotify id, like every artist avatar).
+// One name of a strip with the artist's photo before it and a dot after, so
+// it's clear which photo goes with which name (our picks' photos come by
+// their Spotify id, like every artist avatar).
 function DeepName({ a, size, copy, onOpen }: { a: Name; size: number; copy: boolean; onOpen: () => void }) {
   return (
+    <>
     <button
       className="dcn"
       aria-hidden={copy || undefined}
@@ -65,5 +67,7 @@ function DeepName({ a, size, copy, onOpen }: { a: Name; size: number; copy: bool
       <ArtistAvatar name={a.name} id={a.id} photo={a.photo} size={size} />
       <span>{a.name}</span>
     </button>
+    <i className="dcs" aria-hidden="true" />
+    </>
   );
 }
