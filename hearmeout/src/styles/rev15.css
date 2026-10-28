@@ -1125,3 +1125,61 @@ html,body{margin:0}
 .rd .mg23 b{max-width:100%;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rd .mg23 small{font-size:11px;font-weight:800;color:var(--acct)}
 .rd .mh23{margin:12px 0 0;font-weight:700;font-size:14px}
+/* (2026-10-28) Neutral cards (.nt23): graphite in both modes, cream text —
+   for blocks with no picture behind them (leaderboards, lists, managing). */
+.rd .tile.nt23,.rd main .tile.nt23{--tbg:#22201D!important;--tfg:#F6EFE0;--fg:#F6EFE0;--bb:#F6EFE0;--bf:#181513;--soft2:rgba(255,255,255,.07);background:#22201D!important;color:#F6EFE0;outline:0}
+.rd .tile.nt23 .muted{color:rgba(246,239,224,.7)}
+.rd .tile.nt23 .field{background:rgba(255,255,255,.08);color:#F6EFE0}
+.rd .tile.nt23 .pc15 .pb,.rd .tile.nt23 .pc15 .pb.tn15{background:rgba(255,255,255,.07)!important;color:#F6EFE0}
+.rd .tile.sac15{background:#22201D!important;background-image:none!important;color:#F6EFE0;--fg:#F6EFE0;outline:0}
+/* A card over a picture with none to show: plain graphite. */
+.rd .tile.bh15.np{background:#22201D}
+.rd .tile.bh15.np::before{display:none}
+/* Ranked rows: your own row marked. */
+.rd .tl23 li.you .n,.rd .tl23 li.you b{color:var(--acct)}
+.rd .tl23 button:disabled{opacity:1;cursor:default}
+.rd .crd .tot{margin:0 0 10px;font-weight:700}
+.rd .crd .tot b{font:800 28px/1 var(--font-display);letter-spacing:-.02em}
+/* Taste match hero: over a picture, both faces in the corner. */
+.rd .tile.mh23{position:relative;padding:26px}
+.rd .tile.mh23 .fcs{position:absolute;top:22px;right:22px;display:flex}
+.rd .tile.mh23 .fcs .avt{width:58px;height:58px;font-size:22px;box-shadow:0 0 0 3px rgba(20,18,16,.6)}
+.rd .tile.mh23 .fcs .avt+.avt{margin-left:-14px}
+.rd .tile.mh23 .pct,.rd .tile.mh23 .pcts{color:#fff}
+.rd .tile.mh23 .pill{background:rgba(255,255,255,.14);color:#fff}
+/* Group card: the cover beside the name and faces, the latest event under. */
+.rd .tile.gc23{display:flex!important;flex-direction:column!important;align-items:stretch;gap:14px;padding:16px;text-align:left;color:#fff;width:100%}
+.rd .gc23 .top{display:flex;gap:14px;align-items:center;min-width:0}
+.rd .gc23 .top>.cov{flex:none;width:92px;height:92px;border-radius:16px}
+.rd .gc23 .g{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.rd .gc23 .nm{display:flex;align-items:center;gap:8px;min-width:0}
+.rd .gc23 .nm b{font:800 24px/1.1 var(--font-display);letter-spacing:-.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .gc23 .nw{flex:none;padding:3px 9px;border-radius:99px;background:rgba(255,255,255,.9);color:#161412;font-weight:800;font-size:12px}
+.rd .gc23 .avs{display:flex}
+.rd .gc23 .avs .avt{width:30px;height:30px;font-size:12px;box-shadow:0 0 0 2px rgba(20,18,16,.7)}
+.rd .gc23 .avs .avt+.avt{margin-left:-8px}
+.rd .gc23 .avs .more{background:rgba(255,255,255,.2);color:#fff}
+.rd .gc23 small{font-weight:700;font-size:13px;color:rgba(255,255,255,.78)}
+.rd .gc23 .ev{display:flex;align-items:center;gap:10px;padding:8px;border-radius:14px;background:rgba(0,0,0,.28);min-width:0}
+.rd .gc23 .ev .cov{flex:none;width:40px;height:40px;border-radius:9px}
+.rd .gc23 .ev .g{gap:1px}
+.rd .gc23 .ev b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .gc23 .ev.ev0{display:block;padding:10px 12px}
+/* Group page header. */
+.rd .tile.gh23{display:flex;flex-direction:column;gap:16px;padding:20px;color:#fff}
+.rd .gh23 .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.rd .gh23 .k{font-weight:800;font-size:13px;color:rgba(255,255,255,.78)}
+.rd .gh23 .ce{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:99px;background:rgba(255,255,255,.14);color:#fff;font-weight:800;font-size:13px}
+.rd .gh23 .mid{display:flex;gap:16px;align-items:center;min-width:0}
+.rd .gh23 .cvb{flex:none;display:block!important;padding:0;line-height:0;border-radius:18px;overflow:hidden}
+.rd .gh23 .cvb .cov{width:112px;height:112px;border-radius:18px}
+.rd .gh23 .g{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.rd .gh23 h1{margin:0;font-size:clamp(30px,7vw,48px);line-height:1.02;color:#fff;overflow-wrap:anywhere}
+.rd .gh23 .avs{display:flex;align-items:center}
+.rd .gh23 .avs button{padding:0;line-height:0}
+.rd .gh23 .avs .avt{width:34px;height:34px;font-size:13px;box-shadow:0 0 0 2px rgba(20,18,16,.7)}
+.rd .gh23 .avs>*+*{margin-left:-8px}
+.rd .gh23 .avs .more{background:rgba(255,255,255,.2);color:#fff}
+.rd .gh23 .g small{font-weight:700;color:rgba(255,255,255,.78)}
+.rd .gh23 .st15{margin:0;background:rgba(0,0,0,.28)}
+.rd .gh23 .acts{margin:0}

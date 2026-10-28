@@ -116,25 +116,30 @@ export function GroupScreen({ device: _device }: { device: Device }) {
 
       {/* Hero: the group's name, members and numbers over its cover (its own
           picture, or the best album of the month), blurred. */}
-      <div className={`tile gh22 ${heroBg ? 'bh15' : 't-ink glow'}`} style={blurStyle(heroBg)}>
+      <div className={`tile bh15 gh23${heroBg ? '' : ' np'}`} style={blurStyle(heroBg, 300)}>
         <div className="top">
-          <span className="pill">{t('groups.privateGroup')}</span>
+          <span className="k">{t('groups.privateGroup')} · {t('groups.since', { date: sinceLabel(detail.createdAt, language) })}</span>
           <button className="ce" onClick={() => setCoverOpen(true)}><i className="ic ic-pic" aria-hidden="true" /> {t('groups.coverEdit')}</button>
         </div>
-        <h1>{detail.name}</h1>
-        <div className="who">
-          <span className="avs">
-            {detail.members.slice(0, 6).map((m) => (
-              <button key={m.id} aria-label={m.name} onClick={() => openMember(m.id)}><Av u={m} /></button>
-            ))}
-            {detail.members.length > 6 && <span className="dot more">+{detail.members.length - 6}</span>}
-          </span>
-          <small>{t('groups.memberCount', { count: detail.members.length, word: pluralForKey(language, detail.members.length, 'groups.memberOne', 'groups.memberFew', 'groups.memberMany') })} · {t('groups.since', { date: sinceLabel(detail.createdAt, language) })}</small>
+        <div className="mid">
+          <button className="cvb" onClick={() => setCoverOpen(true)} aria-label={t('groups.coverEdit')}>
+            <CoverArt url={heroBg ?? undefined} fallbackLetter={detail.name[0]?.toUpperCase() || '?'} className="cov" px={150} />
+          </button>
+          <div className="g">
+            <h1>{detail.name}</h1>
+            <span className="avs">
+              {detail.members.slice(0, 6).map((m) => (
+                <button key={m.id} aria-label={m.name} onClick={() => openMember(m.id)}><span className="avt" style={{ ...userAvatarStyle(m), backgroundSize: 'cover' }}>{!m.avatarUrl && m.name[0]?.toUpperCase()}</span></button>
+              ))}
+              {detail.members.length > 6 && <span className="avt more">+{detail.members.length - 6}</span>}
+            </span>
+            <small>{t('groups.memberCount', { count: detail.members.length, word: pluralForKey(language, detail.members.length, 'groups.memberOne', 'groups.memberFew', 'groups.memberMany') })}</small>
+          </div>
         </div>
-        <div className="nums">
-          <span><b>{Math.round(totalHours)}{t('unit.h')}</b><small>{t(period === 'week' ? 'groups.listenedWeek' : 'groups.listenedMonth')}</small></span>
-          <span><b>{totalRatingsThisMonth}</b><small>{t('groups.ratingsThisMonth')}</small></span>
-          <span><b>{groupAvgScore ? `★ ${fmt1(groupAvgScore)}` : '–'}</b><small>{t('groups.figAvg')}</small></span>
+        <div className="st15">
+          <div><b>{Math.round(totalHours)}{t('unit.h')}</b><small>{t(period === 'week' ? 'groups.listenedWeek' : 'groups.listenedMonth')}</small></div>
+          <div><b>{totalRatingsThisMonth}</b><small>{t('groups.ratingsThisMonth')}</small></div>
+          <div><b>{groupAvgScore ? fmt1(groupAvgScore) : '–'}</b><small>{t('groups.figAvg')}</small></div>
         </div>
         <div className="acts">
           <button className="btn" onClick={copyInviteLink}>{t('groups.inviteFriends')}</button>
@@ -167,7 +172,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
       <div className="bento b3">
 
         {/* Latest ratings as covers you swipe through, over the latest one. */}
-        <div className={`tile s3 ${actCover ? 'bh15' : 't-c4'}`} style={blurStyle(actCover)}>
+        <div className={`tile s3 ${actCover ? 'bh15' : 'nt23'}`} style={blurStyle(actCover)}>
           <h2>{t('groups.activity')}</h2>
           {detail.activity.length ? (
             <div className="hrow act13">
@@ -191,7 +196,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
         </div>
 
         {/* Managing the group: invite by handle, leave. */}
-        <div className="tile t-soft2 s3">
+        <div className="tile nt23 s3">
           <div className="mng13">
             <div className="inv">
               <label htmlFor="ginv" style={{ fontWeight: 800 }}>{t('groups.inviteByHandle')}</label>

@@ -11,7 +11,7 @@ import { pluralForKey } from '@/lib/i18n';
 import type { ApiUser, GroupLeaderboardPeriod, GroupVoteState } from '@/lib/types';
 import { CoverArt } from './ui/CoverArt';
 import { ArtistName } from './ui/ArtistName';
-import { LeaderboardTile } from './ui/Podium';
+import { RankRows } from './ui/RankRows';
 
 const Face = ({ u }: { u: { name: string; avatarUrl: string | null } }) => (
   <span className="dot" style={{ ...userAvatarStyle(u), backgroundSize: 'cover' }}>{!u.avatarUrl && u.name[0]?.toUpperCase()}</span>
@@ -107,7 +107,6 @@ export function GroupListenRace({ rows, period, onPeriod, meId, onOpen }: {
   onOpen: (id: string) => void;
 }) {
   const { t } = useApp();
-  const max = Math.max(0, ...rows.map((r) => r.hours));
   const total = rows.reduce((s, r) => s + r.hours, 0);
   return (
     <section className="sh14 lr22">
@@ -118,30 +117,14 @@ export function GroupListenRace({ rows, period, onPeriod, meId, onOpen }: {
           <button className={`chip${period === 'month' ? ' on' : ''}`} onClick={() => onPeriod('month')}>{t('stats.thisMonth')}</button>
         </div>
       </div>
-      <LeaderboardTile className="crd" people={rows.slice(0, 3).map((r) => r.user)}>
+      <div className="tile nt23 crd">
         <p className="tot"><b>{fmtHours(total)}{t('unit.h')}</b> {t('groups.togetherHours')}</p>
-        <div className="eq" role="list">
-          {rows.map((r, n) => {
-            const you = r.user.id === meId;
-            const lead = n === 0 && r.hours > 0;
-            const h = max ? Math.max(4, Math.round((r.hours / max) * 100)) : 4;
-            return (
-              <button
-                key={r.user.id}
-                role="listitem"
-                className={`c${lead ? ' lead' : ''}${you ? ' you' : ''}`}
-                onClick={you ? undefined : () => onOpen(r.user.id)}
-                aria-label={`${n + 1}. ${r.user.name} · ${fmtHours(r.hours)}${t('unit.h')}`}
-              >
-                <span className="h">{lead && <i className="ic ic-medal" aria-hidden="true" />}{fmtHours(r.hours)}{t('unit.h')}</span>
-                <span className="bar"><i style={{ height: `${h}%` }} /></span>
-                <Face u={r.user} />
-                <small>{r.user.name}</small>
-              </button>
-            );
-          })}
-        </div>
-      </LeaderboardTile>
+        <RankRows
+          label={t('groups.leaderboard')}
+          rows={rows.map((r) => ({ id: r.user.id, name: r.user.name, avatarUrl: r.user.avatarUrl, amount: r.hours, value: `${fmtHours(r.hours)}${t('unit.h')}`, you: r.user.id === meId }))}
+          onOpen={onOpen}
+        />
+      </div>
     </section>
   );
 }

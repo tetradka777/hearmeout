@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { toneClass } from '../ui/Visual';
 import { createPortal } from 'react-dom';
 import { useApp } from '@/lib/AppContext';
 import { FanClubGrid } from '../FanClubs';
@@ -32,39 +31,45 @@ function LeadingVote({ albumId }: { albumId: string }) {
   return <>{t('groups.voteLeads', { album: album?.title ?? '…' })}</>;
 }
 
-// A group card: its own colour, the people in it big, how much they
-// listened this week, and the latest thing that happened — who rated which
-// album (with that cover, so it's clear what it is), else the album
-// leading this month's vote.
+// A group card over its picture (its own cover, else its top album, else
+// the latest rated), blurred under a dark haze: the cover square on the
+// left, the name, faces and this week's hours beside it, and the latest
+// thing that happened under them.
 function GroupCard({ g }: { g: GroupSummary }) {
   const { t, language, viewGroup, spotifyCovers } = useApp();
   const shown = g.members.slice(0, 5);
   const more = g.members.length - shown.length;
   const last = g.recent?.[0];
   const lastAlbum = useAlbum(last?.albumId ?? null);
+  const topAlbum = useAlbum(g.coverAlbumIds?.[0] ?? null);
+  const albumCover = (x: typeof topAlbum) => (x ? spotifyCovers[x.id] || x.cover || null : null);
+  const pic = g.cover || albumCover(topAlbum) || albumCover(lastAlbum);
   return (
-    <button className={`tile gc16 ${g.cover ? 'bh15' : toneClass(g.id)}`} style={blurStyle(g.cover)} onClick={() => viewGroup(g.id)}>
-      <span className="avs16" aria-hidden="true">
-        {shown.map((m) => <span key={m.id} className="dot" style={{ ...userAvatarStyle(m), backgroundSize: 'cover' }}>{!m.avatarUrl && m.name[0]?.toUpperCase()}</span>)}
-        {more > 0 && <span className="dot more">+{more}</span>}
+    <button className={`tile gc23 bh15${pic ? '' : ' np'}`} style={blurStyle(pic)} onClick={() => viewGroup(g.id)}>
+      <span className="top">
+        <CoverArt url={pic ?? undefined} fallbackLetter={g.name[0]?.toUpperCase() || '?'} className="cov" px={120} />
+        <span className="g">
+          <span className="nm">
+            <b>{g.name}</b>
+            {g.newPlays > 0 && <span className="nw">{t('groups.newPlaysTag', { count: g.newPlays })}</span>}
+          </span>
+          <span className="avs">
+            {shown.map((m) => <span key={m.id} className="avt" style={{ ...userAvatarStyle(m), backgroundSize: 'cover' }}>{!m.avatarUrl && m.name[0]?.toUpperCase()}</span>)}
+            {more > 0 && <span className="avt more">+{more}</span>}
+          </span>
+          <small>{t('groups.memberCount', { count: g.memberCount, word: pluralForKey(language, g.memberCount, 'groups.memberOne', 'groups.memberFew', 'groups.memberMany') })} · {t('groups.hoursThisWeek', { n: g.hoursWeek ?? 0 })}</small>
+        </span>
       </span>
-      <span className="nm16">
-        <h3>{g.name}</h3>
-        {g.newPlays > 0 && <span className="tag" style={{ background: 'var(--acc)', color: 'var(--onacc)' }}>{t('groups.newPlaysTag', { count: g.newPlays })}</span>}
-      </span>
-      <small className="mt16">
-        {t('groups.memberCount', { count: g.memberCount, word: pluralForKey(language, g.memberCount, 'groups.memberOne', 'groups.memberFew', 'groups.memberMany') })} · {t('groups.hoursThisWeek', { n: g.hoursWeek ?? 0 })}
-      </small>
       {last && lastAlbum ? (
-        <span className="ev16">
-          <CoverArt url={spotifyCovers[lastAlbum.id] || lastAlbum.cover} fallbackLetter={lastAlbum.artist[0] || '?'} className="cov" px={44} style={{ width: 44, height: 44 }} />
+        <span className="ev">
+          <CoverArt url={albumCover(lastAlbum) ?? undefined} fallbackLetter={lastAlbum.artist[0] || '?'} className="cov" px={44} />
           <span className="g">
             <small>{formatRelative(last.at, language)}</small>
             <b>{t('groups.recentRated', { name: last.user.name, album: lastAlbum.title, stars: fmt1(last.stars) })}</b>
           </span>
         </span>
       ) : (
-        <small className="mt16">{g.leadingVote ? <LeadingVote albumId={g.leadingVote} /> : t('groups.voteOpenHint')}</small>
+        <small className="ev ev0">{g.leadingVote ? <LeadingVote albumId={g.leadingVote} /> : t('groups.voteOpenHint')}</small>
       )}
     </button>
   );

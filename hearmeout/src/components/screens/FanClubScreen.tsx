@@ -10,6 +10,7 @@ import type { Device } from '@/lib/types';
 import type { FanClubMember, FanClubPage } from '@/app/api/fanclubs/[id]/route';
 import { ArtistAvatar } from '../ui/ArtistName';
 import { CoverWall } from '../ui/Visual';
+import { RankRows } from '../ui/RankRows';
 
 const TOP = 5;
 
@@ -46,7 +47,6 @@ export function FanClubScreen(_props: { device: Device }) {
 
   const shown = data?.shown ?? [];
   const top = shown.filter((m) => (m.plays ?? 0) > 0).sort((a, b) => (b.plays ?? 0) - (a.plays ?? 0)).slice(0, TOP);
-  const maxPlays = Math.max(1, ...top.map((m) => m.plays ?? 0));
   const openMember = (m: FanClubMember) => { if (m.id !== me?.id) viewFriend(m.id); };
 
   return (
@@ -86,28 +86,18 @@ export function FanClubScreen(_props: { device: Device }) {
           </div>
 
           <div className="sec two fc23">
-            <div className="tile">
+            <div className="tile nt23">
               <h2>{t('fanclub.topListeners')}</h2>
               {top.length ? (
-                <ol className="tl23">
-                  {top.map((m, i) => (
-                    <li key={m.id}>
-                      <button onClick={() => openMember(m)}>
-                        <span className="n">{i + 1}</span>
-                        <span className="avt" style={userAvatarStyle(m)}>{!m.avatarUrl && m.name[0]?.toUpperCase()}</span>
-                        <span className="g">
-                          <b>{m.id === me?.id ? t('fanclub.you') : m.name}</b>
-                          <i style={{ width: `${Math.max(6, Math.round(((m.plays ?? 0) / maxPlays) * 100))}%` }} />
-                        </span>
-                        <span className="v">{t('fanclub.playsN', { n: m.plays ?? 0 })}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ol>
+                <RankRows
+                  label={t('fanclub.topListeners')}
+                  rows={top.map((m) => ({ id: m.id, name: m.id === me?.id ? t('fanclub.you') : m.name, avatarUrl: m.avatarUrl, amount: m.plays ?? 0, value: t('fanclub.playsN', { n: m.plays ?? 0 }), you: m.id === me?.id }))}
+                  onOpen={viewFriend}
+                />
               ) : <p className="muted" style={{ fontWeight: 600 }}>{t('fanclub.nothingYet')}</p>}
             </div>
 
-            <div className="tile">
+            <div className="tile nt23">
               <h2>{t('fanclub.membersTitle')}</h2>
               {shown.length ? (
                 <div className="mg23">
