@@ -36,10 +36,17 @@ type PlayerValue = {
   playQueue: (tracks: QueueTrack[], startIndex: number, opts?: { quiet?: boolean; loop?: boolean }) => void;
   toggle: () => void;
   next: () => void;
+  // The one before in the queue (a swipe on the bar); the start of the
+  // same one when it's the first.
+  prev: () => void;
   close: () => void;
 };
 
 const PlayerContext = createContext<PlayerValue | null>(null);
+
+// What a play control for a track carries as data-pl, so the bar can tell
+// whether the playing track's own control is on screen (useTrackOnScreen).
+export const trackKey = (t: { title: string; albumId?: string | null }) => `${t.title}|${t.albumId ?? ''}`;
 
 export function usePlayer(): PlayerValue {
   const ctx = useContext(PlayerContext);
@@ -114,6 +121,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   // Manual "Next" (prototype's mini-player, spec 3.18/B11) — same bounds
   // check as auto-advance-on-ended, just triggerable from a button too.
   const next = useCallback(() => advance(), [advance]);
+  const prev = useCallback(() => {
+    if (index > 0) { setIndex(index - 1); return; }
+    const audio = audioRef.current;
+    if (audio && status === 'ready') { audio.currentTime = 0; audio.play().catch(() => {}); }
+  }, [index, status]);
 
   // "✕" close (spec 3.18/B11): the mini-player has no way to dismiss
   // itself today, so it stays docked until a full page reload. Clearing
@@ -151,8 +163,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<PlayerValue>(() => ({
-    queue, index, playing, progress, getProgress, status, currentTrack, quiet, playQueue, toggle, next, close,
-  }), [queue, index, playing, progress, getProgress, status, currentTrack, quiet, playQueue, toggle, next, close]);
+    queue, index, playing, progress, getProgress, status, currentTrack, quiet, playQueue, toggle, next, prev, close,
+  }), [queue, index, playing, progress, getProgress, status, currentTrack, quiet, playQueue, toggle, next, prev, close]);
 
   return (
     <PlayerContext.Provider value={value}>

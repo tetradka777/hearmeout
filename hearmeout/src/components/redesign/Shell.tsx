@@ -11,7 +11,8 @@ import { Ticker } from './Ticker';
 import { TopButtons } from './TopButtons';
 import { GlobalPlayer } from '../DockedPlayer';
 import { NowPlayingBar } from './NowPlayingBar';
-import { usePlayer } from '@/lib/PlayerContext';
+import { trackKey, usePlayer } from '@/lib/PlayerContext';
+import { useTrackOnScreen } from '@/lib/useTrackOnScreen';
 import { Toast } from '../ui/Toast';
 
 // The redesign's app shell (spec 2.4, 3.9, 4, 15.1, 17.1): one top menu
@@ -77,6 +78,9 @@ export function RedesignShell({ children }: { children: ReactNode }) {
   const activeGroup = state.activeScreen === 'history' ? (state.historyOrigin === 'rate' ? 'rate' : null) : NAV_GROUP[state.activeScreen];
   const { currentTrack, quiet } = usePlayer();
   const hasPlayer = !!currentTrack && !quiet;
+  // The bar folds away while the playing track's own play button is in view.
+  const trackInView = useTrackOnScreen(hasPlayer && currentTrack ? trackKey(currentTrack) : null);
+  const barShown = hasPlayer && !trackInView;
   const hasNowPlaying = !!me?.nowPlaying;
 
   return (
@@ -124,6 +128,11 @@ export function RedesignShell({ children }: { children: ReactNode }) {
       <main className="fade" id="main" tabIndex={-1}>{children}</main>
       </div>
 
+      {/* Phone: the bottom menu, with the preview bar sliding out of its top
+          (one glass block, a thin line between). The mini-player takes
+          priority over the now-playing bar while active (spec 13.17.2). */}
+      <div className={`dock24${barShown ? ' on' : ''}`}>
+      <GlobalPlayer shown={barShown} />
       {/* Mobile tab bar: 5 tabs and your profile photo */}
       <nav className="tabbar" aria-label={t('nav.main')}>
         {TAB_SCREENS.map((screen) => (
@@ -140,12 +149,9 @@ export function RedesignShell({ children }: { children: ReactNode }) {
           </button>
         )}
       </nav>
+      </div>
 
-      {/* The preview mini-player takes priority over the now-playing bar
-          while active (spec 13.17.2) — both live in the same fixed-bottom
-          slot, so only one renders at a time. */}
       {!hasPlayer && <NowPlayingBar />}
-      <GlobalPlayer />
       <Toast />
     </div>
   );
