@@ -532,14 +532,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // no flash — this effect just keeps the root in sync with the account's
   // real settings and re-applies live when "system" mode's OS preference
   // changes while the app is open).
+  // The album page is always dark, whatever the theme: the mode follows the
+  // open screen too.
+  const albumOpen = state.activeScreen === 'rate';
   useEffect(() => {
     if (!me) return;
     const root = document.documentElement;
+    const modeNow = () => (albumOpen ? 'dark' : resolveMode(me.mode));
     const themeKey = () => `${root.dataset.design}|${root.dataset.palette}|${root.dataset.mode}`;
     const before = themeKey();
     root.dataset.design = me.design;
     root.dataset.palette = me.palette;
-    root.dataset.mode = resolveMode(me.mode);
+    root.dataset.mode = modeNow();
     if (before !== themeKey()) restyleAfterThemeChange();
     try {
       localStorage.setItem('hmo-appearance', JSON.stringify({
@@ -564,14 +568,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     let onColorSchemeChange: (() => void) | null = null;
     if (me.mode === 'system') {
       colorSchemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      onColorSchemeChange = () => { root.dataset.mode = resolveMode('system'); restyleAfterThemeChange(); };
+      onColorSchemeChange = () => { root.dataset.mode = modeNow(); restyleAfterThemeChange(); };
       colorSchemeQuery.addEventListener('change', onColorSchemeChange);
     }
     return () => {
       motionQuery.removeEventListener('change', applyMotion);
       if (colorSchemeQuery && onColorSchemeChange) colorSchemeQuery.removeEventListener('change', onColorSchemeChange);
     };
-  }, [me]);
+  }, [me, albumOpen]);
 
   // Friend requests arrive from other people, so they're re-checked when the
   // tab becomes visible again and once a minute while it's visible — not

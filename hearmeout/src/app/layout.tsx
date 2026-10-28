@@ -41,6 +41,8 @@ try {
   if (mode === 'system' || !mode) {
     mode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   }
+  // The album page is always dark (AppContext).
+  if (/[?&]screen=rate(&|$)/.test(location.search)) mode = 'dark';
   root.dataset.mode = mode;
   var osReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (osReducedMotion || (a && a.motionEnabled === false)) root.dataset.motion = 'off';

@@ -962,3 +962,23 @@ html,body,.rd{-webkit-user-select:none;user-select:none;-webkit-touch-callout:no
 @media(prefers-reduced-motion:reduce){.rd .dc22{overflow-x:auto}.rd .dc22 .dct{animation:none}}
 [data-motion="off"] .rd .dc22{overflow-x:auto}
 [data-motion="off"] .rd .dc22 .dct{animation:none}
+/* (2026-10-28) Album page: the album centred (cover, artist, title, meta),
+   icon-only actions around the play button, then a rate | tracklist switch.
+   Always dark (AppContext puts data-mode="dark" on the root while it's open). */
+.rd .ah23{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;max-width:760px;margin:4px auto 26px}
+.rd .ah23>.cov{width:min(320px,74vw);aspect-ratio:1;margin-bottom:14px}
+.rd .ah23 .ahr{margin:0;font-weight:800;font-size:17px;display:flex;justify-content:center}
+.rd .ah23 h1.big{margin:0;text-align:center;max-width:100%}
+.rd .ah23 .ahm{margin:0;font-weight:700;font-size:14px}
+.rd .ah23 .aha{display:flex;align-items:center;justify-content:center;gap:16px;margin:14px 0 12px}
+.rd .ah23 .aha .ib{width:50px;height:50px;background:color-mix(in srgb,currentColor 12%,transparent)}
+.rd .ah23 .aha .ib svg{width:22px;height:22px}
+.rd .ah23 .aha .pvbtn .pvi{font-size:20px}
+.rd .ah23 .ph15{justify-content:center;margin:0 0 6px}
+.rd .ah23 .ahs{font-weight:700;font-size:14px;text-decoration:underline;text-underline-offset:3px}
+.rd .atp23{max-width:760px;margin:0 auto}
+.rd .atp23>.btab14{margin:0 auto 16px}
+.rd .rst23{display:flex;align-items:center;gap:14px;min-height:76px}
+.rd .rst23>:first-child{min-width:0}
+.rd .rst23 .bub{margin-left:auto;flex:none;padding:8px 18px}
+@media(max-width:400px){.rd .rst23 .bub{padding:6px 14px}.rd .rst23 .bub .num{font-size:30px}.rd .rst23 .bub .w{font-size:11px}}

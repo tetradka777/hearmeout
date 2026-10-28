@@ -1,6 +1,7 @@
 'use client';
 
 import { cachedJson, peekJson } from './cachedJson';
+import { whenQuiet } from './navQuiet';
 import { prefetchAlbum } from './prefetchPages';
 import type { FeedResponse, GroupSummary, Me } from './types';
 
@@ -14,6 +15,8 @@ const ALBUMS_MAX = 16;
 // (lib/cachedJson), so opening one shows it at once. None of it asks
 // Spotify for anything.
 export async function preloadDetails(me: Me, stillWanted: () => boolean): Promise<void> {
+  // Each step waits while you're opening screens (lib/navQuiet).
+  const next = async () => { await whenQuiet(); return stillWanted(); };
   // Your own stats for the other periods (the screen opens on this week),
   // under the same keys the stats screen uses (period, weekStart, offset).
   const statsKey = (period: string, offset?: number) => {
@@ -22,11 +25,11 @@ export async function preloadDetails(me: Me, stillWanted: () => boolean): Promis
     return `/api/stats?${p.toString()}`;
   };
   for (const url of [statsKey('week', -1), statsKey('month', 0), statsKey('month', -1), statsKey('season')]) {
-    if (!stillWanted()) return;
+    if (!(await next())) return;
     await cachedJson(url);
   }
   for (const f of me.friends) {
-    if (!stillWanted()) return;
+    if (!(await next())) return;
     await Promise.all([
       cachedJson(`/api/users/${f.id}`),
       cachedJson(`/api/stats?range=6m&userId=${f.id}`),
@@ -36,7 +39,7 @@ export async function preloadDetails(me: Me, stillWanted: () => boolean): Promis
   }
   const groups = await cachedJson<GroupSummary[]>('/api/groups');
   for (const g of groups || []) {
-    if (!stillWanted()) return;
+    if (!(await next())) return;
     await cachedJson(`/api/groups/${g.id}?period=month`);
   }
 
@@ -49,7 +52,7 @@ export async function preloadDetails(me: Me, stillWanted: () => boolean): Promis
   for (const r of me.recentRatings || []) add(r.albumId);
   for (const id of me.top4Albums || []) add(id);
   for (const id of ids.slice(0, ALBUMS_MAX)) {
-    if (!stillWanted()) return;
+    if (!(await next())) return;
     await prefetchAlbum(id, me.friends.length > 0);
   }
 }
