@@ -1,11 +1,17 @@
 // HearMeOut service worker.
 // - Offline: page loads go to the network as always; only when the network
 //   fails is a small "you're offline" page shown instead of the browser's
-//   error. Nothing else is cached, so the site never shows stale data.
+//   error. Pages and data are never cached, so the site never shows stale
+//   data.
+// - Code: the build's files (/_next/static/…, named by their content, so a
+//   name never changes meaning) are kept after the first download and
+//   served from here, so opening a page doesn't wait on a busy server.
 // - Push: shows notifications sent by the server (friend requests, the
 //   weekly recap) and opens the right page when one is tapped.
 const OFFLINE_CACHE = 'hmo-offline-v1';
 const OFFLINE_URL = '/offline.html';
+const STATIC_CACHE = 'hmo-static-v1';
+const STATIC_MAX = 400;
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(OFFLINE_CACHE).then((c) => c.add(OFFLINE_URL)).then(() => self.skipWaiting()));
@@ -14,7 +20,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== OFFLINE_CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k !== OFFLINE_CACHE && k !== STATIC_CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });

@@ -61,7 +61,7 @@ export function RateScreen({ device: _device }: { device: Device }) {
     reviewsVersion, ensureLiveAlbum, lovedItems, toggleLoved, laterItems, toggleLaterAlbum, toggleLaterTrack, me,
     setRatingValue, publishRating, showToast, viewHistory,
   } = useApp();
-  const { playQueue, currentTrack, playing, progress } = usePlayer();
+  const { playQueue, currentTrack, playing } = usePlayer();
 
   const staticMatch = albums.find((x) => x.id === state.currentAlbumId);
   const enriched = liveAlbums[state.currentAlbumId];
@@ -91,7 +91,9 @@ export function RateScreen({ device: _device }: { device: Device }) {
   const trackScores = useCachedJson<TrackRatingsResponse>(state.currentAlbumId && me ? `/api/track-ratings?albumId=${encodeURIComponent(state.currentAlbumId)}` : null);
   const [openTrack, setOpenTrack] = useState<number | null>(null);
   const [sharing, setSharing] = useState(false);
-  useEffect(() => setOpenTrack(null), [state.currentAlbumId]);
+  // Under the album: the rating form or the tracklist.
+  const [tab, setTab] = useState<'rate' | 'tracks'>('rate');
+  useEffect(() => { setOpenTrack(null); setTab('rate'); }, [state.currentAlbumId]);
 
   const [text, setText] = useState(state.ratingDraftText);
   useEffect(() => setText(state.ratingDraftText), [state.currentAlbumId, state.ratingDraftText]);
@@ -140,6 +142,8 @@ export function RateScreen({ device: _device }: { device: Device }) {
   // prevHtml(): the preview line follows whichever track of this album is
   // loaded in the player; otherwise it invites a listen before scoring.
   const curIdx = currentTrack?.albumId === a.id ? a.tracklist.indexOf(currentTrack.title) : -1;
+  // "your take" shows up once you're scoring or writing.
+  const showTake = val > 0 || text.trim().length > 0;
   const fmtT = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
   const fmtDur = (ms: number | null | undefined) => (ms ? fmtT(Math.round(ms / 1000)) : '');
 
@@ -191,57 +195,56 @@ export function RateScreen({ device: _device }: { device: Device }) {
       {backdrop}
       {shareModal}
       {chips}
-      <div className="two">
-        <div className="stack">
-          <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: '100%', aspectRatio: '1' }} />
+      {/* The album in the middle: cover, artist and title centred, then the
+          play button with the icon-only actions beside it. */}
+      <div className="ah23">
+        <CoverArt url={cover} fallbackLetter={a.artist[0] || '?'} className="cov" />
+        <p className="ahr"><ArtistName name={a.artist} id={a.artistId} size={22} /></p>
+        <h1 className="big">{a.title}</h1>
+        <p className="muted ahm">
+          {[a.genre, a.year || null, a.tracklist.length ? `${a.tracklist.length} ${t('album.tracksCount')}` : null].filter(Boolean).join(' · ')}
+        </p>
+        <div className="aha">
+          <button className={`ib love later${savedForLater ? ' on' : ''}`} aria-pressed={savedForLater} aria-label={savedForLater ? t('album.savedForLater') : t('album.listenLater')} title={savedForLater ? t('album.savedForLater') : t('album.listenLater')} onClick={() => toggleLaterAlbum(a.id, a.title, a.artist, cover || null)}>
+            <BookmarkIcon />
+          </button>
+          <button className={`ib love${albumLoved ? ' on' : ''}`} aria-pressed={albumLoved} aria-label={albumLoved ? t('album.removeFromLoved') : t('album.addToLoved')} title={albumLoved ? t('album.removeFromLoved') : t('album.addToLoved')} onClick={() => toggleLoved('album', a.title, a.artist, a.spotifyId ?? null, spotifyCovers[a.id] || a.cover || null)}>
+            <HeartIcon />
+          </button>
+          {a.tracklist.length > 0 && <PreviewButton tracks={trackQueue} index={curIdx >= 0 ? curIdx : 0} size={72} />}
+          <button className="ib love" aria-label={t('share.button')} title={t('share.button')} onClick={() => setSharing(true)}><ShareIcon /></button>
         </div>
-        <div className="stack">
-          <p className="eyebrow muted">
-            <ArtistName name={a.artist} id={a.artistId} size={22} />
-            {a.genre && <> · <span className="tag">{a.genre}</span></>}
-            {a.year ? ` · ${a.year}` : ''}
-            {a.tracklist.length ? ` · ${a.tracklist.length} ${t('album.tracksCount')}` : ''}
-          </p>
-          <h1 className="big">{a.title}</h1>
-          <div className="acts" style={{ margin: '0 0 14px' }}>
-            <button className={`btn ghost love later${savedForLater ? ' on' : ''}`} aria-pressed={savedForLater} onClick={() => toggleLaterAlbum(a.id, a.title, a.artist, cover || null)}>
-              <BookmarkIcon /> {savedForLater ? t('album.savedForLater') : t('album.listenLater')}
-            </button>
-            <button className={`btn ghost love${albumLoved ? ' on' : ''}`} aria-pressed={albumLoved} aria-label={albumLoved ? t('album.removeFromLoved') : t('album.addToLoved')} onClick={() => toggleLoved('album', a.title, a.artist, a.spotifyId ?? null, spotifyCovers[a.id] || a.cover || null)}>
-              <HeartIcon /> {albumLoved ? t('album.loved') : t('album.love')}
-            </button>
-            <button className="btn ghost love" onClick={() => setSharing(true)}><ShareIcon /> {t('share.button')}</button>
-            {openSpotifyUrl && <a className="btn ghost" href={openSpotifyUrl} target="_blank" rel="noreferrer">{t('album.openInSpotify')}</a>}
-          </div>
-          {a.tracklist.length > 0 && (
-            <div className="pvw">
-              <PreviewButton tracks={trackQueue} index={curIdx >= 0 ? curIdx : 0} />
-              <div>
-                <b style={{ display: 'block' }}>{curIdx >= 0 ? a.tracklist[curIdx] : t('album.preview30s')}</b>
-                <small className="muted" style={{ fontWeight: 700 }}>
-                  {fmtT(curIdx >= 0 ? progress * 30 : 0)} / 0:30 · {curIdx >= 0 ? a.artist : t('album.listenBeforeScore')}
-                </small>
-              </div>
-            </div>
-          )}
-          {/* Only the numbers there are (no row of dashes on an album nobody rated). */}
-          {(circleAvg || ratingInfo?.count || myPlays) ? (
-            <Phrase parts={[
-              ...(circleAvg ? [[`★ ${fmt1(circleAvg.avg)}`, t('album.yourCircle')]] as [string, string][] : []),
-              ...(ratingInfo?.count ? [[`★ ${fmt1(ratingInfo.avg)}`, t('album.everyoneCount', { n: ratingInfo.count })]] as [string, string][] : []),
-              ...(myPlays ? [[myPlays, t('album.yourPlays')]] as [number, string][] : []),
-            ]} />
-          ) : null}
+        {/* Only the numbers there are (no row of dashes on an album nobody rated). */}
+        {(circleAvg || ratingInfo?.count || myPlays) ? (
+          <Phrase parts={[
+            ...(circleAvg ? [[`★ ${fmt1(circleAvg.avg)}`, t('album.yourCircle')]] as [string, string][] : []),
+            ...(ratingInfo?.count ? [[`★ ${fmt1(ratingInfo.avg)}`, t('album.everyoneCount', { n: ratingInfo.count })]] as [string, string][] : []),
+            ...(myPlays ? [[myPlays, t('album.yourPlays')]] as [number, string][] : []),
+          ]} />
+        ) : null}
+        {openSpotifyUrl && <a className="ahs muted" href={openSpotifyUrl} target="_blank" rel="noreferrer">{t('album.openInSpotify')}</a>}
+      </div>
 
+      <div className="atp23">
+        <div className="btab14" role="tablist" aria-label={a.title}>
+          <button role="tab" aria-selected={tab === 'rate'} className={tab === 'rate' ? 'on' : ''} onClick={() => setTab('rate')}>{t('album.tabRate')}</button>
+          <button role="tab" aria-selected={tab === 'tracks'} className={tab === 'tracks' ? 'on' : ''} onClick={() => setTab('tracks')}>{t('album.tracklist')}</button>
+        </div>
+
+        {tab === 'tracks' ? (
+          <TintBox className="tile" picture={cover} fallbackKey={a.id}>
+            <p className="muted" style={{ fontWeight: 600, margin: '0 0 8px' }}>{t('album.tracklistHint')}</p>
+            <div>{tracklist}</div>
+          </TintBox>
+        ) : (
+        <div className="stack">
           <div className="tile ratebox">
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
-              <div className="duel">
-                <div className="bub b-ac"><span className="num">{val > 0 ? fmt1(val) : '–'}</span><span className="w">{t('rate.yourTake')}</span></div>
-              </div>
-              <div>
+            <div>
+              <div className="rst23">
                 <StarSlider value={val} onChange={setRatingValue} size={34} />
-                <p className="muted" style={{ fontSize: 14, fontWeight: 600, marginTop: 8 }}>{label}</p>
+                {showTake && <div className="bub b-ac sm"><span className="num">{val > 0 ? fmt1(val) : '–'}</span><span className="w">{t('rate.yourTake')}</span></div>}
               </div>
+              <p className="muted" style={{ fontSize: 14, fontWeight: 600, marginTop: 8 }}>{label}</p>
             </div>
           </div>
 
@@ -286,14 +289,10 @@ export function RateScreen({ device: _device }: { device: Device }) {
           </div>
           {val <= 0 && <small className="muted" style={{ fontWeight: 700 }}>{t('rate.pickToPost')}</small>}
         </div>
+        )}
       </div>
 
-      <div className="sec bento b3">
-        <TintBox className="tile s2" picture={cover} fallbackKey={a.id}>
-          <h2>{t('album.tracklist')}</h2>
-          <p className="muted" style={{ fontWeight: 600, margin: '-6px 0 8px' }}>{t('album.tracklistHint')}</p>
-          <div>{tracklist}</div>
-        </TintBox>
+      <div className="sec two">
         <TintBox className="tile" picture={cover} fallbackKey={a.id}>
           <h2>{t('album.community')}</h2>
           <div style={{ display: 'flex', gap: 12, alignItems: 'baseline', flexWrap: 'wrap' }}>
@@ -311,14 +310,14 @@ export function RateScreen({ device: _device }: { device: Device }) {
           <div style={{ marginTop: 14 }}><AlbumRatingDistribution albumId={a.id} refreshToken={reviewsVersion} you={val > 0 ? val : null} /></div>
           <AlbumTagsSummary albumId={a.id} refreshToken={reviewsVersion} />
         </TintBox>
-        <div className="s3">
-          <h2>{t('album.reviews')}</h2>
-          <AlbumReviews albumId={a.id} refreshToken={reviewsVersion} />
-        </div>
+        {/* Friends who rated: after the album itself. */}
+        <FriendsWhoRated albumId={a.id} />
       </div>
 
-      {/* Friends who rated: at the end of the page, after the album itself. */}
-      <div className="sec"><FriendsWhoRated albumId={a.id} /></div>
+      <div className="sec">
+        <h2>{t('album.reviews')}</h2>
+        <AlbumReviews albumId={a.id} refreshToken={reviewsVersion} />
+      </div>
     </div>
   );
 }

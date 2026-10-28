@@ -1,8 +1,9 @@
-// The 13 palettes from the redesign (spec 2.2 / Appendix C). `id` matches
+// The 13 palettes from the redesign (spec 2.2 / Appendix C), plus Tangerine
+// (orange, 2026-10-28). `id` matches
 // the `data-palette` value in src/styles/tokens.css exactly.
 export type PaletteId =
   | 'lemons' | 'idea' | 'bloom' | 'autumn' | 'rude-olive' | 'periwinkle'
-  | 'moss' | 'forest' | 'sky' | 'coffee' | 'acid' | 'grape' | 'cherry';
+  | 'moss' | 'forest' | 'sky' | 'coffee' | 'tangerine' | 'acid' | 'grape' | 'cherry';
 
 export type Design = 'cream-pop' | 'toxic';
 export type Mode = 'light' | 'dark' | 'system';
@@ -22,6 +23,7 @@ export const PALETTES: PaletteInfo[] = [
   { id: 'forest', name: 'Forest', group: 'classic' },
   { id: 'sky', name: 'Sky', group: 'classic' },
   { id: 'coffee', name: 'Coffee', group: 'classic' },
+  { id: 'tangerine', name: 'Tangerine', group: 'classic' },
   { id: 'acid', name: 'Acid', group: 'neon' },
   { id: 'grape', name: 'Grape', group: 'neon' },
   { id: 'cherry', name: 'Cherry', group: 'neon' },

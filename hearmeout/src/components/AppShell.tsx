@@ -11,6 +11,7 @@ import { RateScreen } from './screens/RateScreen';
 // The welcome tour is shown once per account: its own chunk too.
 const OnboardingScreen = dynamic(() => import('./OnboardingScreen').then((m) => m.OnboardingScreen));
 import { preloadDetails } from '@/lib/backgroundPreload';
+import { markNav, whenQuiet } from '@/lib/navQuiet';
 import { useScrollMemory } from '@/lib/scrollMemory';
 
 // Home and the album page are in the first bundle; every other screen is
@@ -101,6 +102,7 @@ export function AppShell() {
   // there: the activity strip reads the feed it loads.
   const [visited, setVisited] = useState<Set<ScreenName>>(() => new Set<ScreenName>(['catalog', state.activeScreen]));
   useEffect(() => {
+    markNav();
     setVisited((v) => (v.has(state.activeScreen) ? v : new Set(v).add(state.activeScreen)));
   }, [state.activeScreen]);
 
@@ -112,7 +114,9 @@ export function AppShell() {
     let alive = true;
     let i = 0;
     let timer: ReturnType<typeof setTimeout>;
-    const step = () => {
+    const step = async () => {
+      // A screen opened a moment ago goes first.
+      await whenQuiet();
       if (!alive) return;
       const name = BACKGROUND_SCREENS[i++];
       if (!name) { preloadDetails(me, () => alive).catch(() => {}); return; }
