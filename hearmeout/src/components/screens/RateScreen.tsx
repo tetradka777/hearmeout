@@ -8,7 +8,7 @@ import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
-import { HeartIcon, PlayIcon, BookmarkIcon, ShareIcon } from '../ui/Icons';
+import { HeartIcon, PlayIcon, BookmarkIcon, ShareIcon, SpotifyLogo } from '../ui/Icons';
 import { ShareAlbumModal } from '../ShareAlbumModal';
 import { Stars, StarSlider } from '../redesign/Stars';
 import { PreviewButton } from '../redesign/PreviewButton';
@@ -188,6 +188,10 @@ export function RateScreen({ device: _device }: { device: Device }) {
   const backdrop = state.activeScreen === 'rate' && cover && typeof document !== 'undefined' && document.querySelector('.rd')
     ? createPortal(<div className="abg17" style={blurStyle(cover, 320)} aria-hidden="true" />, document.querySelector('.rd')!)
     : null;
+  // Spotify's logo after the numbers opens the album there.
+  const spotifyLink = openSpotifyUrl ? (
+    <a className="spl23" href={openSpotifyUrl} target="_blank" rel="noreferrer" aria-label={t('album.openInSpotify')} title={t('album.openInSpotify')}><SpotifyLogo /></a>
+  ) : null;
   const shareModal = sharing ? <ShareAlbumModal album={{ id: a.id, title: a.title, artist: a.artist, cover: cover || null }} onClose={() => setSharing(false)} /> : null;
 
   return (
@@ -215,14 +219,13 @@ export function RateScreen({ device: _device }: { device: Device }) {
           <button className="ib love" aria-label={t('share.button')} title={t('share.button')} onClick={() => setSharing(true)}><ShareIcon /></button>
         </div>
         {/* Only the numbers there are (no row of dashes on an album nobody rated). */}
-        {(circleAvg || ratingInfo?.count || myPlays) ? (
-          <Phrase parts={[
+        {(circleAvg || ratingInfo?.count || myPlays || openSpotifyUrl) ? (
+          <Phrase extra={spotifyLink} parts={[
             ...(circleAvg ? [[`★ ${fmt1(circleAvg.avg)}`, t('album.yourCircle')]] as [string, string][] : []),
             ...(ratingInfo?.count ? [[`★ ${fmt1(ratingInfo.avg)}`, t('album.everyoneCount', { n: ratingInfo.count })]] as [string, string][] : []),
             ...(myPlays ? [[myPlays, t('album.yourPlays')]] as [number, string][] : []),
           ]} />
         ) : null}
-        {openSpotifyUrl && <a className="ahs muted" href={openSpotifyUrl} target="_blank" rel="noreferrer">{t('album.openInSpotify')}</a>}
       </div>
 
       <div className="atp23">

@@ -953,10 +953,9 @@ html,body,.rd{-webkit-user-select:none;user-select:none;-webkit-touch-callout:no
 .rd .dc22 .dcs{display:block;flex:none;align-self:center;width:12px;height:12px;margin:0 26px;border-radius:50%;background:var(--acct)}
 .rd .dc22.bk .dcs{width:10px;height:10px;margin:0 22px}
 .rd .dc22 .dcn .aav{flex:none}
-/* The photo is bigger than the name, and the name starts on it (about two
-   letters), with a halo of the page colour so it stays readable. */
-.rd .dc22 .dcn{gap:0}
-.rd .dc22 .dcn>span:last-child{position:relative;margin-left:-.8em;text-shadow:2px 0 0 var(--bg),-2px 0 0 var(--bg),0 2px 0 var(--bg),0 -2px 0 var(--bg),2px 2px 0 var(--bg),-2px -2px 0 var(--bg),2px -2px 0 var(--bg),-2px 2px 0 var(--bg)}
+/* The photo is bigger than the name and stands apart from it. */
+.rd .dc22 .dcn{gap:16px}
+.rd .dc22 .dcn>span:last-child{position:relative}
 .rd .dc22 .dcn:hover,.rd .dc22 .dcn:focus-visible{color:var(--acct)}
 @media(max-width:600px){.rd .dc22 .dcn{font-size:40px}.rd .dc22 .dcs{margin:0 18px;width:10px;height:10px}.rd .dc22 .dcn .aav{width:76px!important;height:76px!important}.rd .dc22.bk .dcn{font-size:30px}.rd .dc22.bk .dcs{margin:0 16px;width:8px;height:8px}.rd .dc22.bk .dcn .aav{width:56px!important;height:56px!important}}
 @media(prefers-reduced-motion:reduce){.rd .dc22{overflow-x:auto}.rd .dc22 .dct{animation:none}}
@@ -975,10 +974,47 @@ html,body,.rd{-webkit-user-select:none;user-select:none;-webkit-touch-callout:no
 .rd .ah23 .aha .ib svg{width:22px;height:22px}
 .rd .ah23 .aha .pvbtn .pvi{font-size:20px}
 .rd .ah23 .ph15{justify-content:center;margin:0 0 6px}
-.rd .ah23 .ahs{font-weight:700;font-size:14px;text-decoration:underline;text-underline-offset:3px}
 .rd .atp23{max-width:760px;margin:0 auto}
 .rd .atp23>.btab14{margin:0 auto 16px}
 .rd .rst23{display:flex;align-items:center;gap:14px;min-height:76px}
 .rd .rst23>:first-child{min-width:0}
 .rd .rst23 .bub{margin-left:auto;flex:none;padding:8px 18px}
 @media(max-width:400px){.rd .rst23 .bub{padding:6px 14px}.rd .rst23 .bub .num{font-size:30px}.rd .rst23 .bub .w{font-size:11px}}
+/* (2026-10-28) Spotify's logo after the album's numbers. */
+.rd .ph15{align-items:center}
+.rd .ph15 .spl23{display:inline-flex;flex:none;width:38px;height:38px;border-radius:50%;padding:0;background:none}
+.rd .ph15 .spl23 svg{width:100%;height:100%}
+/* (2026-10-28) The whole screen: no default 8px body margin, and on the phone
+   shelves run to the screen's edges (their first card still lines up with
+   the text). */
+html,body{margin:0}
+@media (max-width:899px){
+  .rd main .hrow:not(.tile .hrow):not(.bh15 .hrow),.rd main .dc22{margin-inline:-16px;padding-inline:16px;scroll-padding-inline:16px}
+  .rd main .dc22{padding-inline:0}
+}
+/* (2026-10-28) Ratings history. */
+.rd .hh23{margin-top:6px}
+.rd .hh23 .hhn{margin:0 0 12px;font-weight:800;font-size:20px}
+.rd .hh23 .hhn b{font:800 clamp(56px,14vw,84px)/.9 var(--font-display);letter-spacing:-.04em;margin-right:6px}
+.rd .hl23{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.rd .hl23>button.tile{display:block!important;text-align:left;padding:12px;color:#fff;min-width:0}
+.rd .hl23 .hlc{display:block;position:relative}
+.rd .hl23 .hlc .cov{display:block;width:100%;aspect-ratio:1;border-radius:14px}
+.rd .hl23 .hls{display:block;margin-top:10px;font:800 clamp(24px,6vw,34px)/1 var(--font-display);letter-spacing:-.03em;white-space:nowrap}
+.rd .hl23 small{display:block;margin-top:4px;font-weight:800;font-size:13px}
+.rd .hl23 .hlt{display:block;margin-top:2px;font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.9}
+@media (max-width:420px){.rd .hl23{gap:8px}.rd .hl23>button.tile{padding:8px}.rd .hl23 small{font-size:12px}.rd .hl23 .hlt{font-size:12px}}
+.rd .hd23{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:6px;align-items:end;height:180px}
+.rd .hd23>div{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
+.rd .hd23 small{font-weight:800;font-size:12px;min-height:16px;opacity:.8}
+.rd .hd23 i{display:block;width:100%;border-radius:8px 8px 4px 4px;background:color-mix(in srgb,currentColor 22%,transparent);margin-top:4px}
+.rd .hd23 .on i{background:var(--acc)}
+.rd .hd23 .on small{opacity:1}
+.rd .hd23 span{margin-top:6px;font-size:11px;font-weight:800;opacity:.7}
+.rd .hc23{flex-wrap:nowrap;overflow-x:auto;gap:8px}
+.rd .hc23>span{display:flex;gap:8px;flex:none}
+.rd .hc23>span+span{padding-left:10px;border-left:1px solid color-mix(in srgb,currentColor 18%,transparent)}
+.rd .hc23 .chip{flex:none;margin:0}
+.rd .hm23{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.rd .hm23>span{padding:6px 12px;border-radius:99px;background:var(--soft2);font-weight:800;font-size:13px}
+@media (min-width:900px){.rd .hl23{grid-template-columns:repeat(3,minmax(0,240px))}}
