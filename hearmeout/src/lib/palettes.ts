@@ -1,5 +1,5 @@
-// The 13 palettes from the redesign (spec 2.2 / Appendix C), plus Tangerine
-// (orange, 2026-10-28). `id` matches
+// The colours you can pick (2026-10-28: one colour each, tokens.css --pick;
+// the ids are the old palettes' and stay as saved on accounts). `id` matches
 // the `data-palette` value in src/styles/tokens.css exactly.
 export type PaletteId =
   | 'lemons' | 'idea' | 'bloom' | 'autumn' | 'rude-olive' | 'periwinkle'
@@ -13,20 +13,20 @@ export type WeekStart = 'mon' | 'sun';
 export type PaletteInfo = { id: PaletteId; name: string; group: 'classic' | 'neon' };
 
 export const PALETTES: PaletteInfo[] = [
-  { id: 'lemons', name: 'Lemons', group: 'classic' },
-  { id: 'idea', name: 'Idea', group: 'classic' },
-  { id: 'bloom', name: 'Bloom', group: 'classic' },
-  { id: 'autumn', name: 'Autumn', group: 'classic' },
-  { id: 'rude-olive', name: 'Rude olive', group: 'classic' },
-  { id: 'periwinkle', name: 'Periwinkle', group: 'classic' },
-  { id: 'moss', name: 'Moss', group: 'classic' },
-  { id: 'forest', name: 'Forest', group: 'classic' },
-  { id: 'sky', name: 'Sky', group: 'classic' },
-  { id: 'coffee', name: 'Coffee', group: 'classic' },
-  { id: 'tangerine', name: 'Tangerine', group: 'classic' },
-  { id: 'acid', name: 'Acid', group: 'neon' },
-  { id: 'grape', name: 'Grape', group: 'neon' },
-  { id: 'cherry', name: 'Cherry', group: 'neon' },
+  { id: 'lemons', name: 'lemon', group: 'classic' },
+  { id: 'tangerine', name: 'orange', group: 'classic' },
+  { id: 'autumn', name: 'red', group: 'classic' },
+  { id: 'cherry', name: 'cherry', group: 'classic' },
+  { id: 'rude-olive', name: 'wine', group: 'classic' },
+  { id: 'idea', name: 'pink', group: 'classic' },
+  { id: 'bloom', name: 'violet', group: 'classic' },
+  { id: 'grape', name: 'indigo', group: 'classic' },
+  { id: 'periwinkle', name: 'periwinkle', group: 'classic' },
+  { id: 'sky', name: 'sky', group: 'classic' },
+  { id: 'forest', name: 'green', group: 'classic' },
+  { id: 'acid', name: 'lime', group: 'classic' },
+  { id: 'moss', name: 'olive', group: 'classic' },
+  { id: 'coffee', name: 'brown', group: 'classic' },
 ];
 
 export const DEFAULT_PALETTE: PaletteId = 'lemons';

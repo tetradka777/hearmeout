@@ -47,3 +47,32 @@
   animation-iteration-count: 1 !important;
   transition-duration: 0.001ms !important;
 }
+
+/* (2026-10-28) One colour instead of a theme. The site is neutral; the
+   colour you pick (--pick, --pick-on for text on it) shows only on your
+   avatar letter, the ticker and small marks (dots, stars, numbers) through
+   --acct. Buttons and filled accents are the text colour; the tab bar is
+   glass. The palette ids stay (saved on accounts); each is now one colour. */
+[data-palette="lemons"]{--pick:#F2C230;--pick-on:#2A2205}
+[data-palette="idea"]{--pick:#E0307F;--pick-on:#FFFFFF}
+[data-palette="bloom"]{--pick:#8B3FC4;--pick-on:#FFFFFF}
+[data-palette="autumn"]{--pick:#D8342A;--pick-on:#FFFFFF}
+[data-palette="rude-olive"]{--pick:#9C1B3A;--pick-on:#FFFFFF}
+[data-palette="periwinkle"]{--pick:#5A60D8;--pick-on:#FFFFFF}
+[data-palette="moss"]{--pick:#8C8A2C;--pick-on:#FFFFFF}
+[data-palette="forest"]{--pick:#2F9A5A;--pick-on:#FFFFFF}
+[data-palette="sky"]{--pick:#2C8BE0;--pick-on:#FFFFFF}
+[data-palette="coffee"]{--pick:#8A5A3A;--pick-on:#FFFFFF}
+[data-palette="tangerine"]{--pick:#EE7A2E;--pick-on:#2A1305}
+[data-palette="acid"]{--pick:#B5E61D;--pick-on:#1A2200}
+[data-palette="grape"]{--pick:#5B34C7;--pick-on:#FFFFFF}
+[data-palette="cherry"]{--pick:#E8364F;--pick-on:#FFFFFF}
+[data-design][data-mode][data-palette]{
+  --pal:var(--pick);--pals:color-mix(in srgb,var(--pick) 18%,var(--bg));
+  --ac:var(--fg);--on:var(--bg);--scl:var(--fg);--hi:#F2C14E;
+  --acc:#ECE2D0;--onacc:#1E1B18;--bb:var(--fg);--bf:var(--bg);
+  --acct:color-mix(in srgb,var(--pick) 80%,var(--fg));
+  --chr-bg:color-mix(in srgb,var(--bg) 58%,transparent);--chr-fg:var(--fg);--chr-hi:var(--acct);--chr-act-bg:var(--fg);--chr-act-fg:var(--bg);
+  --tk-bg:var(--pick);--tk-fg:var(--pick-on);--tk-b:transparent
+}
+[data-design][data-mode="dark"][data-palette]{--acc:#F1E8D8}
