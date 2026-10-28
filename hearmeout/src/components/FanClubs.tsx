@@ -66,12 +66,20 @@ export function FanClubsForYou() {
       {items.map((f) => {
         const n = f.members + (joined.has(f.name) ? 1 : 0);
         return (
-          <div className="cc14" key={f.name}>
-            <ArtistShelfCard name={f.name} id={f.id} photo={f.photo} sub={n > 0 ? t('fandoms.members', { n }) : t('fandoms.beFirst')} onClick={() => openClub(f)} />
-            <button className={`jn14${joined.has(f.name) ? ' on' : ''}`} onClick={() => !joined.has(f.name) && join(f)} disabled={joined.has(f.name)}>
-              {joined.has(f.name) ? t('fandoms.joined') : t('fandoms.join')}
-            </button>
-          </div>
+          <ArtistShelfCard
+            key={f.name}
+            name={f.name}
+            id={f.id}
+            photo={f.photo}
+            sub={n > 0 ? t('fandoms.members', { n }) : t('fandoms.beFirst')}
+            onClick={() => openClub(f)}
+            // Joining: the round button on the photo (a tick once in).
+            action={(
+              <button className={`jn23${joined.has(f.name) ? ' on' : ''}`} onClick={() => !joined.has(f.name) && join(f)} disabled={joined.has(f.name)} aria-label={joined.has(f.name) ? t('fandoms.joined') : t('fandoms.join')} title={joined.has(f.name) ? t('fandoms.joined') : t('fandoms.join')}>
+                <i className={`ic ic-${joined.has(f.name) ? 'check' : 'users'}`} aria-hidden="true" />
+              </button>
+            )}
+          />
         );
       })}
     </Shelf>

@@ -10,8 +10,8 @@ import { isReviewTagId, REVIEW_TAG_LABEL_KEY } from '@/lib/reviewTags';
 import { sizedImage } from '@/lib/imageSize';
 import { CoverArt } from './CoverArt';
 import { ArtistAvatar, ArtistName } from './ArtistName';
-import { toneClass, toneColor } from './Visual';
-import { tintStyle, useImageColor } from '@/lib/imageColor';
+import { blurStyle } from '@/lib/imageColor';
+import { useArtistPhoto } from '@/lib/artistPhotos';
 import { SocialBar } from './Social';
 import { socialKey } from '@/lib/socialClient';
 
@@ -157,20 +157,18 @@ export function Shelf({ title, sub, right, top, children, onMore, done = true, c
   );
 }
 
-// An album on a shelf: the cover (a rank in a circle on its corner), then
-// title, artist and one more line, straight on the page.
 export function AlbumShelfCard({ cover, title, artist, artistId, meta, badge, onClick }: {
   cover?: string | null; title: string; artist: string; artistId?: string | null; meta?: ReactNode; badge?: ReactNode; onClick: () => void;
 }) {
-  // The cover on a plate of its colour.
-  const tint = useImageColor(cover ? sizedImage(cover, 64) ?? cover : null);
+  // The cover is the card: the title and artist sit on its lower part over a
+  // dark fade, the place (#1) in a small pill above them.
   return (
-    <div className="shc14 tn15" style={tintStyle(tint ?? toneColor(title))}>
+    <div className="ab23">
       <button className="im" onClick={onClick} aria-label={title}>
-        <CoverArt url={cover ?? undefined} fallbackLetter={artist[0] || '?'} className="cov" px={180} style={{ width: '100%', aspectRatio: '1' }} />
-        {badge && <span className="bg">{badge}</span>}
+        <CoverArt url={cover ?? undefined} fallbackLetter={artist[0] || '?'} className="cov" px={300} />
       </button>
       <span className="tx">
+        {badge && <span className="bg">{badge}</span>}
         <button className="tt" onClick={onClick}>{title}</button>
         <small><ArtistName name={artist} id={artistId} size={16} /></small>
         {meta && <small className="mt">{meta}</small>}
@@ -179,13 +177,23 @@ export function AlbumShelfCard({ cover, title, artist, artistId, meta, badge, on
   );
 }
 
-// An artist on a shelf: a tinted card with the round photo, the name and
-// one line under it.
-export function ArtistShelfCard({ name, id, photo, sub, onClick }: { name: string; id?: string | null; photo?: string | null; sub?: ReactNode; onClick: () => void }) {
+// An artist on a shelf: the photo fills the top, the name and one line
+// below it over the same photo blurred and darkened. `action`: a round
+// button on the photo's corner (joining a fan club).
+export function ArtistShelfCard({ name, id, photo: known, sub, onClick, action }: { name: string; id?: string | null; photo?: string | null; sub?: ReactNode; onClick: () => void; action?: ReactNode }) {
+  const looked = useArtistPhoto(name, false, id);
+  const photo = known || looked || null;
   return (
-    <button className={`arc14 ${toneClass(name)}`} onClick={onClick}>
-      <ArtistAvatar name={name} id={id} photo={photo} size={120} />
-      <span className="tx"><b>{name}</b>{sub && <small>{sub}</small>}</span>
-    </button>
+    <div className="ac23" style={blurStyle(photo)}>
+      <div className="apw">
+        <button className="ap" onClick={onClick} aria-label={name}>
+          <ArtistAvatar name={name} id={id} photo={photo} size={300} />
+        </button>
+        {action && <span className="aa">{action}</span>}
+      </div>
+      <button className="at" onClick={onClick} tabIndex={-1} aria-hidden="true">
+        <b>{name}</b>{sub && <small>{sub}</small>}
+      </button>
+    </div>
   );
 }
