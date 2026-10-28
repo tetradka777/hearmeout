@@ -40,6 +40,12 @@ export function formatRelative(iso: string, language: Language): string {
   return translate(language, 'time.yearsAgo', { n: Math.floor(days / 365) });
 }
 
+// One name for the same release listed twice (a single and its album,
+// "Title .", "Title (Deluxe)", a re-upload).
+export function releaseNameKey(title: string): string {
+  return title.toLowerCase().replace(/s*[([].*?[)]]/g, '').replace(/[^p{L}p{N}]+/gu, '');
+}
+
 // A title without the extras that make it endless on a card: '(feat. …)',
 // '(Soundtrack From …)', '[Deluxe]', ' - Remastered 2011'. The full title
 // stays for screen readers and the album page.

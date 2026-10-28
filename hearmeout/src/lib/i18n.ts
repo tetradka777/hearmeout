@@ -87,6 +87,7 @@ const en = {
   'match.percentMatchAria': '{pct} percent match',
   'match.viewProfile': 'view {name}’s profile',
   'match.whereYouDisagree': 'where you disagree',
+  'match.agreeTitle': 'you agree on',
   'match.apart': '{value} apart',
   'match.notEnoughForGaps': 'you have not rated the same albums yet.',
   'match.sharedArtistsTitle': 'shared artists',
@@ -402,6 +403,7 @@ const en = {
   'splash.joke7': 'counting how many times you replayed that one song…',
   'player.rateIt': 'rate it',
   'player.next': 'next track',
+  'player.openAlbum': 'open the album',
   'player.close': 'close player',
   'player.dragToRate': 'drag to rate',
 

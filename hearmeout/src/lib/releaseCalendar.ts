@@ -1,4 +1,5 @@
 import { supabaseAdmin } from './supabaseAdmin';
+import { releaseNameKey } from '@/lib/format';
 import { peekSpotifyCache, withSpotifyCache } from './spotifyCache';
 import { deezerArtistIdForName, deezerReleasesById, type DeezerArtist } from './deezerServer';
 import { fetchArtistAlbumsSplit, resolveSpotifyAlbumId } from './spotifyCatalog';
@@ -27,7 +28,7 @@ export async function upcomingForUser(userId: string): Promise<UpcomingRelease[]
   const reminded = new Set((reminders || []).map((r) => r.album_id as string));
   // Keyed by the set of clubs (an hour): joining one shows its releases.
   const key = follows.map((f) => f.artist_id as string).sort().join(',');
-  const list = await withSpotifyCache(`fc-upcoming:v1:${key}`, 3600, async () => {
+  const list = await withSpotifyCache(`fc-upcoming:v2:${key}`, 3600, async () => {
     const today = new Date().toISOString().slice(0, 10);
     const out: Omit<UpcomingRelease, 'reminded'>[] = [];
     const seen = new Set<string>();
@@ -46,7 +47,7 @@ export async function upcomingForUser(userId: string): Promise<UpcomingRelease[]
         else if (!albums) inBackground(fetchAlbums).catch(() => {});
         for (const a of albums?.upcoming ?? []) {
           if (!a.releaseDate || a.releaseDate <= today) continue;
-          const k = `${artist.toLowerCase()}|${a.title.toLowerCase()}`;
+          const k = `${artist.toLowerCase()}|${releaseNameKey(a.title)}`;
           if (seen.has(k)) continue;
           seen.add(k);
           out.push({ albumId: a.id, artist, artistId, title: a.title, date: a.releaseDate, cover: a.cover });
@@ -56,7 +57,7 @@ export async function upcomingForUser(userId: string): Promise<UpcomingRelease[]
         if (!dzId) continue;
         for (const r of await deezerReleasesById(dzId)) {
           if (r.date <= today) continue;
-          const k = `${artist.toLowerCase()}|${r.title.toLowerCase()}`;
+          const k = `${artist.toLowerCase()}|${releaseNameKey(r.title)}`;
           if (seen.has(k)) continue;
           seen.add(k);
           out.push({ albumId: `dz:${r.id}`, artist, artistId, title: r.title, date: r.date, cover: r.cover });

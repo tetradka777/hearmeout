@@ -81,6 +81,7 @@ const de: Dict = {
   'match.percentMatchAria': '{pct} Prozent Übereinstimmung',
   'match.viewProfile': 'profil von {name} ansehen',
   'match.whereYouDisagree': 'hier seid ihr uneins',
+  'match.agreeTitle': 'hier seid ihr euch einig',
   'match.apart': '{value} Abstand',
   'match.notEnoughForGaps': 'ihr habt noch keine gemeinsamen Alben bewertet.',
   'match.sharedArtistsTitle': 'gemeinsame Artists',
@@ -396,6 +397,7 @@ const de: Dict = {
   'splash.joke7': 'es wird gezählt, wie oft du diesen einen Song gehört hast…',
   'player.rateIt': 'bewerten',
   'player.next': 'nächster Titel',
+  'player.openAlbum': 'album öffnen',
   'player.close': 'player schließen',
   'player.dragToRate': 'zum Bewerten ziehen',
 
