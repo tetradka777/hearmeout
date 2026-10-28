@@ -42,7 +42,7 @@ export function RisingArtists() {
               for the eye. */}
           <div className="dct" style={{ animationDuration: `${Math.max(30, items.length * 7)}s` }}>
             {[0, 1].map((copy) => items.map((a) => (
-              <DeepName key={`${copy}:${a.key}`} a={a} size={n ? 48 : 64} copy={copy === 1} onOpen={() => openArtist(a.name, a.id)} />
+              <DeepName key={`${copy}:${a.key}`} a={a} size={n ? 72 : 96} copy={copy === 1} onOpen={() => openArtist(a.name, a.id)} />
             )))}
           </div>
         </div>
