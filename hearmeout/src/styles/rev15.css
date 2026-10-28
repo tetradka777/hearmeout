@@ -247,7 +247,7 @@
 /* Colourful cards (after Superfan, where cards aren't all one colour): six
    deep tones, the same in light and dark mode (cards don't change with the theme). Tiles take them with t-c1…t-c6,
    artist and fan club cards by name (toneClass in ui/Visual.tsx). */
-.rd{--c1:#B8432C;--c2:#2E7A4A;--c3:#2D5699;--c4:#A3305A;--c5:#6A45B0;--c6:#17766E;--cfg:#F6EFE0;--cdk:#141414}
+.rd{--c1:#5A4130;--c2:#3E4B33;--c3:#36405A;--c4:#5A3542;--c5:#5A4E26;--c6:#2F4D49;--cfg:#F6EFE0;--cdk:#181513}
 .rd .tile.t-c1,.rd .tile.t-c2,.rd .tile.t-c3,.rd .tile.t-c4,.rd .tile.t-c5,.rd .tile.t-c6{--tfg:var(--cfg);--bb:var(--cfg);--bf:var(--c1);outline:0}
 .rd .tile.t-c1{--tbg:var(--c1)}.rd .tile.t-c2{--tbg:var(--c2)}.rd .tile.t-c3{--tbg:var(--c3)}
 .rd .tile.t-c4{--tbg:var(--c4)}.rd .tile.t-c5{--tbg:var(--c5)}.rd .tile.t-c6{--tbg:var(--c6)}
@@ -282,8 +282,8 @@
    from lib/imageColor), a soft tone until it's known.
    .bh15: the picture itself blurred over the whole card, white text —
    the main card of a screen (the same look as the review cards). */
-.rd .tn15{--tint:var(--c3);background:color-mix(in srgb,var(--tint) 72%,var(--cdk));color:var(--cfg);transition:background-color .35s}
-.rd .tile.tn15{--tbg:color-mix(in srgb,var(--tint) 72%,var(--cdk));--tfg:var(--cfg);--bb:var(--cfg);--bf:var(--cdk);outline:0}
+.rd .tn15{--tint:var(--c3);background:color-mix(in srgb,var(--tint) 30%,var(--cdk));color:var(--cfg);transition:background-color .35s}
+.rd .tile.tn15{--tbg:color-mix(in srgb,var(--tint) 30%,var(--cdk));--tfg:var(--cfg);--bb:var(--cfg);--bf:var(--cdk);outline:0}
 
 .rd .bh15{position:relative;overflow:hidden;isolation:isolate;outline:0;color:#fff;--tfg:#fff;--tbg:#1e1d1c;background:#1e1d1c}
 .rd .bh15::before{content:'';position:absolute;inset:-24px;z-index:-1;background:var(--cvbg,none) center/cover no-repeat;filter:blur(18px) saturate(1.15);opacity:.95;border-radius:0;width:auto;height:auto;transform:none}
@@ -297,13 +297,13 @@
 /* Album cards on shelves and walls: the cover on a plate of its colour. */
 .rd .shc14.tn15{padding:10px 10px 12px;border-radius:calc(var(--r) - 2px)}
 .rd .cw15 .it.tn15{padding:8px 8px 10px;border-radius:18px}
-.rd .cw15 .it.tn15 .bg{box-shadow:0 0 0 3px color-mix(in srgb,var(--tint) 72%,var(--cdk))}
+.rd .cw15 .it.tn15 .bg{box-shadow:0 0 0 3px color-mix(in srgb,var(--tint) 30%,var(--cdk))}
 /* People cards: a plate of each person's colour. */
-.rd .pc15 .pb.tn15{background:color-mix(in srgb,var(--tint) 72%,var(--cdk));color:var(--cfg)}
+.rd .pc15 .pb.tn15{background:color-mix(in srgb,var(--tint) 32%,var(--cdk));color:var(--cfg)}
 
 /* Podium steps in each person's colour (stronger for first place). */
-.rd .pd13 .st13.tn15{background:color-mix(in srgb,var(--tint) 65%,var(--cdk));color:var(--cfg)}
-.rd .pd13.p1 .st13.tn15{background:color-mix(in srgb,var(--tint) 85%,var(--cdk))}
+.rd .pd13 .st13.tn15{background:color-mix(in srgb,var(--tint) 45%,var(--cdk));color:var(--cfg)}
+.rd .pd13.p1 .st13.tn15{background:color-mix(in srgb,var(--tint) 70%,var(--cdk))}
 
 /* Match: the % card over the two of you, your colour into your friend's. */
 .rd .tile.mh16{position:relative;overflow:hidden;isolation:isolate;outline:0;padding:28px;--tfg:#fff;color:#fff;--tbg:linear-gradient(115deg,color-mix(in srgb,var(--g1) 75%,#141210),color-mix(in srgb,var(--g2) 75%,#141210));background:linear-gradient(115deg,color-mix(in srgb,var(--g1) 75%,#141210),color-mix(in srgb,var(--g2) 75%,#141210))}
@@ -321,7 +321,7 @@
 .rd .phd14.ph16::after{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(170deg,rgba(18,18,18,.1),rgba(18,18,18,.45))}
 .rd .phd14.ph16 .muted,.rd .phd14.ph16 small{color:rgba(255,255,255,.78)}
 
-.rd{--s1:#F07A3C;--s2:#6DBE45;--s3:#4F7BE8;--s4:#EC5F8E;--s5:#F2BF2A;--s6:#22B5A2}
+.rd{--s1:#E0955A;--s2:#8DB06A;--s3:#7E95D6;--s4:#D97C98;--s5:#D9B640;--s6:#5FB3A8}
 
 /* Album page: the cover, blurred, is the whole page's background (fixed
    to the screen), frosted towards the theme's background so the menus and
