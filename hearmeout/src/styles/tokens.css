@@ -15,19 +15,19 @@
   --font-body: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
-[data-palette="lemons"]{--pal:#2450B0;--pals:#FDEDA3;--ac:#EE2B30;--on:#FFFFFF;--scl:#D9232A;--hi:#FFE135}
-[data-palette="idea"]{--pal:#1F5BD6;--pals:#E1E6CF;--ac:#F01F86;--on:#FFFFFF;--scl:#D41872;--hi:#FF4FA8}
-[data-palette="bloom"]{--pal:#5B1F7A;--pals:#F1DDBE;--ac:#9B3FD0;--on:#FFFFFF;--scl:#8A2DC0;--hi:#D99BFF}
-[data-palette="autumn"]{--pal:#C24A2C;--pals:#F4DFC6;--ac:#FF9F1C;--on:#3A1E10;--scl:#C0412A;--hi:#FFA233}
-[data-palette="rude-olive"]{--pal:#3D44C2;--pals:#F8DDC1;--ac:#D11F48;--on:#FFFFFF;--scl:#C21A42;--hi:#FF5C7F}
-[data-palette="periwinkle"]{--pal:#4349C8;--pals:#FBF1D0;--ac:#5F64F0;--on:#FFFFFF;--scl:#4F55E0;--hi:#A3A7FF}
-[data-palette="moss"]{--pal:#5E6E12;--pals:#F4EBD3;--ac:#F2B518;--on:#3A2E08;--scl:#5E6E12;--hi:#F2CF2E}
-[data-palette="forest"]{--pal:#24704A;--pals:#F5F4F4;--ac:#EC3426;--on:#FFFFFF;--scl:#D92B1F;--hi:#FF5A4D}
-[data-palette="sky"]{--pal:#2365B8;--pals:#E3EFF1;--ac:#2A8BEB;--on:#FFFFFF;--scl:#1D6FCC;--hi:#8FCBFF}
-[data-palette="coffee"]{--pal:#7B4528;--pals:#F4E0C4;--ac:#EE2846;--on:#FFFFFF;--scl:#D81E3B;--hi:#FF4D6A}
-[data-palette="acid"]{--pal:#15150F;--pals:#EEF6C9;--ac:#C8FF3C;--on:#15150F;--scl:#4F7A00;--hi:#C8FF3C}
-[data-palette="grape"]{--pal:#2A1257;--pals:#F0E6FF;--ac:#A877FF;--on:#21103F;--scl:#6E3BEA;--hi:#B48AFF}
-[data-palette="cherry"]{--pal:#1A1210;--pals:#FFE1E5;--ac:#FF3352;--on:#1A1210;--scl:#E01936;--hi:#FF4D68}
+[data-palette="lemons"]{--pal:#12378B;--pals:#FDEDA3;--ac:#DE272C;--on:#FFFFFF;--scl:#DE272C;--hi:#F7DF64}
+[data-palette="idea"]{--pal:#204DA4;--pals:#E1E6CF;--ac:#E01B7A;--on:#FFFFFF;--scl:#CF186E;--hi:#F658A3}
+[data-palette="bloom"]{--pal:#440A5F;--pals:#F1DDBE;--ac:#8B23B2;--on:#FFFFFF;--scl:#8B23B2;--hi:#DAA4F3}
+[data-palette="autumn"]{--pal:#BE2D22;--pals:#F4DFC6;--ac:#F3A044;--on:#3A1E10;--scl:#BE2D22;--hi:#F69F4E}
+[data-palette="rude-olive"]{--pal:#2228A7;--pals:#F8DDC1;--ac:#8E0B28;--on:#FFFFFF;--scl:#8E0B28;--hi:#F8728B}
+[data-palette="periwinkle"]{--pal:#272C9D;--pals:#FBF1D0;--ac:#4348C0;--on:#FBF1D0;--scl:#4348C0;--hi:#A9ADFB}
+[data-palette="moss"]{--pal:#6C5F14;--pals:#F4EBD3;--ac:#E0A63A;--on:#3A2E08;--scl:#6C5F14;--hi:#E9CB48}
+[data-palette="forest"]{--pal:#456E3C;--pals:#F5F4F4;--ac:#DD3428;--on:#FFFFFF;--scl:#DB3327;--hi:#F66256}
+[data-palette="sky"]{--pal:#1B487F;--pals:#E3EFF1;--ac:#1982DC;--on:#FFFFFF;--scl:#0F6CBE;--hi:#A4D0FA}
+[data-palette="coffee"]{--pal:#744F33;--pals:#F4E0C4;--ac:#DD283F;--on:#FFFFFF;--scl:#DD283F;--hi:#F65670}
+[data-palette="acid"]{--pal:#15150F;--pals:#EEF6C9;--ac:#C4F546;--on:#15150F;--scl:#4C6605;--hi:#C4F546}
+[data-palette="grape"]{--pal:#1E0649;--pals:#F0E6FF;--ac:#BA97FA;--on:#21103F;--scl:#6738D7;--hi:#BA97FA}
+[data-palette="cherry"]{--pal:#1A1210;--pals:#FFE1E5;--ac:#F54761;--on:#1A1210;--scl:#D61632;--hi:#F6566E}
 
 /* Design x mode. Resolve "system" mode to light/dark in JS before setting
    data-mode (prefers-color-scheme), so first paint never flashes wrong. */
