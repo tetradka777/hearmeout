@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { blurStyle } from '@/lib/imageColor';
 import { ArtistName } from '../ui/ArtistName';
@@ -10,18 +10,16 @@ import type { Device } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
 import { HeartIcon, PlayIcon, BookmarkIcon, ShareIcon, SpotifyLogo } from '../ui/Icons';
 import { ShareAlbumModal } from '../ShareAlbumModal';
-import { Stars, StarSlider } from '../redesign/Stars';
+import { StarSlider } from '../redesign/Stars';
 import { PreviewButton } from '../redesign/PreviewButton';
-import { pluralForKey } from '@/lib/i18n';
 import type { QueueTrack } from '@/lib/PlayerContext';
-import { usePlayer, prefetchQueueTrack } from '@/lib/PlayerContext';
+import { usePlayer, prefetchQueueTrack, trackKey } from '@/lib/PlayerContext';
 import { albumFriendsUrl, useAlbumJson } from '@/lib/useAlbumJson';
 import { AlbumReviews } from '../AlbumReviews';
 import { TrackScoreButton, TrackScoreEditor } from '../TrackScore';
 import { useCachedJson } from '@/lib/cachedJson';
 import type { TrackRatingsResponse } from '@/app/api/track-ratings/route';
-import { AlbumRatingDistribution } from '../AlbumRatingDistribution';
-import { AlbumTagsSummary } from '../AlbumTagsSummary';
+import { useFillHeight } from '@/lib/useFillHeight';
 import { PersonCards, Phrase, TintBox } from '../ui/Visual';
 import { REVIEW_TAG_ORDER, REVIEW_TAG_LABEL_KEY, MAX_REVIEW_TAGS } from '@/lib/reviewTags';
 
@@ -57,7 +55,7 @@ function FriendsWhoRated({ albumId }: { albumId: string }) {
 // screen matches that: it's always live, not a form you submit and leave.
 export function RateScreen({ device: _device }: { device: Device }) {
   const {
-    state, t, language, albums, liveAlbums, failedAlbumIds, albumRatings, myRatings, spotifyCovers,
+    state, t, albums, liveAlbums, failedAlbumIds, albumRatings, myRatings, spotifyCovers,
     reviewsVersion, ensureLiveAlbum, lovedItems, toggleLoved, laterItems, toggleLaterAlbum, toggleLaterTrack, me,
     setRatingValue, publishRating, showToast, viewHistory,
   } = useApp();
@@ -93,6 +91,11 @@ export function RateScreen({ device: _device }: { device: Device }) {
   const [sharing, setSharing] = useState(false);
   // Under the album: the rating form or the tracklist.
   const [tab, setTab] = useState<'rate' | 'tracks'>('rate');
+  // Below the rate | tracklist switch the page scrolls on its own; the
+  // album and the switch stay put (useFillHeight).
+  const scroller = useRef<HTMLDivElement>(null);
+  const locked = useFillHeight(scroller, state.activeScreen === 'rate' && !!a);
+  useEffect(() => { scroller.current?.scrollTo(0, 0); }, [tab, state.currentAlbumId]);
   useEffect(() => { setOpenTrack(null); setTab('rate'); }, [state.currentAlbumId]);
 
   const [text, setText] = useState(state.ratingDraftText);
@@ -138,7 +141,6 @@ export function RateScreen({ device: _device }: { device: Device }) {
   const openSpotifyUrl = a.spotifyId ? `https://open.spotify.com/album/${a.spotifyId}` : null;
   const albumLoved = lovedItems.some((li) => li.type === 'album' && li.title === a.title && li.artist === a.artist);
   const savedForLater = laterItems.some((li) => li.type === 'album' && li.albumId === a.id);
-  const vsAverage = val > 0 && ratingInfo ? val - ratingInfo.avg : null;
   // prevHtml(): the preview line follows whichever track of this album is
   // loaded in the player; otherwise it invites a listen before scoring.
   const curIdx = currentTrack?.albumId === a.id ? a.tracklist.indexOf(currentTrack.title) : -1;
@@ -158,7 +160,7 @@ export function RateScreen({ device: _device }: { device: Device }) {
         return (
           <div key={`${i}-${tr}`} className="trw19">
           <div className={`row trk${isRowCurrent ? ' cur' : ''}`}>
-            <button className="rowlink" onClick={() => playQueue(trackQueue, i)} onPointerEnter={() => prefetchQueueTrack(trackQueue[i])} onFocus={() => prefetchQueueTrack(trackQueue[i])} aria-label={t('album.playPreviewOf', { title: tr })}>
+            <button className="rowlink" data-pl={trackKey(trackQueue[i])} onClick={() => playQueue(trackQueue, i)} onPointerEnter={() => prefetchQueueTrack(trackQueue[i])} onFocus={() => prefetchQueueTrack(trackQueue[i])} aria-label={t('album.playPreviewOf', { title: tr })}>
               <span className="num" style={{ fontSize: 20, width: 24, opacity: 0.8 }}>{i + 1}</span>
               <span className="g"><b>{tr}</b>{ts?.best === n && <small className="bst19"><i className="ic ic-medal" aria-hidden="true" /> {t('track.best')}</small>}</span>
               {fmtDur(a.trackDurations?.[i]) && <small className="muted" style={{ fontWeight: 700 }}>{fmtDur(a.trackDurations?.[i])}</small>}
@@ -195,7 +197,7 @@ export function RateScreen({ device: _device }: { device: Device }) {
   const shareModal = sharing ? <ShareAlbumModal album={{ id: a.id, title: a.title, artist: a.artist, cover: cover || null }} onClose={() => setSharing(false)} /> : null;
 
   return (
-    <div className="alp17">
+    <div className={`alp17${locked ? ' lk23' : ''}`}>
       {backdrop}
       {shareModal}
       {chips}
@@ -233,6 +235,9 @@ export function RateScreen({ device: _device }: { device: Device }) {
           <button role="tab" aria-selected={tab === 'rate'} className={tab === 'rate' ? 'on' : ''} onClick={() => setTab('rate')}>{t('album.tabRate')}</button>
           <button role="tab" aria-selected={tab === 'tracks'} className={tab === 'tracks' ? 'on' : ''} onClick={() => setTab('tracks')}>{t('album.tracklist')}</button>
         </div>
+      </div>
+
+      <div className="asc23" ref={scroller}>
 
         {tab === 'tracks' ? (
           <TintBox className="tile" picture={cover} fallbackKey={a.id}>
@@ -251,7 +256,7 @@ export function RateScreen({ device: _device }: { device: Device }) {
             </div>
           </div>
 
-          <div>
+          {(text.trim() || tags.length > 0) && <div>
             <label>{t('rate.tagsLabel')} <span className="muted" style={{ fontWeight: 700 }}>{t('rate.tagsCount', { n: tags.length, max: MAX_REVIEW_TAGS })}</span></label>
             <div className="tagrow">
               {REVIEW_TAG_ORDER.map((id) => (
@@ -260,7 +265,7 @@ export function RateScreen({ device: _device }: { device: Device }) {
                 </button>
               ))}
             </div>
-          </div>
+          </div>}
 
           <div>
             <label htmlFor="rv">{t('rate.reviewLabel')}</label>
@@ -293,26 +298,8 @@ export function RateScreen({ device: _device }: { device: Device }) {
           {val <= 0 && <small className="muted" style={{ fontWeight: 700 }}>{t('rate.pickToPost')}</small>}
         </div>
         )}
-      </div>
 
-      <div className="sec two">
-        <TintBox className="tile" picture={cover} fallbackKey={a.id}>
-          <h2>{t('album.community')}</h2>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'baseline', flexWrap: 'wrap' }}>
-            <span className="num" style={{ fontSize: 64, color: 'var(--acct)' }}>{ratingInfo ? fmt1(ratingInfo.avg) : '–'}</span>
-            <span className="stars"><Stars value={ratingInfo?.avg ?? 0} size={18} /></span>
-          </div>
-          <p className="muted" style={{ fontWeight: 700 }}>{ratingInfo ? `${ratingInfo.count} ${pluralForKey(language, ratingInfo.count, 'album.ratingOne', 'album.ratingFew', 'album.ratingMany')}` : t('album.noRatings')}</p>
-          {vsAverage != null ? (
-            <p style={{ fontWeight: 800, marginTop: 8 }}>
-              {t(vsAverage >= 0 ? 'rate.aboveAverage' : 'rate.belowAverage', { score: fmt1(val), diff: fmt1(Math.abs(vsAverage)) })}
-            </p>
-          ) : (
-            <p className="muted" style={{ fontWeight: 600, marginTop: 8 }}>{t('rate.rateToCompare')}</p>
-          )}
-          <div style={{ marginTop: 14 }}><AlbumRatingDistribution albumId={a.id} refreshToken={reviewsVersion} you={val > 0 ? val : null} /></div>
-          <AlbumTagsSummary albumId={a.id} refreshToken={reviewsVersion} />
-        </TintBox>
+      <div className="sec">
         {/* Friends who rated: after the album itself. */}
         <FriendsWhoRated albumId={a.id} />
       </div>
@@ -320,6 +307,7 @@ export function RateScreen({ device: _device }: { device: Device }) {
       <div className="sec">
         <h2>{t('album.reviews')}</h2>
         <AlbumReviews albumId={a.id} refreshToken={reviewsVersion} />
+      </div>
       </div>
     </div>
   );

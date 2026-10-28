@@ -19,6 +19,9 @@ export function useTrackOnScreen(key: string | null): boolean {
       for (const el of document.querySelectorAll<HTMLElement>('[data-pl]')) {
         if (el.dataset.pl !== key || el.closest('#plhost')) continue;
         const r = el.getBoundingClientRect();
+        // Scrolled out of its own box (the album page's scroll area, a shelf).
+        const box = el.closest('.asc23, .hrow')?.getBoundingClientRect();
+        if (box && (r.bottom <= box.top || r.top >= box.bottom || r.right <= box.left || r.left >= box.right)) continue;
         // Zero size: inside a hidden screen or a closed panel.
         if (!r.width || !r.height) continue;
         if (r.bottom > 0 && r.top < bottom && r.right > 0 && r.left < window.innerWidth) { seen = true; break; }

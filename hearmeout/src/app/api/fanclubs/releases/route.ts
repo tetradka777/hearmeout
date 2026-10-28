@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentUserId } from '@/lib/identity';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { peekSpotifyCache, withSpotifyCache } from '@/lib/spotifyCache';
+import { releaseNameKey } from '@/lib/format';
 import { deezerArtistIdForName, deezerReleasesById, type DeezerArtist } from '@/lib/deezerServer';
 
 export type FanClubRelease = { artist: string; artistId: string; title: string; date: string; cover: string | null };
@@ -21,9 +22,10 @@ export async function GET() {
   // Keyed by the set of clubs: joining one shows its releases at once, and
   // people in the same clubs share the answer.
   const key = follows.map((f) => f.artist_id as string).sort().join(',');
-  const items = await withSpotifyCache(`fc-releases:v2:${key}`, 3600, async () => {
+  const items = await withSpotifyCache(`fc-releases:v3:${key}`, 3600, async () => {
     const today = new Date().toISOString().slice(0, 10);
     const out: FanClubRelease[] = [];
+    const seen = new Set<string>();
     for (const f of follows || []) {
       const name = f.artist_name as string;
       const spotifyId = f.artist_id as string;
@@ -31,8 +33,15 @@ export async function GET() {
         const confirmed = await peekSpotifyCache<DeezerArtist | null>(`dz-artist-for:v1:${spotifyId}`);
         const dzId = confirmed?.id ?? await deezerArtistIdForName(name);
         if (!dzId) continue;
-        const releases = (await deezerReleasesById(dzId)).filter((r) => r.date <= today).slice(0, PER_ARTIST);
-        for (const r of releases) out.push({ artist: name, artistId: spotifyId, title: r.title, date: r.date, cover: r.cover });
+        let n = 0;
+        for (const r of await deezerReleasesById(dzId)) {
+          if (n >= PER_ARTIST) break;
+          const k = `${name.toLowerCase()}|${releaseNameKey(r.title)}`;
+          if (r.date > today || seen.has(k)) continue;
+          seen.add(k);
+          n++;
+          out.push({ artist: name, artistId: spotifyId, title: r.title, date: r.date, cover: r.cover });
+        }
       } catch {
         // One artist failing shouldn't hide the rest.
       }

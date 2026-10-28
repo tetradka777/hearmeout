@@ -1,23 +1,21 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
-import { SharedArtistsCard } from '../SharedArtistsCard';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { ApiUser, Device, DiscoverMatchPerson, PublicProfile, StatsData } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
 import { blurStyle } from '@/lib/imageColor';
-import { sizedImage } from '@/lib/imageSize';
 import { computeMatch } from '@/lib/matchScore';
 import { cachedJson, peekJson, useCachedJson } from '@/lib/cachedJson';
 import { sharedArtists } from '@/lib/sharedArtists';
 import { toLocale } from '@/lib/i18n';
-import { CoverArt } from '../ui/CoverArt';
 import { MascotIcon } from '../redesign/icons';
 import { RankRows } from '../ui/RankRows';
 import { MATCH_FRIEND_EVENT, takeRecentEvent } from '@/lib/uiEvents';
-import { CoverWall, PersonCards } from '../ui/Visual';
+import { PersonCards } from '../ui/Visual';
+import { AlbumShelfCard, ArtistShelfCard, Shelf } from '../ui/SuperCards';
+import { useOpenArtist } from '../ui/ArtistName';
 import { PROFILE_TAB_EVENT } from '@/lib/uiEvents';
 
 type RawInfo = { profile: PublicProfile | null; stats6m: StatsData | null; weekHours: number | null };
@@ -25,7 +23,7 @@ type FriendInfo = RawInfo & { score: number | null };
 const EMPTY_INFO: RawInfo = { profile: null, stats6m: null, weekHours: null };
 
 const sharedArtistNames = sharedArtists;
-const SHARED_SHOWN = 6;
+const RING = 2 * Math.PI * 33;
 
 // countUp() in reference/app.js: the hero percentage counts up to its value
 // over 450ms (ease-out cubic), replayed whenever the value changes or the
@@ -52,27 +50,12 @@ function useCountUp(target: number | null, replayKey: unknown): number | null {
   return shown;
 }
 
-// vMatch() in reference/app.js: a friend picker (pills) drives one
-// continuous "You and {friend}" comparison — hero taste-match card with a
-// dot-meter, a disagreement/gap list, shared artists, a weekly leaderboard
-// (top three) and a discover-more-people list. All
-// numbers here are real (computeMatch, shared ratings, /api/stats), unlike
-// the prototype's own hardcoded demo data.
-type Who = { id: string; name: string; avatarUrl: string | null };
-
-// The big match card over a picture of the two of you (the friend's photo,
-// else the album you both rated last), blurred under the dark haze, with
-// both faces in the corner.
-function MatchHero({ me, friend, picture, children }: { me: Who | null; friend: Who | null; picture: string | null; children: ReactNode }) {
-  return (
-    <div className={`tile bh15 mh23${picture ? '' : ' np'}`} style={blurStyle(picture, 300)}>
-      <span className="fcs" aria-hidden="true">
-        {[me, friend].map((u, i) => u && <span key={i} className="avt" style={{ ...userAvatarStyle(u), backgroundSize: 'cover' }}>{!u.avatarUrl && u.name[0]?.toUpperCase()}</span>)}
-      </span>
-      {children}
-    </div>
-  );
-}
+// Taste match: your friends as ringed faces (the ring is the match) pick
+// one comparison — the two of you over a picture with the % and its line
+// over time, shelves of the albums you agree and disagree on, the artists
+// you share as photo cards, the week's leaderboard over the leader's photo,
+// and people you might match with. All numbers are real (computeMatch,
+// shared ratings, /api/stats).
 
 export function MatchScreen(_props: { device: Device }) {
   const { t, language, me, state, myRatings, albums, liveAlbums, spotifyCovers, openAlbum, viewFriend, showScreen, addFriend, friendRequests } = useApp();
@@ -140,6 +123,7 @@ export function MatchScreen(_props: { device: Device }) {
   // visible too — otherwise it would only ever animate off-screen at load.
   const shownPct = useCountUp(activeInfo?.score ?? null, isActiveScreen ? activeId : null);
 
+  const openArtist = useOpenArtist();
   const history = useCachedJson<{ history: { pct: number; date: string }[] }>(activeId ? `/api/match/${activeId}/history` : null).data?.history ?? null;
 
   if (!me) return null;
@@ -192,112 +176,119 @@ export function MatchScreen(_props: { device: Device }) {
     ? t('match.gapHint', { h: fmtHours(Math.round((leader.hours - leaderboard[myRank].hours) * 10) / 10), name: leader.name, m: Math.max(1, Math.round(((leader.hours - leaderboard[myRank].hours) * 60) / daysLeft)) })
     : myRank === 0 && leaderboard.length > 1 && leader.hours > 0 ? t('match.leadHint', { h: fmtHours(Math.round((leader.hours - leaderboard[1].hours) * 10) / 10) }) : null;
 
+  // The albums you both rated: closest scores first ("you agree on"), the
+  // furthest apart first ("where you disagree").
+  const agree = gaps.filter((g) => Math.abs(g.mine - g.theirs) <= 0.5).sort((a, b) => Math.abs(a.mine - a.theirs) - Math.abs(b.mine - b.theirs) || b.mine - a.mine);
+  const disagree = gaps.filter((g) => Math.abs(g.mine - g.theirs) >= 1);
+  const albumCard = (g: { albumId: string; mine: number; theirs: number }) => {
+    const a = liveAlbums[g.albumId] || albums.find((x) => x.id === g.albumId);
+    const d = Math.abs(g.mine - g.theirs);
+    return (
+      <AlbumShelfCard
+        key={g.albumId}
+        cover={a ? spotifyCovers[a.id] || a.cover : null}
+        title={a?.title ?? '…'}
+        artist={a?.artist ?? ''}
+        artistId={a?.artistId}
+        badge={d <= 0.05 ? '=' : `±${fmt1(d)}`}
+        meta={<span className="sc24"><b>{t('friend.you')} {fmt1(g.mine)}</b><b>{active?.name} {fmt1(g.theirs)}</b></span>}
+        onClick={() => openAlbum(g.albumId)}
+      />
+    );
+  };
+  const leaderUser = leaderboard[0]?.user ?? null;
+
   return (
     <>
       <p className="eyebrow muted">{t('match.eyebrow')}</p>
-      <h1 className="big">{t('match.youAndName', { name: active?.name ?? '' })}</h1>
-      <div className="chips">
-        {ranked.map((f) => (
-          <button key={f.id} className={`chip${f.id === activeId ? ' on' : ''}`} onClick={() => setSelectedId(f.id)}>
-            <span className="dot" style={userAvatarStyle(f)}>{!f.avatarUrl && f.name[0]}</span>
-            {f.name}
-          </button>
-        ))}
+      <h1 className="big">{t('match.title')}</h1>
+
+      {/* Your friends as round faces, each ringed by how close your taste is. */}
+      <div className="hrow fp24" role="tablist" aria-label={t('match.title')}>
+        {ranked.map((f) => {
+          const score = info[f.id]?.score ?? null;
+          return (
+            <button key={f.id} role="tab" aria-selected={f.id === activeId} className={f.id === activeId ? 'on' : ''} onClick={() => setSelectedId(f.id)}>
+              <span className="rg">
+                <svg viewBox="0 0 72 72" aria-hidden="true"><circle className="tr" cx="36" cy="36" r="33" /><circle className="pg" cx="36" cy="36" r="33" strokeDasharray={RING} strokeDashoffset={RING * (1 - (score ?? 0) / 100)} /></svg>
+                <span className="avt" style={{ ...userAvatarStyle(f), backgroundSize: 'cover' }}>{!f.avatarUrl && f.name[0]?.toUpperCase()}</span>
+              </span>
+              <b>{f.name}</b>
+              <small>{score != null ? `${score}%` : '–'}</small>
+            </button>
+          );
+        })}
       </div>
 
-      <MatchHero me={me} friend={active ?? null} picture={heroPicture}>
-        {trendDelta != null && trendDelta !== 0 && (
-          <span className="pill" style={{ marginBottom: 12 }}>
-            {t(trendDelta > 0 ? 'match.pctUpSince' : 'match.pctDownSince', { delta: Math.abs(trendDelta), date: trendDate })}
-          </span>
-        )}
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6 }}>
-          <span className="num pct">{shownPct ?? '–'}</span>{shownPct != null && <span className="num pcts">%</span>}
+      {/* The two of you over a picture: both faces, the %, how it moved. */}
+      <div className={`tile bh15 mh24${heroPicture ? '' : ' np'}`} style={blurStyle(heroPicture, 300)}>
+        <div className="duo">
+          {[me, active].map((u, i) => u && <span key={i} className="avt" style={{ ...userAvatarStyle(u), backgroundSize: 'cover' }}>{!u.avatarUrl && u.name[0]?.toUpperCase()}</span>)}
         </div>
-        <p style={{ fontWeight: 800, marginTop: 16 }}>{t('match.tasteMatchSummary', { count: sharedArt.length })}</p>
+        <p className="who">{t('match.youAndName', { name: active?.name ?? '' })}</p>
+        <div className="pc"><span className="num">{shownPct ?? '–'}</span>{shownPct != null && <span className="num ps">%</span>}</div>
+        <p className="sm">{t('match.tasteMatchSummary', { count: sharedArt.length })}</p>
+        {history && history.length >= 2 && <Sparkline points={history.map((h) => h.pct)} />}
+        {trendDelta != null && trendDelta !== 0 && (
+          <span className="pill">{t(trendDelta > 0 ? 'match.pctUpSince' : 'match.pctDownSince', { delta: Math.abs(trendDelta), date: trendDate })}</span>
+        )}
         <div className="acts">
           <button className="btn" onClick={() => active && viewFriend(active.id)}>{t('match.viewProfile', { name: active?.name ?? '' })}</button>
         </div>
-      </MatchHero>
-
-      <div className="sec two">
-        <div>
-          {/* Over the blurred cover of the album you two are furthest apart on. */}
-          <div className="tile bh15 dis19" style={blurStyle(gapCover ? sizedImage(gapCover, 150) ?? gapCover : null)}>
-            <h2>{t('match.whereYouDisagree')}</h2>
-            {gaps.length ? gaps.map((g) => {
-              const a = liveAlbums[g.albumId] || albums.find((x) => x.id === g.albumId);
-              const lo = Math.min(g.mine, g.theirs), hi = Math.max(g.mine, g.theirs);
-              return (
-                <div className="gap" key={g.albumId}>
-                  <button className="hd" onClick={() => openAlbum(g.albumId)}>
-                    {a && <CoverArt url={spotifyCovers[a.id] || a.cover} fallbackLetter={a.artist[0] || '?'} className="cov" style={{ width: 54, height: 54 }} />}
-                    <div><b>{a?.title ?? g.albumId}</b><br /><small className="muted" style={{ fontWeight: 700 }}>{t('match.apart', { value: fmt1((hi - lo)) })}</small></div>
-                  </button>
-                  <div className="tr">
-                    <i className="fill" style={{ left: `${(lo / 5) * 100}%`, width: `${((hi - lo) / 5) * 100}%` }} />
-                    <b className="m you" style={{ left: `${(g.mine / 5) * 100}%` }}>{t('friend.youLower')[0]}</b>
-                    <b className="m fr" style={{ left: `${(g.theirs / 5) * 100}%` }}>{(active?.name ?? '?')[0]}</b>
-                  </div>
-                  <div className="lab">
-                    {g.mine <= g.theirs
-                      ? <><span>{t('friend.youLower')} {fmt1(g.mine)}</span><span>{active?.name} {fmt1(g.theirs)}</span></>
-                      : <><span>{active?.name} {fmt1(g.theirs)}</span><span>{t('friend.youLower')} {fmt1(g.mine)}</span></>}
-                  </div>
-                </div>
-              );
-            }) : <p className="muted" style={{ fontWeight: 600 }}>{t('match.notEnoughForGaps')}</p>}
-          </div>
-        </div>
-        <div className="stack">
-          {/* The six most played shared artists. */}
-          <SharedArtistsCard names={sharedArt} shown={SHARED_SHOWN} title={t('match.sharedArtistsTitle')} empty={t('match.noSharedArtists')} />
-          {/* Weekly leaderboard (rev 11): the top three, and how far you are from first. */}
-          <div className="tile nt23">
-            <div className="hd10"><div><h2 style={{ margin: 0 }}>{t('match.weeklyLeaderboard')}</h2></div></div>
-            <RankRows
-              label={t('match.weeklyLeaderboard')}
-              rows={leaderboard.slice(0, 5).map((l) => ({ id: l.id, name: l.name, avatarUrl: l.user?.avatarUrl ?? null, amount: l.hours, value: `${fmtHours(l.hours)}${t('unit.h')}`, you: l.id === 'me' }))}
-              onOpen={viewFriend}
-            />
-            {myRank >= 5 && <p className="gap10"><i className="ic ic-medal" /><span>{t('match.yourPlace', { n: myRank + 1, h: fmtHours(leaderboard[myRank].hours) })}</span></p>}
-            {gapHint && <p className="gap10"><i className="ic ic-trend" /><span>{gapHint}</span></p>}
-          </div>
-        </div>
       </div>
 
+      {agree.length > 0 && <Shelf title={t('match.agreeTitle')}>{agree.slice(0, 12).map(albumCard)}</Shelf>}
+      {disagree.length > 0
+        ? <Shelf title={t('match.whereYouDisagree')}>{disagree.slice(0, 12).map(albumCard)}</Shelf>
+        : !agree.length && (
+          <div className="sec"><h2>{t('match.whereYouDisagree')}</h2><p className="muted" style={{ fontWeight: 600 }}>{t('match.notEnoughForGaps')}</p></div>
+        )}
+
+      {sharedArt.length > 0 ? (
+        <Shelf title={t('match.sharedArtistsTitle')}>
+          {sharedArt.slice(0, 12).map((name) => <ArtistShelfCard key={name} name={name} onClick={() => openArtist(name)} />)}
+        </Shelf>
+      ) : (
+        <div className="sec"><h2>{t('match.sharedArtistsTitle')}</h2><p className="muted" style={{ fontWeight: 600 }}>{t('match.noSharedArtists')}</p></div>
+      )}
+
+      {/* The week's listening, over the leader's photo. */}
       <div className="sec">
-        <div className="tile nt23">
-          <div className="hd10"><h2 style={{ margin: 0 }}>{t('match.discoverTitle')}</h2></div>
-          {discover !== null && discover.length ? (
-            <PersonCards people={discover.slice(0, 6).map((p) => ({
-              id: p.id, name: p.name, avatarUrl: p.avatarUrl, value: `${p.score}%`, onClick: () => viewFriend(p.id),
-              action: friendRequests.outgoing.some((r) => r.user.id === p.id)
-                ? <span className="tag" style={{ alignSelf: 'center' }}>{t('friend.requestSent')}</span>
-                : <button className="btn" onClick={() => addFriend(p.handle)}>{t('friend.addFriend')}</button>,
-            }))} />
-          ) : <p className="muted" style={{ fontWeight: 600 }}>{t('match.allFriendsMatched')}</p>}
+        <div className={`tile bh15 lb24${leaderUser?.avatarUrl ? '' : ' np'}`} style={blurStyle(leaderUser?.avatarUrl ?? null, 300)}>
+          <h2>{t('match.weeklyLeaderboard')}</h2>
+          <RankRows
+            label={t('match.weeklyLeaderboard')}
+            rows={leaderboard.slice(0, 5).map((l) => ({ id: l.id, name: l.name, avatarUrl: l.user?.avatarUrl ?? null, amount: l.hours, value: `${fmtHours(l.hours)}${t('unit.h')}`, you: l.id === 'me' }))}
+            onOpen={viewFriend}
+          />
+          {myRank >= 5 && <p className="gap10"><i className="ic ic-medal" /><span>{t('match.yourPlace', { n: myRank + 1, h: fmtHours(leaderboard[myRank].hours) })}</span></p>}
+          {gapHint && <p className="gap10"><i className="ic ic-trend" /><span>{gapHint}</span></p>}
         </div>
       </div>
 
-      {/* Everything you both rated (rev 10/11): the biggest gaps first, five rows. */}
-      {gaps.length > 0 && active && (
+      {discover !== null && discover.length > 0 && (
         <div className="sec">
-          <div className="tile sh10 nt23">
-            <div className="hd10"><h2 style={{ margin: 0 }}>{t('match.bothRatedTitle')}</h2></div>
-            <CoverWall items={gaps.slice(0, 6).map((g) => {
-              const a = liveAlbums[g.albumId] || albums.find((x) => x.id === g.albumId);
-              const d = Math.abs(g.mine - g.theirs);
-              return {
-                key: g.albumId, cover: a ? spotifyCovers[a.id] || a.cover : undefined, title: a?.title ?? '…', artist: a?.artist, artistId: a?.artistId,
-                badge: d <= 0.5 ? '=' : `±${fmt1(d)}`,
-                sub: `${t('friend.you')} ${fmt1(g.mine)} · ${active.name} ${fmt1(g.theirs)}`,
-                onClick: () => openAlbum(g.albumId),
-              };
-            })} />
-          </div>
+          <h2>{t('match.discoverTitle')}</h2>
+          <PersonCards people={discover.slice(0, 10).map((p) => ({
+            id: p.id, name: p.name, avatarUrl: p.avatarUrl, value: `${p.score}%`, onClick: () => viewFriend(p.id),
+            action: friendRequests.outgoing.some((r) => r.user.id === p.id)
+              ? <span className="tag" style={{ alignSelf: 'center' }}>{t('friend.requestSent')}</span>
+              : <button className="btn" onClick={() => addFriend(p.handle)}>{t('friend.addFriend')}</button>,
+          }))} />
         </div>
       )}
     </>
+  );
+}
+
+// The match over time as one line (the snapshots, oldest to newest).
+function Sparkline({ points }: { points: number[] }) {
+  const min = Math.min(...points), max = Math.max(...points);
+  const span = Math.max(1, max - min);
+  const d = points.map((p, i) => `${(i / (points.length - 1)) * 100},${28 - ((p - min) / span) * 24}`).join(' ');
+  return (
+    <svg className="sp24" viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true">
+      <polyline points={d} vectorEffect="non-scaling-stroke" />
+    </svg>
   );
 }

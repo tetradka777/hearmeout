@@ -134,7 +134,7 @@ function LookStep() {
       />
       <div className="palgrid" style={{ marginTop: 16 }} role="radiogroup" aria-label={t('settings.colorPalette')}>
         {PALETTES.map((p) => (
-          <button key={p.id} className="palbtn" role="radio" aria-checked={me.palette === p.id} onClick={() => updateAppearance({ palette: p.id })}>
+          <button key={p.id} className="palbtn" role="radio" aria-label={p.name} title={p.name} aria-checked={me.palette === p.id} onClick={() => updateAppearance({ palette: p.id })}>
             <span className="sws" data-palette={p.id}>
               <i style={{ background: 'var(--pick)' }} />
             </span>

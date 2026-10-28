@@ -8,9 +8,7 @@ import { toLocale, pluralForKey } from '@/lib/i18n';
 import { REVIEW_TAG_LABEL_KEY } from '@/lib/reviewTags';
 import { MascotIcon } from '../redesign/icons';
 import { CoverWall, GenreFill } from '../ui/Visual';
-import { CoverArt } from '../ui/CoverArt';
 import { blurStyle } from '@/lib/imageColor';
-import { shortTitle } from '@/lib/format';
 import { exportRatingsCsv } from '@/lib/csvExport';
 
 type Filter = 'all' | 'reviewed' | 'private' | 'high' | 'low';
@@ -158,29 +156,17 @@ export function HistoryScreen(_props: { device: Device }) {
       {highlights && (
         <div className="sec">
           <h2>{t('history.highlightsTitle')}</h2>
-          <div className="hl23">
-            {[
-              { key: 'hi', r: highlights.highest, sub: t('history.highestRated'), badge: fmt1(highlights.highest.stars) },
-              { key: 'lo', r: highlights.lowest, sub: t('history.lowestRated'), badge: fmt1(highlights.lowest.stars) },
-              ...(highlights.changedMind ? [{ key: 'ch', r: highlights.changedMind, sub: t('history.changedMind'), badge: `${fmt1(highlights.changedMind.previousStars!)}→${fmt1(highlights.changedMind.stars)}` }] : []),
-            ].map(({ key, r, sub, badge }) => {
-              const a = albumFor(r.albumId);
-              const cover = a ? spotifyCovers[a.id] || a.cover : undefined;
-              return (
-                <button key={key} className="tile bh15" style={blurStyle(cover)} onClick={() => openAlbum(r.albumId)} aria-label={`${sub}: ${a?.title ?? ''} — ${badge}`}>
-                  <span className="hlc"><CoverArt url={cover} fallbackLetter={a?.artist[0] || '?'} className="cov" px={150} /></span>
-                  <b className="hls">{badge}</b>
-                  <small>{sub}</small>
-                  <span className="hlt">{a ? shortTitle(a.title) : ''}</span>
-                </button>
-              );
-            })}
-          </div>
+          {/* The moments as cover cards, like every other shelf. */}
+          <CoverWall row items={[
+            wallItem(highlights.highest, 'hi', t('history.highestRated'), fmt1(highlights.highest.stars)),
+            wallItem(highlights.lowest, 'lo', t('history.lowestRated'), fmt1(highlights.lowest.stars)),
+            ...(highlights.changedMind ? [wallItem(highlights.changedMind, 'ch', t('history.changedMind'), `${fmt1(highlights.changedMind.previousStars!)}→${fmt1(highlights.changedMind.stars)}`)] : []),
+          ]} />
         </div>
       )}
 
       <div className="sec two">
-        <div className="tile">
+        <div className="tile nt23">
           <h2>{t('history.scoreDistTitle')}</h2>
           {myRatings.length ? (
             <>
@@ -199,7 +185,7 @@ export function HistoryScreen(_props: { device: Device }) {
           ) : <p className="muted" style={{ marginTop: 10, fontSize: 14, fontWeight: 600 }}>{t('history.notEnoughForChart')}</p>}
         </div>
 
-        <div className="tile">
+        <div className="tile nt23">
           <h2>{t('history.favouriteTags')}</h2>
           {habits.topTags.length ? (
             <GenreFill items={habits.topTags.map(([id, count]) => ({ name: t(REVIEW_TAG_LABEL_KEY[id as keyof typeof REVIEW_TAG_LABEL_KEY]), share: count / habits.topTags[0][1] }))} />
@@ -241,14 +227,14 @@ export function HistoryScreen(_props: { device: Device }) {
             );
           })
         ) : myRatings.length ? (
-          <div className="tile t-soft2 empty">
+          <div className="tile nt23 empty">
             <MascotIcon />
             <h3>{t('history.noMatchTitle')}</h3>
             <p className="muted" style={{ fontWeight: 600 }}>{t('history.noMatchHint')}</p>
             <button className="btn" onClick={() => { setFilter('all'); setHistoryQuery(''); }}>{t('history.showAll')}</button>
           </div>
         ) : (
-          <div className="tile t-soft2 empty">
+          <div className="tile nt23 empty">
             <MascotIcon />
             <h3>{t('history.emptyLine1')}</h3>
             <p className="muted" style={{ fontWeight: 600 }}>{t('history.emptyLine2')}</p>
