@@ -53,7 +53,7 @@ export function PopularNowSection({ genre }: { genre?: string }) {
             title={a.title}
             artist={a.artist}
             badge={`#${i + 1}`}
-            meta={community ? `★ ${fmt1(community.avg)} · ${t('groups.ratingsN', { n: community.count })}` : a.genreBucket || undefined}
+            meta={community ? `★ ${fmt1(community.avg)} · ${t('groups.ratingsN', { n: community.count })}` : undefined}
             onClick={() => open(a)}
           />
         );

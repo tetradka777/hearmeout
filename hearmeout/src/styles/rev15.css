@@ -1075,3 +1075,53 @@ html,body{margin:0}
 .rd .cnc19 .cnn b{display:inline-block;font-size:clamp(58px,16vw,76px);transform:scaleX(1.22);transform-origin:left center;letter-spacing:-.01em}
 .rd .cnc19 .cnn span{font-size:20px;transform:scaleX(1.12);transform-origin:left center}
 .rd .ab23 small.mt{display:block;text-overflow:ellipsis;font-weight:700;color:rgba(255,255,255,.72)}
+/* (2026-10-28) One colour instead of a theme (tokens.css): the picked colour
+   on avatar letters, section dots and the chart's peak; the tab bar glass. */
+.rd .avt{background-color:var(--pick);color:var(--pick-on)}
+.rd .sh14 .hd h2::after,.rd .hd h2.dot::after{background:var(--pick)}
+.rd .hd23 .on i{background:var(--pick)}
+.rd .q13{border-left-color:var(--pick)}
+.rd .sst14 .ic{color:var(--acct)}
+.rd .tabbar{background:var(--chr-bg);-webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);outline:1px solid color-mix(in srgb,var(--fg) 12%,transparent);outline-offset:-1px;box-shadow:0 10px 30px -12px rgba(0,0,0,.35)}
+.rd .tabbar .tbp .avt{box-shadow:0 0 0 2px color-mix(in srgb,var(--fg) 30%,transparent)}
+.rd .tabbar .tbp.on .avt{box-shadow:0 0 0 3px var(--fg)}
+.rd .player,.rd .mplay{-webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5)}
+/* (2026-10-28) Cover walls (CoverWall): every cell is the cover itself with
+   title, artist and line under them over a dark fade, the score in a light
+   pill above — the same card as the album shelves (.ab23). */
+.rd .cw15 .it.ow23{position:relative;isolation:isolate;display:block;padding:0;border-radius:18px;overflow:hidden;background:#1e1d1c;color:#fff;min-width:0}
+.rd .cw15 .it.ow23 .im{display:block!important;width:100%;padding:0;border-radius:0;line-height:0;overflow:hidden}
+.rd .cw15 .it.ow23 .im .cov{display:block;width:100%;aspect-ratio:1/1.08;border-radius:0}
+.rd .cw15 .it.ow23 .tx{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;gap:1px;padding:34px 9px 9px;background:linear-gradient(180deg,transparent,rgba(12,11,10,.55) 35%,rgba(12,11,10,.84));pointer-events:none}
+.rd .cw15 .it.ow23 .tx>*{pointer-events:auto}
+.rd .cw15 .it.ow23 .tx b{color:#fff;font:800 14px/1.2 var(--font-display)}
+.rd .cw15 .it.ow23 .tx small{color:rgba(255,255,255,.8);opacity:1;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .cw15 .it.ow23 .bg{position:static;align-self:flex-end;min-width:0;height:auto;margin-bottom:3px;padding:3px 8px;border-radius:99px;background:rgba(255,255,255,.9);color:#161412;box-shadow:none;font:800 12px/1.1 var(--font-display)}
+.rd .cw15.sm .it.ow23 .tx{padding:26px 7px 7px}
+.rd .cw15.sm .it.ow23 .tx b{font-size:12px}
+@media (max-width:999px){.rd .cw15.hrow.row>.it.ow23{width:150px}}
+/* (2026-10-28) Fan club page: the artist over the blurred photo with the
+   club's numbers, top listeners with bars, members as faces. */
+.rd .tile.fh23{display:flex;align-items:center;gap:22px;padding:22px}
+.rd .tile.fh23>.aav{flex:none;box-shadow:0 0 0 4px rgba(255,255,255,.22)}
+.rd .tile.fh23 .g{flex:1;min-width:0}
+.rd .tile.fh23 .k{margin:0;font-weight:800;font-size:14px;color:rgba(255,255,255,.75)}
+.rd .tile.fh23 h1{margin:2px 0 10px;font-size:clamp(34px,8vw,56px);line-height:1;color:#fff}
+.rd .tile.fh23 .st15{margin:0 0 14px;background:rgba(0,0,0,.28)}
+.rd .tile.fh23 .acts{margin:0}
+@media (max-width:640px){.rd .tile.fh23{flex-direction:column;align-items:flex-start}.rd .tile.fh23>.aav{width:104px!important;height:104px!important}.rd .tile.fh23 .g{width:100%}}
+.rd .fc23{align-items:start}
+.rd .tl23{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.rd .tl23 button{display:flex!important;flex-direction:row!important;align-items:center;gap:10px;width:100%;padding:6px 0;text-align:left;color:inherit}
+.rd .tl23 .n{flex:none;width:18px;font:800 15px/1 var(--font-display);opacity:.6}
+.rd .tl23 .avt{flex:none;width:40px;height:40px;font-size:16px}
+.rd .tl23 .g{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.rd .tl23 .g b{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .tl23 .g i{display:block;height:6px;border-radius:6px;background:var(--pick)}
+.rd .tl23 .v{flex:none;font-weight:800;font-size:13px;opacity:.75}
+.rd .mg23{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:14px 8px}
+.rd .mg23 button{display:flex!important;flex-direction:column!important;align-items:center;gap:5px;min-width:0;color:inherit;padding:0}
+.rd .mg23 .avt{width:58px;height:58px;font-size:22px}
+.rd .mg23 b{max-width:100%;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .mg23 small{font-size:11px;font-weight:800;color:var(--acct)}
+.rd .mh23{margin:12px 0 0;font-weight:700;font-size:14px}

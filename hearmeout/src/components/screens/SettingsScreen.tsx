@@ -68,7 +68,7 @@ function AppearanceTab() {
   const palBtn = (p: (typeof PALETTES)[number]) => (
     <button key={p.id} className="palbtn" role="radio" aria-checked={me.palette === p.id} onClick={() => updateAppearance({ palette: p.id })}>
       <span className="sws" data-palette={p.id}>
-        <i style={{ background: 'var(--ac)' }} /><i style={{ background: 'var(--scl)' }} /><i style={{ background: 'var(--hi)' }} />
+        <i style={{ background: 'var(--pick)' }} />
       </span>
       <span>{p.name}</span>
     </button>
@@ -100,10 +100,7 @@ function AppearanceTab() {
       <div className="tile" style={{ marginTop: 14 }}>
         <h2>{t('settings.colorPalette')}</h2>
         <p className="muted" style={{ margin: '-4px 0 16px', fontWeight: 600 }}>{t('settings.paletteHint')}</p>
-        <p className="palgroup">{t('settings.paletteClassic')}</p>
-        <div className="palgrid" role="radiogroup" aria-label={t('settings.colorPalette')}>{PALETTES.filter((p) => p.group === 'classic').map(palBtn)}</div>
-        <p className="palgroup">{t('settings.paletteNeon')}</p>
-        <div className="palgrid">{PALETTES.filter((p) => p.group === 'neon').map(palBtn)}</div>
+        <div className="palgrid" role="radiogroup" aria-label={t('settings.colorPalette')}>{PALETTES.map(palBtn)}</div>
       </div>
 
       <div className="tile" style={{ marginTop: 14 }}>

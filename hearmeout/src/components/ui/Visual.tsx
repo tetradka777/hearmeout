@@ -32,17 +32,17 @@ export function CoverWall({ items, small, row }: { items: WallItem[]; small?: bo
   );
 }
 
-// One cover on a plate of its colour.
+// One cover as the whole card, the title and artist over its lower part
+// (like the album shelf cards, .ab23), the score in a small pill above them.
 function WallCell({ it, small }: { it: WallItem; small?: boolean }) {
-  const tint = useImageColor(it.cover ? sizedImage(it.cover, 64) ?? it.cover : null);
   return (
-    <div className={`it tn15${tint ? '' : ` ${toneClass(it.title)}`}`} style={tintStyle(tint ?? toneColor(it.title))}>
+    <div className="it ow23">
       <button className="im" onClick={it.onClick} aria-label={it.title} disabled={!it.onClick}>
-        <CoverArt url={it.cover ?? undefined} fallbackLetter={(it.artist || it.title)[0] || '?'} className="cov" px={small ? 120 : 180} style={{ width: '100%', aspectRatio: '1' }} />
-        {it.badge != null && <span className="bg">{it.badge}</span>}
+        <CoverArt url={it.cover ?? undefined} fallbackLetter={(it.artist || it.title)[0] || '?'} className="cov" px={small ? 150 : 240} />
       </button>
       {it.corner && <span className="cn">{it.corner}</span>}
       <span className="tx">
+        {it.badge != null && <span className="bg">{it.badge}</span>}
         <b>{it.title}</b>
         {it.artist && <small><ArtistName name={it.artist} id={it.artistId} size={14} /></small>}
         {it.sub && <small className="sb">{it.sub}</small>}
