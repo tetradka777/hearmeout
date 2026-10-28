@@ -940,24 +940,19 @@ html,body,.rd{-webkit-user-select:none;user-select:none;-webkit-touch-callout:no
 .rd .stk20 .pk22 small{font-size:9px;font-weight:800;line-height:1;opacity:.75}
 .rd .stk20 .pk22>b{position:absolute;top:0;width:9px;height:56%;background:#0F0F0D;border-radius:0 0 3px 3px;transform:translateX(-50%);box-shadow:0 2px 0 rgba(0,0,0,.35);pointer-events:none}
 @media(max-width:400px){.rd .stk20 .pk22{grid-template-columns:repeat(7,14px);height:44px}.rd .stk20 .pk22>b{width:8px}}
-/* Lesser-known artists: two strips of big outlined names running opposite
-   ways, the letters filled with the artist's photo. */
+/* Lesser-known artists: two strips of big names running opposite ways,
+   each with the artist's round photo before it. */
 .rd .dc22{overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent)}
-.rd .dc22+.dc22{margin-top:-4px}
+.rd .dc22+.dc22{margin-top:6px}
 .rd .dc22 .dct{display:flex;width:max-content;animation:dc22 40s linear infinite;will-change:transform}
 .rd .dc22.bk .dct{animation-direction:reverse}
 .rd .dc22:hover .dct{animation-play-state:paused}
 @keyframes dc22{to{transform:translateX(-50%)}}
-.rd .dc22 .dcn{display:flex;align-items:center;flex:none}
-.rd .dc22 button{display:block;padding:0 0 4px;font:800 76px/1 var(--font-display);letter-spacing:-.03em;white-space:nowrap;color:var(--fg);--ol:var(--fg);-webkit-text-size-adjust:none;text-size-adjust:none}
-.rd .dc22.bk button{font-size:54px}
-/* Outline by shadows around the whole letter: a text stroke drew the font's
-   overlapping contours as lines through the letters. */
-.rd .dc22 button.dcp{color:transparent;background-size:cover;background-position:center 30%;-webkit-background-clip:text;background-clip:text;filter:drop-shadow(1.5px 0 0 var(--ol)) drop-shadow(-1.5px 0 0 var(--ol)) drop-shadow(0 1.5px 0 var(--ol)) drop-shadow(0 -1.5px 0 var(--ol))}
-.rd .dc22 button:hover,.rd .dc22 button:focus-visible{--ol:var(--acct);color:var(--acct)}
-.rd .dc22 button.dcp:hover,.rd .dc22 button.dcp:focus-visible{color:transparent}
-.rd .dc22 .dcs{display:block;flex:none;width:12px;height:12px;margin:0 22px;border-radius:50%;background:var(--acct)}
-@media(max-width:600px){.rd .dc22 button{font-size:60px}.rd .dc22.bk button{font-size:44px}.rd .dc22 .dcs{margin:0 16px;width:10px;height:10px}}
+.rd .dc22 .dcn{display:flex!important;flex-direction:row!important;align-items:center;flex:none;gap:14px;margin-right:34px;padding:4px 0;font:800 52px/1.05 var(--font-display);letter-spacing:-.03em;white-space:nowrap;color:var(--fg);-webkit-text-size-adjust:none;text-size-adjust:none}
+.rd .dc22.bk .dcn{font-size:38px;gap:12px;margin-right:28px}
+.rd .dc22 .dcn .aav{flex:none}
+.rd .dc22 .dcn:hover,.rd .dc22 .dcn:focus-visible{color:var(--acct)}
+@media(max-width:600px){.rd .dc22 .dcn{font-size:40px;gap:10px;margin-right:26px}.rd .dc22 .dcn .aav{width:50px!important;height:50px!important}.rd .dc22.bk .dcn{font-size:30px;margin-right:22px}.rd .dc22.bk .dcn .aav{width:38px!important;height:38px!important}}
 @media(prefers-reduced-motion:reduce){.rd .dc22{overflow-x:auto}.rd .dc22 .dct{animation:none}}
 [data-motion="off"] .rd .dc22{overflow-x:auto}
 [data-motion="off"] .rd .dc22 .dct{animation:none}
