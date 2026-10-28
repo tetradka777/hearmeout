@@ -1018,3 +1018,25 @@ html,body{margin:0}
 .rd .hm23{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
 .rd .hm23>span{padding:6px 12px;border-radius:99px;background:var(--soft2);font-weight:800;font-size:13px}
 @media (min-width:900px){.rd .hl23{grid-template-columns:repeat(3,minmax(0,240px))}}
+/* (2026-10-28) "Remind me" for listen-later items (components/LaterReminder). */
+.rd .modal.rm23{padding:20px}
+.rd .rm23 .rmh{display:flex;gap:12px;align-items:center}
+.rd .rm23 .rmh .cov{width:56px;height:56px;border-radius:12px;flex:none}
+.rd .rm23 .rmh .g{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.rd .rm23 .rmh b{font:800 20px/1.15 var(--font-display);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .rm23 .rmh small{font-weight:700;font-size:13px}
+.rd .rm23 .rml{margin:18px 0 8px;font-weight:800}
+.rd .rm23 .rmc{margin-bottom:8px}
+.rd .rm23 .rmr{margin:0;max-width:100%}
+.rd .rm23 .rmr button{font-size:15px;padding:7px 12px}
+.rd .rm23 .rmn{margin:16px 0 0;font-weight:800;display:flex;align-items:center;gap:6px}
+.rd .rm23 .rmp{font-size:13px;font-weight:600;margin:6px 0 0}
+.rd .rm23 .acts{margin-top:16px}
+.rd .ib.rmb.on{background:var(--acc);color:var(--onacc,var(--on))}
+.rd .rmo{display:flex;align-items:center;gap:4px;font-weight:800;font-size:12px;color:var(--acct);margin-top:2px}
+@media (max-width:600px){
+  .rd .modalbg.rm23bg{place-items:end center;padding:0}
+  .rd .modal.rm23{width:100%;border-radius:28px 28px 0 0;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+}
+.rd .rm23 .rmr{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));width:100%;gap:4px}
+.rd .rm23 .rmr button{font-size:14px;padding:8px 4px;justify-content:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

@@ -8,16 +8,22 @@ export async function GET() {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
   const admin = supabaseAdmin();
-  const { data, error } = await admin
-    .from('listen_later')
-    .select('id, item_type, album_id, track_index, title, artist, cover_url, created_at')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+  const base = 'id, item_type, album_id, track_index, title, artist, cover_url, created_at';
+  const read = (cols: string) => admin.from('listen_later').select(cols).eq('user_id', userId).order('created_at', { ascending: false });
+  // Reminders need migration 035; without it the list comes without them
+  // (remindReady: false hides the bell).
+  let remindReady = true;
+  let { data, error } = await read(`${base}, remind_at, remind_every`);
+  if (error && /remind_/.test(error.message)) {
+    remindReady = false;
+    ({ data, error } = await read(base));
+  }
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  const items = (data || []).map((r) => ({
+  const items = ((data || []) as unknown as Record<string, unknown>[]).map((r) => ({
     id: r.id, type: r.item_type, albumId: r.album_id, trackIndex: r.track_index, title: r.title, artist: r.artist, cover: r.cover_url, createdAt: r.created_at,
+    remindAt: r.remind_at ?? null, remindEvery: r.remind_every ?? null,
   }));
-  return NextResponse.json({ items });
+  return NextResponse.json({ items, remindReady });
 }
 
 // Toggle — saving an already-saved album or track removes it (spec
@@ -45,11 +51,12 @@ export async function POST(request: NextRequest) {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ saved: false });
   }
-  const { error } = await admin.from('listen_later').insert({
+  const { data: added, error } = await admin.from('listen_later').insert({
     user_id: userId, item_type: type, album_id: albumId, track_index: trackIndex, title, artist, cover_url: cover,
-  });
+  }).select('id').single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ saved: true });
+  // The id, so the page can offer a reminder for it right away.
+  return NextResponse.json({ saved: true, id: added.id });
 }
 
 // Remove all (spec 13.20 "Remove all N saved items?").

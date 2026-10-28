@@ -11,6 +11,7 @@ import { formatRelative } from '@/lib/format';
 import { pluralForKey } from '@/lib/i18n';
 import type { QueueTrack } from '@/lib/PlayerContext';
 import { usePlayer } from '@/lib/PlayerContext';
+import { ReminderButton, ReminderNote } from '../LaterReminder';
 
 // Listen later (spec 13.20): a private per-account list of saved albums
 // and tracks. Not a top-level tab — reached from the avatar menu and the
@@ -36,10 +37,12 @@ export function LaterRow({ item, onPlay }: { item: LaterItem; onPlay: (item: Lat
           <small className="muted" style={{ fontWeight: 600 }}>
             {item.artist && <><ArtistName name={item.artist} albumId={item.albumId} size={16} /> · </>}{item.type === 'track' && albumTitle ? `${albumTitle} · ` : ''}{t('later.addedAgo', { time: formatRelative(item.createdAt, language) })}
           </small>
+          <ReminderNote item={item} />
         </span>
         <span className="tag">{item.type === 'album' ? t('later.tagAlbum') : t('later.tagTrack')}</span>
       </button>
       <span className="later-act">
+        <ReminderButton item={item} />
         <button className="ib" onClick={() => onPlay(item)} aria-label={t('later.playAria', { title: item.title })}>
           <PlayIcon size={16} />
         </button>

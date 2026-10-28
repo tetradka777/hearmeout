@@ -27,7 +27,7 @@ export async function GET() {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   const items: AppNotification[] = (data || []).flatMap((n) => {
     const a = n.actor as unknown as { id: string; name: string; handle: string; avatar_url: string | null } | null;
-    if (!a && n.kind !== 'release') return [];
+    if (!a && n.kind !== 'release' && n.kind !== 'later') return [];
     return [{
       id: n.id as number,
       kind: n.kind as AppNotification['kind'],
