@@ -1183,3 +1183,36 @@ html,body{margin:0}
 .rd .gh23 .g small{font-weight:700;color:rgba(255,255,255,.78)}
 .rd .gh23 .st15{margin:0;background:rgba(0,0,0,.28)}
 .rd .gh23 .acts{margin:0}
+
+/* Player dock (2026-10-29): on a phone the preview bar slides out of the
+   bottom menu as its top part — one glass block, a thin line between; it
+   folds away while the playing track's own button is on screen. Swiping it
+   moves the bar itself (transform), so it's never positioned by transform. */
+.rd .rvc15 .alb13 .pl13,.rd .pl13{position:relative}
+.rd .pl13 .prr15{position:absolute;inset:-4px;width:calc(100% + 8px);height:calc(100% + 8px);transform:rotate(-90deg);pointer-events:none}
+.rd .pl13 .prr15 circle{fill:none;stroke-width:4}
+.rd .pl13 .prr15 .trk{stroke:transparent}
+.rd .pl13 .prr15 .prg{stroke:var(--pick,#fff);stroke-linecap:round}
+.rd .pl13.on .prr15 .trk{stroke:rgba(255,255,255,.22)}
+.rd #plhost .mplay{touch-action:pan-y;user-select:none}
+@media (max-width:899px){
+  .rd .dock24{position:fixed;left:10px;right:10px;bottom:10px;z-index:40;max-width:520px;margin:0 auto;border-radius:30px;background:var(--chr-bg);color:var(--chr-fg);-webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);outline:1px solid color-mix(in srgb,var(--fg) 12%,transparent);outline-offset:-1px;box-shadow:0 10px 30px -12px rgba(0,0,0,.35);overflow:hidden}
+  [data-design="toxic"] .rd .dock24{bottom:8px}
+  .rd .dock24 .tabbar{position:static;max-width:none;margin:0;background:none;outline:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;border-radius:0}
+  .rd .dock24 #plhost .pls{display:grid;grid-template-rows:0fr;transition:grid-template-rows .32s cubic-bezier(.3,.7,.2,1)}
+  .rd .dock24 #plhost.on .pls{grid-template-rows:1fr}
+  .rd .dock24 #plhost .pls>.mplay{min-height:0;overflow:hidden}
+  .rd .dock24 #plhost .mplay{position:relative;left:auto;right:auto;bottom:auto;z-index:auto;background:none;outline:0;border-radius:0;-webkit-backdrop-filter:none;backdrop-filter:none;padding:10px 14px 9px}
+  .rd .dock24 #plhost .mplay::after{content:'';position:absolute;left:18px;right:18px;bottom:0;border-top:1px solid color-mix(in srgb,var(--chr-fg) 18%,transparent)}
+  .rd .dock24 #plhost.off .mplay{visibility:hidden;transition:visibility 0s .32s}
+  /* Only the menu's height is covered now; the bar adds its own when out. */
+  .rd.hasmp .wrap{padding-bottom:150px}
+  .rd.hasmp .toast{bottom:160px}
+}
+@media (min-width:900px){
+  .rd .dock24{display:contents}
+  .rd #plhost{position:fixed;z-index:46;left:50%;bottom:18px;width:min(780px,calc(100% - 48px));transform:translateX(-50%);transition:transform .3s ease,opacity .3s ease}
+  .rd #plhost .mplay{position:static;left:auto;right:auto;bottom:auto;width:auto;transform:none}
+  .rd #plhost.off{opacity:0;transform:translate(-50%,140%);pointer-events:none}
+}
+@media (prefers-reduced-motion:reduce){.rd .dock24 #plhost .pls,.rd #plhost{transition:none}}

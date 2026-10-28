@@ -9,6 +9,7 @@ import { userAvatarStyle, formatRelative, shortTitle } from '@/lib/format';
 import { isReviewTagId, REVIEW_TAG_LABEL_KEY } from '@/lib/reviewTags';
 import { sizedImage } from '@/lib/imageSize';
 import { CoverArt } from './CoverArt';
+import { PlayRing } from '../redesign/PreviewButton';
 import { ArtistAvatar, ArtistName } from './ArtistName';
 import { blurStyle } from '@/lib/imageColor';
 import { useArtistPhoto } from '@/lib/artistPhotos';
@@ -81,7 +82,6 @@ export function ReviewCard({ user, createdAt, stars, review, tags, albumId, show
   user: Person; createdAt: string; stars: number; review: string | null; tags?: string[]; albumId: string; showAlbum?: boolean; clamp?: boolean;
 }) {
   const { t, language, albums, liveAlbums, spotifyCovers, openAlbum, viewFriend, me } = useApp();
-  const { playQueue } = usePlayer();
   const a = liveAlbums[albumId] || albums.find((x) => x.id === albumId || x.spotifyId === albumId);
   const cover = a ? spotifyCovers[a.id] || a.cover : undefined;
   const firstTrack = a?.tracklist?.[0];
@@ -106,16 +106,32 @@ export function ReviewCard({ user, createdAt, stars, review, tags, albumId, show
             <button className="tt" onClick={() => openAlbum(albumId)} aria-label={a.title}><span>{shortTitle(a.title)}</span></button>
             <small><ArtistName name={a.artist} id={a.artistId} size={16} /></small>
           </span>
-          {firstTrack && (
-            <button className="pl13" onClick={() => playQueue([{ title: firstTrack, artist: a.artist, cover: cover ?? null, albumId: a.id }], 0)} aria-label={t('album.playPreviewOf', { title: firstTrack })}>
-              <i className="ic ic-play" />
-            </button>
-          )}
+          {firstTrack && <ReviewPlay title={firstTrack} artist={a.artist} cover={cover ?? null} albumId={a.id} tracks={a.tracklist ?? []} />}
         </div>
       )}
       {review && <p className={`q13${clamp ? ' clamp' : ''}`}>{quoted(language, review)}</p>}
       {shownTags.length > 0 && <div className="tg13">{shownTags.map((id) => <span key={id}>{t(REVIEW_TAG_LABEL_KEY[id])}</span>)}</div>}
     </DarkCard>
+  );
+}
+
+// The review card's play button: the album from its first song (so the bar
+// can swipe on through it), pause while it plays, and the progress ring
+// around it.
+function ReviewPlay({ title, artist, cover, albumId, tracks }: { title: string; artist: string; cover: string | null; albumId: string; tracks: string[] }) {
+  const { t } = useApp();
+  const { playQueue, currentTrack, playing, toggle } = usePlayer();
+  const isCurrent = currentTrack?.title === title && currentTrack?.albumId === albumId;
+  const list = (tracks.length ? tracks : [title]).map((x) => ({ title: x, artist, cover, albumId }));
+  return (
+    <button
+      className={`pl13${isCurrent && playing ? ' on' : ''}`}
+      onClick={() => (isCurrent ? toggle() : playQueue(list, 0))}
+      aria-label={isCurrent && playing ? t('player.pausePreview') : t('album.playPreviewOf', { title })}
+    >
+      <PlayRing track={{ title, albumId }} />
+      <i className={`ic ${isCurrent && playing ? 'ic-pause' : 'ic-play'}`} />
+    </button>
   );
 }
 

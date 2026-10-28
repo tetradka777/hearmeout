@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { prefetchQueueTrack, usePlayer, type QueueTrack } from '@/lib/PlayerContext';
+import { prefetchQueueTrack, trackKey, usePlayer, type QueueTrack } from '@/lib/PlayerContext';
 import { useApp } from '@/lib/AppContext';
 
 // The 30-second preview control (spec 7.3, 14 #7): a 60px ring, progress
@@ -44,6 +44,7 @@ export function PreviewButton({ tracks, index = 0, size = 60 }: { tracks: QueueT
   return (
     <button
       className={`pvbtn${isPlaying ? ' playing' : ''}`}
+      data-pl={track ? trackKey(track) : undefined}
       style={{ width: size, height: size }}
       onClick={() => (isCurrent ? toggle() : playQueue(tracks, index))}
       // The lookup starts at the touch (or hover), a moment before the click.
@@ -86,7 +87,7 @@ export function PlayRing({ track }: { track: { title: string; albumId?: string |
     return () => cancelAnimationFrame(raf);
   }, [isPlaying, isCurrent, getProgress, progress]);
   return (
-    <svg className="prr15" viewBox="0 0 60 60" aria-hidden="true">
+    <svg className="prr15" viewBox="0 0 60 60" aria-hidden="true" data-pl={trackKey(track)}>
       <circle className="trk" cx="30" cy="30" r={RADIUS} />
       <circle ref={ring} className="prg" cx="30" cy="30" r={RADIUS} strokeDasharray={CIRCUMFERENCE} strokeDashoffset={CIRCUMFERENCE} />
     </svg>
