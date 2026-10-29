@@ -10,18 +10,22 @@ const SPOTIFY_ID = /^[A-Za-z0-9]{22}$/;
 
 type Item = { name: string; id?: string | null };
 
-// One artist's photo, the most certain source first: the Spotify artist by
-// id; else a Deezer artist with exactly this name; else the Spotify artist
-// with exactly this name (Deezer first: a name search costs Spotify quota,
-// which the whole app shares). A merely similar name gives no photo (the
-// avatar shows a letter) rather than someone else's face. Each lookup is
-// cached for 30 days; Spotify over its rate limit just falls through.
-async function photoFor({ name, id }: Item): Promise<string | null> {
+// One artist's photo. With a Spotify id it's that artist's own photo or
+// none: looking the name up instead found same-named strangers (an artist
+// without a Spotify photo got another one's face from Deezer). Spotify not
+// answering (over its rate limit) leaves the photo unknown (undefined), so
+// the browser asks again later rather than keeping a letter. By name only:
+// a Deezer artist with exactly this name and no namesakes, else the one
+// Spotify artist with exactly this name (Deezer first: a name search costs
+// Spotify quota, which the whole app shares). A merely similar name or
+// several namesakes give no photo (a letter) rather than someone else's face.
+async function photoFor({ name, id }: Item): Promise<string | null | undefined> {
   if (id && SPOTIFY_ID.test(id)) {
     try {
-      const photo = await withSpotifyCache(`sp-aphoto:v1:${id}`, 90 * DAY, () => fetchSpotifyArtistPhoto(id));
-      if (photo) return photo;
-    } catch { /* fall through */ }
+      return await withSpotifyCache(`sp-aphoto:v1:${id}`, 90 * DAY, () => fetchSpotifyArtistPhoto(id));
+    } catch {
+      return undefined;
+    }
   }
   try {
     const dz = await deezerArtistByName(name);
@@ -29,7 +33,7 @@ async function photoFor({ name, id }: Item): Promise<string | null> {
     if (dz?.exact && (dz.namesakes ?? 1) <= 1 && dz.photo) return dz.photo;
   } catch { /* fall through */ }
   try {
-    const hit = await withSpotifyCache(`sp-aexact:v1:${name.toLowerCase()}`, 90 * DAY, () => searchSpotifyArtistPhotoExact(name));
+    const hit = await withSpotifyCache(`sp-aexact:v2:${name.toLowerCase()}`, 90 * DAY, () => searchSpotifyArtistPhotoExact(name));
     return hit.photo;
   } catch {
     return null;
@@ -56,7 +60,7 @@ export async function POST(request: NextRequest) {
   }
   if (!items.length) return NextResponse.json({ error: 'missing_names' }, { status: 400 });
 
-  const photos: Record<string, string | null> = {};
+  const photos: Record<string, string | null | undefined> = {};
   // Four at a time: a page of new names shouldn't burst Spotify's rate limit
   // (over it, every Spotify call in the app fails fast until it resets).
   let next = 0;

@@ -253,7 +253,7 @@ const de: Dict = {
   'catalog.fullCatalog': 'gesamtkatalog',
 
   'rate.tagsCount': '{n} von {max}',
-  'album.yourPlays': 'deine Wiedergaben',
+  'album.openIn': 'öffnen in',
   'home.cornerTracks': 'titel',
   'home.cornerArtists': 'künstler',
   'home.rateIt': 'bewerten',
