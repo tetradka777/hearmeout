@@ -259,7 +259,7 @@ const en = {
   'catalog.fullCatalog': 'full catalog',
 
   'rate.tagsCount': '{n} of {max}',
-  'album.yourPlays': 'your plays',
+  'album.openIn': 'open in',
   'home.cornerTracks': 'tracks',
   'home.cornerArtists': 'artists',
   'home.rateIt': 'rate it',

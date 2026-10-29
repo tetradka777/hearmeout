@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { blurStyle } from '@/lib/imageColor';
 import { ArtistName } from '../ui/ArtistName';
@@ -19,7 +19,6 @@ import { AlbumReviews } from '../AlbumReviews';
 import { TrackScoreButton, TrackScoreEditor } from '../TrackScore';
 import { useCachedJson } from '@/lib/cachedJson';
 import type { TrackRatingsResponse } from '@/app/api/track-ratings/route';
-import { useFillHeight } from '@/lib/useFillHeight';
 import { PersonCards, Phrase, TintBox } from '../ui/Visual';
 import { REVIEW_TAG_ORDER, REVIEW_TAG_LABEL_KEY, MAX_REVIEW_TAGS } from '@/lib/reviewTags';
 
@@ -53,6 +52,42 @@ function FriendsWhoRated({ albumId }: { albumId: string }) {
 // ratings, tracklist, community stats and reviews alongside the rating
 // widget itself — there's no click-through from "browse" to "rate". This
 // screen matches that: it's always live, not a form you submit and leave.
+// The switch's sticky bottom: just above the bottom menu (with the player
+// bar in it) or the player bar on a computer — measured, since they come,
+// go and change height — so before the page is scrolled the switch still
+// shows above them.
+function useStickBottom(ref: RefObject<HTMLElement | null>, active: boolean) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!active || !el) return;
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      const dock = document.querySelector<HTMLElement>('.dock24');
+      const bar = document.querySelector<HTMLElement>('#plhost.on');
+      let bottom = window.innerHeight;
+      const dockTop = dock && getComputedStyle(dock).display !== 'contents' ? dock.getBoundingClientRect().top : null;
+      if (dockTop != null && dockTop > 0) bottom = dockTop;
+      else if (bar) bottom = bar.getBoundingClientRect().top;
+      el.style.bottom = `${Math.max(0, Math.round(window.innerHeight - bottom + 8))}px`;
+    };
+    const soon = () => { if (!frame) frame = requestAnimationFrame(measure); };
+    soon();
+    const ro = new ResizeObserver(soon);
+    const dock = document.querySelector('.dock24');
+    if (dock) ro.observe(dock);
+    window.addEventListener('resize', soon);
+    const timer = setInterval(soon, 1000);
+    return () => {
+      ro.disconnect();
+      clearInterval(timer);
+      window.removeEventListener('resize', soon);
+      if (frame) cancelAnimationFrame(frame);
+      el.style.bottom = '';
+    };
+  }, [ref, active]);
+}
+
 export function RateScreen({ device: _device }: { device: Device }) {
   const {
     state, t, albums, liveAlbums, failedAlbumIds, albumRatings, myRatings, spotifyCovers,
@@ -80,10 +115,6 @@ export function RateScreen({ device: _device }: { device: Device }) {
     return scores.length ? { avg: scores.reduce((s, x) => s + x, 0) / scores.length, n: scores.length } : null;
   }, [friendScores, mineStars]);
 
-  // Third stat tile (spec 6.2): your plays of this album.
-  const playIds = a ? [a.id, a.spotifyId].filter(Boolean).join(',') : '';
-  const myPlays = useAlbumJson<{ plays: number }>(playIds && me ? `/api/me/album-plays?ids=${encodeURIComponent(playIds)}` : null)?.plays ?? null;
-
   // Track scores (yours, friends' averages, the best track) and which
   // track's slider is open.
   const trackScores = useCachedJson<TrackRatingsResponse>(state.currentAlbumId && me ? `/api/track-ratings?albumId=${encodeURIComponent(state.currentAlbumId)}` : null);
@@ -91,11 +122,21 @@ export function RateScreen({ device: _device }: { device: Device }) {
   const [sharing, setSharing] = useState(false);
   // Under the album: the rating form or the tracklist.
   const [tab, setTab] = useState<'rate' | 'tracks'>('rate');
-  // Below the rate | tracklist switch the page scrolls on its own; the
-  // album and the switch stay put (useFillHeight).
-  const scroller = useRef<HTMLDivElement>(null);
-  const locked = useFillHeight(scroller, state.activeScreen === 'rate' && !!a);
-  useEffect(() => { scroller.current?.scrollTo(0, 0); }, [tab, state.currentAlbumId]);
+  // The line with the rate | tracklist switch under it sticks to the top
+  // of the screen once the album above has scrolled away (and to the bottom
+  // menu while it's below the fold), so it never leaves the screen. When
+  // it's stuck at the top, switching tabs starts the new tab from its top.
+  const switchRef = useRef<HTMLDivElement>(null);
+  const anchorRef = useRef<HTMLDivElement>(null);
+  useStickBottom(switchRef, state.activeScreen === 'rate' && !!a);
+  const pickTab = (next: 'rate' | 'tracks') => {
+    setTab(next);
+    const el = switchRef.current, anchor = anchorRef.current;
+    if (!el || !anchor) return;
+    const stick = parseFloat(getComputedStyle(el).top) || 0;
+    const natural = anchor.getBoundingClientRect().top + window.scrollY;
+    if (window.scrollY > natural - stick) requestAnimationFrame(() => window.scrollTo({ top: natural - stick }));
+  };
   useEffect(() => { setOpenTrack(null); setTab('rate'); }, [state.currentAlbumId]);
 
   const [text, setText] = useState(state.ratingDraftText);
@@ -190,14 +231,14 @@ export function RateScreen({ device: _device }: { device: Device }) {
   const backdrop = state.activeScreen === 'rate' && cover && typeof document !== 'undefined' && document.querySelector('.rd')
     ? createPortal(<div className="abg17" style={blurStyle(cover, 320)} aria-hidden="true" />, document.querySelector('.rd')!)
     : null;
-  // Spotify's logo after the numbers opens the album there.
+  // "open in" Spotify, at the very end of both tabs.
   const spotifyLink = openSpotifyUrl ? (
-    <a className="spl23" href={openSpotifyUrl} target="_blank" rel="noreferrer" aria-label={t('album.openInSpotify')} title={t('album.openInSpotify')}><SpotifyLogo /></a>
+    <a className="osp24" href={openSpotifyUrl} target="_blank" rel="noreferrer" aria-label={t('album.openInSpotify')}><span>{t('album.openIn')}</span><SpotifyLogo /><b>Spotify</b></a>
   ) : null;
   const shareModal = sharing ? <ShareAlbumModal album={{ id: a.id, title: a.title, artist: a.artist, cover: cover || null }} onClose={() => setSharing(false)} /> : null;
 
   return (
-    <div className={`alp17${locked ? ' lk23' : ''}`}>
+    <div className="alp17">
       {backdrop}
       {shareModal}
       {chips}
@@ -221,28 +262,29 @@ export function RateScreen({ device: _device }: { device: Device }) {
           <button className="ib love" aria-label={t('share.button')} title={t('share.button')} onClick={() => setSharing(true)}><ShareIcon /></button>
         </div>
         {/* Only the numbers there are (no row of dashes on an album nobody rated). */}
-        {(circleAvg || ratingInfo?.count || myPlays || openSpotifyUrl) ? (
-          <Phrase extra={spotifyLink} parts={[
+        {(circleAvg || ratingInfo?.count) ? (
+          <Phrase parts={[
             ...(circleAvg ? [[`★ ${fmt1(circleAvg.avg)}`, t('album.yourCircle')]] as [string, string][] : []),
             ...(ratingInfo?.count ? [[`★ ${fmt1(ratingInfo.avg)}`, t('album.everyoneCount', { n: ratingInfo.count })]] as [string, string][] : []),
-            ...(myPlays ? [[myPlays, t('album.yourPlays')]] as [number, string][] : []),
           ]} />
         ) : null}
       </div>
 
-      <div className="atp23">
+      <div ref={anchorRef} aria-hidden="true" />
+      <div className="atp23" ref={switchRef}>
         <div className="btab14" role="tablist" aria-label={a.title}>
-          <button role="tab" aria-selected={tab === 'rate'} className={tab === 'rate' ? 'on' : ''} onClick={() => setTab('rate')}>{t('album.tabRate')}</button>
-          <button role="tab" aria-selected={tab === 'tracks'} className={tab === 'tracks' ? 'on' : ''} onClick={() => setTab('tracks')}>{t('album.tracklist')}</button>
+          <button role="tab" aria-selected={tab === 'rate'} className={tab === 'rate' ? 'on' : ''} onClick={() => pickTab('rate')}>{t('album.tabRate')}</button>
+          <button role="tab" aria-selected={tab === 'tracks'} className={tab === 'tracks' ? 'on' : ''} onClick={() => pickTab('tracks')}>{t('album.tracklist')}</button>
         </div>
       </div>
 
-      <div className="asc23" ref={scroller}>
+      <div className="asc23">
 
         {tab === 'tracks' ? (
           <TintBox className="tile" picture={cover} fallbackKey={a.id}>
             <p className="muted" style={{ fontWeight: 600, margin: '0 0 8px' }}>{t('album.tracklistHint')}</p>
             <div>{tracklist}</div>
+            {spotifyLink}
           </TintBox>
         ) : (
         <div className="stack">
@@ -296,6 +338,7 @@ export function RateScreen({ device: _device }: { device: Device }) {
             </button>
           </div>
           {val <= 0 && <small className="muted" style={{ fontWeight: 700 }}>{t('rate.pickToPost')}</small>}
+          {spotifyLink}
         </div>
         )}
 

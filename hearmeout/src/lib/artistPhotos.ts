@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react';
 // (/api/deezer/artist-photos), and answers are kept in this browser for two
 // weeks — artist photos are public, so not per account. A failed request
 // isn't remembered: the next view asks again.
-const STORE_KEY = 'hmo-artist-photos-v4';
+const STORE_KEY = 'hmo-artist-photos-v5';
 const TTL_MS = 14 * 86400 * 1000;
 const MAX_KEPT = 2000;
 const BATCH = 40;
@@ -30,7 +30,7 @@ function load(): Record<string, Entry> {
   try {
     store = JSON.parse(localStorage.getItem(STORE_KEY) || '{}') as Record<string, Entry>;
     // Older stores were keyed by name only.
-    for (const old of ['hmo-artist-photos-v1', 'hmo-artist-photos-v2', 'hmo-artist-photos-v3']) localStorage.removeItem(old);
+    for (const old of ['hmo-artist-photos-v1', 'hmo-artist-photos-v2', 'hmo-artist-photos-v3', 'hmo-artist-photos-v4']) localStorage.removeItem(old);
   } catch { store = {}; }
   return store!;
 }

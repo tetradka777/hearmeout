@@ -386,7 +386,10 @@ export async function fetchSpotifyArtistPhoto(id: string): Promise<string | null
 export async function searchSpotifyArtistPhotoExact(name: string): Promise<{ found: boolean; photo: string | null }> {
   const data = await spotifyGet('/search', { q: `artist:${name}`, type: 'artist', limit: '10' });
   const want = name.trim().toLowerCase();
-  const hit = (data.artists?.items || []).find((a: { name: string }) => a.name.toLowerCase() === want) as { images?: { url: string }[] } | undefined;
+  // Several artists with exactly this name: no way to tell which one is
+  // meant, so no photo (a letter) rather than a stranger's face.
+  const exact = (data.artists?.items || []).filter((a: { name: string }) => a.name.toLowerCase() === want) as { images?: { url: string }[] }[];
+  const hit = exact.length === 1 ? exact[0] : undefined;
   return { found: !!hit, photo: hit?.images?.[0]?.url ?? null };
 }
 

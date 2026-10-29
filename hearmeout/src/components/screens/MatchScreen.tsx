@@ -144,6 +144,12 @@ export function MatchScreen(_props: { device: Device }) {
   }
 
   const sharedArt = sharedArtistNames(myStats6m, activeInfo?.stats6m ?? null);
+  // Their Spotify ids, where either of you has them (a photo and a page by
+  // name alone can be a namesake's).
+  const artistIdOf = new Map<string, string>();
+  for (const x of [...(myStats6m?.topArtists ?? []), ...(activeInfo?.stats6m?.topArtists ?? [])]) {
+    if (x.id && !artistIdOf.has(x.name.toLowerCase())) artistIdOf.set(x.name.toLowerCase(), x.id);
+  }
 
   const myScoreByAlbum = new Map(myRatings.map((r) => [r.albumId, r.stars] as const));
   const gaps = (activeInfo?.profile?.recentRatings ?? [])
@@ -246,7 +252,10 @@ export function MatchScreen(_props: { device: Device }) {
 
       {sharedArt.length > 0 ? (
         <Shelf title={t('match.sharedArtistsTitle')}>
-          {sharedArt.slice(0, 12).map((name) => <ArtistShelfCard key={name} name={name} onClick={() => openArtist(name)} />)}
+          {sharedArt.slice(0, 12).map((name) => {
+            const id = artistIdOf.get(name.toLowerCase()) ?? null;
+            return <ArtistShelfCard key={name} name={name} id={id} onClick={() => openArtist(name, id)} />;
+          })}
         </Shelf>
       ) : (
         <div className="sec"><h2>{t('match.sharedArtistsTitle')}</h2><p className="muted" style={{ fontWeight: 600 }}>{t('match.noSharedArtists')}</p></div>
