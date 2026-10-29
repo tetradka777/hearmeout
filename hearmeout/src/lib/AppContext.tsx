@@ -12,7 +12,7 @@ import { laterRemindReady, openLaterReminder } from './laterRemind';
 import { storeAlbums, storedAlbums } from './albumStore';
 import { completedWeekRange } from './weeks';
 import type {
-  Album, AlbumRatingInfo, AppNotification, ArtistState, Device, FeedResponse, FriendRequest, LaterItem, LovedItem, LovedItemType, Me, RatingRecord, RecapData, RecapPeriod, ScreenName, SeasonOption, SpotifyArtistAlbum,
+  Album, AlbumRatingInfo, AppNotification, ArtistState, Device, FeedResponse, FriendRequest, LaterItem, LovedItem, LovedItemType, Me, RatingRecord, RecapData, RecapPeriod, ScreenName, SpotifyArtistAlbum,
 } from './types';
 import type { AlbumDetail } from './spotifyCatalog';
 import { resolveMode, type Design, type Mode, type PaletteId, type TimeFormat, type WeekStart } from './palettes';
@@ -200,7 +200,6 @@ type AppContextValue = {
   setRecapPeriod: (p: RecapPeriod) => void;
   setRecapSeasonKey: (key: string | null) => void;
   setRecapOffset: (o: number) => void;
-  recapSeasons: SeasonOption[] | null;
   setRatingValue: (v: number) => void;
   setRatingDraftText: (t: string) => void;
   publishRating: (albumId: string, stars: number, review: string, tags?: string[], isPrivate?: boolean) => Promise<void>;
@@ -515,6 +514,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
   useEffect(() => { refreshAlbumRatings(); }, [refreshAlbumRatings]);
   useEffect(() => {
+    // The catalogue's covers hardly ever change: a copy under 6 h is kept.
+    const age = jsonAge('/api/spotify/covers');
+    if (age != null && age < 6 * 3600_000 && peekJson('/api/spotify/covers')) return;
     fetch('/api/spotify/covers')
       .then((res) => (res.ok ? res.json() : null))
       .then((d) => { if (d) { storeJson('/api/spotify/covers', d); setSpotifyCovers(d); } })
@@ -588,7 +590,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // invisible until a reload). Drives the "new requests" badge.
   useEffect(() => {
     if (state.authStatus !== 'ready') return;
+    // Coming back to the tab fires both visibilitychange and focus: one
+    // check is enough.
+    let last = 0;
     const refreshInbox = () => {
+      if (Date.now() - last < 5000) return;
+      last = Date.now();
       refreshFriendRequests();
       fetch('/api/notifications').then((r) => (r.ok ? r.json() : null)).then((d) => { if (d) setNotifications(d); }).catch(() => {});
     };
@@ -830,23 +837,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => requestedRecapKeys.current.delete(key));
   }, [me]);
-
-  // Season chips per person, kept for the session: opening the season recap
-  // again (or a refresh of `me`) no longer blanks and reloads them.
-  const [seasonsByUser, setSeasonsByUser] = useState<Record<string, SeasonOption[]>>({});
-  const recapSeasonsTarget = state.recapViewUserId === 'me' ? me?.id : state.recapViewUserId;
-  const recapSeasons = recapSeasonsTarget ? seasonsByUser[recapSeasonsTarget] ?? null : null;
-  useEffect(() => {
-    // Loaded ahead of time (not only once the Season chip is picked).
-    const targetId = recapSeasonsTarget;
-    if (!targetId || seasonsByUser[targetId]) return;
-    let cancelled = false;
-    fetch(`/api/recap/seasons?userId=${targetId}`)
-      .then((res) => (res.ok ? res.json() : { seasons: [] }))
-      .then((data: { seasons: SeasonOption[] }) => { if (!cancelled) setSeasonsByUser((s) => ({ ...s, [targetId]: data.seasons })); })
-      .catch(() => { if (!cancelled) setSeasonsByUser((s) => ({ ...s, [targetId]: [] })); });
-    return () => { cancelled = true; };
-  }, [state.activeScreen, state.recapPeriod, recapSeasonsTarget, seasonsByUser]);
 
   // Posting/saving-privately never navigates away (the prototype's own
   // post/priv click handlers just re-render the same vRate() page in
@@ -1333,14 +1323,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     state, language: state.language, t, albums: ALBUMS, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds,
     myRatings, feed, setFeed, lovedItems, toggleLoved, laterItems, refreshLater, toggleLaterAlbum, toggleLaterTrack, removeLaterItem, removeAllLater, friendRequests, recapCache, recapLocked, reviewsVersion,
     showScreen, viewHistory, goBack, openAlbum, viewFriend, viewGroup, openFanClub, openConcerts, openRecap, closeRecap,
-    setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, setRecapOffset, recapSeasons,
+    setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, setRecapOffset,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, logoutEverywhere, deleteAccount,
     updateProfileName, updateProfileHandle, updateAvatar, updateBanner, updateLanguage, updateRegion, updateRegionAuto, updateOpenProfile, updateAppearance, updatePrivacy, updatePinnedAlbums,
     addFriend, respondToFriendRequest, removeFriend, notifications, markNotificationsRead, sendHi, shareRecapWithFriends, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds,
     myRatings, feed, setFeed, lovedItems, toggleLoved, laterItems, refreshLater, toggleLaterAlbum, toggleLaterTrack, removeLaterItem, removeAllLater, friendRequests, recapCache, recapLocked, reviewsVersion, showScreen, viewHistory, goBack, openAlbum,
-    setRecapSeasonKey, setRecapOffset, recapSeasons,
+    setRecapSeasonKey, setRecapOffset,
     viewFriend, viewGroup, openFanClub, openConcerts, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, logoutEverywhere, deleteAccount,

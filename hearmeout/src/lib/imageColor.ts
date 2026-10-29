@@ -136,8 +136,9 @@ export function tintStyle(color: string | null | undefined): CSSProperties | und
 }
 // Blurred, so a small picture is enough (a 640 px cover is ~125 KB, the
 // 300 px one ~35 KB and usually already loaded for the cover itself).
-// `px`: the on-screen size to pick the picture for.
+// `px`: the on-screen size; under 12–42 px of blur half the resolution
+// looks the same, so the picture is picked for half of it.
 export function blurStyle(url: string | null | undefined, px = 150): CSSProperties | undefined {
-  const src = sizedImage(url, px) ?? url;
+  const src = sizedImage(url, Math.round(px / 2)) ?? url;
   return src ? ({ ['--cvbg' as string]: `url('${src}')` } as CSSProperties) : undefined;
 }

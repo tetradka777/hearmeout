@@ -38,7 +38,7 @@ function WallCell({ it, small }: { it: WallItem; small?: boolean }) {
   return (
     <div className="it ow23">
       <button className="im" onClick={it.onClick} aria-label={it.title} disabled={!it.onClick}>
-        <CoverArt url={it.cover ?? undefined} fallbackLetter={(it.artist || it.title)[0] || '?'} className="cov" px={small ? 150 : 240} />
+        <CoverArt url={it.cover ?? undefined} fallbackLetter={(it.artist || it.title)[0] || '?'} className="cov" px={small ? 120 : 190} />
       </button>
       {it.corner && <span className="cn">{it.corner}</span>}
       <span className="tx">

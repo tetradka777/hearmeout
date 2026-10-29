@@ -1119,6 +1119,7 @@ const es: Dict = {
   'groups.latestTitle': 'lo último en tus grupos',
   'groups.recentRated': '{name} valoró {album} con {stars}',
   'match.gapHint': 'a {h} h de {name}. unos {m} min más al día y terminas la semana en primer lugar.',
+  'match.gapHintH': 'a {h} h de {name}. unas {d} h más al día y terminas la semana en primer lugar.',
   'match.leadHint': 'vas primero, con {h} h de ventaja.',
   'match.bothRatedTitle': 'todo lo que habéis valorado los dos',
   'match.colAlbum': 'álbum',
