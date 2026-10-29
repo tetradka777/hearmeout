@@ -181,7 +181,7 @@ export function AlbumShelfCard({ cover, title, artist, artistId, meta, badge, on
   return (
     <div className="ab23">
       <button className="im" onClick={onClick} aria-label={title}>
-        <CoverArt url={cover ?? undefined} fallbackLetter={artist[0] || '?'} className="cov" px={300} />
+        <CoverArt url={cover ?? undefined} fallbackLetter={artist[0] || '?'} className="cov" px={200} />
       </button>
       <span className="tx">
         {badge && <span className="bg">{badge}</span>}
@@ -203,7 +203,7 @@ export function ArtistShelfCard({ name, id, photo: known, sub, onClick, action }
     <div className="ac23" style={blurStyle(photo)}>
       <div className="apw">
         <button className="ap" onClick={onClick} aria-label={name}>
-          <ArtistAvatar name={name} id={id} photo={photo} size={300} />
+          <ArtistAvatar name={name} id={id} photo={photo} size={200} />
         </button>
         {action && <span className="aa">{action}</span>}
       </div>

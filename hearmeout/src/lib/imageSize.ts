@@ -14,12 +14,12 @@ export function sizedImage(url: string | null | undefined, cssPx: number): strin
   if (spotify) {
     const [, base, prefix, rest] = spotify;
     if ((Object.values(SPOTIFY_ALBUM) as string[]).includes(prefix)) {
-      // 300 px is fine up to ~360 px on screen.
-      const p = target <= 64 ? SPOTIFY_ALBUM[64] : target <= 360 ? SPOTIFY_ALBUM[300] : SPOTIFY_ALBUM[640];
+      // 300 px is fine up to ~210 css px (shelf cards are ≤200).
+      const p = target <= 64 ? SPOTIFY_ALBUM[64] : target <= 420 ? SPOTIFY_ALBUM[300] : SPOTIFY_ALBUM[640];
       return base + p + rest;
     }
     if ((Object.values(SPOTIFY_ARTIST) as string[]).includes(prefix)) {
-      const p = target <= 160 ? SPOTIFY_ARTIST[160] : target <= 320 ? SPOTIFY_ARTIST[320] : SPOTIFY_ARTIST[640];
+      const p = target <= 160 ? SPOTIFY_ARTIST[160] : target <= 420 ? SPOTIFY_ARTIST[320] : SPOTIFY_ARTIST[640];
       return base + p + rest;
     }
     return url;

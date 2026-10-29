@@ -23,22 +23,6 @@ export function parseSeasonKey(key: string): { year: number; season: SeasonName 
   return { year: Number(m[1]), season: m[2] as SeasonName };
 }
 
-// Every season key that overlaps [from, to], most recent first — used to
-// build a real "which seasons actually have your data" picker instead of
-// guessing a fixed list of years.
-export function seasonsInRange(from: Date, to: Date): SeasonOption[] {
-  const options: SeasonOption[] = [];
-  const startYear = from.getUTCFullYear();
-  const endYear = to.getUTCFullYear() + 1;
-  for (let year = endYear; year >= startYear; year--) {
-    for (const season of SEASONS) {
-      const { start, end } = seasonBounds(year, season);
-      if (start <= to && end > from) options.push({ key: seasonKey(year, season), year, season });
-    }
-  }
-  return options.sort((a, b) => seasonBounds(b.year, b.season).start.getTime() - seasonBounds(a.year, a.season).start.getTime());
-}
-
 // The last `n` finished seasons before `now`, most recent first (recaps
 // are made only for those: the last season and the one before).
 export function lastSeasons(now: Date = new Date(), n = 2): SeasonOption[] {

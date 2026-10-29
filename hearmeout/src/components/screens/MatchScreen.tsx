@@ -178,8 +178,16 @@ export function MatchScreen(_props: { device: Device }) {
   const myRank = leaderboard.findIndex((l) => l.id === 'me');
   const leader = leaderboard[0];
   const daysLeft = (() => { const dow = new Date().getDay(); return me.weekStart === 'sun' ? 7 - dow : dow === 0 ? 1 : 8 - dow; })();
+  // From 90 minutes a day on it reads in hours ("224 more minutes" didn't).
+  const gapText = (gap: number, name: string) => {
+    const perDay = (gap * 60) / daysLeft;
+    const h = fmtHours(Math.round(gap * 10) / 10);
+    return perDay >= 90
+      ? t('match.gapHintH', { h, name, d: fmtHours(Math.round((perDay / 60) * 10) / 10) })
+      : t('match.gapHint', { h, name, m: Math.max(1, Math.round(perDay)) });
+  };
   const gapHint = myRank > 0 && leader.hours > 0
-    ? t('match.gapHint', { h: fmtHours(Math.round((leader.hours - leaderboard[myRank].hours) * 10) / 10), name: leader.name, m: Math.max(1, Math.round(((leader.hours - leaderboard[myRank].hours) * 60) / daysLeft)) })
+    ? gapText(leader.hours - leaderboard[myRank].hours, leader.name)
     : myRank === 0 && leaderboard.length > 1 && leader.hours > 0 ? t('match.leadHint', { h: fmtHours(Math.round((leader.hours - leaderboard[1].hours) * 10) / 10) }) : null;
 
   // The albums you both rated: closest scores first ("you agree on"), the

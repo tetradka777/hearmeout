@@ -1119,6 +1119,7 @@ const de: Dict = {
   'groups.latestTitle': 'neues aus deinen Gruppen',
   'groups.recentRated': '{name} hat {album} mit {stars} bewertet',
   'match.gapHint': '{h} Std. hinter {name}. etwa {m} Min. mehr am Tag, und du bist bis Wochenende vorn.',
+  'match.gapHintH': '{h} Std. hinter {name}. etwa {d} Std. mehr am Tag, und du bist bis Wochenende vorn.',
   'match.leadHint': 'du bist vorn, {h} Std. vorsprung.',
   'match.bothRatedTitle': 'alles, was ihr beide bewertet habt',
   'match.colAlbum': 'album',

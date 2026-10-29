@@ -1125,6 +1125,7 @@ const en = {
   'groups.latestTitle': 'latest in your groups',
   'groups.recentRated': '{name} rated {album} {stars}',
   'match.gapHint': '{h}h behind {name}. about {m} more minutes a day gets you first by the end of the week.',
+  'match.gapHintH': '{h}h behind {name}. about {d}h more a day gets you first by the end of the week.',
   'match.leadHint': 'you’re first, {h}h ahead.',
   'match.bothRatedTitle': 'everything you both rated',
   'match.colAlbum': 'album',
