@@ -1400,3 +1400,14 @@ html,body{margin:0}
 .rd .ab23 .tx,.rd .cw15 .it.ow23 .tx{background:none;isolation:isolate;padding-top:12px}
 .rd .ab23 .tx::before,.rd .cw15 .it.ow23 .tx::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);-webkit-mask-image:linear-gradient(transparent,#000 12px);mask-image:linear-gradient(transparent,#000 12px)}
 .rd .ab23 .tx,.rd .cw15 .it.ow23 .tx{text-shadow:0 1px 3px rgba(0,0,0,.55)}
+
+/* The reference reserves only the bottom quarter for the blurred caption. */
+.rd .ab23 .tx::before,.rd .cw15 .it.ow23 .tx::before{content:none}
+.rd .ab23::after,.rd .cw15 .it.ow23::after{content:"";position:absolute;inset:auto 0 0;height:25%;z-index:0;pointer-events:none;-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);-webkit-mask-image:linear-gradient(transparent,#000 7px);mask-image:linear-gradient(transparent,#000 7px)}
+.rd .ab23 .tx,.rd .cw15 .it.ow23 .tx{height:25%;box-sizing:border-box;padding:4px 10px;gap:2px;justify-content:center;z-index:1}
+.rd .ab23 .tt{font-size:14px;line-height:1.15}.rd .cw15 .it.ow23 .tx>b{font-size:13px;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .ab23 .by26,.rd .cw15 .ow23 .by26{gap:5px;align-items:center;line-height:1.15}
+.rd .ab23 .by26>small,.rd .ab23 .by26>.score25,.rd .cw15 .ow23 .by26>small,.rd .cw15 .ow23 .by26>.score25{font-size:11px;line-height:1.15}
+.rd .ab23 .by26>.mt,.rd .cw15 .ow23 .by26>.sb{order:-1;flex:none;max-width:30%;font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .cw15 .ow23 .cn{z-index:2}
+.rd .cw15.sm .it.ow23 .tx{padding:3px 6px}.rd .cw15.sm .it.ow23 .tx>b{font-size:11px}.rd .cw15.sm .ow23 .by26>small,.rd .cw15.sm .ow23 .by26>.score25{font-size:10px}
