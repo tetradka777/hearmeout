@@ -3,12 +3,11 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { blurStyle } from '@/lib/imageColor';
 import { sizedImage } from '@/lib/imageSize';
-import { recapToneStyle } from '@/lib/recapTone';
-import { ArtistName } from '../ui/ArtistName';
+import { ArtistAvatar, ArtistName } from '../ui/ArtistName';
 import { AlbumShelfCard, CardWho, DarkCard, Shelf } from '../ui/SuperCards';
 import { SocialBar } from '../ui/Social';
 import { socialKey } from '@/lib/socialClient';
-import { fmt1, fmtHours } from '@/lib/numberFormat';
+import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { ApiUser, Device, FeedEvent, FeedResponse, PublicProfile, RecapData } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
@@ -70,16 +69,10 @@ function HeroTile({ wide }: { wide: boolean }) {
 
 // ----- Recap card (rev 8): new → one line once opened; too little → says so -----
 
-function recapCovers(r: RecapData, n = 2): string[] {
-  const out: string[] = [];
-  for (const s of r.topSongs) if (s.cover && !out.includes(s.cover)) out.push(s.cover);
-  for (const a of r.topArtists) if (a.cover && !out.includes(a.cover)) out.push(a.cover);
-  return out.slice(0, n);
-}
-
 function RecapCard({ r, week }: { r: RecapData | undefined; week: number }) {
   const { t, openRecap } = useApp();
-  const eyebrow = t('recapTeaser.weekEyebrow', { n: week });
+  const recapWeek = r?.range.start ? isoWeekNumber(new Date(r.range.start)) : week;
+  const eyebrow = t('recapTeaser.weekEyebrow', { n: recapWeek });
   if (r && r.trackCount < RECAP_MIN_TRACKS) {
     return (
       <div className="tile t-soft2 rc empty" role="group" style={{ alignItems: 'flex-start', textAlign: 'left', minHeight: 250, justifyContent: 'center' }}>
@@ -95,41 +88,18 @@ function RecapCard({ r, week }: { r: RecapData | undefined; week: number }) {
       </div>
     );
   }
-  const covers = r ? recapCovers(r) : [];
-  const award = r?.awards[0];
+  const album = r?.topAlbum;
+  const artist = r?.topArtists[0];
+  const song = r?.topSongs[0];
   return (
-    <button className={`tile ${r ? 't-rc' : 't-ink'} rc`} style={recapToneStyle(r)} onClick={() => openRecap('me', 'week')}>
-      <span className="rc-top"><span>{eyebrow}</span>{r && <span className="rc-new"><i aria-hidden="true" />{t('home.rcNew')}</span>}</span>
-      <span className="rc-stage" aria-hidden="true">
-        <span className="rc-covs">
-          {covers.map((c, i) => (
-            <span key={c} className={i === 0 ? 'c1' : 'c2'}><CoverArt url={c} fallbackLetter="?" className="cov" px={116} style={{ width: '100%', aspectRatio: '1' }} /></span>
-          ))}
-        </span>
-        {award && <span className="rc-stat"><small>{t('home.rcStatus')}</small><b>{t(`groups.${award}` as never)}</b></span>}
+    <button className="tile bh15 recap25" style={blurStyle(album?.cover, 400)} onClick={() => openRecap('me', 'week')}>
+      <span className="recap25head"><b>{eyebrow}</b><i className="ic ic-chev" aria-hidden="true" /></span>
+      <span className="recap25images" aria-hidden="true">
+        <CoverArt url={album?.cover ?? undefined} fallbackLetter="?" className="cov" px={120} />
+        {artist ? <ArtistAvatar name={artist.name} id={artist.id} size={100} /> : <span className="aav">?</span>}
+        <CoverArt url={song?.cover ?? undefined} fallbackLetter="?" className="cov" px={120} />
       </span>
-      <span className="rc-nums">
-        <span><b>{r ? `${fmtHours(Math.round(r.minutes / 60))}${t('unit.h')}` : '–'}</b><small>{t('recap.listened')}</small></span>
-        <span><b>{r ? r.newArtists : '–'}</b><small>{t('recap.newArtists')}</small></span>
-        <span><b>{r?.avgScore != null ? fmt1(r.avgScore) : '–'}</b><small>{t('recap.avgScore')}</small></span>
-      </span>
-      <span className="rc-foot"><span className="rc-fr" /><span className="rc-go">{t('recapTeaser.open')} →</span></span>
-    </button>
-  );
-}
-
-function RecapStrip({ r, week }: { r: RecapData; week: number }) {
-  const { t, openRecap } = useApp();
-  const award = r.awards[0];
-  return (
-    <button className="tile t-rc rcstrip" style={recapToneStyle(r)} onClick={() => openRecap('me', 'week')}>
-      <span className="mini">{recapCovers(r, 3).map((c) => <CoverArt key={c} url={c} fallbackLetter="?" className="cov" px={34} style={{ width: 34, aspectRatio: '1' }} />)}</span>
-      <span className="tt">{t('home.rcStripTitle', { n: week })}</span>
-      <span className="mt">
-        {award ? `${t(`groups.${award}` as never)} · ` : ''}{fmtHours(Math.round(r.minutes / 60))}{t('unit.h')} · <span className="x">{r.newArtists} {t('recap.newArtists')} · </span>{r.avgScore != null ? `${fmt1(r.avgScore)} ${t('recap.avgScore')}` : ''}
-      </span>
-      <span className="go">{t('home.rcOpenAgain')}</span>
-      <i className="ic ic-chev go13" aria-hidden="true" />
+      <span className="recap25count">{r ? r.trackCount : '–'} {t('recap.tracksL')}</span>
     </button>
   );
 }
@@ -355,11 +325,10 @@ function TrendingSection() {
   if (!known.length) return null;
   return (
     <Shelf title={t('home.trendingTitle')}>
-      {known.map(({ id, album }, i) => {
+      {known.map(({ id, album }) => {
         const x = list.find((y) => y.albumId === id)!;
         return (
-          <AlbumShelfCard key={id} cover={spotifyCovers[album.id] || album.cover} title={album.title} artist={album.artist} artistId={album.artistId}
-            badge={`#${i + 1}`} meta={`★ ${fmt1(x.avg)} · ${t('home.trendingFriends', { n: x.count })}`} onClick={() => openAlbum(album.id)} />
+          <AlbumShelfCard key={id} cover={spotifyCovers[album.id] || album.cover} title={album.title} artist={album.artist} artistId={album.artistId} meta={`★ ${fmt1(x.avg)} · ${t('home.trendingFriends', { n: x.count })}`} onClick={() => openAlbum(album.id)} />
         );
       })}
     </Shelf>
@@ -451,7 +420,7 @@ export function HomeScreen(_props: { device: Device }) {
         <HeroTile wide={seen} />
         {!seen && <RecapCard r={r} week={week} />}
       </div>
-      {seen && r && <RecapStrip r={r} week={week} />}
+      {seen && r && <RecapCard r={r} week={week} />}
       {yearRecapOpen() && <YearCard />}
       <StreakLine />
 

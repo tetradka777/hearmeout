@@ -44,7 +44,7 @@ export function PopularNowSection({ genre }: { genre?: string }) {
   }
   return (
     <Shelf title={t('catalog.popularNow')} onMore={more} done={done}>
-      {items.map((a, i) => {
+      {items.map((a) => {
         const community = a.spotifyId ? albumRatings[a.spotifyId] : undefined;
         return (
           <AlbumShelfCard
@@ -52,7 +52,6 @@ export function PopularNowSection({ genre }: { genre?: string }) {
             cover={a.cover}
             title={a.title}
             artist={a.artist}
-            badge={`#${i + 1}`}
             meta={community ? `★ ${fmt1(community.avg)} · ${t('groups.ratingsN', { n: community.count })}` : undefined}
             onClick={() => open(a)}
           />

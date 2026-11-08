@@ -8,7 +8,7 @@ export type RankRow = { id: string; name: string; avatarUrl: string | null; amou
 // your colour and the number — the leaderboards on the taste match, group
 // and fan club pages (.tl23 in rev15.css). A row opens that person, except
 // your own.
-export function RankRows({ rows, onOpen, label }: { rows: RankRow[]; onOpen?: (id: string) => void; label?: string }) {
+export function RankRows({ rows, onOpen, label, exactBars = false }: { rows: RankRow[]; onOpen?: (id: string) => void; label?: string; exactBars?: boolean }) {
   const max = Math.max(0, ...rows.map((r) => r.amount));
   return (
     <ol className="tl23" aria-label={label}>
@@ -19,7 +19,7 @@ export function RankRows({ rows, onOpen, label }: { rows: RankRow[]; onOpen?: (i
             <span className="avt" style={{ ...userAvatarStyle(r), backgroundSize: 'cover' }}>{!r.avatarUrl && r.name[0]?.toUpperCase()}</span>
             <span className="g">
               <b>{r.name}</b>
-              <i style={{ width: `${max ? Math.max(4, Math.round((r.amount / max) * 100)) : 4}%` }} />
+              <i style={{ width: `${exactBars ? (max ? r.amount / max * 100 : 0) : max ? Math.max(4, Math.round((r.amount / max) * 100)) : 4}%` }} />
             </span>
             <span className="v">{r.value}</span>
           </button>

@@ -41,6 +41,7 @@ export type RecapTrackRef = { title: string; artist: string; albumId: string | n
 export type RecapGenreShare = { genre: string; pct: number };
 
 export type RecapData = {
+  topAlbum?: { albumId: string; cover: string | null; plays: number } | null;
   topArtists: RecapArtistRef[];
   topSongs: RecapTrackRef[];
   topGenres: RecapGenreShare[];

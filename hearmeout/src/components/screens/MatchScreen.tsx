@@ -5,7 +5,6 @@ import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { ApiUser, Device, DiscoverMatchPerson, PublicProfile, StatsData } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
-import { blurStyle } from '@/lib/imageColor';
 import { computeMatch } from '@/lib/matchScore';
 import { cachedJson, peekJson, useCachedJson } from '@/lib/cachedJson';
 import { sharedArtists } from '@/lib/sharedArtists';
@@ -23,7 +22,6 @@ type FriendInfo = RawInfo & { score: number | null };
 const EMPTY_INFO: RawInfo = { profile: null, stats6m: null, weekHours: null };
 
 const sharedArtistNames = sharedArtists;
-const RING = 2 * Math.PI * 33;
 
 // countUp() in reference/app.js: the hero percentage counts up to its value
 // over 450ms (ease-out cubic), replayed whenever the value changes or the
@@ -50,12 +48,9 @@ function useCountUp(target: number | null, replayKey: unknown): number | null {
   return shown;
 }
 
-// Taste match: your friends as ringed faces (the ring is the match) pick
-// one comparison — the two of you over a picture with the % and its line
-// over time, shelves of the albums you agree and disagree on, the artists
-// you share as photo cards, the week's leaderboard over the leader's photo,
-// and people you might match with. All numbers are real (computeMatch,
-// shared ratings, /api/stats).
+// Taste match: compact friend picker, pair summary, shared artist photos,
+// album comparisons and the weekly listening leaderboard. Existing data
+// sources and calculations remain computeMatch, shared ratings and /api/stats.
 
 export function MatchScreen(_props: { device: Device }) {
   const { t, language, me, state, myRatings, albums, liveAlbums, spotifyCovers, openAlbum, viewFriend, showScreen, addFriend, friendRequests } = useApp();
@@ -156,14 +151,6 @@ export function MatchScreen(_props: { device: Device }) {
     .filter((r) => myScoreByAlbum.has(r.albumId))
     .map((r) => ({ albumId: r.albumId, mine: myScoreByAlbum.get(r.albumId)!, theirs: r.stars }))
     .sort((a, b) => Math.abs(b.mine - b.theirs) - Math.abs(a.mine - a.theirs));
-  const gapAlbum = gaps[0] ? liveAlbums[gaps[0].albumId] || albums.find((x) => x.id === gaps[0].albumId) : undefined;
-  const gapCover = gapAlbum ? spotifyCovers[gapAlbum.id] || gapAlbum.cover || null : null;
-
-  // The hero's picture: the friend's photo, else the newest album you both rated.
-  const bothNewest = (activeInfo?.profile?.recentRatings ?? []).find((r) => myScoreByAlbum.has(r.albumId));
-  const bothAlbum = bothNewest ? liveAlbums[bothNewest.albumId] || albums.find((x) => x.id === bothNewest.albumId) : undefined;
-  const heroPicture = active?.avatarUrl || (bothAlbum ? spotifyCovers[bothAlbum.id] || bothAlbum.cover || null : null) || gapCover;
-
   const trendDelta = history && history.length >= 2 ? Math.round(history[history.length - 1].pct - history[0].pct) : null;
   const trendDate = history && history.length >= 2
     ? new Date(history[0].date).toLocaleDateString(toLocale(language), { month: 'long' })
@@ -196,7 +183,6 @@ export function MatchScreen(_props: { device: Device }) {
   const disagree = gaps.filter((g) => Math.abs(g.mine - g.theirs) >= 1);
   const albumCard = (g: { albumId: string; mine: number; theirs: number }) => {
     const a = liveAlbums[g.albumId] || albums.find((x) => x.id === g.albumId);
-    const d = Math.abs(g.mine - g.theirs);
     return (
       <AlbumShelfCard
         key={g.albumId}
@@ -204,13 +190,12 @@ export function MatchScreen(_props: { device: Device }) {
         title={a?.title ?? '…'}
         artist={a?.artist ?? ''}
         artistId={a?.artistId}
-        badge={d <= 0.05 ? '=' : `±${fmt1(d)}`}
         meta={<span className="sc24"><b>{t('friend.you')} {fmt1(g.mine)}</b><b>{active?.name} {fmt1(g.theirs)}</b></span>}
         onClick={() => openAlbum(g.albumId)}
       />
     );
   };
-  const leaderUser = leaderboard[0]?.user ?? null;
+
 
   return (
     <>
@@ -218,13 +203,12 @@ export function MatchScreen(_props: { device: Device }) {
       <h1 className="big">{t('match.title')}</h1>
 
       {/* Your friends as round faces, each ringed by how close your taste is. */}
-      <div className="hrow fp24" role="tablist" aria-label={t('match.title')}>
+      <div className="hrow fp24 friendpick25" role="tablist" aria-label={t('match.title')}>
         {ranked.map((f) => {
           const score = info[f.id]?.score ?? null;
           return (
             <button key={f.id} role="tab" aria-selected={f.id === activeId} className={f.id === activeId ? 'on' : ''} onClick={() => setSelectedId(f.id)}>
               <span className="rg">
-                <svg viewBox="0 0 72 72" aria-hidden="true"><circle className="tr" cx="36" cy="36" r="33" /><circle className="pg" cx="36" cy="36" r="33" strokeDasharray={RING} strokeDashoffset={RING * (1 - (score ?? 0) / 100)} /></svg>
                 <span className="avt" style={{ ...userAvatarStyle(f), backgroundSize: 'cover' }}>{!f.avatarUrl && f.name[0]?.toUpperCase()}</span>
               </span>
               <b>{f.name}</b>
@@ -235,31 +219,17 @@ export function MatchScreen(_props: { device: Device }) {
       </div>
 
       {/* The two of you over a picture: both faces, the %, how it moved. */}
-      <div className={`tile bh15 mh24${heroPicture ? '' : ' np'}`} style={blurStyle(heroPicture, 300)}>
-        <div className="duo">
-          {[me, active].map((u, i) => u && <span key={i} className="avt" style={{ ...userAvatarStyle(u), backgroundSize: 'cover' }}>{!u.avatarUrl && u.name[0]?.toUpperCase()}</span>)}
-        </div>
-        <p className="who">{t('match.youAndName', { name: active?.name ?? '' })}</p>
-        <div className="pc"><span className="num">{shownPct ?? '–'}</span>{shownPct != null && <span className="num ps">%</span>}</div>
-        <p className="sm">{t('match.tasteMatchSummary', { count: sharedArt.length })}</p>
-        {history && history.length >= 2 && <Sparkline points={history.map((h) => h.pct)} />}
-        {trendDelta != null && trendDelta !== 0 && (
-          <span className="pill">{t(trendDelta > 0 ? 'match.pctUpSince' : 'match.pctDownSince', { delta: Math.abs(trendDelta), date: trendDate })}</span>
-        )}
-        <div className="acts">
-          <button className="btn" onClick={() => active && viewFriend(active.id)}>{t('match.viewProfile', { name: active?.name ?? '' })}</button>
-        </div>
+      <div className="tile t-paper match25">
+        <div className="match25head"><h2>{t('match.youAndName', { name: active?.name ?? '' })}</h2><button className="btn ghost" onClick={() => active && viewFriend(active.id)}>{t('match.viewProfile', { name: active?.name ?? '' })}<i className="ic ic-chev" /></button></div>
+        <div className="duo">{[me, active].map((u, i) => u && <span key={i} className="avt" style={{ ...userAvatarStyle(u), backgroundSize: 'cover' }}>{!u.avatarUrl && u.name[0]?.toUpperCase()}</span>)}</div>
+        <div className="match25numbers"><div><b className="num">{shownPct ?? '–'}{shownPct != null && '%'}</b><span>{t('match.title')}</span></div><div><b>{sharedArt.length}</b><span>{t('match.sharedArtistsTitle')}</span>
+          {trendDelta != null && trendDelta !== 0 && <small className="pill">{t(trendDelta >= 0 ? 'match.pctUpSince' : 'match.pctDownSince', { delta: Math.abs(trendDelta), date: trendDate })}</small>}
+        </div></div>
+        <div className="match25meter" role="meter" aria-label={t('match.title')} aria-valuemin={0} aria-valuemax={100} aria-valuenow={shownPct ?? undefined}><i style={{ width: `${shownPct ?? 0}%` }} /><span>{shownPct != null ? `${shownPct} / 100` : '–'}</span></div>
       </div>
 
-      {agree.length > 0 && <Shelf title={t('match.agreeTitle')}>{agree.slice(0, 12).map(albumCard)}</Shelf>}
-      {disagree.length > 0
-        ? <Shelf title={t('match.whereYouDisagree')}>{disagree.slice(0, 12).map(albumCard)}</Shelf>
-        : !agree.length && (
-          <div className="sec"><h2>{t('match.whereYouDisagree')}</h2><p className="muted" style={{ fontWeight: 600 }}>{t('match.notEnoughForGaps')}</p></div>
-        )}
-
       {sharedArt.length > 0 ? (
-        <Shelf title={t('match.sharedArtistsTitle')}>
+        <Shelf className="shared25" title={`${t('match.sharedArtistsTitle')} ${sharedArt.length}`}>
           {sharedArt.slice(0, 12).map((name) => {
             const id = artistIdOf.get(name.toLowerCase()) ?? null;
             return <ArtistShelfCard key={name} name={name} id={id} onClick={() => openArtist(name, id)} />;
@@ -269,11 +239,19 @@ export function MatchScreen(_props: { device: Device }) {
         <div className="sec"><h2>{t('match.sharedArtistsTitle')}</h2><p className="muted" style={{ fontWeight: 600 }}>{t('match.noSharedArtists')}</p></div>
       )}
 
-      {/* The week's listening, over the leader's photo. */}
+      {agree.length > 0 && <Shelf title={t('match.agreeTitle')}>{agree.slice(0, 12).map(albumCard)}</Shelf>}
+      {disagree.length > 0
+        ? <Shelf title={t('match.whereYouDisagree')}>{disagree.slice(0, 12).map(albumCard)}</Shelf>
+        : !agree.length && (
+          <div className="sec"><h2>{t('match.whereYouDisagree')}</h2><p className="muted" style={{ fontWeight: 600 }}>{t('match.notEnoughForGaps')}</p><button className="btn ghost" onClick={() => showScreen('catalog')}>{t('nav.discover')}<i className="ic ic-chev" /></button></div>
+        )}
+
+
+      {/* The week's listening, with exact bar lengths including zero. */}
       <div className="sec">
-        <div className={`tile bh15 lb24${leaderUser?.avatarUrl ? '' : ' np'}`} style={blurStyle(leaderUser?.avatarUrl ?? null, 300)}>
+        <div className="tile t-ink lb24 leaderboard25">
           <h2>{t('match.weeklyLeaderboard')}</h2>
-          <RankRows
+          <RankRows exactBars
             label={t('match.weeklyLeaderboard')}
             rows={leaderboard.slice(0, 5).map((l) => ({ id: l.id, name: l.name, avatarUrl: l.user?.avatarUrl ?? null, amount: l.hours, value: `${fmtHours(l.hours)}${t('unit.h')}`, you: l.id === 'me' }))}
             onOpen={viewFriend}
@@ -295,17 +273,5 @@ export function MatchScreen(_props: { device: Device }) {
         </div>
       )}
     </>
-  );
-}
-
-// The match over time as one line (the snapshots, oldest to newest).
-function Sparkline({ points }: { points: number[] }) {
-  const min = Math.min(...points), max = Math.max(...points);
-  const span = Math.max(1, max - min);
-  const d = points.map((p, i) => `${(i / (points.length - 1)) * 100},${28 - ((p - min) / span) * 24}`).join(' ');
-  return (
-    <svg className="sp24" viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true">
-      <polyline points={d} vectorEffect="non-scaling-stroke" />
-    </svg>
   );
 }

@@ -7,9 +7,10 @@ import { ArtistAvatar, ArtistName, useOpenArtist } from '../ui/ArtistName';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { Device, StatsCalendarDay, StatsData, StatsPeriodType, StatsSeasonKey } from '@/lib/types';
+import { AlbumShelfCard } from '../ui/SuperCards';
+import { PreviewButton } from '../redesign/PreviewButton';
 import { CoverArt } from '../ui/CoverArt';
 import { BookmarkIcon, HeartIcon } from '../ui/Icons';
-import { usePlayer } from '@/lib/PlayerContext';
 import type { AlbumDetail } from '@/lib/spotifyCatalog';
 import { toLocale, quoted, type Language } from '@/lib/i18n';
 import type { WeekStart } from '@/lib/palettes';
@@ -90,8 +91,9 @@ function ListeningCalendar({ data, t, language, weekStart }: { data: StatsData; 
   const dayBtn = (d: StatsCalendarDay, cls: string, inner: React.ReactNode) => (
     <button
       key={d.date}
-      className={`cd ${cls} l${level(d.minutes)}${d.date === todayKey ? ' today' : ''}${selected === d.date ? ' sel' : ''}`}
+      className={`cd ${cls} l${level(d.minutes)}${d.date === todayKey ? ' today' : ''}${readoutDay?.date === d.date ? ' sel' : ''}`}
       onClick={() => setSelected(d.date)}
+      aria-pressed={readoutDay?.date === d.date}
       aria-label={`${dayLabel(parseDay(d.date))}: ${d.minutes ? durLong(d.minutes, t) : t('stats.calNoListening')}`}
     >
       {inner}
@@ -142,15 +144,11 @@ function ListeningCalendar({ data, t, language, weekStart }: { data: StatsData; 
   }
 
   return (
-    <div className="tile t-c2 s3 cal11">
+    <div className="tile t-ink s3 cal11 calendar25">
       <h2>{t('stats.calendarTitle')}</h2>
-      <p className="muted" style={{ margin: '-6px 0 18px', fontWeight: 600 }}>{t('stats.calendarHelp')}</p>
+      <span className="calendar25period">{data.periodLabel}</span>
       <div className="cal" ref={calRef}>
-        <Phrase parts={[
-          [`${calendar.activeDays} / ${calendar.totalDays}`, t('stats.calDaysListened')],
-          ...(calendar.longestStreak > 0 ? [[calendar.longestStreak, t('stats.calLongestStreak')]] as [number, string][] : []),
-          ...(calendar.bestDay && calendar.bestDay.minutes > 0 ? [[durLong(calendar.bestDay.minutes, t), `${t('stats.calBestDay')} · ${dayLabel(parseDay(calendar.bestDay.date))}`]] as [string, string][] : []),
-        ]} />
+        <p className="calendar25summary">{calendar.activeDays} / {calendar.totalDays} {t('stats.calDaysListened')} · {calendar.longestStreak} {t('stats.calLongestStreak')}</p>
         <div className="calscroll" ref={scrollRef} data-w={gridW} data-max={gridMax}>{gridEl}</div>
         <div className="calread" aria-live="polite">
           {readoutDay ? (
@@ -174,8 +172,8 @@ function ListeningCalendar({ data, t, language, weekStart }: { data: StatsData; 
 
 export function StatsScreen(_props: { device: Device }) {
   const { t, language, me, lovedItems, toggleLoved, openRecap, ensureRecap, recapCache, laterItems, toggleLaterTrack, showToast, myRatings, openAlbum } = useApp();
-  const { playQueue } = usePlayer();
   const openArtist = useOpenArtist();
+  const [showAllRecent, setShowAllRecent] = useState(false);
   const [savingRow, setSavingRow] = useState<number | null>(null);
 
   // Listen later from Recently played (spec 13.20): a track bookmark needs
@@ -282,7 +280,7 @@ export function StatsScreen(_props: { device: Device }) {
   const word = t(periodType === 'season' ? 'stats.wordSeason' : periodType === 'month' ? 'stats.wordMonth' : 'stats.wordWeek');
   const tf = me.timeFormat ?? '24';
   const peak = data?.peakHour != null ? formatHour(data.peakHour, tf) : '–';
-  const GENRE_SHADE = [100, 70, 46, 28, 18, 10];
+  const GENRE_SHADE = [100, 80, 60, 40, 25, 10];
   const barsAxis = (() => {
     if (!data || !data.bars.length || !data.calendar.days.length) return null;
     const loc = toLocale(language);
@@ -355,7 +353,7 @@ export function StatsScreen(_props: { device: Device }) {
               </div>
             </div>
 
-            <ListeningCalendar data={data} t={t} language={language} weekStart={me.weekStart ?? 'mon'} />
+
 
             {/* Top artists as photos: the first big, the next four in a row. */}
             <div className={`tile tar13${data.topArtists[0]?.cover ? ' bh15' : ' t-c3'}`} style={blurStyle(data.topArtists[0]?.cover)}>
@@ -389,37 +387,13 @@ export function StatsScreen(_props: { device: Device }) {
               })() : <p className="muted" style={{ fontWeight: 600 }}>{t('stats.notEnough')}</p>}
             </div>
 
-            <div className="tile t-c5 s2">
-              <div className="hd10"><div><h2 style={{ margin: 0 }}>{t('stats.topAlbums')}</h2></div></div>
-              {data.topAlbums?.length ? (
-                <div className="alg13">
-                  {data.topAlbums.map((a, i) => {
-                    const mine = myRatings.find((r) => r.albumId === a.albumId)?.stars;
-                    return (
-                      <button key={a.albumId} onClick={() => openAlbum(a.albumId)}>
-                        <div className="cvw">
-                          <CoverArt url={a.cover ?? undefined} fallbackLetter={a.artist[0] || '?'} className="cov" px={160} style={{ width: '100%', aspectRatio: '1' }} />
-                          <span className="rkb13">{i + 1}</span>
-                          <span className="hr13">{fmtHours(a.hours)}{t('unit.h')}</span>
-                          {mine != null && <span className="sc13">{fmt1(mine)}</span>}
-                        </div>
-                        <b>{a.title}</b>
-                        <small className="muted"><ArtistName name={a.artist} albumId={a.albumId} size={16} /></small>
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : <p className="muted" style={{ fontWeight: 600 }}>{t('stats.notEnough')}</p>}
-            </div>
-
             {/* Time of day and genres in one tile. */}
-            <div className="tile t-c6">
-              <h2>{t('stats.whenYouListen')}</h2>
+            <div className="tile t-ink listening25">
+              <div className="listening25head"><h2>{t('stats.whenYouListen')}</h2>{data.peakHour != null && <span className="pill">{t('stats.peakHour')} · {peak}</span>}</div>
               <div className="tod" role="img" aria-label={t('stats.todAria', { hour: peak })}>
-                {data.heatmap.map((n, h) => <i key={h} className={h === data.peakHour ? 'pk' : ''} style={{ height: `${Math.max(4, Math.round((n / maxHeat) * 100))}%` }} title={formatHour(h, tf)} />)}
+                {data.heatmap.map((n, h) => <i key={h} className={h === data.peakHour ? 'pk' : ''} style={{ height: `${n ? Math.max(4, Math.round((n / maxHeat) * 100)) : 0}%` }} title={formatHour(h, tf)} />)}
               </div>
               <div className="todax" aria-hidden="true">{[0, 6, 12, 18, 23].map((h) => <span key={h}>{formatHour(h, tf)}</span>)}</div>
-              {data.peakHour != null && <p className="muted" style={{ margin: '6px 0 0', fontWeight: 700 }}>{t('stats.peakSentencePre')} <b>{peak}</b>.</p>}
               {data.genreSplit.length > 0 && (
                 <>
                   <h2 style={{ marginTop: 22 }}>{t('stats.genreSplit')}</h2>
@@ -430,29 +404,28 @@ export function StatsScreen(_props: { device: Device }) {
                   </div>
                   <div className="glegend">
                     {data.genreSplit.map((g, i) => (
-                      <span key={g.genre}><i style={{ background: `color-mix(in srgb, var(--acct) ${GENRE_SHADE[i] ?? 10}%, var(--paper))` }} />{g.genre} <b>{g.pct}%</b></span>
+                      <span key={g.genre}><i style={{ background: `color-mix(in srgb, var(--acct) ${GENRE_SHADE[i] ?? 10}%, var(--paper))` }} />{g.genre === 'other' ? t('stats.genreOther') : g.genre} <b>{g.pct}%</b></span>
                     ))}
                   </div>
                 </>
               )}
             </div>
 
-            <div className="tile t-c4 s2">
-              <h2>{t('stats.recentPlays')}</h2>
+            <div className="tile bh15 recent25 s2" style={blurStyle(data.recentPlays.find((p) => p.cover)?.cover, 400)}>
+              <div className="recent25head"><h2>{t('stats.recentPlays')}</h2>{data.recentPlays.length > 3 && <button className="btn ghost" aria-expanded={showAllRecent} onClick={() => setShowAllRecent((v) => !v)}>{t(showAllRecent ? 'stats.recentShowLess' : 'stats.recentViewAll')}</button>}</div>
               {data.recentPlays.length ? (
-                <div className="hrow rp13">
-                  {data.recentPlays.slice(0, 8).map((p, i) => {
+                <div className="recent25list">
+                  {data.recentPlays.slice(0, showAllRecent ? 8 : 3).map((p, i) => {
                     const loved = lovedItems.some((li) => li.type === 'track' && li.title === p.title && li.artist === p.artist);
                     const later = laterItems.some((li) => li.type === 'track' && li.title === p.title && li.artist === p.artist);
                     return (
-                      <div className="rp13c" key={i}>
-                        <button className="play13" onClick={() => playQueue([{ title: p.title, artist: p.artist, cover: p.cover, albumId: p.albumId }], 0)} aria-label={t('album.playPreviewOf', { title: p.title })}>
-                          <CoverArt url={p.cover ?? undefined} fallbackLetter={p.artist[0] || '?'} className="cov" px={150} style={{ width: '100%', aspectRatio: '1' }} />
-                          <span className="pi13" aria-hidden="true"><i className="ic ic-play" /></span>
-                        </button>
+                      <div className="recent25row" key={i}>
+                        <CoverArt url={p.cover ?? undefined} fallbackLetter={p.artist[0] || '?'} className="cov" px={56} style={{ width: 42, height: 42 }} />
+                        <span className="recent25info">
                         <b>{p.title}</b>
                         <small className="muted" style={{ fontWeight: 600 }}><ArtistName name={p.artist} albumId={p.albumId} size={16} /></small>
-                        <small className="muted" style={{ fontWeight: 700, fontSize: 12 }}>{formatRelative(p.playedAt, language)}</small>
+                        </span><time dateTime={p.playedAt}>{formatRelative(p.playedAt, language)}</time>
+                        <PreviewButton tracks={[{ title: p.title, artist: p.artist, cover: p.cover, albumId: p.albumId }]} size={30} />
                         <span className="acts13">
                           <button className={`ib love${loved ? ' on' : ''}`} aria-pressed={loved} onClick={() => toggleLoved('track', p.title, p.artist, p.trackId, p.cover)} aria-label={loved ? t('album.removeFromLoved') : t('album.addToLoved')}>
                             <HeartIcon />
@@ -467,6 +440,22 @@ export function StatsScreen(_props: { device: Device }) {
                 </div>
               ) : <p className="muted" style={{ fontWeight: 600 }}>{t('stats.notEnough')}</p>}
             </div>
+            <section className="topalbums25 s2">
+              <div className="hd10"><div><h2 style={{ margin: 0 }}>{t('stats.topAlbums')}</h2></div></div>
+              {data.topAlbums?.length ? (
+                <div className="albums25grid">
+                  {data.topAlbums.slice(0, 4).map((a) => {
+                    const mine = myRatings.find((r) => r.albumId === a.albumId)?.stars;
+                    return <AlbumShelfCard key={a.albumId} cover={a.cover} title={a.title} artist={a.artist} albumId={a.albumId}
+                      meta={<>{fmtHours(a.hours)}{t('unit.h')}{mine != null && <> · <i className="ic ic-star" aria-hidden="true" /> {fmt1(mine)}</>}</>}
+                      onClick={() => openAlbum(a.albumId)} />;
+                  })}
+                </div>
+              ) : <p className="muted" style={{ fontWeight: 600 }}>{t('stats.notEnough')}</p>}
+            </section>
+
+
+            <ListeningCalendar data={data} t={t} language={language} weekStart={me.weekStart ?? 'mon'} />
           </div>
 
           <div className="sec">

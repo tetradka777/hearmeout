@@ -1,3 +1,4 @@
+import { leadingAlbum } from '@/lib/designMetrics';
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
@@ -170,7 +171,7 @@ export async function GET(request: NextRequest) {
   const avgScore = visibleRatings.length ? Math.round((visibleRatings.reduce((s, r) => s + Number(r.stars), 0) / visibleRatings.length) * 10) / 10 : null;
 
   const recap: RecapData = {
-    topArtists, topSongs, topGenres, minutes, uniqueArtists, trackCount: rows.length,
+    topAlbum: leadingAlbum(rows), topArtists, topSongs, topGenres, minutes, uniqueArtists, trackCount: rows.length,
     newArtists, avgScore, awards, range: labelRange, daily,
   };
   if (RECAP_MEMO.size > 500) for (const [k, v] of RECAP_MEMO) if (Date.now() - v.at > MEMO_TTL_MS) RECAP_MEMO.delete(k);
