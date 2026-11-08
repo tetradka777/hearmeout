@@ -1,3 +1,4 @@
+import { percentageShares } from '@/lib/designMetrics';
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId } from '@/lib/identity';
@@ -244,11 +245,12 @@ export async function GET(request: NextRequest) {
 
   const genreCounts = new Map<string, number>();
   for (const r of inRange) if (r.genre) genreCounts.set(r.genre, (genreCounts.get(r.genre) || 0) + 1);
-  const totalGenre = [...genreCounts.values()].reduce((s, n) => s + n, 0);
-  const genreSplit = [...genreCounts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 4)
-    .map(([genre, n]) => ({ genre, pct: totalGenre ? Math.round((n / totalGenre) * 100) : 0 }));
+  const sortedGenres = [...genreCounts.entries()].sort((a, b) => b[1] - a[1]);
+  const genreGroups = sortedGenres.slice(0, 4);
+  const other = sortedGenres.slice(4).reduce((sum, [, n]) => sum + n, 0);
+  if (other) genreGroups.push(['other', other]);
+  const shares = percentageShares(genreGroups.map(([, n]) => n));
+  const genreSplit = genreGroups.map(([genre], i) => ({ genre, pct: shares[i] }));
 
   // Per-day aggregation for the calendar and the "hours per day/week" bars.
   const byDay = new Map<string, { ms: number; tracks: number; artistMs: Map<string, number> }>();

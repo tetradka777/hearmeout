@@ -173,20 +173,19 @@ export function Shelf({ title, sub, right, top, children, onMore, done = true, c
   );
 }
 
-export function AlbumShelfCard({ cover, title, artist, artistId, meta, badge, onClick }: {
-  cover?: string | null; title: string; artist: string; artistId?: string | null; meta?: ReactNode; badge?: ReactNode; onClick: () => void;
+export function AlbumShelfCard({ cover, title, artist, artistId, albumId, meta, badge, onClick }: {
+  cover?: string | null; title: string; artist: string; artistId?: string | null; albumId?: string | null; meta?: ReactNode; badge?: ReactNode; onClick: () => void;
 }) {
-  // The cover is the card: the title and artist sit on its lower part over a
-  // dark fade, the place (#1) in a small pill above them.
+  // The cover is the card; all metadata stays in its lower text zone.
   return (
     <div className="ab23">
       <button className="im" onClick={onClick} aria-label={title}>
         <CoverArt url={cover ?? undefined} fallbackLetter={artist[0] || '?'} className="cov" px={200} />
       </button>
       <span className="tx">
-        {badge && <span className="bg">{badge}</span>}
-        <button className="tt" onClick={onClick}>{title}</button>
-        <small><ArtistName name={artist} id={artistId} size={16} /></small>
+        <button className="tt" onClick={onClick}><span>{title}</span></button>
+        <small><ArtistName name={artist} id={artistId} albumId={albumId} size={16} /></small>
+        {badge != null && <small className="score25">{typeof badge === 'string' && /^\d+([.,]\d+)?$/.test(badge) && <i className="ic ic-star" aria-hidden="true" />}{badge}</small>}
         {meta && <small className="mt">{meta}</small>}
       </span>
     </div>

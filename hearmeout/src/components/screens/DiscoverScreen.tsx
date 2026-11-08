@@ -180,14 +180,13 @@ function TopRatedShelf({ genre }: { genre: string }) {
   }
   return (
     <Shelf title={t('catalog.topRated')} onMore={() => setLimit((n) => n + TOP_STEP)} done={done}>
-      {list.map(({ id, a }, i) => (
+      {list.map(({ id, a }) => (
         <AlbumShelfCard
           key={id}
           cover={spotifyCovers[a.id] || a.cover}
           title={a.title}
           artist={a.artist}
           artistId={a.artistId}
-          badge={`#${i + 1}`}
           meta={`★ ${fmt1(albumRatings[id].avg)} · ${t('groups.ratingsN', { n: albumRatings[id].count })}`}
           onClick={() => openAlbum(a.id)}
         />
