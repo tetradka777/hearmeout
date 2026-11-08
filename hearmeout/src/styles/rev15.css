@@ -1426,3 +1426,8 @@ html,body{margin:0}
 
 /* Softer caption blur; keep the approved edge, height and shade. */
 .rd .ab23::after,.rd .cw15 .it.ow23::after{-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+
+/* Approved caption height; retain the existing blur, shade and sharp edge. */
+.rd .ab23::after,.rd .cw15 .it.ow23::after,.rd .ab23 .tx,.rd .cw15 .it.ow23 .tx{height:27%}
+
+.rd .cw15 .it.ow23 .tx{padding-block:4px;gap:3px}.rd .cw15.sm .it.ow23 .tx{padding-block:3px;gap:1px}
