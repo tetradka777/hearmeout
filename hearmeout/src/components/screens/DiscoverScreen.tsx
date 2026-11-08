@@ -187,7 +187,7 @@ function TopRatedShelf({ genre }: { genre: string }) {
           title={a.title}
           artist={a.artist}
           artistId={a.artistId}
-          meta={`★ ${fmt1(albumRatings[id].avg)} · ${t('groups.ratingsN', { n: albumRatings[id].count })}`}
+          score={albumRatings[id].avg}
           onClick={() => openAlbum(a.id)}
         />
       ))}

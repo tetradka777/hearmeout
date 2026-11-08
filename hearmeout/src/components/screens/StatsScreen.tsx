@@ -447,7 +447,7 @@ export function StatsScreen(_props: { device: Device }) {
                   {data.topAlbums.slice(0, 4).map((a) => {
                     const mine = myRatings.find((r) => r.albumId === a.albumId)?.stars;
                     return <AlbumShelfCard key={a.albumId} cover={a.cover} title={a.title} artist={a.artist} albumId={a.albumId}
-                      meta={<>{fmtHours(a.hours)}{t('unit.h')}{mine != null && <> · <i className="ic ic-star" aria-hidden="true" /> {fmt1(mine)}</>}</>}
+                      score={mine} meta={`${fmtHours(a.hours)}${t('unit.h')}`}
                       onClick={() => openAlbum(a.albumId)} />;
                   })}
                 </div>

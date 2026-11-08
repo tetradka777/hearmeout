@@ -43,8 +43,10 @@ function WallCell({ it, small }: { it: WallItem; small?: boolean }) {
       {it.corner && <span className="cn">{it.corner}</span>}
       <span className="tx">
         <b>{it.title}</b>
-        {it.artist && <small><ArtistName name={it.artist} id={it.artistId} size={14} /></small>}
-        {it.badge != null && <small className="score25">{typeof it.badge === 'string' && /^\d+([.,]\d+)?$/.test(it.badge) && <i className="ic ic-star" aria-hidden="true" />}{it.badge}</small>}
+        <span className="by26">
+          {it.artist && <small><ArtistName name={it.artist} id={it.artistId} noAvatar /></small>}
+          {it.badge != null && <small className="score25">{typeof it.badge === 'string' && /^\d+([.,]\d+)?$/.test(it.badge) && <i className="ic ic-star" aria-hidden="true" />}{it.badge}</small>}
+        </span>
         {it.sub && <small className="sb">{it.sub}</small>}
       </span>
     </div>

@@ -173,8 +173,8 @@ export function Shelf({ title, sub, right, top, children, onMore, done = true, c
   );
 }
 
-export function AlbumShelfCard({ cover, title, artist, artistId, albumId, meta, badge, onClick }: {
-  cover?: string | null; title: string; artist: string; artistId?: string | null; albumId?: string | null; meta?: ReactNode; badge?: ReactNode; onClick: () => void;
+export function AlbumShelfCard({ cover, title, artist, artistId, albumId, meta, badge, score, onClick }: {
+  cover?: string | null; title: string; artist: string; artistId?: string | null; albumId?: string | null; meta?: ReactNode; badge?: ReactNode; score?: number | null; onClick: () => void;
 }) {
   // The cover is the card; all metadata stays in its lower text zone.
   return (
@@ -184,8 +184,10 @@ export function AlbumShelfCard({ cover, title, artist, artistId, albumId, meta, 
       </button>
       <span className="tx">
         <button className="tt" onClick={onClick}><span>{title}</span></button>
-        <small><ArtistName name={artist} id={artistId} albumId={albumId} size={16} /></small>
-        {badge != null && <small className="score25">{typeof badge === 'string' && /^\d+([.,]\d+)?$/.test(badge) && <i className="ic ic-star" aria-hidden="true" />}{badge}</small>}
+        <span className="by26">
+          <small><ArtistName name={artist} id={artistId} albumId={albumId} noAvatar /></small>
+          {(score != null || badge != null) && <small className="score25">{(score != null || (typeof badge === 'string' && /^\d+([.,]\d+)?$/.test(badge))) && <i className="ic ic-star" aria-hidden="true" />}{score != null ? fmt1(score) : badge}</small>}
+        </span>
         {meta && <small className="mt">{meta}</small>}
       </span>
     </div>
