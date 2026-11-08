@@ -328,7 +328,7 @@ function TrendingSection() {
       {known.map(({ id, album }) => {
         const x = list.find((y) => y.albumId === id)!;
         return (
-          <AlbumShelfCard key={id} cover={spotifyCovers[album.id] || album.cover} title={album.title} artist={album.artist} artistId={album.artistId} meta={`★ ${fmt1(x.avg)} · ${t('home.trendingFriends', { n: x.count })}`} onClick={() => openAlbum(album.id)} />
+          <AlbumShelfCard key={id} cover={spotifyCovers[album.id] || album.cover} title={album.title} artist={album.artist} artistId={album.artistId} score={x.avg} meta={t('home.trendingFriends', { n: x.count })} onClick={() => openAlbum(album.id)} />
         );
       })}
     </Shelf>

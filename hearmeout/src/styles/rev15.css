@@ -1385,3 +1385,12 @@ html,body{margin:0}
 .rd .calendar25 .cd.sel{border-radius:6px}.rd .calendar25 .cd.cw.sel{border-radius:13px}
 
 .rd .listening25head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}.rd .listening25head h2{margin:0}.rd .listening25head .pill{background:var(--light25);color:var(--ink);font-size:10px;white-space:nowrap;padding:4px 8px}.rd .calendar25 .calscroll{padding:4px;margin:-4px}.rd .calendar25 .calread .d::after{content:" · ";white-space:pre}
+
+/* Album cards: title, artist left, real score right. */
+.rd .ab23 .by26,.rd .cw15 .ow23 .by26{display:flex;align-items:baseline;justify-content:space-between;gap:8px;min-width:0;width:100%}
+.rd .ab23 .by26>small:first-child,.rd .cw15 .ow23 .by26>small:first-child{flex:1;min-width:0;overflow:hidden}
+.rd .ab23 .by26>.score25,.rd .cw15 .ow23 .by26>.score25{flex:none;white-space:nowrap;display:flex;align-items:center;gap:3px;color:var(--cream);font-weight:800}
+.rd .ab23 .tx,.rd .cw15 .it.ow23 .tx{padding-top:16px;gap:4px}
+.rd .ab23 .tt{font-size:16px;line-height:1.2}.rd .ab23 .tt>span{-webkit-line-clamp:1}
+.rd .ab23 .by26 .arl,.rd .cw15 .ow23 .by26 .arl{max-width:100%;min-width:0;display:block}.rd .ab23 .by26 .arn,.rd .cw15 .ow23 .by26 .arn{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .ab23{border-radius:18px}.rd .ab23 .by26>small{font-size:13px}.rd .ab23 .by26 .score25{font-size:13px}

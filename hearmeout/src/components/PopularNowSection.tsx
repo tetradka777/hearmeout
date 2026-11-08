@@ -2,7 +2,6 @@
 
 import { useApp } from '@/lib/AppContext';
 import { cachedJson, cachedPage } from '@/lib/cachedJson';
-import { fmt1 } from '@/lib/numberFormat';
 import { usePaged } from '@/lib/usePaged';
 import type { ChartAlbum, ChartAlbumLite } from '@/lib/appleCharts';
 import { AlbumShelfCard, Shelf } from './ui/SuperCards';
@@ -52,7 +51,7 @@ export function PopularNowSection({ genre }: { genre?: string }) {
             cover={a.cover}
             title={a.title}
             artist={a.artist}
-            meta={community ? `★ ${fmt1(community.avg)} · ${t('groups.ratingsN', { n: community.count })}` : undefined}
+            score={community?.avg}
             onClick={() => open(a)}
           />
         );
