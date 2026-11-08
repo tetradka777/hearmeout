@@ -1431,3 +1431,10 @@ html,body{margin:0}
 .rd .ab23::after,.rd .cw15 .it.ow23::after,.rd .ab23 .tx,.rd .cw15 .it.ow23 .tx{height:27%}
 
 .rd .cw15 .it.ow23 .tx{padding-block:4px;gap:3px}.rd .cw15.sm .it.ow23 .tx{padding-block:3px;gap:1px}
+
+/* Friend portraits: defocus the actual photo underneath the caption;
+   keep the soft photographic transition and avoid a heavy black footer. */
+.rd .friend25 .friend25text{padding:18px 14px 12px;gap:5px}
+.rd .friend25 .nm{font-size:22px;line-height:1.1}
+.rd .friend25text::before{background:none;filter:none;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);-webkit-mask-image:linear-gradient(transparent,#000 32%);mask-image:linear-gradient(transparent,#000 32%)}
+.rd .friend25text::after{background:linear-gradient(transparent,rgba(14,12,11,.12) 35%,rgba(14,12,11,.28))}
