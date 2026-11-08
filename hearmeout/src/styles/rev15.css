@@ -1411,3 +1411,11 @@ html,body{margin:0}
 .rd .ab23 .by26>.mt,.rd .cw15 .ow23 .by26>.sb{order:-1;flex:none;max-width:30%;font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rd .cw15 .ow23 .cn{z-index:2}
 .rd .cw15.sm .it.ow23 .tx{padding:3px 6px}.rd .cw15.sm .it.ow23 .tx>b{font-size:11px}.rd .cw15.sm .ow23 .by26>small,.rd .cw15.sm .ow23 .by26>.score25{font-size:10px}
+
+/* Final reference: a blurred, shaded caption in exactly the bottom 30%. */
+.rd .ab23::after,.rd .cw15 .it.ow23::after{height:30%;background:rgba(14,12,11,.52);-webkit-mask-image:linear-gradient(transparent,#000 7px);mask-image:linear-gradient(transparent,#000 7px)}
+.rd .ab23 .tx,.rd .cw15 .it.ow23 .tx{height:30%;padding:6px 10px;gap:4px}
+.rd .ab23 .tt{font-size:16px;line-height:1.2}.rd .cw15 .it.ow23 .tx>b{font-size:14px;line-height:1.2}
+.rd .ab23 .by26>small,.rd .ab23 .by26>.score25,.rd .cw15 .ow23 .by26>small,.rd .cw15 .ow23 .by26>.score25{font-size:13px;line-height:1.15}
+.rd .ab23 .by26>.mt,.rd .cw15 .ow23 .by26>.sb{font-size:9px}
+.rd .cw15.sm .it.ow23 .tx{padding:4px 6px;gap:2px}.rd .cw15.sm .it.ow23 .tx>b{font-size:11px}.rd .cw15.sm .ow23 .by26>small,.rd .cw15.sm .ow23 .by26>.score25{font-size:10px}
