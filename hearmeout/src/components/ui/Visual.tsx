@@ -46,8 +46,8 @@ function WallCell({ it, small }: { it: WallItem; small?: boolean }) {
         <span className="by26">
           {it.artist && <small><ArtistName name={it.artist} id={it.artistId} noAvatar /></small>}
           {it.badge != null && <small className="score25">{typeof it.badge === 'string' && /^\d+([.,]\d+)?$/.test(it.badge) && <i className="ic ic-star" aria-hidden="true" />}{it.badge}</small>}
+          {it.sub && <small className="sb">{it.sub}</small>}
         </span>
-        {it.sub && <small className="sb">{it.sub}</small>}
       </span>
     </div>
   );

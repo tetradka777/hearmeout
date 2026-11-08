@@ -187,8 +187,8 @@ export function AlbumShelfCard({ cover, title, artist, artistId, albumId, meta, 
         <span className="by26">
           <small><ArtistName name={artist} id={artistId} albumId={albumId} noAvatar /></small>
           {(score != null || badge != null) && <small className="score25">{(score != null || (typeof badge === 'string' && /^\d+([.,]\d+)?$/.test(badge))) && <i className="ic ic-star" aria-hidden="true" />}{score != null ? fmt1(score) : badge}</small>}
+          {meta && <small className="mt">{meta}</small>}
         </span>
-        {meta && <small className="mt">{meta}</small>}
       </span>
     </div>
   );
