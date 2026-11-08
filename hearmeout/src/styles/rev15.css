@@ -1394,3 +1394,9 @@ html,body{margin:0}
 .rd .ab23 .tt{font-size:16px;line-height:1.2}.rd .ab23 .tt>span{-webkit-line-clamp:1}
 .rd .ab23 .by26 .arl,.rd .cw15 .ow23 .by26 .arl{max-width:100%;min-width:0;display:block}.rd .ab23 .by26 .arn,.rd .cw15 .ow23 .by26 .arn{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rd .ab23{border-radius:18px}.rd .ab23 .by26>small{font-size:13px}.rd .ab23 .by26 .score25{font-size:13px}
+
+/* Album text rests on the actual cover blurred locally, without a tint.
+   The cover above this strip keeps its original sharpness and brightness. */
+.rd .ab23 .tx,.rd .cw15 .it.ow23 .tx{background:none;isolation:isolate;padding-top:12px}
+.rd .ab23 .tx::before,.rd .cw15 .it.ow23 .tx::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);-webkit-mask-image:linear-gradient(transparent,#000 12px);mask-image:linear-gradient(transparent,#000 12px)}
+.rd .ab23 .tx,.rd .cw15 .it.ow23 .tx{text-shadow:0 1px 3px rgba(0,0,0,.55)}
