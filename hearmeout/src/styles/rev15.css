@@ -1423,3 +1423,6 @@ html,body{margin:0}
 /* Reference caption: a hard horizontal edge, cover colour visible through
    a lighter shade. Blur and shade remain confined to the bottom 30%. */
 .rd .ab23::after,.rd .cw15 .it.ow23::after{background:rgba(14,12,11,.28);-webkit-mask-image:none;mask-image:none}
+
+/* Softer caption blur; keep the approved edge, height and shade. */
+.rd .ab23::after,.rd .cw15 .it.ow23::after{-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
