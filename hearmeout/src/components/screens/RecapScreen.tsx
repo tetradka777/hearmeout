@@ -1,4 +1,5 @@
 'use client';
+import { Initial } from '../ui/Initial';
 
 import { useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
@@ -250,7 +251,7 @@ export function RecapScreen(_props: { device: Device }) {
               vibe, three numbers, genres, top artists and songs, by day, awards. */}
           <section className="rsh13" style={recapToneStyle(r)} aria-label={isMe ? t(`recap.titleMe.${period}` as TranslationKey) : t(`recap.titleOf.${period}` as TranslationKey, { name })}>
             <header className="rh">
-              <span className="avt" style={{ ...userAvatarStyle({ avatarUrl }), backgroundSize: 'cover' }}>{!avatarUrl && name[0]?.toUpperCase()}</span>
+              <span className="avt" style={{ ...userAvatarStyle({ avatarUrl }), backgroundSize: 'cover' }}>{!avatarUrl && <Initial name={name} />}</span>
               <div className="g"><b>{name}</b><small>{period === 'week' ? `${t('recap.weekPill', { n: weekNumber(offset) })} · ` : ''}{range}</small></div>
               {song && (
                 <button
@@ -353,7 +354,7 @@ export function RecapScreen(_props: { device: Device }) {
                   return (
                     <div className={`tile rcf13 ${fr && fr.trackCount ? 't-rc' : 't-ink'}`} style={fr && fr.trackCount ? recapToneStyle(fr) : undefined} key={f.id}>
                       <button className="rh" onClick={() => openRecap(f.id)}>
-                        <span className="avt" style={{ ...userAvatarStyle(f), backgroundSize: 'cover' }}>{!f.avatarUrl && f.name[0]?.toUpperCase()}</span>
+                        <span className="avt" style={{ ...userAvatarStyle(f), backgroundSize: 'cover' }}>{!f.avatarUrl && <Initial name={f.name} />}</span>
                         <span className="g"><b>{f.name}</b><small>{range}</small></span>
                         {fr && fr.minutes > 0 && <span className="mp">{num(fr.minutes)} <small>{t('recap.minShort')}</small></span>}
                       </button>
@@ -383,7 +384,7 @@ export function RecapScreen(_props: { device: Device }) {
               <button className="tile t-soft2 nx13" onClick={() => openRecap(nextFriend.id)}>
                 <span className="k">{t('recap.upNext')}</span>
                 <span className="rh">
-                  <span className="dot" style={{ ...userAvatarStyle(nextFriend), backgroundSize: 'cover' }}>{!nextFriend.avatarUrl && nextFriend.name[0]?.toUpperCase()}</span>
+                  <span className="dot" style={{ ...userAvatarStyle(nextFriend), backgroundSize: 'cover' }}>{!nextFriend.avatarUrl && <Initial name={nextFriend.name} />}</span>
                   <b>{nextFriend.name}</b>
                   <span className="ar">→</span>
                 </span>

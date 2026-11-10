@@ -1,4 +1,5 @@
 'use client';
+import { Initial } from './ui/Initial';
 
 import type { ReactNode } from 'react';
 import { useApp } from '@/lib/AppContext';
@@ -81,7 +82,7 @@ function AccountAside() {
   return (
     <>
       <div className="tile t-ink glow aside9" style={{ textAlign: 'left' }}>
-        <span className="avt lgA" style={userAvatarStyle(me)}>{!me.avatarUrl && me.name[0]?.toUpperCase()}</span>
+        <span className="avt lgA" style={userAvatarStyle(me)}>{!me.avatarUrl && <Initial name={me.name} />}</span>
         <h2 style={{ margin: '12px 0 0' }}>{me.name}</h2>
         <p className="muted" style={{ fontWeight: 700 }}>@{me.handle.replace(/^@/, '')}{me.joinedAt ? ` · ${t('settings.joined', { date: sinceLabel(me.joinedAt, language) })}` : ''}</p>
         <div className="s3x">
@@ -137,7 +138,7 @@ function PrivacyAside() {
       <div className="tile t-soft2 aside9">
         <small className="k9 muted">{t('settings.livePreview')}</small>
         <h3 style={{ margin: '2px 0 4px' }}>{t('settings.strangerSees')}</h3>
-        <div className="mini9"><span className="avt" style={userAvatarStyle(me)}>{!me.avatarUrl && me.name[0]?.toUpperCase()}</span><div><b>{me.name}</b><small className="muted">@{me.handle.replace(/^@/, '')}</small></div></div>
+        <div className="mini9"><span className="avt" style={userAvatarStyle(me)}>{!me.avatarUrl && <Initial name={me.name} />}</span><div><b>{me.name}</b><small className="muted">@{me.handle.replace(/^@/, '')}</small></div></div>
         <Row icon={priv ? 'lock' : 'eye'} title={t('settings.pvProfile')} sub={priv ? t('settings.pvNameOnly') : t('settings.pvOpen')} tag={priv ? t('settings.pvHidden') : t('settings.pvVisible')} on={!priv} />
         <Row icon={me.publicReviews ? 'eye' : 'lock'} title={t('settings.pvReviews')} sub={me.publicReviews ? t('settings.pvAnyone') : t('settings.pvFriendsOnly')} tag={me.publicReviews ? t('settings.pvPublic') : t('settings.pvFriends')} on={me.publicReviews} />
         <Row icon={me.discoverable ? 'eye' : 'lock'} title={t('settings.pvSearch')} sub={me.discoverable ? t('settings.pvFindable') : t('settings.pvNotListed')} tag={me.discoverable ? t('settings.pvListed') : t('settings.pvHidden')} on={me.discoverable} />

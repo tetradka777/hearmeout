@@ -1,4 +1,5 @@
 'use client';
+import { Initial } from './Initial';
 
 import { Children, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { useApp } from '@/lib/AppContext';
@@ -66,7 +67,7 @@ export function CardWho({ user, when, onClick }: { user: Person | Person[]; when
     <>
       <span className="avs">
         {people.slice(0, 2).map((p, i) => (
-          <span key={p.id ?? i} className="dot" style={{ ...userAvatarStyle(p), backgroundSize: 'cover' }}>{!p.avatarUrl && p.name[0]?.toUpperCase()}</span>
+          <span key={p.id ?? i} className="dot" style={{ ...userAvatarStyle(p), backgroundSize: 'cover' }}>{!p.avatarUrl && <Initial name={p.name} />}</span>
         ))}
       </span>
       <span className="g"><b>{people.map((p) => p.name).join(' · ')}</b><small className="wp">{when}</small></span>

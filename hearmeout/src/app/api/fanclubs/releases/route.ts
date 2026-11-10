@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUserId } from '@/lib/identity';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { peekSpotifyCache, withSpotifyCache } from '@/lib/spotifyCache';
+import { withSpotifyCache } from '@/lib/spotifyCache';
 import { releaseNameKey } from '@/lib/format';
-import { deezerArtistIdForName, deezerReleasesById, type DeezerArtist } from '@/lib/deezerServer';
+import { deezerArtistIdForName, deezerReleasesById } from '@/lib/deezerServer';
 
 export type FanClubRelease = { artist: string; artistId: string; title: string; date: string; cover: string | null };
 
@@ -22,7 +22,7 @@ export async function GET() {
   // Keyed by the set of clubs: joining one shows its releases at once, and
   // people in the same clubs share the answer.
   const key = follows.map((f) => f.artist_id as string).sort().join(',');
-  const items = await withSpotifyCache(`fc-releases:v3:${key}`, 3600, async () => {
+  const items = await withSpotifyCache(`fc-releases:v4:${key}`, 3600, async () => {
     const today = new Date().toISOString().slice(0, 10);
     const out: FanClubRelease[] = [];
     const seen = new Set<string>();
@@ -30,8 +30,7 @@ export async function GET() {
       const name = f.artist_name as string;
       const spotifyId = f.artist_id as string;
       try {
-        const confirmed = await peekSpotifyCache<DeezerArtist | null>(`dz-artist-for:v1:${spotifyId}`);
-        const dzId = confirmed?.id ?? await deezerArtistIdForName(name);
+        const dzId = await deezerArtistIdForName(name, spotifyId);
         if (!dzId) continue;
         let n = 0;
         for (const r of await deezerReleasesById(dzId)) {

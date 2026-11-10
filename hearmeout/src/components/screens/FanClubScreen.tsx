@@ -1,4 +1,5 @@
 'use client';
+import { Initial } from '../ui/Initial';
 
 import { useState } from 'react';
 import { useApp } from '@/lib/AppContext';
@@ -103,7 +104,7 @@ export function FanClubScreen(_props: { device: Device }) {
                 <div className="mg23">
                   {shown.map((m) => (
                     <button key={m.id} onClick={() => openMember(m)} disabled={m.id === me?.id}>
-                      <span className="avt" style={userAvatarStyle(m)}>{!m.avatarUrl && m.name[0]?.toUpperCase()}</span>
+                      <span className="avt" style={userAvatarStyle(m)}>{!m.avatarUrl && <Initial name={m.name} />}</span>
                       <b>{m.id === me?.id ? t('fanclub.you') : m.name}</b>
                       {m.friend && <small>{t('fanclub.friendTag')}</small>}
                     </button>

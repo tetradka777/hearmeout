@@ -1,4 +1,5 @@
 'use client';
+import { Initial } from './ui/Initial';
 
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -75,7 +76,7 @@ export function ShareAlbumModal({ album, onClose }: {
                 const on = picked.includes(f.id);
                 return (
                   <button key={f.id} className={on ? 'on' : ''} aria-pressed={on} onClick={() => toggle(f.id)}>
-                    <span className="dot" style={{ ...userAvatarStyle(f), backgroundSize: 'cover' }}>{!f.avatarUrl && f.name[0]?.toUpperCase()}</span>
+                    <span className="dot" style={{ ...userAvatarStyle(f), backgroundSize: 'cover' }}>{!f.avatarUrl && <Initial name={f.name} />}</span>
                     <small>{f.name}</small>
                     {on && <i className="ic ic-check" aria-hidden="true" />}
                   </button>

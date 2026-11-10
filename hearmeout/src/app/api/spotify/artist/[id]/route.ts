@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentUserId } from '@/lib/identity';
 import { RateLimitError, upstreamErrorResponse } from '@/lib/upstreamError';
 import { fetchSpotifyArtistDetail, fetchArtistAlbumsSplit, type ArtistDetail, type SpotifyArtistAlbumRef } from '@/lib/spotifyCatalog';
-import { deezerArtistFor, deezerGenresById } from '@/lib/deezerServer';
+import { cachedDeezerArtistForSpotify, deezerArtistFor, deezerGenresById } from '@/lib/deezerServer';
 import { peekSpotifyCache, withSpotifyCache } from '@/lib/spotifyCache';
 
 type CachedArtist = { artist: ArtistDetail | null; released: SpotifyArtistAlbumRef[]; upcoming: SpotifyArtistAlbumRef[] };
@@ -15,12 +15,12 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   // ?cached=1: a prefetch (pointer over a link) — only what the server has
   // already, never a Spotify request; 204 when there's nothing.
   if (new URL(request.url).searchParams.get('cached') === '1') {
-    const hit = await peekSpotifyCache<CachedArtist>(`artist:v3:${id}`);
+    const hit = await peekSpotifyCache<CachedArtist>(`artist:v4:${id}`);
     if (!hit?.artist) return new NextResponse(null, { status: 204 });
     return NextResponse.json({ ...hit.artist, releasedAlbums: hit.released, upcomingAlbums: hit.upcoming });
   }
   try {
-    const result = await withSpotifyCache<CachedArtist>(`artist:v3:${id}`, 86400, async () => {
+    const result = await withSpotifyCache<CachedArtist>(`artist:v4:${id}`, 86400, async () => {
       // The albums first (cached): the artist detail compares them with Deezer.
       const albums = await withSpotifyCache(`artistalbums:v1:${id}`, 86400, () => fetchArtistAlbumsSplit(id));
       const artist = await fetchSpotifyArtistDetail(id);
@@ -37,13 +37,15 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     // it, else the one the page already shows), without the album list.
     // Not cached, so the full page comes back once Spotify answers again.
     if (err instanceof RateLimitError) {
-      const name = (await peekSpotifyCache<string>(`artist-name:v1:${id}`)) || new URL(request.url).searchParams.get('name')?.slice(0, 200);
+      const raw = await peekSpotifyCache<{ name: string } | null>(`sp-artist-raw:v1:${id}`);
+      const canonicalName = raw?.name || await peekSpotifyCache<string>(`artist-name:v1:${id}`);
+      const confirmed = await cachedDeezerArtistForSpotify(id);
+      const name = canonicalName || confirmed?.name || new URL(request.url).searchParams.get('name')?.slice(0, 200);
       if (name) {
-        // Deezer's artist only when it's surely this one (deezerArtistFor):
-        // compared with whatever album list is cached, else a unique name.
+        // Query-string names are labels, never evidence for an id mapping.
         const albums = (await peekSpotifyCache<{ released: SpotifyArtistAlbumRef[] }>(`artistalbums:v1:${id}`))?.released
           || (await peekSpotifyCache<CachedArtist>(`artist:v2:${id}`))?.released || [];
-        const dz = await deezerArtistFor(id, name, albums.map((al) => al.title)).catch(() => null);
+        const dz = confirmed || (canonicalName ? await deezerArtistFor(id, canonicalName, albums.map((al) => al.title)).catch(() => null) : null);
         const genres = dz ? await deezerGenresById(dz.id).catch(() => [] as string[]) : [];
         return NextResponse.json({ id, name, photo: dz?.photo ?? null, genres, fans: dz?.fans ?? null, releasedAlbums: [], upcomingAlbums: [], limited: true });
       }

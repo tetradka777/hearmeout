@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from 'react';
+import { normalizeArtistName } from '@/lib/artistIdentity';
 import { useApp } from '@/lib/AppContext';
 import { useArtistPhoto } from '@/lib/artistPhotos';
 import { sizedImage } from '@/lib/imageSize';
@@ -69,8 +70,7 @@ export function ArtistName({ name, id: givenId, albumId, size = 18, className = 
   const openArtist = useOpenArtist();
   const { t, albums, liveAlbums } = useApp();
   const album = !givenId && albumId ? liveAlbums[albumId] || albums.find((a) => a.id === albumId || a.spotifyId === albumId) : undefined;
-  const sameName = (x: string) => x.trim().toLowerCase() === name.split(',')[0].trim().toLowerCase();
-  const id = givenId || (album?.artistId && album.artist.split(',').map((x) => x.trim()).some(sameName) ? album.artistId : null);
+  const id = givenId || (album?.artistId && normalizeArtistName(album.artist) === normalizeArtistName(name) ? album.artistId : null);
   if (!name) return null;
   const go = (e: MouseEvent | KeyboardEvent) => {
     e.stopPropagation();

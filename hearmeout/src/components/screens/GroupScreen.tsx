@@ -1,4 +1,5 @@
 'use client';
+import { Initial } from '../ui/Initial';
 
 import { useEffect, useState } from 'react';
 import { fmt1 } from '@/lib/numberFormat';
@@ -94,7 +95,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
   const voteMonth = new Date(`${detail.vote.monthKey}-01T12:00:00`);
   const voteEnd = new Date(voteMonth.getFullYear(), voteMonth.getMonth() + 1, 0);
   const openMember = (id: string) => { if (id !== me.id) viewFriend(id); };
-  const Av = ({ u }: { u: { name: string; avatarUrl: string | null } }) => <span className="dot" style={userAvatarStyle(u)}>{!u.avatarUrl && u.name[0]}</span>;
+  const Av = ({ u }: { u: { name: string; avatarUrl: string | null } }) => <span className="dot" style={userAvatarStyle(u)}>{!u.avatarUrl && <Initial name={u.name} />}</span>;
 
   const heroCovers = detail.topAlbums.slice(0, 3);
   // The page's top card over its best album's cover, blurred.
@@ -129,7 +130,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
             <h1>{detail.name}</h1>
             <span className="avs">
               {detail.members.slice(0, 6).map((m) => (
-                <button key={m.id} aria-label={m.name} onClick={() => openMember(m.id)}><span className="avt" style={{ ...userAvatarStyle(m), backgroundSize: 'cover' }}>{!m.avatarUrl && m.name[0]?.toUpperCase()}</span></button>
+                <button key={m.id} aria-label={m.name} onClick={() => openMember(m.id)}><span className="avt" style={{ ...userAvatarStyle(m), backgroundSize: 'cover' }}>{!m.avatarUrl && <Initial name={m.name} />}</span></button>
               ))}
               {detail.members.length > 6 && <span className="avt more">+{detail.members.length - 6}</span>}
             </span>

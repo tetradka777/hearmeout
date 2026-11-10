@@ -1438,3 +1438,50 @@ html,body{margin:0}
 .rd .friend25 .nm{font-size:22px;line-height:1.1}
 .rd .friend25text::before{background:none;filter:none;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);-webkit-mask-image:linear-gradient(transparent,#000 32%);mask-image:linear-gradient(transparent,#000 32%)}
 .rd .friend25text::after{background:linear-gradient(transparent,rgba(14,12,11,.12) 35%,rgba(14,12,11,.28))}
+
+/* Content pass: album captions must fit the actual card, not the viewport.
+   Preserve the agreed 27% strip and reuse it on friends at the same strength. */
+.rd .ab23::after,.rd .cw15 .it.ow23::after{--album-blur28:6px;-webkit-backdrop-filter:blur(var(--album-blur28));backdrop-filter:blur(var(--album-blur28))}
+.rd .friend25text::before{-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.rd .recap25::before{filter:blur(10px) saturate(1.15)}
+.rd .recap28discovery{font-size:13px;line-height:1.35;font-weight:600;color:var(--cream)}
+.rd .davatar28{display:block;width:70%;height:70%;flex:none;margin:auto}
+.rd .initial25 .davatar28{width:42%;height:65%;opacity:.9}
+.rd .ab23,.rd .cw15 .it.ow23{container-type:inline-size}
+.rd .ab23 .tx,.rd .cw15 .it.ow23 .tx{padding:clamp(3px,2.3cqw,6px) clamp(6px,5cqw,10px);gap:2px;justify-content:center;overflow:visible}
+.rd .ab23 .tt,.rd .cw15 .it.ow23 .tx>b{font-size:clamp(10px,7.8cqw,16px);line-height:1.15;flex:none;margin:0;min-height:0;padding:0}
+.rd .ab23 .tt>span,.rd .cw15 .it.ow23 .tx>b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;-webkit-line-clamp:unset}
+.rd .ab23 .by26,.rd .cw15 .it.ow23 .by26{flex:none;gap:4px;min-height:0;line-height:1.15}
+.rd .ab23 .by26>small,.rd .ab23 .by26>.score25,.rd .cw15 .it.ow23 .by26>small,.rd .cw15 .it.ow23 .by26>.score25{font-size:clamp(9px,6.7cqw,13px);line-height:1.15}
+.rd .score25>.ic{width:1em;height:1em}.rd .ab23 .by26>.mt{font-size:9px;max-width:28%;order:-1}
+.rd .cw15 .wall28{gap:6px;min-width:0;align-self:start}.rd .cw15 .wall28>.ow23{width:100%;flex:none}
+.rd .cw15 .wall28meta{font-size:11px;line-height:1.35;color:var(--fg);overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rd .bh15 .wall28meta{color:var(--cream)}
+.rd .cw15.hrow.row>.wall28{width:150px;flex:none}
+.rd .sr14>.matchalbum28,.rd .sr14>.pick28{flex:none;min-width:0}
+.rd .matchscores28{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
+.rd .matchscores28>span{display:flex;flex-direction:column;gap:3px;min-width:0;padding:7px 8px;border-radius:12px;background:var(--paper)}
+.rd .matchscores28 small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}
+.rd .matchscores28 b{display:flex;align-items:center;gap:3px;font-size:14px}.rd .matchscores28 .ic{width:12px;height:12px}
+.rd .pick28who{display:flex;align-items:center;gap:7px;margin-top:9px;min-width:0}
+.rd .pick28faces{display:flex;flex:none;padding-right:3px}.rd .pick28faces .dot{width:25px;height:25px;border-radius:50%;background-color:var(--pick);color:var(--pick-on);background-size:cover;background-position:center;display:grid;place-items:center;border:2px solid var(--bg);padding:0}.rd .pick28faces .dot+.dot{margin-left:-7px}
+.rd .pick28who>small{font-size:11px;line-height:1.3;overflow-wrap:anywhere;min-width:0}
+.rd .ac23 .aa{top:10px;right:10px;bottom:auto}
+/* Full event titles and higher contrast on photo-backed activity/reviews. */
+.rd .dkc13.rvc15.fdc15{height:auto;min-height:236px}
+.rd .dkc13.rvc15.fdc15.has-asd{grid-template-rows:auto auto auto auto}
+.rd .dkc13.rvc15.fdc15>.bd{overflow:visible;min-height:auto}
+.rd .fdc15 .ft15>span{display:block;-webkit-line-clamp:unset;white-space:normal;overflow:visible;overflow-wrap:anywhere}
+.rd .fdc15 .m15,.rd .fdc15 .m15 .arl,.rd .fdc15 .m15 .arn{white-space:normal;overflow:visible;overflow-wrap:anywhere;color:var(--cream)}
+.rd .dkc13.rvc15::after{background:rgba(14,12,11,.7)}
+.rd .rvc15 .who13 .wp,.rd .rvc15 .who13 small,.rd .rvc15 .alb13 small,.rd .rvc15 .alb13 small .arl,.rd .rvc15 .alb13 small .arn{color:var(--cream);opacity:1}
+.rd .fdc15 .s15,.rd .fdc15 .m15{color:var(--cream);opacity:1}
+.rd .rvc15 .alb13{padding:4px 0;min-width:0}.rd .rvc15 .alb13 .g{min-width:0}
+.rd .rvc15 .alb13 .pl13{position:relative;inset:auto;overflow:visible;margin-inline:4px;flex:none}
+@media(min-width:900px){.rd .cw15.hrow.row>.wall28{width:190px}}
+
+.rd .home28batch{margin-bottom:22px}.rd .home28albums{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:18px}.rd .home28 .rvc15{height:auto;min-height:260px}.rd .home28more{padding:12px 0 20px;text-align:center}.rd .home28 .rvc15 .bd{overflow:visible;min-height:auto}@media(min-width:900px){.rd .home28albums{grid-template-columns:repeat(4,minmax(0,1fr))}.rd .home28 .rvc15{max-width:720px}}
+
+.rd .dkc13.rvc15{height:auto;min-height:236px}.rd .dkc13.rvc15>.bd{overflow:visible;min-height:auto}
+.rd .fdc15 .ex .q13,.rd .fdc15 .ex .q13.clamp{display:block;-webkit-line-clamp:unset;overflow:visible;overflow-wrap:anywhere}
+.rd .fdc15 .who13 .g{min-width:0}.rd .fdc15 .who13 b{overflow-wrap:anywhere;white-space:normal}

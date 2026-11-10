@@ -1,4 +1,5 @@
 'use client';
+import { Initial } from '../ui/Initial';
 
 import { useEffect, useMemo, useState } from 'react';
 import { ArtistAvatar, ArtistName } from '../ui/ArtistName';
@@ -37,7 +38,7 @@ function PersonRow({ person }: { person: PersonResult }) {
   return (
     <div className="row">
       <button className="rowlink" onClick={() => viewFriend(person.id)}>
-        <span className="dot" style={userAvatarStyle(person)}>{!person.avatarUrl && person.name[0]}</span>
+        <span className="dot" style={userAvatarStyle(person)}>{!person.avatarUrl && <Initial name={person.name} />}</span>
         <span className="g">
           <b>{person.name}</b>
           <small className="muted" style={{ fontWeight: 600 }}>

@@ -1,7 +1,7 @@
 import { supabaseAdmin } from './supabaseAdmin';
 import { releaseNameKey } from '@/lib/format';
 import { peekSpotifyCache, withSpotifyCache } from './spotifyCache';
-import { deezerArtistIdForName, deezerReleasesById, type DeezerArtist } from './deezerServer';
+import { deezerArtistIdForName, deezerReleasesById } from './deezerServer';
 import { fetchArtistAlbumsSplit, resolveSpotifyAlbumId } from './spotifyCatalog';
 import { inBackground } from './spotifyPriority';
 import { sendPush } from './push';
@@ -28,7 +28,7 @@ export async function upcomingForUser(userId: string): Promise<UpcomingRelease[]
   const reminded = new Set((reminders || []).map((r) => r.album_id as string));
   // Keyed by the set of clubs (an hour): joining one shows its releases.
   const key = follows.map((f) => f.artist_id as string).sort().join(',');
-  const list = await withSpotifyCache(`fc-upcoming:v2:${key}`, 3600, async () => {
+  const list = await withSpotifyCache(`fc-upcoming:v3:${key}`, 3600, async () => {
     const today = new Date().toISOString().slice(0, 10);
     const out: Omit<UpcomingRelease, 'reminded'>[] = [];
     const seen = new Set<string>();
@@ -52,8 +52,7 @@ export async function upcomingForUser(userId: string): Promise<UpcomingRelease[]
           seen.add(k);
           out.push({ albumId: a.id, artist, artistId, title: a.title, date: a.releaseDate, cover: a.cover });
         }
-        const confirmed = await peekSpotifyCache<DeezerArtist | null>(`dz-artist-for:v1:${artistId}`);
-        const dzId = confirmed?.id ?? await deezerArtistIdForName(artist);
+        const dzId = await deezerArtistIdForName(artist, artistId);
         if (!dzId) continue;
         for (const r of await deezerReleasesById(dzId)) {
           if (r.date <= today) continue;
@@ -88,7 +87,7 @@ export function maybeSendReleaseReminders(): void {
     for (const r of due) {
       let albumId = r.album_id as string;
       if (albumId.startsWith('dz:')) {
-        const found = await inBackground(() => withSpotifyCache(`resolve-album:v2:${(r.title as string).toLowerCase()}:${(r.artist as string).toLowerCase()}`, 180 * 86400, () => resolveSpotifyAlbumId(r.title as string, r.artist as string))).catch(() => null);
+        const found = await inBackground(() => withSpotifyCache(`resolve-album:v3:${(r.title as string).toLowerCase()}:${(r.artist as string).toLowerCase()}`, 180 * 86400, () => resolveSpotifyAlbumId(r.title as string, r.artist as string))).catch(() => null);
         if (found) albumId = found;
       }
       const openable = !albumId.startsWith('dz:');

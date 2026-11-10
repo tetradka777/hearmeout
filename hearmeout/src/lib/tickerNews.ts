@@ -5,6 +5,8 @@ import { deezerArtistIdForName, deezerReleasesById } from './deezerServer';
 import { RateLimitError } from './upstreamError';
 import { cachedArtistConcerts, concertsConfigured, regionFirst } from './concerts';
 import { DEFAULT_PRIVACY, fetchPrivacy } from './privacy';
+import { normalizeArtistName, rankListeningArtists, type ArtistIdentity, type ListeningArtistRow } from './artistIdentity';
+import { peekSpotifyCacheMany } from './spotifyCache';
 
 // News for the activity strip, after the viewer's and friends' own activity:
 // new and announced albums, upcoming concerts and records. "mine" marks items
@@ -31,7 +33,7 @@ export function popularArtists(n: number, skip: Set<string> = new Set()): string
   const out: string[] = [];
   const seen = new Set(skip);
   for (const a of [...ALBUMS].filter((x) => x.popularRank != null).sort((x, y) => (x.popularRank ?? 0) - (y.popularRank ?? 0))) {
-    const name = a.artist.split(',')[0].trim();
+    const name = a.artist.trim();
     if (seen.has(name.toLowerCase())) continue;
     seen.add(name.toLowerCase());
     out.push(name);
@@ -42,36 +44,44 @@ export function popularArtists(n: number, skip: Set<string> = new Set()): string
 
 // The viewer's most listened artists by time played over the last 90 days.
 export async function topArtistsOf(admin: SupabaseClient, userId: string, n: number): Promise<string[]> {
-  const { rows: data } = await fetchAllRows((f, t) => admin
+  return (await topArtistIdentitiesOf(admin, userId, n)).map((a) => a.name);
+}
+
+export async function topArtistIdentitiesOf(admin: SupabaseClient, userId: string, n: number): Promise<ArtistIdentity[]> {
+  const { rows: data } = await fetchAllRows<ListeningArtistRow>((f, t) => admin
     .from('listening_events')
-    .select('artist, duration_ms')
+    .select('artist, artist_id, album, duration_ms')
     .eq('user_id', userId)
     .gte('played_at', new Date(Date.now() - 90 * dayMs).toISOString())
     .order('id')
     .range(f, t));
-  const ms = new Map<string, { name: string; ms: number }>();
-  for (const p of data || []) {
-    const name = (p.artist as string | null)?.split(',')[0]?.trim();
-    if (!name) continue;
-    const cur = ms.get(name.toLowerCase()) || { name, ms: 0 };
-    cur.ms += (p.duration_ms as number | null) || 0;
-    ms.set(name.toLowerCase(), cur);
+  // Reuse names already fetched by the artist page/avatars; no new Spotify
+  // requests for this background job. Unknown credits stay whole.
+  const ranked = rankListeningArtists(data).slice(0, n);
+  const ids = ranked.flatMap((a) => a.id ? [a.id] : []);
+  const cached = await peekSpotifyCacheMany<{ name: string } | null>(ids.map((id) => `sp-artist-raw:v1:${id}`));
+  const names = new Map<string, string>();
+  for (const id of ids) {
+    const name = cached.get(`sp-artist-raw:v1:${id}`)?.payload?.name;
+    if (name) names.set(id, name);
   }
-  return [...ms.values()].sort((a, b) => b.ms - a.ms).slice(0, n).map((a) => a.name);
+  return ranked.map((a) => ({ ...a, name: (a.id && names.get(a.id)) || a.name }));
 }
 
 // Recent and announced albums of these artists, from Deezer (no Spotify
 // quota spent: lib/deezerServer deezerReleasesById); an artist whose name
 // Deezer can't pin down for sure is skipped.
-export async function releasesFor(artists: string[], mine: boolean): Promise<TickerNewsItem[]> {
+export async function releasesFor(artists: (string | ArtistIdentity)[], mine: boolean): Promise<TickerNewsItem[]> {
   const items: TickerNewsItem[] = [];
   const now = Date.now();
   const recentFrom = isoDay(now - RELEASE_DAYS * dayMs);
   const today = isoDay(now);
   const upcomingTo = isoDay(now + UPCOMING_DAYS * dayMs);
-  for (const artist of artists) {
+  for (const item of artists) {
+    const artist = typeof item === 'string' ? item : item.name;
     try {
-      const dzId = await deezerArtistIdForName(artist);
+      const albumTitles = typeof item === 'string' ? ALBUMS.filter((a) => normalizeArtistName(a.artist) === normalizeArtistName(artist)).map((a) => a.title) : item.albumTitles;
+      const dzId = await deezerArtistIdForName(artist, typeof item === 'string' ? null : item.id, albumTitles);
       if (!dzId) continue;
       const releases = await deezerReleasesById(dzId);
       const fresh = releases.find((a) => a.date >= recentFrom && a.date <= today);
@@ -86,14 +96,15 @@ export async function releasesFor(artists: string[], mine: boolean): Promise<Tic
 }
 
 // Each artist's next concert, in the viewer's country first.
-export async function concertsFor(artists: string[], mine: boolean, country: string | null): Promise<TickerNewsItem[]> {
+export async function concertsFor(artists: (string | ArtistIdentity)[], mine: boolean, country: string | null): Promise<TickerNewsItem[]> {
   if (!concertsConfigured()) return [];
   const items: TickerNewsItem[] = [];
   const until = isoDay(Date.now() + CONCERT_DAYS * dayMs);
   const today = isoDay(Date.now());
-  for (const artist of artists) {
+  for (const item of artists) {
+    const artist = typeof item === 'string' ? item : item.name;
     try {
-      const list = regionFirst((await cachedArtistConcerts(artist)).filter((c) => c.date >= today && c.date <= until), country);
+      const list = regionFirst((await cachedArtistConcerts(artist, typeof item === 'string' ? null : item.id)).filter((c) => c.date >= today && c.date <= until), country);
       const c = list[0];
       if (c) items.push({ kind: 'concert', id: `con-${c.id}`, artist, date: c.date, city: c.city, country: c.country, mine });
     } catch {

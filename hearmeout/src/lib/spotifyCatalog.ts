@@ -6,6 +6,7 @@ import { RateLimitError, retryAfterSeconds } from './upstreamError';
 import { logServerError } from './errorLog';
 import { supabaseAdmin } from './supabaseAdmin';
 import { isBackground } from './spotifyPriority';
+import { normalizeArtistName } from './artistIdentity';
 
 // Every Spotify Web API call goes through here: a 429 with a short
 // Retry-After (2 s or less) is waited out and retried once; a longer one
@@ -122,16 +123,26 @@ export function isFunctionalAudio(title: string, artist: string): boolean {
 // credited artists, or the main one of "A & B" / "A, B") and has this title
 // (ignoring "(Deluxe)", "- Remastered" and the like) — no match is null,
 // never the first search hit, which used to open someone else's album.
-export async function resolveSpotifyAlbumId(title: string, artist: string): Promise<string | null> {
+export async function resolveSpotifyAlbumId(title: string, artist: string, artistId?: string | null): Promise<string | null> {
   const params: Record<string, string> = { q: `album:${title} artist:${artist}`, type: 'album', limit: '10' };
   const data = await spotifyGet('/search', params);
   const items = (data.albums?.items || []) as SpotifyAlbumSearchItem[];
-  const wantArtists = new Set([artist, ...artist.split(/\s*,\s*|\s+&\s+/)].map(normalizeTitle).filter(Boolean));
   const wantTitle = normalizeTitle(title);
-  const byArtist = items.filter((a) => a.artists?.some((x) => wantArtists.has(normalizeTitle(x.name))));
-  const hit = byArtist.find((a) => normalizeTitle(a.name) === wantTitle)
-    || byArtist.find((a) => { const n = normalizeTitle(a.name); return !!wantTitle && !!n && (n.startsWith(wantTitle) || wantTitle.startsWith(n)); });
-  return hit?.id ?? null;
+  const wantArtist = normalizeArtistName(artist);
+  // Credits are structured in Spotify. Compare whole names or the whole
+  // joined credit, never fragments of a name containing punctuation.
+  const byArtist = items.filter((a) => artistId ? a.artists?.some((x) => x.id === artistId) : a.artists?.some((x) => normalizeArtistName(x.name) === wantArtist)
+    || normalizeArtistName(a.artists?.map((x) => x.name).join(', ') || '') === wantArtist
+    || normalizeArtistName(a.artists?.map((x) => x.name).join(' & ') || '') === wantArtist);
+  const matches = byArtist.filter((a) => normalizeTitle(a.name) === wantTitle);
+  if (!artistId) {
+    const identities = new Set(matches.map((a) => {
+      const exact = a.artists.filter((x) => normalizeArtistName(x.name) === wantArtist);
+      return (exact.length ? exact : a.artists).map((x) => x.id).sort().join(',');
+    }));
+    if (identities.size > 1) return null;
+  }
+  return matches[0]?.id ?? null;
 }
 
 // An album of this artist by title: search results (at most 10 in
@@ -156,8 +167,9 @@ export async function resolveSpotifyArtistId(name: string): Promise<string | nul
   const items: { id: string; name: string }[] = data.artists?.items ?? [];
   // Exactly this name or nobody: the first hit used to be returned when
   // nothing matched, which opened the wrong artist's page.
-  const want = normalizeTitle(name);
-  return items.find((a) => normalizeTitle(a.name) === want)?.id ?? null;
+  const want = normalizeArtistName(name);
+  const exact = items.filter((a) => normalizeArtistName(a.name) === want);
+  return exact.length === 1 ? exact[0].id : null;
 }
 
 // durationMs is optional: details cached before it was added lack it.
@@ -385,10 +397,10 @@ export async function fetchSpotifyArtistPhoto(id: string): Promise<string | null
 
 export async function searchSpotifyArtistPhotoExact(name: string): Promise<{ found: boolean; photo: string | null }> {
   const data = await spotifyGet('/search', { q: `artist:${name}`, type: 'artist', limit: '10' });
-  const want = name.trim().toLowerCase();
+  const want = normalizeArtistName(name);
   // Several artists with exactly this name: no way to tell which one is
   // meant, so no photo (a letter) rather than a stranger's face.
-  const exact = (data.artists?.items || []).filter((a: { name: string }) => a.name.toLowerCase() === want) as { images?: { url: string }[] }[];
+  const exact = (data.artists?.items || []).filter((a: { name: string }) => normalizeArtistName(a.name) === want) as { images?: { url: string }[] }[];
   const hit = exact.length === 1 ? exact[0] : undefined;
   return { found: !!hit, photo: hit?.images?.[0]?.url ?? null };
 }

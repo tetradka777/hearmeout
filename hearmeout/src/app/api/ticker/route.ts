@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserId } from '@/lib/identity';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { withSpotifyCache } from '@/lib/spotifyCache';
-import { concertsFor, popularArtists, recordsFor, releasesFor, topArtistsOf, type TickerNewsItem } from '@/lib/tickerNews';
+import { concertsFor, popularArtists, recordsFor, releasesFor, topArtistIdentitiesOf, type TickerNewsItem } from '@/lib/tickerNews';
 
 export type TickerNewsResponse = { items: TickerNewsItem[] };
 
@@ -21,14 +21,14 @@ export async function GET(request: NextRequest) {
   const admin = supabaseAdmin();
 
   try {
-    const mine = await withSpotifyCache(`ticker:me:v2:${userId}:${country ?? '-'}`, 3600, async () => {
+    const mine = await withSpotifyCache(`ticker:me:v3:${userId}:${country ?? '-'}`, 3600, async () => {
       const { data: friendRows } = await admin.from('friendships').select('friend_id').eq('user_id', userId);
       const friendIds = (friendRows || []).map((r) => r.friend_id as string);
       const { data: friendUsers } = friendIds.length
         ? await admin.from('users').select('id, name').in('id', friendIds)
         : { data: [] as { id: string; name: string }[] };
       const names = new Map((friendUsers || []).map((u) => [u.id as string, u.name as string]));
-      const artists = await topArtistsOf(admin, userId, MY_ARTISTS);
+      const artists = await topArtistIdentitiesOf(admin, userId, MY_ARTISTS);
       return {
         artists,
         items: [
@@ -39,8 +39,8 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    const skip = new Set(mine.artists.map((a) => a.toLowerCase()));
-    const global = await withSpotifyCache(`ticker:global:v2:${country ?? '-'}`, 6 * 3600, async () => {
+    const skip = new Set(mine.artists.map((a) => a.name.toLowerCase()));
+    const global = await withSpotifyCache(`ticker:global:v3:${country ?? '-'}`, 6 * 3600, async () => {
       const artists = popularArtists(POPULAR_ARTISTS);
       return [...(await releasesFor(artists, false)), ...(await concertsFor(artists.slice(0, POPULAR_CONCERTS), false, country))];
     });

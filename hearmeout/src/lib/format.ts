@@ -43,7 +43,7 @@ export function formatRelative(iso: string, language: Language): string {
 // One name for the same release listed twice (a single and its album,
 // "Title .", "Title (Deluxe)", a re-upload).
 export function releaseNameKey(title: string): string {
-  return title.toLowerCase().replace(/s*[([].*?[)]]/g, '').replace(/[^p{L}p{N}]+/gu, '');
+  return title.normalize('NFKC').toLowerCase().replace(/(?<=\S)\s*[\[(].*?[\])]/g, '').replace(/[^\p{L}\p{N}]+/gu, '');
 }
 
 // A title without the extras that make it endless on a card: '(feat. …)',

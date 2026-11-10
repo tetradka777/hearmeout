@@ -11,10 +11,12 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const title = searchParams.get('title');
   const artist = searchParams.get('artist');
+  const artistId = searchParams.get('artistId') || null;
+  if (artistId && !/^[A-Za-z0-9]{22}$/.test(artistId)) return NextResponse.json({ error: 'invalid_artist_id' }, { status: 400 });
   if (!title || !artist) return NextResponse.json({ error: 'missing_params' }, { status: 400 });
 
   try {
-    const id = await withSpotifyCache(`resolve-album:v2:${title.toLowerCase()}:${artist.toLowerCase()}`, 180 * 86400, () => resolveSpotifyAlbumId(title, artist));
+    const id = await withSpotifyCache(`resolve-album:v4:${title.toLowerCase()}:${artistId || artist.toLowerCase()}`, 180 * 86400, () => resolveSpotifyAlbumId(title, artist, artistId));
     if (!id) return NextResponse.json({ error: 'not_found' }, { status: 404 });
     return NextResponse.json({ id }, { headers: { 'Cache-Control': 's-maxage=3600, stale-while-revalidate=86400' } });
   } catch (err) {

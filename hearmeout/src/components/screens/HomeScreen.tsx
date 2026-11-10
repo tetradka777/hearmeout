@@ -11,7 +11,7 @@ import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
 import type { ApiUser, Device, FeedEvent, FeedResponse, PublicProfile, RecapData } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
-import { formatRelative, shortTitle } from '@/lib/format';
+import { formatRelative } from '@/lib/format';
 import { MascotIcon } from '../redesign/icons';
 import { MATCH_FRIEND_EVENT } from '@/lib/uiEvents';
 import { useFriendScores } from '@/lib/useFriendScores';
@@ -26,6 +26,7 @@ import { ratingStreak, recentRatingDays } from '@/lib/streak';
 import { ImportNudge } from '../ConnectionBlocks';
 import { RateQueueCard } from '../RateQueue';
 import { AddFriendCard, FriendPlayerCard } from '../FriendPlayerCard';
+import { HomeContinuation } from '../HomeContinuation';
 import { FriendsPicksCard } from '../FriendsPicksCard';
 import { PROFILE_TAB_EVENT } from '@/lib/uiEvents';
 import { CoverWall } from '../ui/Visual';
@@ -99,6 +100,7 @@ function RecapCard({ r, week }: { r: RecapData | undefined; week: number }) {
         {artist ? <ArtistAvatar name={artist.name} id={artist.id} size={100} /> : <span className="aav">?</span>}
         <CoverArt url={song?.cover ?? undefined} fallbackLetter="?" className="cov" px={120} />
       </span>
+      {r && <span className="recap28discovery">{t('home.recapDiscoveries', { n: r.newArtists })}</span>}
       <span className="recap25count">{r ? r.trackCount : '–'} {t('recap.tracksL')}</span>
     </button>
   );
@@ -175,7 +177,7 @@ function FeedRow({ event }: { event: FeedEvent }) {
     >
       {/* After Superfan's listening cards: big title, a white line, a grey
           line, the framed cover on the right. */}
-      {open ? <button className="ft15" onClick={open} aria-label={title}><span>{shortTitle(title)}</span></button> : <h3 className="ft15"><span>{shortTitle(title)}</span></h3>}
+      {open ? <button className="ft15" onClick={open} aria-label={title}><span>{title}</span></button> : <h3 className="ft15"><span>{title}</span></h3>}
       {(right || sub) && <p className="s15">{right}{right && sub ? ' · ' : ''}{sub}</p>}
       {meta && <p className="m15">{meta}</p>}
     </DarkCard>
@@ -438,6 +440,7 @@ export function HomeScreen(_props: { device: Device }) {
 
       <FriendsPicksCard />
       <TrendingSection />
+      <HomeContinuation />
     </>
   );
 }

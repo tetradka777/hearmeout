@@ -1,4 +1,5 @@
 'use client';
+import { Initial } from './ui/Initial';
 
 import { useEffect, useRef, useState } from 'react';
 import { ArtistAvatar } from './ui/ArtistName';
@@ -44,7 +45,7 @@ function PeopleStep() {
           const inc = friendRequests.incoming.find((r) => r.user.id === p.id);
           return (
             <div className="conn" key={p.id}>
-              <span className="dot" style={userAvatarStyle(p)}>{!p.avatarUrl && p.name[0]}</span>
+              <span className="dot" style={userAvatarStyle(p)}>{!p.avatarUrl && <Initial name={p.name} />}</span>
               <div className="g"><b>{p.name}</b><br /><small className="muted" style={{ fontWeight: 600 }}>{t('onboarding.personSub', { pct: p.score, handle: p.handle.replace(/^@/, '') })}</small></div>
               {isFriend ? <span className="tag">{t('friend.friendsTag')}</span>
                 : out ? <button className="btn ghost" style={sm} onClick={() => respondToFriendRequest(out.id, 'cancel')}>{t('friend.requestSent')}</button>

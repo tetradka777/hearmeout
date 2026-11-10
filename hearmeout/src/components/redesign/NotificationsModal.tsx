@@ -1,4 +1,5 @@
 'use client';
+import { Initial } from '../ui/Initial';
 
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -83,7 +84,7 @@ export function NotificationsModal({ onClose }: { onClose: () => void }) {
         <span className="pic">
           {music
             ? <CoverArt url={n.payload.cover ?? undefined} fallbackLetter={(n.payload.artist || '?')[0]} className="cov" px={56} />
-            : <span className="avt" style={userAvatarStyle(n.actor!)}>{!n.actor!.avatarUrl && n.actor!.name[0]?.toUpperCase()}</span>}
+            : <span className="avt" style={userAvatarStyle(n.actor!)}>{!n.actor!.avatarUrl && <Initial name={n.actor!.name} />}</span>}
           <span className="kd" aria-hidden="true"><i className={`ic ic-${n.kind === 'later' ? 'clock' : music ? (n.kind === 'album' ? 'note' : 'disc') : kind.icon}`} /></span>
         </span>
         <span className="g">
