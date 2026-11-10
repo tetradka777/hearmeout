@@ -19,13 +19,13 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   const nameKey = `artist-name:v1:${id}`;
   // ?cached=1: a prefetch — only what's cached, 204 otherwise.
   if (new URL(request.url).searchParams.get('cached') === '1') {
-    const hit = await peekSpotifyCache<unknown[]>(`artist-top:v5:${id}`);
+    const hit = await peekSpotifyCache<unknown[]>(`artist-top:v6:${id}`);
     return hit ? NextResponse.json({ tracks: hit }) : new NextResponse(null, { status: 204 });
   }
   try {
     const name = await withSpotifyCache(nameKey, 30 * 86400, () => fetchSpotifyArtistName(id));
     if (!name) return NextResponse.json({ tracks: [] });
-    const tracks = await withSpotifyCache(`artist-top:v5:${id}`, 3 * 86400, () => fetchArtistTopTracks(id, name));
+    const tracks = await withSpotifyCache(`artist-top:v6:${id}`, 3 * 86400, () => fetchArtistTopTracks(id, name));
     return NextResponse.json({ tracks });
   } catch (err) {
     if (err instanceof RateLimitError) {

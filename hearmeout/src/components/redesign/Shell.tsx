@@ -1,4 +1,5 @@
 'use client';
+import { Initial } from '../ui/Initial';
 
 import type { ReactNode } from 'react';
 import { useApp } from '@/lib/AppContext';
@@ -144,7 +145,7 @@ export function RedesignShell({ children }: { children: ReactNode }) {
         {/* Your profile, as your photo, at the end of the bar. */}
         {me && (
           <button className={`tbp${state.activeScreen === 'profile' ? ' on' : ''}`} onClick={() => showScreen('profile')} aria-label={t('nav.profile')}>
-            <span className="avt" style={{ ...userAvatarStyle(me), backgroundSize: 'cover' }}>{!me.avatarUrl && me.name[0]?.toUpperCase()}</span>
+            <span className="avt" style={{ ...userAvatarStyle(me), backgroundSize: 'cover' }}>{!me.avatarUrl && <Initial name={me.name} />}</span>
             {friendRequests.incoming.length > 0 && <span className="badge" aria-hidden="true">{friendRequests.incoming.length}</span>}
           </button>
         )}

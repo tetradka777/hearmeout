@@ -65,8 +65,8 @@ async function build(country: string): Promise<ChartAlbum[]> {
     while (!limited && next < results.length) {
       const i = next++;
       const r = results[i];
-      const artist = r.artistName.split(/ & |, /)[0];
-      ids[i] = await withSpotifyCache(`albumid:v1:${r.name.toLowerCase()}|${artist.toLowerCase()}`, 180 * 86400, () => resolveSpotifyAlbumId(r.name, artist))
+      const artist = r.artistName;
+      ids[i] = await withSpotifyCache(`albumid:v2:${r.name.toLowerCase()}|${artist.toLowerCase()}`, 180 * 86400, () => resolveSpotifyAlbumId(r.name, artist))
         .catch((err) => { if (err instanceof RateLimitError) limited = true; return null; });
     }
   }));
@@ -92,7 +92,7 @@ async function build(country: string): Promise<ChartAlbum[]> {
 // Six hours per country; the matching to Spotify is cached for a month.
 export function chartAlbums(region: string | null): Promise<ChartAlbum[]> {
   const country = region && /^[A-Za-z]{2}$/.test(region) ? region.toLowerCase() : 'us';
-  return withSpotifyCache(`apple-chart:v4:${country}`, 6 * 3600, () => build(country));
+  return withSpotifyCache(`apple-chart:v5:${country}`, 6 * 3600, () => build(country));
 }
 
 // For the endless "Popular now" shelf: one country's top 100 at a time,

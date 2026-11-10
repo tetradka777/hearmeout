@@ -36,7 +36,8 @@ export function CoverWall({ items, small, row }: { items: WallItem[]; small?: bo
 // (like the album shelf cards, .ab23), the score in a small pill above them.
 function WallCell({ it, small }: { it: WallItem; small?: boolean }) {
   return (
-    <div className="it ow23">
+    <div className="it wall28">
+      <div className="it ow23">
       <button className="im" onClick={it.onClick} aria-label={it.title} disabled={!it.onClick}>
         <CoverArt url={it.cover ?? undefined} fallbackLetter={(it.artist || it.title)[0] || '?'} className="cov" px={small ? 120 : 190} />
       </button>
@@ -46,9 +47,10 @@ function WallCell({ it, small }: { it: WallItem; small?: boolean }) {
         <span className="by26">
           {it.artist && <small><ArtistName name={it.artist} id={it.artistId} noAvatar /></small>}
           {it.badge != null && <small className="score25">{typeof it.badge === 'string' && /^\d+([.,]\d+)?$/.test(it.badge) && <i className="ic ic-star" aria-hidden="true" />}{it.badge}</small>}
-          {it.sub && <small className="sb">{it.sub}</small>}
         </span>
       </span>
+      </div>
+      {it.sub && <small className="wall28meta">{it.sub}</small>}
     </div>
   );
 }

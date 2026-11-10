@@ -2,7 +2,7 @@
 
 import { useApp } from '@/lib/AppContext';
 import { useCachedJson } from '@/lib/cachedJson';
-import { toLocale } from '@/lib/i18n';
+import { formatRelative } from '@/lib/format';
 import type { FanClubRelease } from '@/app/api/fanclubs/releases/route';
 import { AlbumShelfCard, Shelf } from './ui/SuperCards';
 
@@ -14,7 +14,7 @@ export function FanClubReleases() {
   const { data } = useCachedJson<FanClubRelease[]>('/api/fanclubs/releases');
   if (!data?.length) return null;
   const open = async (r: FanClubRelease) => {
-    const res = await fetch(`/api/spotify/resolve-album?title=${encodeURIComponent(r.title)}&artist=${encodeURIComponent(r.artist)}`).catch(() => null);
+    const res = await fetch(`/api/spotify/resolve-album?title=${encodeURIComponent(r.title)}&artist=${encodeURIComponent(r.artist)}&artistId=${encodeURIComponent(r.artistId)}`).catch(() => null);
     if (!res?.ok) { showToast(t('toast.albumOpenFailed')); return; }
     openAlbum((await res.json()).id);
   };
@@ -27,7 +27,7 @@ export function FanClubReleases() {
           title={r.title}
           artist={r.artist}
           artistId={r.artistId}
-          meta={new Date(`${r.date}T00:00:00Z`).toLocaleDateString(toLocale(language), { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
+          meta={formatRelative(`${r.date}T00:00:00Z`, language)}
           onClick={() => open(r)}
         />
       ))}

@@ -1,4 +1,5 @@
 'use client';
+import { Initial } from './ui/Initial';
 
 import { useApp } from '@/lib/AppContext';
 import { useCachedJson } from '@/lib/cachedJson';
@@ -22,7 +23,7 @@ export function FriendPlayerCard({ user, demo = false, pct }: { user: ApiUser; d
   const play = profile?.nowPlaying || profile?.lastPlayed || null;
   return (
     <button className="tile fc20 friend25" style={{ ...tintStyle(color), ...blurStyle(user.avatarUrl, 400) }} onClick={() => viewFriend(user.id)}>
-      {user.avatarUrl ? <span className="photo25" style={{ backgroundImage: `url('${user.avatarUrl}')` }} /> : <span className="initial25">{user.name[0]?.toUpperCase()}</span>}
+      {user.avatarUrl ? <span className="photo25" style={{ backgroundImage: `url('${user.avatarUrl}')` }} /> : <span className="initial25"><Initial name={user.name} /></span>}
       <span className="friend25text">
         <b className="nm">{user.name}</b>
         <span className="friend25meta">{pct != null && <span className="mt">{pct}% {t('home.matchWord')}</span>}{play && <time dateTime={play.startedAt}>{formatRelative(play.startedAt, language)}</time>}</span>

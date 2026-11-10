@@ -3,6 +3,11 @@ import type { Dict } from '../i18n';
 // Loaded on demand (loadLanguage in i18n.ts): only the reader's language
 // reaches the browser.
 const de: Dict = {
+  'home.recapDiscoveries': 'diese woche {n} neue {n|entdeckung|entdeckungen}',
+  'home.keepExploring': 'weiter entdecken',
+  'home.exploreMore': 'mehr musik',
+  'home.exploreEnd': 'du bist vorerst auf dem neuesten stand',
+  'home.exploreRetry': 'erneut versuchen',
   'nav.home': 'start',
   'nav.rate': 'bewerten',
   'nav.main': 'hauptmenü',

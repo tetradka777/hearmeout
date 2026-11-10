@@ -1,4 +1,5 @@
 'use client';
+import { Initial } from '../ui/Initial';
 
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
@@ -184,15 +185,19 @@ export function MatchScreen(_props: { device: Device }) {
   const albumCard = (g: { albumId: string; mine: number; theirs: number }) => {
     const a = liveAlbums[g.albumId] || albums.find((x) => x.id === g.albumId);
     return (
+      <div className="matchalbum28" key={g.albumId}>
       <AlbumShelfCard
-        key={g.albumId}
         cover={a ? spotifyCovers[a.id] || a.cover : null}
         title={a?.title ?? '…'}
         artist={a?.artist ?? ''}
         artistId={a?.artistId}
-        meta={<span className="sc24"><b>{t('friend.you')} {fmt1(g.mine)}</b><b>{active?.name} {fmt1(g.theirs)}</b></span>}
         onClick={() => openAlbum(g.albumId)}
       />
+      <div className="matchscores28">
+        <span><small>{t('friend.you')}</small><b><i className="ic ic-star" />{fmt1(g.mine)}</b></span>
+        <span><small>{active?.name}</small><b><i className="ic ic-star" />{fmt1(g.theirs)}</b></span>
+      </div>
+      </div>
     );
   };
 
@@ -209,7 +214,7 @@ export function MatchScreen(_props: { device: Device }) {
           return (
             <button key={f.id} role="tab" aria-selected={f.id === activeId} className={f.id === activeId ? 'on' : ''} onClick={() => setSelectedId(f.id)}>
               <span className="rg">
-                <span className="avt" style={{ ...userAvatarStyle(f), backgroundSize: 'cover' }}>{!f.avatarUrl && f.name[0]?.toUpperCase()}</span>
+                <span className="avt" style={{ ...userAvatarStyle(f), backgroundSize: 'cover' }}>{!f.avatarUrl && <Initial name={f.name} />}</span>
               </span>
               <b>{f.name}</b>
               <small>{score != null ? `${score}%` : '–'}</small>
@@ -221,7 +226,7 @@ export function MatchScreen(_props: { device: Device }) {
       {/* The two of you over a picture: both faces, the %, how it moved. */}
       <div className="tile t-paper match25">
         <div className="match25head"><h2>{t('match.youAndName', { name: active?.name ?? '' })}</h2><button className="btn ghost" onClick={() => active && viewFriend(active.id)}>{t('match.viewProfile', { name: active?.name ?? '' })}<i className="ic ic-chev" /></button></div>
-        <div className="duo">{[me, active].map((u, i) => u && <span key={i} className="avt" style={{ ...userAvatarStyle(u), backgroundSize: 'cover' }}>{!u.avatarUrl && u.name[0]?.toUpperCase()}</span>)}</div>
+        <div className="duo">{[me, active].map((u, i) => u && <span key={i} className="avt" style={{ ...userAvatarStyle(u), backgroundSize: 'cover' }}>{!u.avatarUrl && <Initial name={u.name} />}</span>)}</div>
         <div className="match25numbers"><div><b className="num">{shownPct ?? '–'}{shownPct != null && '%'}</b><span>{t('match.title')}</span></div><div><b>{sharedArt.length}</b><span>{t('match.sharedArtistsTitle')}</span>
           {trendDelta != null && trendDelta !== 0 && <small className="pill">{t(trendDelta >= 0 ? 'match.pctUpSince' : 'match.pctDownSince', { delta: Math.abs(trendDelta), date: trendDate })}</small>}
         </div></div>

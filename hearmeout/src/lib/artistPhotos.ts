@@ -10,8 +10,9 @@ import { useEffect, useState } from 'react';
 // (/api/deezer/artist-photos), and answers are kept in this browser for two
 // weeks — artist photos are public, so not per account. A failed request
 // isn't remembered: the next view asks again.
-const STORE_KEY = 'hmo-artist-photos-v5';
+const STORE_KEY = 'hmo-artist-photos-v6';
 const TTL_MS = 14 * 86400 * 1000;
+const MISSING_TTL_MS = 15 * 60 * 1000;
 const MAX_KEPT = 2000;
 const BATCH = 40;
 
@@ -30,7 +31,7 @@ function load(): Record<string, Entry> {
   try {
     store = JSON.parse(localStorage.getItem(STORE_KEY) || '{}') as Record<string, Entry>;
     // Older stores were keyed by name only.
-    for (const old of ['hmo-artist-photos-v1', 'hmo-artist-photos-v2', 'hmo-artist-photos-v3', 'hmo-artist-photos-v4']) localStorage.removeItem(old);
+    for (const old of ['hmo-artist-photos-v1', 'hmo-artist-photos-v2', 'hmo-artist-photos-v3', 'hmo-artist-photos-v4', 'hmo-artist-photos-v5']) localStorage.removeItem(old);
   } catch { store = {}; }
   return store!;
 }
@@ -52,7 +53,7 @@ function save() {
 // undefined: not known yet; null: the artist has no photo.
 export function peekArtistPhoto(name: string, id?: string | null): string | null | undefined {
   const hit = load()[keyOf(name, id)];
-  if (!hit || Date.now() - hit[1] > TTL_MS) return undefined;
+  if (!hit || Date.now() - hit[1] > (hit[0] === null ? MISSING_TTL_MS : TTL_MS)) return undefined;
   return hit[0];
 }
 

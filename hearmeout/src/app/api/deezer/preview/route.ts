@@ -4,6 +4,7 @@ import { upstreamErrorResponse } from '@/lib/upstreamError';
 import { deezerGet } from '@/lib/deezerServer';
 import { storeSpotifyCache, withSpotifyCache } from '@/lib/spotifyCache';
 import { fetchSpotifyAlbumDetail, fetchSpotifyTrackIsrc, searchSpotifyTracks } from '@/lib/spotifyCatalog';
+import { normalizeArtistName } from '@/lib/artistIdentity';
 
 // 30-second previews come from Deezer, looked up on the server (no CORS
 // proxy). Finding the right recording is the whole job here: a loose
@@ -31,8 +32,10 @@ function sameTitle(a: string, b: string): boolean {
 // Exact artist match only: one of the credited artists is the one asked
 // for ("Miley" is not "Miley Cyrus").
 function sameArtist(candidates: string[], wanted: string): boolean {
-  const want = new Set([wanted, ...wanted.split(/\s*,\s*|\s+&\s+/)].map(normalize).filter(Boolean));
-  return candidates.some((c) => want.has(normalize(c))) || want.has(normalize(candidates.join(', ')));
+  const want = normalizeArtistName(wanted);
+  return candidates.some((c) => normalizeArtistName(c) === want)
+    || normalizeArtistName(candidates.join(', ')) === want
+    || normalizeArtistName(candidates.join(' & ')) === want;
 }
 
 const SPOTIFY_ID = /^[0-9A-Za-z]{22}$/;
@@ -74,7 +77,7 @@ function rememberLink(id: number, link: Promise<{ title: string; preview: string
 }
 
 async function previewFor(artist: string, title: string, albumId: string): Promise<{ title: string; preview: string } | null> {
-  const key = `dz-preview-id:v1:${albumId}|${artist.toLowerCase()}|${title.toLowerCase()}`;
+  const key = `dz-preview-id:v2:${albumId}|${artist.toLowerCase()}|${title.toLowerCase()}`;
   let searched = false;
   const found = await withSpotifyCache<Found>(key, 90 * 86400, async () => {
     searched = true;

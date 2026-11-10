@@ -459,7 +459,7 @@ export function ProfileScreen(_props: { device: Device }) {
           then friends / edit profile / share. */}
       <div className="phd14 ph16" style={{ ['--g1' as string]: myColor, ['--a1' as string]: me.avatarUrl ? `url('${me.avatarUrl}')` : 'none' } as React.CSSProperties}>
         <label className="avwrap" aria-label={t('profile.uploadPhoto')}>
-          <span className="avt lgA" style={{ ...userAvatarStyle(me), backgroundSize: 'cover' }}>{!me.avatarUrl && me.name[0].toUpperCase()}</span>
+          <span className="avt lgA" style={{ ...userAvatarStyle(me), backgroundSize: 'cover' }}>{!me.avatarUrl && <Initial name={me.name} />}</span>
           <input
             type="file"
             accept="image/*"
@@ -503,7 +503,7 @@ export function ProfileScreen(_props: { device: Device }) {
           <button className="pb" onClick={openFriends}>
             {me.friends.length > 0 && (
               <span className="avs">
-                {me.friends.slice(0, 3).map((f) => <span key={f.id} className="dot" style={{ ...userAvatarStyle(f), backgroundSize: 'cover' }}>{!f.avatarUrl && f.name[0]?.toUpperCase()}</span>)}
+                {me.friends.slice(0, 3).map((f) => <span key={f.id} className="dot" style={{ ...userAvatarStyle(f), backgroundSize: 'cover' }}>{!f.avatarUrl && <Initial name={f.name} />}</span>)}
               </span>
             )}
             <span className="l">{t('profile.friendsBtn')}</span>
@@ -591,7 +591,7 @@ function ProfileTopRated({ list }: { list: RatingRecord[] }) {
             title={a?.title ?? '…'}
             artist={a?.artist ?? ''}
             artistId={a?.artistId}
-            meta={`★ ${fmt1(r.stars)}`}
+            score={r.stars}
             onClick={() => openAlbum(r.albumId)}
           />
         );

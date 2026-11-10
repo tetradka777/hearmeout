@@ -1,4 +1,5 @@
 'use client';
+import { Initial } from './ui/Initial';
 
 import { useApp } from '@/lib/AppContext';
 import { useAlbums } from '@/lib/useAlbum';
@@ -14,7 +15,7 @@ import { ArtistName } from './ui/ArtistName';
 import { RankRows } from './ui/RankRows';
 
 const Face = ({ u }: { u: { name: string; avatarUrl: string | null } }) => (
-  <span className="dot" style={{ ...userAvatarStyle(u), backgroundSize: 'cover' }}>{!u.avatarUrl && u.name[0]?.toUpperCase()}</span>
+  <span className="dot" style={{ ...userAvatarStyle(u), backgroundSize: 'cover' }}>{!u.avatarUrl && <Initial name={u.name} />}</span>
 );
 
 // The album-of-the-month vote, made like "picks from friends": one candidate

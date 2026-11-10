@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { fetchSpotifyTrackAlbum } from './spotifyCatalog';
 import { withSpotifyCache } from './spotifyCache';
 import { inBackground } from './spotifyPriority';
-import { deezerArtistByName, deezerArtistGenres, normalizeTitle } from './deezerServer';
+import { deezerArtistGenres } from './deezerServer';
 import { bucketForGenres } from './genreBuckets';
 import { fetchAllRows } from './supabasePaginate';
 import { RateLimitError } from './upstreamError';
@@ -85,15 +85,12 @@ async function enrich(admin: SupabaseClient, userId: string): Promise<void> {
     await new Promise((r) => setTimeout(r, REQUEST_DELAY_MS));
   }
 
-  // Genres: by the row's artist string, genre from its main artist. Synced
-  // rows join several artists with ", ", but a name can contain a comma too
-  // ("Tyler, The Creator"): the whole string wins when Deezer knows it.
+  // Joined credits are ambiguous: preserve the full string rather than
+  // treating a comma inside an artist name as another artist.
   const artists = [...new Set(rows.filter((r) => !r.genre && r.artist).map((r) => r.artist as string))].slice(0, MAX_ARTISTS_PER_RUN);
   for (const artist of artists) {
     try {
-      const whole = artist.includes(',') ? await deezerArtistByName(artist) : null;
-      const main = whole && normalizeTitle(whole.name) === normalizeTitle(artist) ? artist : artist.split(',')[0].trim();
-      const genres = await deezerArtistGenres(main);
+      const genres = await deezerArtistGenres(artist);
       const genre = bucketForGenres(genres) ?? genres[0];
       if (genre) await admin.from('listening_events').update({ genre }).eq('user_id', userId).eq('artist', artist).is('genre', null);
     } catch (err) {

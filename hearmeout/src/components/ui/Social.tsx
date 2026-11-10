@@ -1,4 +1,5 @@
 'use client';
+import { Initial } from './Initial';
 
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -118,7 +119,7 @@ function CommentsModal({ target, title, onClose }: { target: string; title?: str
             : !list.length ? <p className="muted" style={{ fontWeight: 600 }}>{t('social.noComments')}</p>
             : list.map((c) => (
               <div className="cmt" key={c.id}>
-                <button className="dot" style={{ ...userAvatarStyle(c.user), backgroundSize: 'cover' }} onClick={() => { if (c.user.id !== me?.id) { onClose(); viewFriend(c.user.id); } }} aria-label={c.user.name}>{!c.user.avatarUrl && c.user.name[0]?.toUpperCase()}</button>
+                <button className="dot" style={{ ...userAvatarStyle(c.user), backgroundSize: 'cover' }} onClick={() => { if (c.user.id !== me?.id) { onClose(); viewFriend(c.user.id); } }} aria-label={c.user.name}>{!c.user.avatarUrl && <Initial name={c.user.name} />}</button>
                 <div className="g">
                   <b>{c.user.name} <small className="muted">· {formatRelative(c.createdAt, language)}</small></b>
                   <p>{c.body}</p>

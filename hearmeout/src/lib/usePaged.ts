@@ -29,6 +29,7 @@ export function usePaged<T, C>(
     const s = state.current;
     if (s.busy || s.done) return;
     s.busy = true;
+    setView((v) => v.failed ? { ...v, failed: false } : v);
     // A reset (new deps, or a second effect run) swaps in a new state object;
     // a load still running for the old one then stops.
     const stale = () => state.current !== s;

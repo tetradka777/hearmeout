@@ -6,7 +6,9 @@ import { resolveSpotifyAlbumId } from './spotifyCatalog';
 import { deezerArtistIdForName, deezerReleasesById } from './deezerServer';
 import { inBackground } from './spotifyPriority';
 import { RateLimitError } from './upstreamError';
-import { popularArtists, topArtistsOf } from './tickerNews';
+import { popularArtists, topArtistIdentitiesOf } from './tickerNews';
+import { normalizeArtistName } from './artistIdentity';
+import { ALBUMS } from './data';
 import { sendPush } from './push';
 import { logServerError } from './errorLog';
 
@@ -28,7 +30,7 @@ const PER_DAY = 4;
 const MAX_LOOKUPS = 300;
 const dayMs = 86400000;
 
-type Release = { dzId: number; artist: string; title: string; date: string; cover: string | null };
+type Release = { dzId: number; artist: string; artistId: string | null; title: string; date: string; cover: string | null };
 type Candidate = Release & { popular: boolean };
 
 let lastCheck = 0;
@@ -62,7 +64,7 @@ function releaseLookup() {
   let lookups = 0;
   const fromDay = new Date(Date.now() - FRESH_DAYS * dayMs).toISOString().slice(0, 10);
   const today = new Date().toISOString().slice(0, 10);
-  return (artist: string, knownId?: string): Promise<Release | null> => {
+  return (artist: string, knownId?: string | null, albumTitles?: string[]): Promise<Release | null> => {
     const key = knownId || artist.toLowerCase();
     const hit = memo.get(key);
     if (hit) return hit;
@@ -70,11 +72,11 @@ function releaseLookup() {
     const p = (async () => {
       // A followed artist (known Spotify id) whose Deezer twin was already
       // confirmed is found by that; otherwise by exact, unambiguous name.
-      const confirmed = knownId ? (await peekSpotifyCache<{ id: number } | null>(`dz-artist-for:v1:${knownId}`))?.id : null;
-      const dzId = confirmed ?? await deezerArtistIdForName(artist);
+      const titles = albumTitles || ALBUMS.filter((a) => normalizeArtistName(a.artist) === normalizeArtistName(artist)).map((a) => a.title);
+      const dzId = await deezerArtistIdForName(artist, knownId, titles);
       if (!dzId) return null;
       const fresh = (await deezerReleasesById(dzId)).find((a) => a.date >= fromDay && a.date <= today);
-      return fresh ? { dzId: fresh.id, artist, title: fresh.title, date: fresh.date, cover: fresh.cover } : null;
+      return fresh ? { dzId: fresh.id, artist, artistId: knownId || null, title: fresh.title, date: fresh.date, cover: fresh.cover } : null;
     })().catch((err) => {
       // A rate limit ends the run; any other failure only skips this artist.
       if (err instanceof RateLimitError) throw err;
@@ -127,9 +129,9 @@ export async function runReleaseNotifications(opts: { userIds?: string[] } = {})
       if (wantMine) {
         const follows = await followsOf(admin, userId);
         const followed = new Set(follows.map((f) => f.name.toLowerCase()));
-        const top = (await topArtistsOf(admin, userId, MINE_ARTISTS)).filter((a) => !followed.has(a.toLowerCase()));
+        const top = (await topArtistIdentitiesOf(admin, userId, MINE_ARTISTS)).filter((a) => !followed.has(a.name.toLowerCase()));
         for (const f of follows) { const r = await lookup(f.name, f.id); if (r) candidates.push({ ...r, popular: false }); }
-        for (const a of top) { const r = await lookup(a); if (r) candidates.push({ ...r, popular: false }); }
+        for (const a of top) { const r = await lookup(a.name, a.id, a.albumTitles); if (r) candidates.push({ ...r, popular: false }); }
       }
       if (wantPopular) candidates.push(...await popularReleases());
       if (!candidates.length) continue;
@@ -145,7 +147,7 @@ export async function runReleaseNotifications(opts: { userIds?: string[] } = {})
         seen.add(`dz${c.dzId}`);
         // The notification opens the album, which the app knows by its
         // Spotify id: one search, cached for half a year, only now.
-        const albumId = await withSpotifyCache(`albumid:v1:${c.title.toLowerCase()}|${c.artist.toLowerCase()}`, 180 * 86400, () => resolveSpotifyAlbumId(c.title, c.artist));
+        const albumId = await withSpotifyCache(`albumid:v2:${c.title.toLowerCase()}|${c.artistId || c.artist.toLowerCase()}`, 180 * 86400, () => resolveSpotifyAlbumId(c.title, c.artist, c.artistId));
         if (!albumId || seen.has(albumId)) continue;
         seen.add(albumId);
         const { error: insErr } = await admin.from('notifications').insert({

@@ -3,6 +3,7 @@ import { getCurrentUserId } from '@/lib/identity';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { fetchAllRows } from '@/lib/supabasePaginate';
 import { concertsConfigured, cachedArtistConcerts, popularConcerts, regionFirst, type Concert } from '@/lib/concerts';
+import { rankListeningArtists } from '@/lib/artistIdentity';
 
 export type ConcertFeedItem = Concert & { artist: string; artistId: string | null; group: 'yours' | 'popular'; photo?: string | null };
 
@@ -33,18 +34,7 @@ export async function GET(request: NextRequest) {
       .range(f, t)),
     supabaseAdmin().from('artist_follows').select('artist_id, artist_name').eq('user_id', userId).order('created_at', { ascending: false }).limit(CLUBS),
   ]);
-  const msByArtist = new Map<string, { name: string; ms: number; id: string | null }>();
-  for (const p of plays || []) {
-    const name = (p.artist as string | null)?.split(',')[0]?.trim();
-    if (!name) continue;
-    const key = name.toLowerCase();
-    const cur = msByArtist.get(key) || { name, ms: 0, id: null };
-    // The Spotify id of the main artist, for telling same-named artists apart.
-    if (!cur.id && p.artist_id && !(p.artist as string).includes(',')) cur.id = p.artist_id as string;
-    cur.ms += (p.duration_ms as number | null) || 0;
-    msByArtist.set(key, cur);
-  }
-  const yoursRanked = [...msByArtist.values()].sort((a, b) => b.ms - a.ms).slice(0, YOURS);
+  const yoursRanked = rankListeningArtists(plays).slice(0, YOURS);
   const yours = yoursRanked.map((a) => a.name);
   const idOf = new Map(yoursRanked.map((a) => [a.name, a.id]));
   const taken = new Set(yours.map((n) => n.toLowerCase()));

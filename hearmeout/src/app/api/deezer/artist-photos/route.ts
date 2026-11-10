@@ -1,45 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserId } from '@/lib/identity';
-import { deezerArtistByName } from '@/lib/deezerServer';
-import { fetchSpotifyArtistPhoto, searchSpotifyArtistPhotoExact } from '@/lib/spotifyCatalog';
-import { withSpotifyCache } from '@/lib/spotifyCache';
+import { artistPhotoFor, type ArtistPhotoItem as Item } from '@/lib/artistPhotoServer';
 
 const MAX_NAMES = 40;
-const DAY = 86400;
-const SPOTIFY_ID = /^[A-Za-z0-9]{22}$/;
 
-type Item = { name: string; id?: string | null };
-
-// One artist's photo. With a Spotify id it's that artist's own photo or
-// none: looking the name up instead found same-named strangers (an artist
-// without a Spotify photo got another one's face from Deezer). Spotify not
-// answering (over its rate limit) leaves the photo unknown (undefined), so
-// the browser asks again later rather than keeping a letter. By name only:
-// a Deezer artist with exactly this name and no namesakes, else the one
-// Spotify artist with exactly this name (Deezer first: a name search costs
-// Spotify quota, which the whole app shares). A merely similar name or
-// several namesakes give no photo (a letter) rather than someone else's face.
-async function photoFor({ name, id }: Item): Promise<string | null | undefined> {
-  if (id && SPOTIFY_ID.test(id)) {
-    try {
-      return await withSpotifyCache(`sp-aphoto:v1:${id}`, 90 * DAY, () => fetchSpotifyArtistPhoto(id));
-    } catch {
-      return undefined;
-    }
-  }
-  try {
-    const dz = await deezerArtistByName(name);
-    // Not when Deezer has several artists with this name (which one?).
-    if (dz?.exact && (dz.namesakes ?? 1) <= 1 && dz.photo) return dz.photo;
-  } catch { /* fall through */ }
-  try {
-    const hit = await withSpotifyCache(`sp-aexact:v2:${name.toLowerCase()}`, 90 * DAY, () => searchSpotifyArtistPhotoExact(name));
-    return hit.photo;
-  } catch {
-    return null;
-  }
-}
-
+// With an id: Spotify's own photo, then a Deezer identity confirmed through
+// matching albums. With a name: an exact, unambiguous artist. Transient
+// failures are omitted, so the browser does not cache missing photos.
 // Artist photos for the small avatars next to artist names (ArtistName):
 // many in one request instead of one each. Each answer is keyed by the
 // Spotify id when one was sent, else by the name.
@@ -65,7 +32,7 @@ export async function POST(request: NextRequest) {
   // (over it, every Spotify call in the app fails fast until it resets).
   let next = 0;
   await Promise.all(Array.from({ length: Math.min(4, items.length) }, async () => {
-    while (next < items.length) { const it = items[next++]; photos[it.id || it.name] = await photoFor(it); }
+    while (next < items.length) { const it = items[next++]; photos[it.id || it.name] = await artistPhotoFor(it); }
   }));
   return NextResponse.json({ photos });
 }

@@ -1,4 +1,5 @@
 'use client';
+import { Initial } from './Initial';
 
 import { userAvatarStyle } from '@/lib/format';
 
@@ -16,7 +17,7 @@ export function RankRows({ rows, onOpen, label, exactBars = false }: { rows: Ran
         <li key={r.id} className={r.you ? 'you' : undefined}>
           <button onClick={r.you || !onOpen ? undefined : () => onOpen(r.id)} disabled={r.you || !onOpen}>
             <span className="n">{i + 1}</span>
-            <span className="avt" style={{ ...userAvatarStyle(r), backgroundSize: 'cover' }}>{!r.avatarUrl && r.name[0]?.toUpperCase()}</span>
+            <span className="avt" style={{ ...userAvatarStyle(r), backgroundSize: 'cover' }}>{!r.avatarUrl && <Initial name={r.name} />}</span>
             <span className="g">
               <b>{r.name}</b>
               <i style={{ width: `${exactBars ? (max ? r.amount / max * 100 : 0) : max ? Math.max(4, Math.round((r.amount / max) * 100)) : 4}%` }} />

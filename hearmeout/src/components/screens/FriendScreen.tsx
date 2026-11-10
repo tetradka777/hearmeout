@@ -1,4 +1,5 @@
 'use client';
+import { Initial } from '../ui/Initial';
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { ArtistAvatar, ArtistName } from '../ui/ArtistName';
@@ -229,7 +230,7 @@ export function FriendScreen({ device: _device }: { device: Device }) {
               <h3 style={{ margin: '2px 0 8px' }}>{t('friend.mutualN', { n: f.mutualFriends.length })}</h3>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {f.mutualFriends.map((m) => (
-                  <button className="chip" key={m.id} onClick={() => viewFriend(m.id)}><span className="dot" style={userAvatarStyle(m)}>{!m.avatarUrl && m.name[0]}</span>{m.name}</button>
+                  <button className="chip" key={m.id} onClick={() => viewFriend(m.id)}><span className="dot" style={userAvatarStyle(m)}>{!m.avatarUrl && <Initial name={m.name} />}</span>{m.name}</button>
                 ))}
               </div>
             </div>
@@ -278,8 +279,8 @@ export function FriendScreen({ device: _device }: { device: Device }) {
       <PairHero me={me} friend={f}>
         <div className="fm20">
           <span className="duo" aria-hidden="true">
-            <span className="avt" style={{ ...userAvatarStyle(me), backgroundSize: 'cover' }}>{!me.avatarUrl && me.name[0]?.toUpperCase()}</span>
-            <span className="avt" style={{ ...userAvatarStyle(f), backgroundSize: 'cover' }}>{!f.avatarUrl && f.name[0]?.toUpperCase()}</span>
+            <span className="avt" style={{ ...userAvatarStyle(me), backgroundSize: 'cover' }}>{!me.avatarUrl && <Initial name={me.name} />}</span>
+            <span className="avt" style={{ ...userAvatarStyle(f), backgroundSize: 'cover' }}>{!f.avatarUrl && <Initial name={f.name} />}</span>
           </span>
           <b>{t('friend.youAnd', { name: firstName })}</b>
         </div>
@@ -408,7 +409,7 @@ function FriendHead({ f, demo, isFriend, firstName: _firstName, children }: { f:
   ];
   return (
     <div className="phd14 ph16 fh20" style={{ ['--g1' as string]: color, ['--a1' as string]: f.avatarUrl ? `url('${f.avatarUrl}')` : 'none' } as CSSProperties}>
-      <span className="avt lgA" style={{ ...userAvatarStyle(f), backgroundSize: 'cover' }}>{!f.avatarUrl && f.name[0].toUpperCase()}</span>
+      <span className="avt lgA" style={{ ...userAvatarStyle(f), backgroundSize: 'cover' }}>{!f.avatarUrl && <Initial name={f.name} />}</span>
       <div className="pinfo">
         <small className="ey">
           {isFriend ? t('friend.eyebrowFriend') : t('friend.eyebrowPerson')}

@@ -1,4 +1,5 @@
 'use client';
+import { Initial } from '../ui/Initial';
 
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -54,7 +55,7 @@ function GroupCard({ g }: { g: GroupSummary }) {
             {g.newPlays > 0 && <span className="nw">{t('groups.newPlaysTag', { count: g.newPlays })}</span>}
           </span>
           <span className="avs">
-            {shown.map((m) => <span key={m.id} className="avt" style={{ ...userAvatarStyle(m), backgroundSize: 'cover' }}>{!m.avatarUrl && m.name[0]?.toUpperCase()}</span>)}
+            {shown.map((m) => <span key={m.id} className="avt" style={{ ...userAvatarStyle(m), backgroundSize: 'cover' }}>{!m.avatarUrl && <Initial name={m.name} />}</span>)}
             {more > 0 && <span className="avt more">+{more}</span>}
           </span>
           <small>{t('groups.memberCount', { count: g.memberCount, word: pluralForKey(language, g.memberCount, 'groups.memberOne', 'groups.memberFew', 'groups.memberMany') })} · {t('groups.hoursThisWeek', { n: g.hoursWeek ?? 0 })}</small>
@@ -90,7 +91,7 @@ function LatestInGroups({ groups }: { groups: GroupSummary[] }) {
         const album = known.find((k) => k.id === r.albumId)?.album;
         if (!album) return [];
         return [{
-          key: `${r.group.id}-${r.albumId}-${r.at}`, cover: spotifyCovers[album.id] || album.cover, title: album.title,
+          key: `${r.group.id}-${r.albumId}-${r.at}`, cover: spotifyCovers[album.id] || album.cover, title: album.title, artist: album.artist, artistId: album.artistId,
           sub: `${r.user.name} · ${r.group.name}`, badge: fmt1(r.stars), onClick: () => viewGroup(r.group.id),
         }];
       })} />
