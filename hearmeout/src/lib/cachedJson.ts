@@ -20,6 +20,7 @@ const mem = new Map<string, Entry>();
 const inflight = new Map<string, Promise<unknown>>();
 const listeners = new Map<string, Set<(data: unknown) => void>>();
 let owner: string | null = null;
+let generation = 0;
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
 function storage(): Storage | null {
@@ -30,6 +31,8 @@ function storage(): Storage | null {
 // (which forgets everything, in memory and stored).
 export function setJsonCacheOwner(userId: string | null): void {
   if (userId === owner) return;
+  generation++;
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
   mem.clear();
   inflight.clear();
   owner = userId;
@@ -98,10 +101,17 @@ export function cachedJson<T>(url: string, opts: { force?: boolean } = {}): Prom
   if (!opts.force && hit && Date.now() - hit.at < FRESH_MS) return Promise.resolve(hit.data as T);
   const pending = inflight.get(url);
   if (pending && !opts.force) return pending as Promise<T | null>;
+  const requestGeneration = generation;
   const p = fetch(url)
     .then((r) => (r.ok ? (r.json() as Promise<T>) : null))
     .catch(() => null)
     .then((v) => {
+      // An answer started by a different account must neither repopulate
+      // this account's store nor reach a still-mounted caller.
+      if (requestGeneration !== generation) return null;
+      // A forced refresh can finish first. An older answer must not
+      // overwrite it or remove the request newer callers are sharing.
+      if (inflight.get(url) !== p) return (mem.get(url)?.data as T | undefined) ?? null;
       inflight.delete(url);
       if (v == null) return (mem.get(url)?.data as T | undefined) ?? null;
       storeJson(url, v);
@@ -124,6 +134,7 @@ export function useCachedJson<T>(url: string | null): { data: T | null; failed: 
   const [data, setData] = useState<T | null>(() => (url ? peekJson<T>(url) : null));
   const [failed, setFailed] = useState(false);
   useEffect(() => {
+    let active = true;
     setFailed(false);
     if (!url) { setData(null); return; }
     setData(peekJson<T>(url));
@@ -131,8 +142,8 @@ export function useCachedJson<T>(url: string | null): { data: T | null; failed: 
     const set = listeners.get(url) || new Set();
     set.add(fn);
     listeners.set(url, set);
-    cachedJson<T>(url).then((d) => { if (d != null) setData(d); else setFailed(true); });
-    return () => { set.delete(fn); };
+    cachedJson<T>(url).then((d) => { if (active) { if (d != null) setData(d); else setFailed(true); } });
+    return () => { active = false; set.delete(fn); };
   }, [url]);
   const reload = useCallback(() => (url ? cachedJson<T>(url, { force: true }) : Promise.resolve(null)), [url]);
   return { data, failed, reload };

@@ -1525,3 +1525,16 @@ html,body{margin:0}
 .rd .tk31-message{grid-area:1/1;visibility:hidden;pointer-events:none;animation:none}
 .rd .tk31-message.on{visibility:visible;animation:tk31-in .2s ease-out both}
 [data-motion="off"] .rd .tk31-message.on{animation:none}@media(prefers-reduced-motion:reduce){.rd .tk31-message.on{animation:none}}
+
+/* Compact moving activity strip; keep authors opaque in every theme. */
+.rd .ticker.tk32{height:40px;min-height:40px;max-height:40px;border-radius:999px;white-space:nowrap;text-align:left}
+.rd .ticker.tk32 .mq{padding:9px 0;min-width:0}
+.rd .ticker.tk32 .track{width:max-content;max-width:none;flex:none}
+.rd .ticker.tk32 .grp{flex:none;gap:28px;padding:0 0 0 28px}
+.rd .ticker.tk32 .grp>span{max-width:none;overflow:visible;text-overflow:clip;white-space:nowrap;line-height:22px}
+.rd .ticker.tk32 b{color:inherit}
+.rd .ticker.tk32.calm32 .mq{overflow-x:auto;mask-image:none;-webkit-mask-image:none;scrollbar-width:none}
+.rd .ticker.tk32.calm32 .tk32-copy{display:none}
+/* A real queued album supplies the invitation backdrop. */
+.rd .tile.rqc19{background:var(--ink);color:var(--cream);--tfg:var(--cream)}
+.rd .home32row{margin-top:0}
