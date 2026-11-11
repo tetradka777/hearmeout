@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { sizedImage } from '@/lib/imageSize';
+import { coverImages } from '@/lib/coverImages';
 
 type Props = {
   url?: string;
@@ -56,10 +57,6 @@ function watch(root: Element | null, el: Element, cb: () => void): () => void {
     if (left && !left.size) { waiting.delete(el); o.unobserve(el); }
   };
 }
-// Pictures already shown once: drawn at once when they appear again (another
-// screen, a re-render), instead of waiting a frame for the observer.
-const shown = new Set<string>();
-
 function whenNear(el: Element, cb: () => void): () => void {
   if (typeof IntersectionObserver === 'undefined') { cb(); return () => {}; }
   const row = el.parentElement?.closest('.hrow') ?? null;
@@ -73,27 +70,44 @@ function whenNear(el: Element, cb: () => void): () => void {
 export function CoverArt({ url: rawUrl, fallbackLetter, className = '', style, fallbackStyle, children, onClick, px }: Props) {
   const size = px ?? (typeof style?.width === 'number' ? style.width : undefined);
   const url = size ? sizedImage(rawUrl, size) : rawUrl;
-  const [failed, setFailed] = useState(false);
-  const [near, setNear] = useState(() => !!url && shown.has(url));
+  const [nearUrl, setNearUrl] = useState<string | undefined>(undefined);
+  const [, changed] = useState(0);
   const ref = useRef<HTMLDivElement | null>(null);
+  const result = url ? coverImages.read(url) : undefined;
+  const near = !!url && (nearUrl === url || result === 'loaded' || result === 'loading');
 
   useEffect(() => {
     const el = ref.current;
-    if (!el || near) return;
-    return whenNear(el, () => setNear(true));
-  }, [near]);
-
-  useEffect(() => {
-    setFailed(false);
-    if (!url || !near) return;
-    shown.add(url);
-    if (shown.size > 4000) shown.delete(shown.values().next().value!);
-    const img = new window.Image();
-    img.onerror = () => setFailed(true);
-    img.src = url;
+    if (!el || !url || near) return;
+    return whenNear(el, () => setNearUrl(url));
   }, [url, near]);
 
-  const showFallback = !url || failed;
+  useEffect(() => {
+    if (!url || !near) return;
+    // Shared work and a URL-specific subscription: an old failure cannot
+    // clear a different cover after navigation or an album switch.
+    return coverImages.watch(url, () => changed(n => n + 1));
+  }, [url, near]);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!url || !el || result !== 'failed') return;
+    const visible = () => {
+      const rect = el.getBoundingClientRect();
+      return !document.hidden && rect.width > 0 && rect.height > 0 && rect.bottom >= 0 && rect.top <= window.innerHeight && rect.right >= 0 && rect.left <= window.innerWidth;
+    };
+    const online = () => { if (visible()) coverImages.retry(url, true); };
+    const resumed = () => { if (visible()) coverImages.retry(url); };
+    const observer = new IntersectionObserver(entries => {
+      if (!document.hidden && entries.some(entry => entry.isIntersecting)) coverImages.retry(url);
+    }, { rootMargin: '100px' });
+    observer.observe(el);
+    window.addEventListener('online', online);
+    document.addEventListener('visibilitychange', resumed);
+    return () => { observer.disconnect(); window.removeEventListener('online', online); document.removeEventListener('visibilitychange', resumed); };
+  }, [url, result]);
+
+  const showFallback = !url || result === 'failed';
   return (
     <div
       ref={ref}

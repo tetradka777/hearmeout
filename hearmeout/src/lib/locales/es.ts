@@ -4,6 +4,10 @@ import type { Dict } from '../i18n';
 // reaches the browser.
 const es: Dict = {
   'home.recapDiscoveries': 'descubriste {n} {n|artista nuevo|artistas nuevos} esta semana',
+  'home.exploreGenre': "más {genre}",
+  'home.exploreCountry': "en {country}",
+  'home.exploreAlbums': "más álbumes por descubrir",
+  'home.explorePair': "dales una escucha",
   'home.keepExploring': 'sigue explorando',
   'home.exploreMore': 'más música',
   'home.exploreEnd': 'ya estás al día',
