@@ -14,7 +14,7 @@ function seedFor(name: string): number {
 
 const eye = (x: number, y: number, rx: number, ry: number) => `M${x - rx} ${y}a${rx} ${ry} 0 1 0 ${rx * 2} 0a${rx} ${ry} 0 1 0 ${-rx * 2} 0Z`;
 
-export function Initial({ name }: { name: string }) {
+export function Initial({ name, festive = false }: { name: string; festive?: boolean }) {
   const seed = seedFor(name);
   const tilt = (((seed >>> 4) % 5) - 2) * 3;
   const gaze = (((seed >>> 8) % 5) - 2) * 0.6;
@@ -26,6 +26,7 @@ export function Initial({ name }: { name: string }) {
       <path fillRule="evenodd" d={SHAPES[seed % SHAPES.length] + eye(24, leftY, leftRx, 6.3) + eye(40, rightY, 4.8, 5.8) + mouth} style={{ fill: 'currentColor', stroke: 'none' }} />
       <circle cx={24 + gaze} cy={leftY + 0.7} r="2.1" style={{ fill: 'currentColor', stroke: 'none' }} />
       <circle cx={40 + gaze} cy={rightY + 0.7} r="2" style={{ fill: 'currentColor', stroke: 'none' }} />
+      {festive && <g className="avatar33hat"><path d="M12 19Q20 -1 42 8L52 20 44 20Q36 10 27 16L18 23Z" style={{fill:'var(--pick)',stroke:'var(--cream)',strokeWidth:1.5}}/><path d="M13 20Q29 12 45 18L46 24Q29 18 14 26Z" style={{fill:'var(--cream)'}}/><circle cx="52" cy="20" r="5" style={{fill:'var(--cream)'}}/></g>}
     </g>
   </svg>;
 }

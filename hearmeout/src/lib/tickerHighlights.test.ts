@@ -1,0 +1,2 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {highlightTickerText} from './tickerHighlights';
+test('highlights real subjects without altering or interpreting text',()=>{const text='played <bray fool> for the first time';const parts=highlightTickerText(text,['<bray fool>']);assert.equal(parts.map(p=>p.text).join(''),text);assert.deepEqual(parts.filter(p=>p.highlight).map(p=>p.text),['<bray fool>']);assert.deepEqual(highlightTickerText('hello',[]),[{text:'hello',highlight:false}]);});

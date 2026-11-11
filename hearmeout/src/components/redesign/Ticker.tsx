@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useTickerEvents } from './useTickerEvents';
+import { highlightTickerText } from '@/lib/tickerHighlights';
 import { useApp } from '@/lib/AppContext';
 
 // Preserve the scroll offset across navigation without a JS animation loop.
@@ -69,7 +70,7 @@ export function Ticker() {
   }, [enabled, events, me?.id]);
 
   if (!enabled || !events.length) return null;
-  const messages = events.map(item => <span key={item.id}><b>{item.name}</b> {item.text}</span>);
+  const messages = events.map(item => <span key={item.id}><b>{item.name}</b> {highlightTickerText(item.text,item.highlights ?? []).map((part,i)=>part.highlight ? <em key={i}>{part.text}</em> : part.text)}</span>);
   return <div className="ticker tk32" ref={root} tabIndex={0} aria-live="off"
     onMouseEnter={() => { pause.current.hover = true; refresh.current?.(); }}
     onMouseLeave={() => { pause.current.hover = false; refresh.current?.(); }}

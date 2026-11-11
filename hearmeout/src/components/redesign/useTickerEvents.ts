@@ -14,7 +14,7 @@ import type { TickerNewsResponse } from '@/app/api/ticker/route';
 // empty for someone whose friends are quiet: records, new and announced
 // albums and concerts of the artists they listen to, then of the most
 // popular artists. Empty only when there's nothing real at all.
-export type TickerEvent = { id: string; name: string; text: string };
+export type TickerEvent = { id: string; name: string; text: string; highlights?: string[] };
 
 const EMPTY_NEWS: TickerNewsItem[] = [];
 const OWN_MAX = 6;
@@ -52,16 +52,16 @@ export function useTickerEvents(): TickerEvent[] {
 
   if (feed.hero) {
     const title = albumTitle(feed.hero.albumId);
-    if (title) events.push({ id: 'hero', name: t('friend.you'), text: t('ticker.disagree', { friend: feed.hero.friend.name, album: title }) });
+    if (title) events.push({ id: 'hero', highlights: [feed.hero.friend.name, title], name: t('friend.you'), text: t('ticker.disagree', { friend: feed.hero.friend.name, album: title }) });
   }
 
   for (const e of feed.events) {
     if (events.length >= OWN_MAX) break;
     if (e.type === 'first_play') {
-      events.push({ id: `fp-${e.user.id}-${e.at}-${e.trackTitle}`, name: e.user.name, text: t('ticker.firstPlay', { track: shortTitle(e.trackTitle) }) });
+      events.push({ id: `fp-${e.user.id}-${e.at}-${e.trackTitle}`, highlights: [shortTitle(e.trackTitle)], name: e.user.name, text: t('ticker.firstPlay', { track: shortTitle(e.trackTitle) }) });
     } else if (e.type === 'rating_review') {
       const title = albumTitle(e.albumId);
-      if (title) events.push({ id: `rr-${e.user.id}-${e.albumId}-${e.at}`, name: e.user.name, text: t('ticker.rated', { album: title, stars: e.stars.toFixed(1) }) });
+      if (title) events.push({ id: `rr-${e.user.id}-${e.albumId}-${e.at}`, highlights: [title], name: e.user.name, text: t('ticker.rated', { album: title, stars: e.stars.toFixed(1) }) });
     } else if (e.type === 'session') {
       events.push({ id: `se-${e.at}`, name: t('ticker.youSubject'), text: t('ticker.session', { minutes: e.minutes }) });
     }
@@ -83,7 +83,7 @@ export function useTickerEvents(): TickerEvent[] {
       const title = albumTitle(n.albumId);
       if (title) ev = { id: n.id, name: t('ticker.albumOfWeekLabel'), text: t('ticker.albumOfWeek', { album: title, count: n.count }) };
     }
-    if (ev) { events.push(ev); added++; }
+    if (ev) { if ('title' in n) ev.highlights = [shortTitle(n.title)]; if (n.kind === 'albumOfWeek') ev.highlights = [albumTitle(n.albumId) ?? '']; events.push(ev); added++; }
   }
 
   return events;

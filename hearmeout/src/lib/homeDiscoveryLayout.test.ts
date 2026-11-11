@@ -7,7 +7,7 @@ test('discovery uses each item once and provides distinct rows, pairs and review
  const music=blocks.filter(b=>b.kind==='albums').flatMap(b=>b.indices);const reviews=blocks.filter(b=>b.kind==='reviews').flatMap(b=>b.indices);
  assert.deepEqual([...music].sort((a,b)=>a-b),albums.map((_,i)=>i));assert.equal(new Set(music).size,music.length);
  assert.deepEqual([...reviews].sort((a,b)=>a-b),Array.from({length:9},(_,i)=>i));
- assert.ok(blocks.some(b=>b.kind==='albums'&&b.layout==='row'));assert.ok(blocks.some(b=>b.kind==='albums'&&b.layout==='pair'));
+ assert.ok(blocks.some(b=>b.kind==='albums'&&b.layout==='row'));assert.ok(blocks.filter(b=>b.kind==='albums').every(b=>b.layout==='row')); for(let i=1;i<blocks.length;i++)assert.ok(blocks[i].kind!=='albums'||blocks[i-1].kind!=='albums');
  assert.ok(blocks.some(b=>b.kind==='reviews'&&b.indices.length===1));assert.ok(blocks.some(b=>b.kind==='reviews'&&b.indices.length>1));
  for(const b of blocks){assert.ok(b.indices.length);if(b.kind==='albums'&&b.genre)assert.ok(b.indices.every(i=>albums[i].genreBucket===b.genre));if(b.kind==='albums'&&b.country)assert.ok(b.indices.every(i=>albums[i].country===b.country));}
 });
@@ -22,3 +22,4 @@ test('dominant charts do not repeat country or genre headings throughout the fee
  const topics=blocks.flatMap(b=>b.kind==='albums'?[b.genre&&'genre:'+b.genre,b.country&&'country:'+b.country].filter(Boolean):[]);
  assert.equal(new Set(topics).size,topics.length);
 });
+test('without available reviews consecutive album shelves are combined',()=>{const blocks=buildDiscoveryBlocks(albums,0);assert.equal(blocks.length,1);assert.equal(blocks[0].indices.length,albums.length);const short=buildDiscoveryBlocks(albums.slice(0,10),1);assert.equal(short.filter(b=>b.kind==='albums').length,1);});

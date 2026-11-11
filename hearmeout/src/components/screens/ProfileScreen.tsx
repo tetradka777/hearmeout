@@ -1,4 +1,6 @@
 'use client';
+import { AvatarChoices } from '../ui/AvatarChoices';
+
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -521,6 +523,7 @@ export function ProfileScreen(_props: { device: Device }) {
         </div>
       </div>
 
+      <AvatarChoices />
       <button className="tile t-c5 sst14" onClick={() => showScreen('stats')}>
         <i className="ic ic-bolt" aria-hidden="true" />
         <span className="g"><b>{t('profile.quickStats')}</b>{weekStats && weekStats.hours > 0 && <small>{t('profile.hoursWeek', { h: fmtHours(weekStats.hours) })}</small>}</span>
