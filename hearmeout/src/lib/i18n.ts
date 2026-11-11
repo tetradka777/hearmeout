@@ -928,6 +928,8 @@ const en = {
   'profile.uniqueArtistsN': '{n} different artists',
   'profile.awardsEmptyTitle': 'not enough data yet',
   'profile.awardsEmptyBody': 'add a friend and listen for a few days. awards appear at the end of the month.',
+  'profile.defaultAvatar': 'default avatar',
+  'profile.festiveAvatar': 'holiday avatar',
   'profile.uploadPhoto': 'upload a new profile photo',
   'profile.displayName': 'display name',
   'friends.incomingL': 'incoming',

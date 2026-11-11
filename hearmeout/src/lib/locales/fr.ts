@@ -922,6 +922,8 @@ const fr: Dict = {
   'profile.uniqueArtistsN': '{n} artistes différents',
   'profile.awardsEmptyTitle': 'pas encore assez de données',
   'profile.awardsEmptyBody': 'ajoute un ami et écoute quelques jours. les récompenses arrivent en fin de mois.',
+  'profile.defaultAvatar': 'avatar par défaut',
+  'profile.festiveAvatar': 'avatar de fête',
   'profile.uploadPhoto': 'importer une nouvelle photo de profil',
   'profile.displayName': 'nom affiché',
   'friends.incomingL': 'reçues',

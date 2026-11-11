@@ -1538,3 +1538,19 @@ html,body{margin:0}
 /* A real queued album supplies the invitation backdrop. */
 .rd .tile.rqc19{background:var(--ink);color:var(--cream);--tfg:var(--cream)}
 .rd .home32row{margin-top:0}
+
+/* Event subjects follow the user's accent with its contrasting text. */
+.rd .ticker.tk32{background:var(--paper);color:var(--fg)}
+.rd .ticker.tk32 b,.rd .ticker.tk32 em{color:var(--pick-on);background:var(--pick);font-style:normal;border-radius:4px;padding:1px 3px}
+.rd .home29 h2::after{content:'';display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--pick);margin-left:9px;vertical-align:middle}
+.rd .home29 .sr14>.ab23{flex:0 0 clamp(160px,44vw,220px);width:clamp(160px,44vw,220px)}
+.rd .recap33footer{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%}
+.rd .recap33footer .recap28discovery{flex:1;min-width:0;text-align:left;margin:0}
+.rd .recap33footer .recap25count{flex:none;align-self:center;margin:0}
+.rd .avatar33choices{display:flex;flex-wrap:wrap;gap:6px;grid-column:1/-1}
+.rd .avatar33choices .btn{display:flex;align-items:center;gap:6px;font-size:12px;padding:6px 10px}
+.rd .avatar33choices .dot{display:flex;align-items:center;justify-content:center;width:36px;height:36px;flex:none}
+
+.rd .home29bento~* h2::after{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--pick);margin-left:9px;vertical-align:middle}
+
+.rd .avatar33choices .dot{background:var(--pick);color:var(--pick-on)}

@@ -46,6 +46,7 @@ function ContinuationFeed({ surface }: { surface: 'catalog' | 'discover' }) {
     try { return await cachedPage<T>(url); } finally { pendingSources.current--; setSourceVersion(v => v + 1); }
   }
   const sentinel = useRef<HTMLDivElement>(null);
+  const autoDepth = useRef<number | null>(null);
   const reviews = usePaged<Review, number>(async from => {
     const page = await readSource<{ reviews: Review[]; next: number | null }>(`/api/reviews/recent?from=${from ?? 0}`);
     return { items: page.reviews, next: page.next };
@@ -68,8 +69,9 @@ function ContinuationFeed({ surface }: { surface: 'catalog' | 'discover' }) {
     return uniqueDiscovery(reviews.items, charts.items, id => known.get(id), ids, [...ids.flatMap(id => known.has(id) ? [known.get(id)!] : []), ...(headCharts ?? [])]);
   }, [reviews.items, charts.items, feed, picks, known, headCharts]);
   const reviewLimit = Math.ceil(visible / 16) * 5;
-  const shownReviews = selection.reviews.slice(0, reviewLimit);
-  useAlbums(shownReviews.map(r => r.albumId));
+  const requestedReviews = selection.reviews.slice(0, reviewLimit);
+  useAlbums(requestedReviews.map(r => r.albumId));
+  const shownReviews = requestedReviews.filter(r => known.has(r.albumId));
   const displayedAlbums = selection.albums.slice(0, visible);
   const blocks = buildDiscoveryBlocks(displayedAlbums, shownReviews.length);
   const exhausted = charts.done && reviews.done && visible >= selection.albums.length && reviewLimit >= selection.reviews.length;
@@ -91,7 +93,13 @@ function ContinuationFeed({ surface }: { surface: 'catalog' | 'discover' }) {
   }, [visible, albumCount, reviewCount, chartsDone, reviewsDone, moreCharts, moreReviews, state.activeScreen, surface]);
   useEffect(() => {
     if (exhausted || failed || loadingMore || pendingSources.current > 0 || !rawCount || state.activeScreen !== surface || !sentinel.current) return;
-    const observer = new IntersectionObserver(entries => { if (entries.some(e => e.isIntersecting)) void loadMore(); }, { rootMargin: '180px' });
+    const observer = new IntersectionObserver(entries => {
+      if (!entries.some(e => e.isIntersecting) || !sentinel.current) return;
+      const depth = sentinel.current.getBoundingClientRect().top + window.scrollY;
+      // Appending to one horizontal shelf must not eagerly fetch every page.
+      if (autoDepth.current != null && depth <= autoDepth.current + 8) return;
+      autoDepth.current = depth; void loadMore();
+    }, { rootMargin: '180px' });
     observer.observe(sentinel.current);
     return () => observer.disconnect();
   }, [exhausted, failed, loadingMore, rawCount, state.activeScreen, loadMore, surface, sourceVersion]);

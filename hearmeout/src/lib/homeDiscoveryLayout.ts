@@ -27,18 +27,22 @@ export function buildDiscoveryBlocks(albums: readonly Music[], reviewCount: numb
       blocks.push({kind: 'albums', key: 'music-' + indices[0], indices, layout, ...(genre ? {genre} : country ? {country} : {}), ...(heading ? {heading} : {})});
       const used = new Set(indices); pool = pool.filter(i => !used.has(i));
     };
-    const genres = [...new Set(pool.map(i => albums[i].genreBucket).filter(Boolean))];
-    const grouped = genres.map(g => pool.filter(i => albums[i].genreBucket === g)).sort((a,b) => b.length - a.length)[0];
-    const firstRow = grouped && grouped.length >= 4 ? grouped.slice(0,8) : pool.slice(0,6);
-    music(firstRow, firstRow.length > 2 ? 'row' : 'pair');
+    music(pool.slice(0, pool.length < 14 ? pool.length : 8), 'row');
     if (reviews.length) blocks.push({kind:'reviews',key:'reviews-'+reviews[0],indices:reviews.slice(0,1)});
-    // A compact pair breaks up the sideways rows, without inventing a rank.
-    if (pool.length >= 2) music(pool.slice(0,2),'pair');
+    music(pool.slice(0,8), 'row');
     if (reviews.length > 1) {
-      blocks.push({kind:'reviews',key:'reviews-'+reviews[1],indices:reviews.slice(1), ...(!reviewHeading ? {heading: true} : {})});
+      blocks.push({kind:'reviews',key:'reviews-'+reviews[1],indices:reviews.slice(1), ...(!reviewHeading ? {heading:true} : {})});
       reviewHeading = true;
     }
-    while(pool.length) music(pool.slice(0,8),pool.length <= 2 ? 'pair' : 'row');
   }
-  return blocks;
+  // With no review between them, keep albums in one swipeable shelf.
+  return blocks.reduce<DiscoveryBlock[]>((out, block) => {
+    const previous = out[out.length - 1];
+    if (previous?.kind === 'albums' && block.kind === 'albums') {
+      previous.indices.push(...block.indices);
+      if (!previous.indices.every(i => albums[i].genreBucket === previous.genre)) delete previous.genre;
+      if (!previous.indices.every(i => albums[i].country === previous.country)) delete previous.country;
+    } else out.push({...block,indices:[...block.indices]});
+    return out;
+  }, []);
 }

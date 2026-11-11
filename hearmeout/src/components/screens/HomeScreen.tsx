@@ -101,8 +101,8 @@ function RecapCard({ r, week }: { r: RecapData | undefined; week: number }) {
         {artist ? <ArtistAvatar name={artist.name} id={artist.id} size={100} /> : <span className="aav">?</span>}
         <CoverArt url={song?.cover ?? undefined} fallbackLetter="?" className="cov" px={120} />
       </span>
-      {r && <span className="recap28discovery">{t('home.recapDiscoveries', { n: r.newArtists })}</span>}
-      <span className="recap25count">{r ? r.trackCount : '–'} {t('recap.tracksL')}</span>
+      <span className="recap33footer">{r && <span className="recap28discovery">{t('home.recapDiscoveries', { n: r.newArtists })}</span>}
+      <span className="recap25count">{r ? r.trackCount : '–'} {t('recap.tracksL')}</span></span>
     </button>
   );
 }
