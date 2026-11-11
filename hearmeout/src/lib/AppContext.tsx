@@ -7,7 +7,7 @@ import { normalizeLanguage, pickLanguage, translate, type Language, type Transla
 import { yearRecapOffset, yearRecapOpen } from './yearRecap';
 import { useLoadedLanguage } from './useLoadedLanguage';
 import { clearStatsCache } from './statsClientCache';
-import { jsonAge, peekJson, setJsonCacheOwner, storeJson } from './cachedJson';
+import { cachedJson, jsonAge, peekJson, setJsonCacheOwner, storeJson } from './cachedJson';
 import { laterRemindReady, openLaterReminder } from './laterRemind';
 import { storeAlbums, storedAlbums } from './albumStore';
 import { completedWeekRange } from './weeks';
@@ -517,11 +517,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // The catalogue's covers hardly ever change: a copy under 6 h is kept.
     const age = jsonAge('/api/spotify/covers');
     if (age != null && age < 6 * 3600_000 && peekJson('/api/spotify/covers')) return;
-    fetch('/api/spotify/covers')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((d) => { if (d) { storeJson('/api/spotify/covers', d); setSpotifyCovers(d); } })
+    if (state.authStatus !== 'ready') return;
+    cachedJson<Record<string, string>>('/api/spotify/covers')
+      .then((d) => { if (d) setSpotifyCovers(d); })
       .catch(() => {});
-  }, []);
+  }, [state.authStatus]);
 
   useEffect(() => { if (state.authStatus === 'ready') refreshMyRatings(); }, [state.authStatus, refreshMyRatings]);
   useEffect(() => { if (state.authStatus === 'ready') refreshLovedItems(); }, [state.authStatus, refreshLovedItems]);

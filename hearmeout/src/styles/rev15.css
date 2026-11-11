@@ -1554,3 +1554,11 @@ html,body{margin:0}
 .rd .home29bento~* h2::after{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--pick);margin-left:9px;vertical-align:middle}
 
 .rd .avatar33choices .dot{background:var(--pick);color:var(--pick-on)}
+
+/* Colour the words themselves, without a marker plate. */
+.rd .ticker.tk32 b,.rd .ticker.tk32 em{color:color-mix(in srgb,var(--pick) 35%,var(--fg));background:transparent;padding:0;border-radius:0;font-weight:800}
+
+/* Keep the activity heading dot with its last word on narrow phones. */
+.rd .home29bento~* h2.feed34heading::after{content:none}
+.rd .feed34heading>span{white-space:nowrap}
+.rd .feed34heading>span::after{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--pick);margin-left:9px;vertical-align:middle}

@@ -1,24 +1,22 @@
 'use client';
 
-import { Suspense, startTransition, useEffect, useState, type ComponentType } from 'react';
+import { Suspense, useEffect, useState, type ComponentType } from 'react';
 import dynamic from 'next/dynamic';
 import { useApp } from '@/lib/AppContext';
 import { useWheelRows } from '@/lib/hooks';
 import type { Device, ScreenName } from '@/lib/types';
 import { RedesignShell } from './redesign/Shell';
 import { HomeScreen } from './screens/HomeScreen';
-import { RateScreen } from './screens/RateScreen';
+const RateScreen = dynamic(() => import('./screens/RateScreen').then(m => m.RateScreen));
 // The welcome tour is shown once per account: its own chunk too.
 const OnboardingScreen = dynamic(() => import('./OnboardingScreen').then((m) => m.OnboardingScreen));
-import { preloadDetails } from '@/lib/backgroundPreload';
 import { LaterReminderHost } from './LaterReminder';
-import { markNav, whenQuiet } from '@/lib/navQuiet';
+import { markNav } from '@/lib/navQuiet';
 import { useScrollMemory } from '@/lib/scrollMemory';
 
-// Home and the album page are in the first bundle; every other screen is
-// its own chunk, fetched in the background right after start-up (they're
-// mounted there a moment later anyway), so the first screen comes up
-// without carrying all fourteen.
+// Home is in the first bundle; every other screen is
+// its own chunk, requested on first opening. Visited screens stay mounted
+// so navigation back preserves their data without preloading private pages.
 const loadHistoryScreen = () => import('./screens/HistoryScreen').then((m) => m.HistoryScreen);
 const loadRecapScreen = () => import('./screens/RecapScreen').then((m) => m.RecapScreen);
 const loadProfileScreen = () => import('./screens/ProfileScreen').then((m) => m.ProfileScreen);
@@ -34,7 +32,6 @@ const loadSettingsScreen = () => import('./screens/SettingsScreen').then((m) => 
 const loadStatesScreen = () => import('./screens/StatesScreen').then((m) => m.StatesScreen);
 const loadConcertsScreen = () => import('./screens/ConcertsScreen').then((m) => m.ConcertsScreen);
 const loadLaterScreen = () => import('./screens/LaterScreen').then((m) => m.LaterScreen);
-const SCREEN_LOADERS = [loadConcertsScreen, loadHistoryScreen, loadRecapScreen, loadProfileScreen, loadArtistScreen, loadFriendScreen, loadStatsScreen, loadMatchScreen, loadGroupsScreen, loadGroupScreen, loadFanClubScreen, loadDiscoverScreen, loadSettingsScreen, loadStatesScreen, loadLaterScreen];
 const HistoryScreen = dynamic(loadHistoryScreen);
 const RecapScreen = dynamic(loadRecapScreen);
 const ProfileScreen = dynamic(loadProfileScreen);
@@ -51,8 +48,7 @@ const StatesScreen = dynamic(loadStatesScreen);
 const LaterScreen = dynamic(loadLaterScreen);
 const ConcertsScreen = dynamic(loadConcertsScreen);
 
-// Every screen mounts the first time it's opened (or when the background
-// preload gets to it) and stays mounted after
+// Every screen mounts the first time it is opened and stays mounted after
 // (shown/hidden, not unmounted/remounted) so in-progress state — draft
 // reviews, scroll position, form inputs — survives switching away and back.
 const SCREENS: { name: ScreenName; Component: ComponentType<{ device: Device }> }[] = [
@@ -75,26 +71,9 @@ const SCREENS: { name: ScreenName; Component: ComponentType<{ device: Device }> 
   { name: 'later', Component: LaterScreen },
 ];
 
-// Mounted in the background, one by one, once the first screen is up: each
-// loads its data (and its covers) while hidden, so opening it later shows
-// everything at once instead of starting the requests then.
-const BACKGROUND_SCREENS: ScreenName[] = ['stats', 'match', 'groups', 'profile', 'recap', 'discover', 'history', 'later'];
-// Late enough that the first screen's own data and covers go first (on the
-// small server every request of the background batch competes with them).
-const FIRST_DELAY_MS = 2500;
-const STEP_MS = 900;
-
 export function AppShell() {
-  const { state, me, t } = useApp();
+  const { state, t } = useApp();
   useWheelRows();
-
-  // Fetch the other screens' code right after the first one is up (they're
-  // small): waiting for an idle moment left a tab tapped in the first
-  // seconds waiting too.
-  useEffect(() => {
-    const id = setTimeout(() => { for (const load of SCREEN_LOADERS) load().catch(() => {}); }, 0);
-    return () => clearTimeout(id);
-  }, []);
 
   // A screen mounts the first time it's opened and then stays mounted
   // (hidden), so its state still survives switching away and back. Mounting
@@ -106,30 +85,6 @@ export function AppShell() {
     markNav();
     setVisited((v) => (v.has(state.activeScreen) ? v : new Set(v).add(state.activeScreen)));
   }, [state.activeScreen]);
-
-  // Background preload: the main screens, then the friend and group pages
-  // (lib/backgroundPreload). Starts once per account.
-  const meId = me?.id ?? null;
-  useEffect(() => {
-    if (!meId || !me) return;
-    let alive = true;
-    let i = 0;
-    let timer: ReturnType<typeof setTimeout>;
-    const step = async () => {
-      // A screen opened a moment ago goes first.
-      await whenQuiet();
-      if (!alive) return;
-      const name = BACKGROUND_SCREENS[i++];
-      if (!name) { preloadDetails(me, () => alive).catch(() => {}); return; }
-      // A transition: a tap in the meantime is handled first, not after the
-      // hidden screen's render.
-      startTransition(() => setVisited((v) => (v.has(name) ? v : new Set(v).add(name))));
-      timer = setTimeout(step, STEP_MS);
-    };
-    timer = setTimeout(step, FIRST_DELAY_MS);
-    return () => { alive = false; clearTimeout(timer); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [meId]);
 
   // Each page keeps its scroll position (lib/scrollMemory): switching
   // sections and coming back returns to the same place; a page not seen

@@ -190,6 +190,8 @@ type FeedFilter = 'all' | 'first_play' | 'rating_review' | 'session';
 function FeedSection() {
   const { t, language, feed } = useApp();
   const [filter, setFilter] = useState<FeedFilter>('all');
+  const heading = t('home.feedTitle');
+  const tail = heading.lastIndexOf(' ') + 1;
   const events = feed?.events || [];
   const filtered = filter === 'all' ? events : events.filter((e) => e.type === filter);
   const today = new Date().toLocaleDateString(toLocale(language), { weekday: 'short', day: '2-digit', month: 'short' });
@@ -199,7 +201,7 @@ function FeedSection() {
   return (
     <div className="sec">
       <p className="eyebrow muted">{t('home.feedLive', { date: today }).toLowerCase()}</p>
-      <h2>{t('home.feedTitle')}</h2>
+      <h2 className="feed34heading">{heading.slice(0, tail)}<span>{heading.slice(tail)}</span></h2>
       <div className="chips" role="group" aria-label={t('home.feedTitle')}>
         {chip('all', t('home.filterAll'))}
         {chip('first_play', t('home.filterFirstPlays'))}
