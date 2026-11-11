@@ -8,11 +8,19 @@
 // /v1/artists/{id}, /v1/artists/{id}/albums. Everything in lib/spotifyCatalog.ts
 // is built only out of those.
 let cachedToken: { value: string; expiresAt: number } | null = null;
+let pendingToken: Promise<string> | null = null;
 
 export async function getSpotifyAppToken(): Promise<string> {
   if (cachedToken && Date.now() < cachedToken.expiresAt - 30_000) {
     return cachedToken.value;
   }
+  // A cold page can request several different albums/artists at once.
+  // Share token renewal as well as the resulting token, including errors.
+  pendingToken ??= requestSpotifyAppToken().finally(() => { pendingToken = null; });
+  return pendingToken;
+}
+
+async function requestSpotifyAppToken(): Promise<string> {
   const raw = `${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`;
   const res = await fetch('https://accounts.spotify.com/api/token', {
     method: 'POST',

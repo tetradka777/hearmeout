@@ -9,7 +9,7 @@ import { AlbumShelfCard, Shelf } from './ui/SuperCards';
 type Item = ChartAlbumLite & { spotifyId?: string };
 
 // "Popular now": this week's most played albums (Apple Music's public
-// charts, lib/appleCharts) — your region's chart first, matched to Spotify,
+// charts, lib/appleCharts) — your region's chart first, using known ids,
 // then endlessly on: the top 100 of your country and then of other big
 // markets (/api/charts/more), each album once. Those are matched to
 // Spotify only when opened.

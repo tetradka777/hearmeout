@@ -58,7 +58,7 @@ function LanguageAside() {
           <small className="k9 muted">{t('settings.popularIn', { region: region ? regionDisplayName(region, language) : t('settings.worldwide') })}</small>
           <div className="cv9">
             {chart.slice(0, 3).map((a) => (
-              <span key={a.spotifyId}><CoverArt url={a.cover ?? undefined} fallbackLetter={a.artist[0] || '?'} className="cov" px={90} style={{ width: '100%', aspectRatio: '1' }} /><small>{a.title}</small></span>
+              <span key={`${a.artist}|${a.title}`}><CoverArt url={a.cover ?? undefined} fallbackLetter={a.artist[0] || '?'} className="cov" px={90} style={{ width: '100%', aspectRatio: '1' }} /><small>{a.title}</small></span>
             ))}
           </div>
           <p className="muted" style={{ fontWeight: 600, fontSize: 13, marginTop: 10 }}>{t('settings.regionNote')}</p>
