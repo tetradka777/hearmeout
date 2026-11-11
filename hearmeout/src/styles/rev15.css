@@ -1485,3 +1485,43 @@ html,body{margin:0}
 .rd .dkc13.rvc15{height:auto;min-height:236px}.rd .dkc13.rvc15>.bd{overflow:visible;min-height:auto}
 .rd .fdc15 .ex .q13,.rd .fdc15 .ex .q13.clamp{display:block;-webkit-line-clamp:unset;overflow:visible;overflow-wrap:anywhere}
 .rd .fdc15 .who13 .g{min-width:0}.rd .fdc15 .who13 b{overflow-wrap:anywhere;white-space:normal}
+
+/* Home reading pass: compact, consistent captions and ordered metadata. */
+.rd .home29bento:empty,.rd .home29two:empty{display:none}
+.rd .home29two{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))}
+.rd .ab23 .tx,.rd .cw15 .it.ow23 .tx{min-width:0;text-align:left}
+.rd .ab23 .by26.has-meta29>.mt{order:0;max-width:36%;flex:none;margin:0;font-size:clamp(9px,6.7cqw,12px);line-height:1.15;color:var(--cream)}
+.rd .ab23 .by26.has-meta29>small:first-child{order:0;min-width:0}
+.rd .ac23 .at{line-height:1.25;gap:4px;min-width:0}
+.rd .ac23 .at b,.rd .ac23 .at small{line-height:1.25;min-width:0}
+.rd .picks29 .hrow.sr14{align-items:stretch}
+.rd .picks29 .hrow.sr14>.pick29{width:min(360px,calc(100vw - 32px));flex:none}
+.rd .pick29 .who13{min-width:0}.rd .pick29 .who13 .g{min-width:0}
+.rd .pick29 .who13 b{white-space:normal;overflow-wrap:anywhere}
+.rd .pick29 .sc13{display:flex;align-items:center;gap:4px;white-space:nowrap}.rd .pick29 .sc13 .ic{width:18px;height:18px}
+.rd .home29defer{min-height:1px}
+.rd .home29block{margin:24px 0 0}.rd .home29block>.sh14{margin-top:0}
+.rd .home29pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-width:720px}
+.rd .home29 .home29review>.rvc15{max-width:720px}
+.rd .home29 .home29reviews .sr14>.rvc15{width:min(360px,calc(100vw - 32px));max-width:none;flex:none}
+.rd .home29 .home29reviews .sr14{align-items:stretch}
+.rd .home29 .sh14 .hd h2{font-size:clamp(22px,4.2vw,30px)}
+@media(min-width:900px){.rd .picks29 .hrow.sr14>.pick29,.rd .home29 .home29reviews .sr14>.rvc15{width:380px}}
+
+/* Keep the subject and action in one complete, readable activity message. */
+.rd .ticker.tk31{display:block;padding:10px 18px;border-radius:22px;min-height:40px;height:auto;white-space:normal;overflow:hidden;text-align:left;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+.rd .tk31-message{display:block;width:100%;max-width:none;white-space:normal;overflow-wrap:anywhere;font-size:14px;line-height:1.4;animation:tk31-in .2s ease-out both}
+.rd .tk31-message b{font-size:inherit;line-height:inherit}
+@keyframes tk31-in{from{opacity:0}to{opacity:1}}
+[data-motion="off"] .rd .tk31-message{animation:none}@media(prefers-reduced-motion:reduce){.rd .tk31-message{animation:none}}
+
+/* The old one-colour theme made --tk-b transparent. Subjects use the
+   same contrasting foreground as the complete event. */
+.rd .ticker.tk31 .tk31-message b{color:inherit}
+.rd .pick29>.hd{flex-wrap:nowrap}.rd .pick29score{display:flex;align-items:center;gap:4px}.rd .pick29score .ic{width:14px;height:14px}
+
+/* Reserve one shared text area so cycling messages never shifts the page. */
+.rd .ticker.tk31{display:grid;grid-template-columns:minmax(0,1fr)}
+.rd .tk31-message{grid-area:1/1;visibility:hidden;pointer-events:none;animation:none}
+.rd .tk31-message.on{visibility:visible;animation:tk31-in .2s ease-out both}
+[data-motion="off"] .rd .tk31-message.on{animation:none}@media(prefers-reduced-motion:reduce){.rd .tk31-message.on{animation:none}}

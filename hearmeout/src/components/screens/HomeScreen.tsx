@@ -74,7 +74,8 @@ function RecapCard({ r, week }: { r: RecapData | undefined; week: number }) {
   const { t, openRecap } = useApp();
   const recapWeek = r?.range.start ? isoWeekNumber(new Date(r.range.start)) : week;
   const eyebrow = t('recapTeaser.weekEyebrow', { n: recapWeek });
-  if (r && r.trackCount < RECAP_MIN_TRACKS) {
+  if (!r || r.trackCount === 0) return null;
+  if (r.trackCount < RECAP_MIN_TRACKS) {
     return (
       <div className="tile t-soft2 rc empty" role="group" style={{ alignItems: 'flex-start', textAlign: 'left', minHeight: 250, justifyContent: 'center' }}>
         <div className="rc-top" style={{ width: '100%' }}><span>{eyebrow}</span></div>
@@ -194,6 +195,7 @@ function FeedSection() {
   const today = new Date().toLocaleDateString(toLocale(language), { weekday: 'short', day: '2-digit', month: 'short' });
   const chip = (f: FeedFilter, label: string) => <button className={`chip${filter === f ? ' on' : ''}`} onClick={() => setFilter(f)}>{label}</button>;
 
+  if (!events.length) return null;
   return (
     <div className="sec">
       <p className="eyebrow muted">{t('home.feedLive', { date: today }).toLowerCase()}</p>
@@ -274,6 +276,7 @@ function DayTile() {
     const key = s.albumId || s.cover || s.title;
     if (!covers.some((c) => c.key === key)) covers.push({ key, cover: s.cover, albumId: s.albumId, title: s.title, artist: s.artist });
   }
+  if (!r || r.trackCount === 0) return null;
   return (
     // The day over its covers, blurred (the first one), white text.
     <div className={`tile day13${covers[0]?.cover ? ' bh15' : ''}`} style={blurStyle(covers[0]?.cover ? sizedImage(covers[0].cover, 150) ?? covers[0].cover : null)}>
@@ -303,6 +306,7 @@ function RateTile() {
   const { t, myRatings, feed, openAlbum, spotifyCovers } = useApp();
   const rated = useMemo(() => new Set(myRatings.map((r) => r.albumId)), [myRatings]);
   const unrated = useAlbums((feed?.recentAlbumIds || []).filter((id) => !rated.has(id)).slice(0, 12));
+  if (!unrated.length) return null;
   return (
     // No card of its own: the covers under it are the cards.
     <div className="sec rt16">
@@ -418,8 +422,8 @@ export function HomeScreen(_props: { device: Device }) {
     <>
       {/* the page heading for screen readers (the hot take, when there is one, has its own) */}
       <h1 className="sr">{t('nav.home')}</h1>
-      <div className="bento b3">
-        <HeroTile wide={seen} />
+      <div className="bento b3 home29bento">
+        <HeroTile wide={seen || !r?.trackCount} />
         {!seen && <RecapCard r={r} week={week} />}
       </div>
       {seen && r && <RecapCard r={r} week={week} />}
@@ -433,7 +437,7 @@ export function HomeScreen(_props: { device: Device }) {
 
       <FriendsList />
 
-      <div className="sec two">
+      <div className="sec two home29two">
         <DayTile />
         <RateTile />
       </div>

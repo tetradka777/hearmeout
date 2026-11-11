@@ -4,31 +4,33 @@ import { useMemo } from 'react';
 import { useApp } from '@/lib/AppContext';
 import { useCachedJson } from '@/lib/cachedJson';
 import { useAlbums } from '@/lib/useAlbum';
-import { userAvatarStyle } from '@/lib/format';
+import { fmt1 } from '@/lib/numberFormat';
 import type { Recommendation } from '@/app/api/recommendations/route';
-import { AlbumShelfCard, Shelf } from './ui/SuperCards';
-import { Initial } from './ui/Initial';
+import { DarkCard, CardWho, Shelf } from './ui/SuperCards';
+import { CoverArt } from './ui/CoverArt';
+import { ArtistName } from './ui/ArtistName';
 
-// The same real friend recommendations, in a horizontal shelf with a
-// readable recommendation underneath each album. No hidden vertical deck.
+// Friend picks use the same photo-backed activity card as today's plays.
 export function FriendsPicksCard() {
   const { t, openAlbum, spotifyCovers, myRatings, viewFriend } = useApp();
   const { data } = useCachedJson<Recommendation[]>('/api/recommendations');
-  const rated = useMemo(() => new Set(myRatings.map((r) => r.albumId)), [myRatings]);
-  const list = (data || []).filter((r) => !rated.has(r.albumId));
-  const known = useAlbums(list.map((x) => x.albumId)).slice(0, 10);
+  const rated = useMemo(() => new Set(myRatings.map(r => r.albumId)), [myRatings]);
+  const list = (data || []).filter(r => !rated.has(r.albumId) && r.fans.length > 0).slice(0, 10);
+  const known = useAlbums(list.map(x => x.albumId));
   if (!known.length) return null;
-  return <Shelf title={t('home.friendsLovedTitle')} className="picks28">
+  return <Shelf title={t('home.friendsLovedTitle')} className="picks29">
     {known.map(({ id, album }) => {
-      const pick = list.find((x) => x.albumId === id)!;
+      const pick = list.find(x => x.albumId === id)!;
       const first = pick.fans[0];
-      return <div className="pick28" key={id}>
-        <AlbumShelfCard cover={spotifyCovers[album.id] || album.cover} title={album.title} artist={album.artist} artistId={album.artistId} score={pick.avg} onClick={() => openAlbum(album.id)} />
-        <div className="pick28who">
-          <span className="pick28faces">{pick.fans.slice(0, 3).map((f) => <button key={f.id} className="dot" aria-label={f.name} style={userAvatarStyle(f)} onClick={() => viewFriend(f.id)}>{!f.avatarUrl && <Initial name={f.name} />}</button>)}</span>
-          <small>{pick.fans.length > 1 ? t('home.lovedByMany', { name: first?.name ?? '', n: pick.fans.length - 1 }) : t('home.lovedBy', { name: first?.name ?? '' })}</small>
-        </div>
-      </div>;
+      const cover = spotifyCovers[album.id] || album.cover;
+      return <DarkCard key={id} cover={cover} className="rvc15 fdc15 pick29"
+        head={<CardWho user={first || {name: '', avatarUrl: null}} when={t('home.trendingFriends', {n: pick.fans.length})} onClick={first ? () => viewFriend(first.id) : undefined} />}
+        onOpen={() => openAlbum(album.id)} openText
+        aside={<button className="cvb" onClick={() => openAlbum(album.id)} aria-label={album.title}><CoverArt url={cover} fallbackLetter={album.artist[0] || '?'} className="cov" px={240} style={{width:'100%',aspectRatio:'1'}} /></button>}>
+        <button className="ft15" onClick={() => openAlbum(album.id)}><span>{album.title}</span></button>
+        <p className="s15 pick29score"><i className="ic ic-star" aria-hidden="true" />{fmt1(pick.avg)}</p>
+        <p className="m15"><ArtistName name={album.artist} id={album.artistId} /></p>
+      </DarkCard>;
     })}
   </Shelf>;
 }

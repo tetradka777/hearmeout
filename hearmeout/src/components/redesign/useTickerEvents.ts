@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useApp } from '@/lib/AppContext';
 import { useCachedJson } from '@/lib/cachedJson';
 import { toLocale, type Language } from '@/lib/i18n';
@@ -15,6 +16,7 @@ import type { TickerNewsResponse } from '@/app/api/ticker/route';
 // popular artists. Empty only when there's nothing real at all.
 export type TickerEvent = { id: string; name: string; text: string };
 
+const EMPTY_NEWS: TickerNewsItem[] = [];
 const OWN_MAX = 6;
 const NEWS_MAX = 10;
 
@@ -23,7 +25,7 @@ const NEWS_MAX = 10;
 function useTickerNews(enabled: boolean, region: string | null): TickerNewsItem[] {
   const url = enabled ? `/api/ticker${region ? `?country=${encodeURIComponent(region)}` : ''}` : null;
   const items = useCachedJson<TickerNewsResponse>(url).data?.items;
-  return enabled && items ? items : [];
+  return enabled && items ? items : EMPTY_NEWS;
 }
 
 function shortDate(iso: string, language: Language): string {
@@ -42,6 +44,7 @@ function placeOf(city: string | null, country: string | null, language: Language
 export function useTickerEvents(): TickerEvent[] {
   const { t, language, me, feed, albums, liveAlbums } = useApp();
   const news = useTickerNews(!!me?.tickerEnabled, me?.region ?? null);
+  return useMemo(() => {
   if (!feed) return [];
 
   const albumTitle = (albumId: string) => (liveAlbums[albumId] || albums.find((a) => a.id === albumId))?.title ?? null;
@@ -52,15 +55,15 @@ export function useTickerEvents(): TickerEvent[] {
     if (title) events.push({ id: 'hero', name: t('friend.you'), text: t('ticker.disagree', { friend: feed.hero.friend.name, album: title }) });
   }
 
-  for (const [i, e] of feed.events.entries()) {
+  for (const e of feed.events) {
     if (events.length >= OWN_MAX) break;
     if (e.type === 'first_play') {
-      events.push({ id: `fp-${i}-${e.at}`, name: e.user.name, text: t('ticker.firstPlay', { track: shortTitle(e.trackTitle) }) });
+      events.push({ id: `fp-${e.user.id}-${e.at}-${e.trackTitle}`, name: e.user.name, text: t('ticker.firstPlay', { track: shortTitle(e.trackTitle) }) });
     } else if (e.type === 'rating_review') {
       const title = albumTitle(e.albumId);
-      if (title) events.push({ id: `rr-${i}-${e.at}`, name: e.user.name, text: t('ticker.rated', { album: title, stars: e.stars.toFixed(1) }) });
+      if (title) events.push({ id: `rr-${e.user.id}-${e.albumId}-${e.at}`, name: e.user.name, text: t('ticker.rated', { album: title, stars: e.stars.toFixed(1) }) });
     } else if (e.type === 'session') {
-      events.push({ id: `se-${i}-${e.at}`, name: t('ticker.youSubject'), text: t('ticker.session', { minutes: e.minutes }) });
+      events.push({ id: `se-${e.at}`, name: t('ticker.youSubject'), text: t('ticker.session', { minutes: e.minutes }) });
     }
   }
 
@@ -84,5 +87,6 @@ export function useTickerEvents(): TickerEvent[] {
   }
 
   return events;
+  }, [t, language, feed, albums, liveAlbums, news]);
 }
 

@@ -1,98 +1,88 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTickerEvents } from './useTickerEvents';
 import { useApp } from '@/lib/AppContext';
+import { nextTickerPosition, syncTickerPosition, tickerHoldMs, type TickerPosition } from '@/lib/tickerRotation';
 
-// Activity ticker (spec 3.8, 14 #1, Appendix F "Ticker"). The critical
-// requirement: it must never restart, stop or jump when the app navigates
-// or re-renders. Two things make that true here:
-//   1. The scroll offset lives in module-level state (outside React and
-//      outside the DOM), so even if this component were ever recreated the
-//      position survives — not just "as long as Shell doesn't unmount".
-//   2. Each frame writes `transform` straight to the track element via a
-//      ref, bypassing React's render cycle entirely, so re-renders of the
-//      rest of the app (screen changes, state updates) can't touch it.
-// Mount this once in the app shell, outside the route outlet (spec 17.1).
-const TK = { pos: 0, last: 0 };
-// One full group (50% of the two-group track) takes 6 s per event, at
-// least 36 s, so a longer strip scrolls at the same reading speed.
-const MS_PER_EVENT = 6000;
-const MIN_DUR_MS = 36000;
-
-function motionOn(): boolean {
-  if (typeof document === 'undefined') return true;
-  if (document.documentElement.dataset.motion === 'off') return false;
-  if (typeof matchMedia === 'undefined') return true;
-  return !matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
+// Keep the event and its reading time across navigation or a remount.
+// Rotate complete phrases: a marquee can scroll the author out of view
+// while leaving an otherwise anonymous "played ..." on a narrow phone.
+const TK: TickerPosition = { id: null, elapsedMs: 0 };
 
 export function Ticker() {
-  const { t, me, feed } = useApp();
+  const { me, feed } = useApp();
   const events = useTickerEvents();
-  const tickerRef = useRef<HTMLDivElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const hoveringRef = useRef(false);
-  const durRef = useRef(MIN_DUR_MS);
-  useEffect(() => { durRef.current = Math.max(MIN_DUR_MS, events.length * MS_PER_EVENT); }, [events.length]);
-  const rafRef = useRef<number | null>(null);
+  const enabled = !!me?.tickerEnabled && !!feed;
+  const [currentId, setCurrentId] = useState<string | null>(null);
+  const pauseRef = useRef({ hover: false, focus: false });
+  const refreshRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    const apply = () => {
-      const t = trackRef.current;
-      if (t) t.style.transform = `translate3d(-${TK.pos.toFixed(3)}%,0,0)`;
-    };
-    apply(); // restore whatever offset a previous mount (or hot reload) left
-
+    if (!enabled || !events.length) return;
+    const reducedMotion = typeof matchMedia !== 'undefined' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
     const canHover = typeof matchMedia !== 'undefined' && matchMedia('(hover: hover)').matches;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let startedAt: number | null = null;
 
-    function loop(ts: number) {
-      const dt = TK.last ? Math.min(100, ts - TK.last) : 0; // cap: a backgrounded tab can't cause a jump
-      TK.last = ts;
-      if (dt && !(canHover && hoveringRef.current) && motionOn()) {
-        TK.pos += (dt / durRef.current) * 50;
-        if (TK.pos >= 50) TK.pos -= 50;
+    function stop() {
+      if (timer != null) clearTimeout(timer);
+      timer = null;
+      if (startedAt != null) {
+        TK.elapsedMs += performance.now() - startedAt;
+        startedAt = null;
       }
-      apply();
-      rafRef.current = requestAnimationFrame(loop);
     }
-    rafRef.current = requestAnimationFrame(loop);
-    return () => { if (rafRef.current != null) cancelAnimationFrame(rafRef.current); TK.last = 0; };
-  }, []);
+
+    function refresh() {
+      stop();
+      Object.assign(TK, syncTickerPosition(TK, events));
+      setCurrentId(TK.id);
+      if (events.length < 2 || document.hidden || document.documentElement.dataset.motion === 'off'
+        || reducedMotion?.matches || pauseRef.current.focus || (canHover && pauseRef.current.hover)) return;
+      const event = events.find((item) => item.id === TK.id)!;
+      startedAt = performance.now();
+      timer = setTimeout(() => {
+        stop();
+        Object.assign(TK, nextTickerPosition(TK, events));
+        refresh();
+      }, Math.max(0, tickerHoldMs(event) - TK.elapsedMs));
+    }
+
+    // No continuous animation loop, including while the tab is hidden or
+    // motion is disabled. Resume the remaining reading time after a pause.
+    refreshRef.current = refresh;
+    document.addEventListener('visibilitychange', refresh);
+    reducedMotion?.addEventListener('change', refresh);
+    const observer = new MutationObserver(refresh);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-motion'] });
+    refresh();
+    return () => {
+      stop();
+      refreshRef.current = null;
+      document.removeEventListener('visibilitychange', refresh);
+      reducedMotion?.removeEventListener('change', refresh);
+      observer.disconnect();
+    };
+  }, [enabled, events]);
 
   // Settings → Extras → Activity strip turns it off (prototype ticker()).
-  if (!me?.tickerEnabled || !feed) return null;
-  // Nothing real to show yet: one calm, still line instead of no strip.
-  if (!events.length) {
-    return (
-      <div className="ticker calm" aria-hidden="true">
-        <div className="mq"><span>{t('ticker.calm')}</span></div>
-      </div>
-    );
-  }
+  if (!enabled) return null;
+  if (!events.length) return null;
 
-  const group = (key: string) => (
-    <span className="grp" key={key}>
-      {events.map((e) => (
-        <span key={e.id}><b>{e.name}</b> {e.text}</span>
-      ))}
-    </span>
-  );
+  const event = events.find((item) => item.id === currentId) ?? events[0];
 
   return (
     <div
-      className="ticker"
-      ref={tickerRef}
-      aria-hidden="true"
-      onMouseEnter={() => { hoveringRef.current = true; }}
-      onMouseLeave={() => { hoveringRef.current = false; }}
+      className="ticker tk31"
+      tabIndex={0}
+      aria-live="off"
+      onMouseEnter={() => { pauseRef.current.hover = true; refreshRef.current?.(); }}
+      onMouseLeave={() => { pauseRef.current.hover = false; refreshRef.current?.(); }}
+      onFocus={() => { pauseRef.current.focus = true; refreshRef.current?.(); }}
+      onBlur={() => { pauseRef.current.focus = false; refreshRef.current?.(); }}
     >
-      <div className="mq">
-        <div className="track" ref={trackRef}>
-          {group('a')}
-          {group('b')}
-        </div>
-      </div>
+      {events.map(item => <span className={`tk31-message${item.id === event.id ? ' on' : ''}`} key={item.id} aria-hidden={item.id !== event.id}><b>{item.name}</b> {item.text}</span>)}
     </div>
   );
 }

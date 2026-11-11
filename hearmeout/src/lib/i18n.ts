@@ -10,6 +10,10 @@ export const LANGUAGE_LABEL: Record<Language, string> = {
 
 const en = {
   'home.recapDiscoveries': 'you discovered {n} new {n|artist|artists} this week',
+  'home.exploreGenre': "more {genre}",
+  'home.exploreCountry': "in {country}",
+  'home.exploreAlbums': "more albums to explore",
+  'home.explorePair': "give these a spin",
   'home.keepExploring': 'keep exploring',
   'home.exploreMore': 'more music',
   'home.exploreEnd': 'you’re all caught up for now',
