@@ -15,3 +15,10 @@ test('completed discovery groups keep the same keys and contents when another pa
  const before=buildDiscoveryBlocks(albums.slice(0,16),5),after=buildDiscoveryBlocks(albums,9);
  assert.deepEqual(after.slice(0,before.length),before);assert.deepEqual(buildDiscoveryBlocks([],0),[]);
 });
+
+test('dominant charts do not repeat country or genre headings throughout the feed',()=>{
+ const repeated=Array.from({length:128},()=>({country:'us',genreBucket:'Hip-Hop'}));
+ const blocks=buildDiscoveryBlocks(repeated,30);
+ const topics=blocks.flatMap(b=>b.kind==='albums'?[b.genre&&'genre:'+b.genre,b.country&&'country:'+b.country].filter(Boolean):[]);
+ assert.equal(new Set(topics).size,topics.length);
+});

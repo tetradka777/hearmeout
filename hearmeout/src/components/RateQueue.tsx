@@ -11,6 +11,7 @@ import { CoverArt } from './ui/CoverArt';
 import { ArtistName } from './ui/ArtistName';
 import { CloseIcon } from './ui/Icons';
 import { StarSlider } from './redesign/Stars';
+import { blurStyle } from '@/lib/imageColor';
 
 // Albums skipped in the queue, per account in this browser: they don't come
 // back next time (a skip isn't a score).
@@ -129,7 +130,7 @@ export function RateQueueCard() {
   if (!queue.length) return null;
   return (
     <>
-      <button className="tile rqc19" onClick={() => setOpen(true)}>
+      <button className={`tile rqc19${known[0]?.album.cover ? ' bh15' : ''}`} style={blurStyle(known[0]?.album.cover)} onClick={() => setOpen(true)}>
         <span className="cvs" aria-hidden="true">
           {known.map(({ id, album }) => <CoverArt key={id} url={album.cover} fallbackLetter={album.artist[0] || '?'} className="cov" px={120} style={{ width: 56, height: 56 }} />)}
         </span>

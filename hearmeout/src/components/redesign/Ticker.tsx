@@ -1,88 +1,82 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTickerEvents } from './useTickerEvents';
 import { useApp } from '@/lib/AppContext';
-import { nextTickerPosition, syncTickerPosition, tickerHoldMs, type TickerPosition } from '@/lib/tickerRotation';
 
-// Keep the event and its reading time across navigation or a remount.
-// Rotate complete phrases: a marquee can scroll the author out of view
-// while leaving an otherwise anonymous "played ..." on a narrow phone.
-const TK: TickerPosition = { id: null, elapsedMs: 0 };
+// Preserve the scroll offset across navigation without a JS animation loop.
+const TK = { owner: '', pixels: 0, id: '', inset: 0 };
+const SPEED = 32;
 
 export function Ticker() {
   const { me, feed } = useApp();
   const events = useTickerEvents();
   const enabled = !!me?.tickerEnabled && !!feed;
-  const [currentId, setCurrentId] = useState<string | null>(null);
-  const pauseRef = useRef({ hover: false, focus: false });
-  const refreshRef = useRef<(() => void) | null>(null);
+  const root = useRef<HTMLDivElement>(null);
+  const track = useRef<HTMLDivElement>(null);
+  const group = useRef<HTMLDivElement>(null);
+  const pause = useRef({ hover: false, focus: false });
+  const refresh = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    if (!enabled || !events.length) return;
-    const reducedMotion = typeof matchMedia !== 'undefined' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
-    const canHover = typeof matchMedia !== 'undefined' && matchMedia('(hover: hover)').matches;
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    let startedAt: number | null = null;
-
-    function stop() {
-      if (timer != null) clearTimeout(timer);
-      timer = null;
-      if (startedAt != null) {
-        TK.elapsedMs += performance.now() - startedAt;
-        startedAt = null;
+    if (!enabled || !events.length || !root.current || !track.current || !group.current) return;
+    if (TK.owner !== me?.id) { TK.owner = me?.id ?? ''; TK.pixels = 0; TK.id = ''; }
+    const element = root.current, moving = track.current, first = group.current;
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+    const canHover = matchMedia('(hover: hover)').matches;
+    let animation: Animation | null = null;
+    let width = 0;
+    let slots: {id: string; start: number}[] = [];
+    const remember = () => {
+      if (animation && typeof animation.currentTime === 'number' && width) {
+        TK.pixels = (animation.currentTime * SPEED / 1000) % width;
+        const slot = [...slots].reverse().find(item => item.start <= TK.pixels) ?? slots[0];
+        if (slot) { TK.id = slot.id; TK.inset = TK.pixels - slot.start; }
       }
-    }
-
-    function refresh() {
-      stop();
-      Object.assign(TK, syncTickerPosition(TK, events));
-      setCurrentId(TK.id);
-      if (events.length < 2 || document.hidden || document.documentElement.dataset.motion === 'off'
-        || reducedMotion?.matches || pauseRef.current.focus || (canHover && pauseRef.current.hover)) return;
-      const event = events.find((item) => item.id === TK.id)!;
-      startedAt = performance.now();
-      timer = setTimeout(() => {
-        stop();
-        Object.assign(TK, nextTickerPosition(TK, events));
-        refresh();
-      }, Math.max(0, tickerHoldMs(event) - TK.elapsedMs));
-    }
-
-    // No continuous animation loop, including while the tab is hidden or
-    // motion is disabled. Resume the remaining reading time after a pause.
-    refreshRef.current = refresh;
-    document.addEventListener('visibilitychange', refresh);
-    reducedMotion?.addEventListener('change', refresh);
-    const observer = new MutationObserver(refresh);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-motion'] });
-    refresh();
-    return () => {
-      stop();
-      refreshRef.current = null;
-      document.removeEventListener('visibilitychange', refresh);
-      reducedMotion?.removeEventListener('change', refresh);
-      observer.disconnect();
     };
-  }, [enabled, events]);
+    function sync() {
+      const staticView = reduced.matches || document.documentElement.dataset.motion === 'off' || !moving.animate;
+      element.classList.toggle('calm32', staticView);
+      if (staticView) { remember(); animation?.cancel(); animation = null; return; }
+      const measured = first.getBoundingClientRect().width;
+      if (!measured) { animation?.pause(); return; }
+      if (!animation || Math.abs(measured - width) > 1) {
+        remember(); animation?.cancel(); width = measured;
+        const left = first.getBoundingClientRect().left;
+        slots = [...first.children].map((child, i) => ({id: events[i].id, start: child.getBoundingClientRect().left - left}));
+        const anchor = slots.find(slot => slot.id === TK.id);
+        if (anchor) TK.pixels = Math.max(0, anchor.start + TK.inset);
+        animation = moving.animate([{ transform: 'translate3d(0,0,0)' }, { transform: 'translate3d(' + -width + 'px,0,0)' }], { duration: width / SPEED * 1000, iterations: Infinity });
+        animation.currentTime = (TK.pixels % width) / SPEED * 1000;
+      }
+      if (document.hidden || pause.current.focus || (canHover && pause.current.hover)) animation.pause();
+      else animation.play();
+    }
+    refresh.current = sync;
+    const resize = new ResizeObserver(sync);
+    resize.observe(first);
+    const motion = new MutationObserver(sync);
+    motion.observe(document.documentElement, { attributes: true, attributeFilter: ['data-motion'] });
+    document.addEventListener('visibilitychange', sync);
+    reduced.addEventListener('change', sync);
+    sync();
+    return () => {
+      remember(); animation?.cancel(); refresh.current = null;
+      resize.disconnect(); motion.disconnect();
+      document.removeEventListener('visibilitychange', sync);
+      reduced.removeEventListener('change', sync);
+    };
+  }, [enabled, events, me?.id]);
 
-  // Settings → Extras → Activity strip turns it off (prototype ticker()).
-  if (!enabled) return null;
-  if (!events.length) return null;
-
-  const event = events.find((item) => item.id === currentId) ?? events[0];
-
-  return (
-    <div
-      className="ticker tk31"
-      tabIndex={0}
-      aria-live="off"
-      onMouseEnter={() => { pauseRef.current.hover = true; refreshRef.current?.(); }}
-      onMouseLeave={() => { pauseRef.current.hover = false; refreshRef.current?.(); }}
-      onFocus={() => { pauseRef.current.focus = true; refreshRef.current?.(); }}
-      onBlur={() => { pauseRef.current.focus = false; refreshRef.current?.(); }}
-    >
-      {events.map(item => <span className={`tk31-message${item.id === event.id ? ' on' : ''}`} key={item.id} aria-hidden={item.id !== event.id}><b>{item.name}</b> {item.text}</span>)}
-    </div>
-  );
+  if (!enabled || !events.length) return null;
+  const messages = events.map(item => <span key={item.id}><b>{item.name}</b> {item.text}</span>);
+  return <div className="ticker tk32" ref={root} tabIndex={0} aria-live="off"
+    onMouseEnter={() => { pause.current.hover = true; refresh.current?.(); }}
+    onMouseLeave={() => { pause.current.hover = false; refresh.current?.(); }}
+    onFocus={() => { pause.current.focus = true; refresh.current?.(); }}
+    onBlur={() => { pause.current.focus = false; refresh.current?.(); }}>
+    <div className="mq"><div className="track" ref={track}>
+      <div className="grp" ref={group}>{messages}</div><div className="grp tk32-copy" aria-hidden="true">{messages}</div>
+    </div></div>
+  </div>;
 }

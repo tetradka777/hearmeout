@@ -113,7 +113,9 @@ export function chartPage(country: string): Promise<ChartAlbumLite[]> {
       headers: { 'User-Agent': 'Mozilla/5.0 (HearMeOut)' },
       signal: AbortSignal.timeout(10000),
     }).catch(() => null);
-    // A failure throws, so it isn't cached as an empty chart.
+    // Unsupported markets are empty, never another country's mislabeled chart.
+    if (res?.status === 404) return [];
+    // A transient failure throws, so it isn't cached as an empty chart.
     if (!res?.ok) throw new Error('Apple chart unavailable');
     const data = await res.json().catch(() => null);
     const all = (data?.feed?.results as AppleResult[] | undefined) ?? [];

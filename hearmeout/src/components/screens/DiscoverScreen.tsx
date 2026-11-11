@@ -8,7 +8,7 @@ import { useApp } from '@/lib/AppContext';
 import type { Album, Device, DiscoverMatchPerson } from '@/lib/types';
 import { userAvatarStyle } from '@/lib/format';
 import { CoverArt } from '../ui/CoverArt';
-import { AlbumShelfCard, ReviewCard, Shelf } from '../ui/SuperCards';
+import { AlbumShelfCard, Shelf } from '../ui/SuperCards';
 import { FanClubsForYou } from '../FanClubs';
 import { FanClubReleases } from '../FanClubReleases';
 import { ComingSoon } from '../ComingSoon';
@@ -17,8 +17,8 @@ import { PopularNowSection } from '../PopularNowSection';
 import { ConcertsFeed } from '../ConcertsFeed';
 import { RisingArtists } from '../RisingArtists';
 import { MascotIcon } from '../redesign/icons';
-import { cachedJson, peekJson, cachedPage } from '@/lib/cachedJson';
-import { usePaged } from '@/lib/usePaged';
+import { cachedJson, peekJson } from '@/lib/cachedJson';
+import { HomeContinuation } from '../HomeContinuation';
 
 // Discover: this is where the old Home/catalog-browser content lives now
 // (redesign spec 13.3 — "Discover is where the old catalog lives"). Empty
@@ -106,8 +106,6 @@ function AlbumRow({ album: a }: { album: Album }) {
   );
 }
 
-type SiteReview = { stars: number; review: string; tags?: string[]; createdAt: string; albumId: string; user: { id?: string; name: string; handle: string; avatarUrl: string | null } };
-
 // Albums outside the static catalog are looked up as they near the screen.
 function useEnsureAlbums(ids: string[]) {
   const { albums, liveAlbums, failedAlbumIds, ensureLiveAlbum } = useApp();
@@ -119,35 +117,6 @@ function useEnsureAlbums(ids: string[]) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
-}
-
-// "Reviews worth reading": the site's latest public reviews, an endless
-// shelf of review cards (/api/reviews/recent, a page at a time).
-function SiteReviewsShelf() {
-  const { t, albums, liveAlbums, failedAlbumIds } = useApp();
-  const { items, done, failed, more } = usePaged<SiteReview, number>(async (from) => {
-    const d = await cachedPage<{ reviews: SiteReview[]; next: number | null }>(`/api/reviews/recent?from=${from ?? 0}`);
-    return { items: d.reviews, next: d.next };
-  }, (r) => `${r.user.id || r.user.handle}|${r.albumId}`, [], 50);
-  useEnsureAlbums(items.map((r) => r.albumId));
-  const known = (id: string) => !!liveAlbums[id] || albums.some((a) => a.id === id || a.spotifyId === id);
-  const shown = items.filter((r) => known(r.albumId));
-  if (!shown.length) {
-    const waiting = !failed && (!done || items.some((r) => !failedAlbumIds[r.albumId]));
-    return (
-      <section className="sh14">
-        <div className="hd"><h2>{t('discover.reviewsWorthReading')}</h2></div>
-        <p className="muted" style={{ fontWeight: 600 }}>{waiting ? t('reviews.loading') : t('reviews.empty')}</p>
-      </section>
-    );
-  }
-  return (
-    <Shelf title={t('discover.reviewsWorthReading')} onMore={more} done={done} className="rvs15">
-      {shown.map((r) => (
-        <ReviewCard key={`${r.user.id || r.user.handle}|${r.albumId}`} user={r.user} createdAt={r.createdAt} stars={r.stars} review={r.review} tags={r.tags} albumId={r.albumId} />
-      ))}
-    </Shelf>
-  );
 }
 
 const MIN_RATINGS_FOR_TOP = 3;
@@ -306,7 +275,6 @@ export function DiscoverScreen(_props: { device: Device }) {
           <ComingSoon />
           <ConcertsFeed />
           <TopRatedShelf genre="all" />
-          <SiteReviewsShelf />
           <RisingArtists />
           {/* People you may know (it was behind the "people" chip). */}
           {discoverPeople && discoverPeople.length > 0 && (
@@ -315,6 +283,7 @@ export function DiscoverScreen(_props: { device: Device }) {
               <div className="tile">{discoverPeople.slice(0, 8).map((p) => <PersonRow key={p.id} person={p} />)}</div>
             </section>
           )}
+          <HomeContinuation surface="discover" />
         </>
       )}
     </>
