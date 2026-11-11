@@ -3,9 +3,13 @@ import type { Dict } from '../i18n';
 // Loaded on demand (loadLanguage in i18n.ts): only the reader's language
 // reaches the browser.
 const es: Dict = {
+  'home.trendingNow': "tendencias ahora",
+  'home.repeatMine': "en bucle hoy",
+  'home.repeatFriends': "en bucle con amigos",
+  'home.repeatToday': "escuchas recientes de hoy",
   'home.recapDiscoveries': 'descubriste {n} {n|artista nuevo|artistas nuevos} esta semana',
-  'home.exploreGenre': "más {genre}",
-  'home.exploreCountry': "en {country}",
+  'home.exploreGenre': "tendencias en {genre}",
+  'home.exploreCountry': "tendencias en {country}",
   'home.exploreAlbums': "más álbumes por descubrir",
   'home.explorePair': "dales una escucha",
   'home.keepExploring': 'sigue explorando',

@@ -1562,3 +1562,26 @@ html,body{margin:0}
 .rd .home29bento~* h2.feed34heading::after{content:none}
 .rd .feed34heading>span{white-space:nowrap}
 .rd .feed34heading>span::after{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--pick);margin-left:9px;vertical-align:middle}
+
+/* Profile metrics have independent cells, with their link on its own line. */
+.rd .phd14 .pcnt{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:start;gap:14px 12px;width:100%;min-width:0}
+.rd .phd14 .pcnt>div{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
+.rd .phd14 .pcnt .num{line-height:1.1;overflow-wrap:anywhere}
+.rd .phd14 .pcnt small{line-height:1.25;overflow-wrap:anywhere;max-width:100%}
+.rd .phd14 .pcnt .pub{grid-column:1/-1;margin:0;justify-self:start;line-height:1.3;overflow-wrap:anywhere;max-width:100%}
+.rd .phd14 .pbt14 .avs{flex:none;align-items:center}
+.rd .phd14 .pbt14 .pb{min-width:0;max-width:100%}
+.rd .phd14 .pbt14 .l{min-width:0;overflow-wrap:anywhere;line-height:1.25}
+.rd .phd14 .pbt14 .ar{flex:none}
+@media(max-width:430px){.rd .phd14 .pcnt{grid-template-columns:repeat(2,minmax(0,1fr))}.rd .gh23 .mid{flex-wrap:wrap;align-items:flex-start}.rd .gh23 .mid>.g{flex:1 1 170px;min-width:0}}
+/* Tracks are their own type, using the existing image backdrop and play control. */
+.rd .repeat35 .sr14>.repeat35card{width:280px;flex:0 0 280px;max-width:calc(100vw - 40px);padding:16px;display:flex;flex-direction:column;gap:14px;color:var(--cream);background:var(--ink);--tfg:var(--cream)}
+.rd .repeat35body{display:flex;align-items:center;gap:12px;min-width:0}.rd .repeat35body>.cov{border-radius:10px}
+.rd .repeat35text{min-width:0;flex:1;display:flex;flex-direction:column;gap:4px}.rd .repeat35title{text-align:left;font:800 18px/1.2 var(--font-display);min-width:0;max-width:100%}
+.rd .repeat35title>span,.rd .repeat35text>b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere}
+.rd .repeat35text>small{overflow-wrap:anywhere;font-size:13px;line-height:1.25}
+.rd .repeat35foot{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}.rd .repeat35foot>span{min-width:0;display:flex;flex-direction:column;gap:4px}.rd .repeat35foot button:not(.pvbtn){text-align:left;overflow-wrap:anywhere;font-weight:700}.rd .repeat35foot .pvbtn{flex:none}
+
+.rd .phd14 .pbt14 .pb:first-child{flex:1 1 240px}
+.rd .phd14 .pbt14 .l{overflow-wrap:normal;white-space:nowrap}
+@media(max-width:600px){.rd .phd14 .pbt14 .pb:first-child{flex-basis:100%}}

@@ -169,7 +169,7 @@ const PAGE_REFRESH_MS = 3600 * 1000;
 export async function cachedPage<T>(url: string): Promise<T> {
   const hit = peekJson<T>(url);
   if (hit != null) {
-    if ((jsonAge(url) ?? Infinity) > PAGE_REFRESH_MS) void cachedJson(url, { force: true });
+    if ((jsonAge(url) ?? Infinity) > PAGE_REFRESH_MS) void cachedJson(url);
     return hit;
   }
   const v = await cachedJson<T>(url);

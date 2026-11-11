@@ -26,6 +26,7 @@ import { ratingStreak, recentRatingDays } from '@/lib/streak';
 import { ImportNudge } from '../ConnectionBlocks';
 import { RateQueueCard } from '../RateQueue';
 import { AddFriendCard, FriendPlayerCard } from '../FriendPlayerCard';
+import { OnRepeatSection } from '../OnRepeatSection';
 import { HomeContinuation } from '../HomeContinuation';
 import { FriendsPicksCard } from '../FriendsPicksCard';
 import { PROFILE_TAB_EVENT } from '@/lib/uiEvents';
@@ -436,6 +437,7 @@ export function HomeScreen(_props: { device: Device }) {
       <RateQueueCard />
 
       <FeedSection />
+      <OnRepeatSection />
 
       <FriendsList />
 
@@ -445,6 +447,7 @@ export function HomeScreen(_props: { device: Device }) {
       </div>
 
       <FriendsPicksCard />
+      <OnRepeatSection friends />
       <TrendingSection />
       <HomeContinuation />
     </>

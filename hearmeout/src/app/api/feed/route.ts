@@ -7,6 +7,7 @@ import { DEFAULT_PRIVACY, type PrivacyFlags } from '@/lib/privacy';
 import type { ApiUser, FeedDisagreement, FeedEvent, FeedResponse } from '@/lib/types';
 import { friendIdsOf } from '@/lib/friendIds';
 import { memoFeed } from '@/lib/feedMemo';
+import { aggregateFriendsOnRepeat, aggregateRepeatTracks } from '@/lib/feedRepeats';
 
 // Home feed (redesign spec 6.1, 8): real friend activity plus today's
 // biggest taste disagreement. Nothing here is premium-gated.
@@ -22,7 +23,7 @@ type FriendRow = { id: string; name: string; handle: string; avatar_url: string 
 type FriendRating = { user_id: string; album_id: string; stars: number; review: string | null; created_at: string; is_private: boolean | null };
 type FriendPlay = { user_id: string; track_id: string | null; track_title: string | null; artist: string | null; album_id: string | null; cover_url: string | null; played_at: string };
 
-type SessionRow = { duration_ms: number | null; artist: string | null; album_id: string | null; cover_url: string | null; played_at: string; track_title: string | null };
+type SessionRow = { duration_ms: number | null; track_id?: string | null; artist: string | null; album_id: string | null; cover_url: string | null; played_at: string; track_title: string | null };
 type Raw = {
   friendUsers: FriendRow[];
   friendRatings: FriendRating[];
@@ -113,7 +114,7 @@ async function readTables(admin: SupabaseClient, userId: string, dayStart: Date,
     myRatingsP,
     todayEventsP,
     olderEventsP,
-    admin.from('listening_events').select('duration_ms, artist, album_id, cover_url, played_at, track_title').eq('user_id', userId).gte('played_at', dayStart.toISOString()),
+    admin.from('listening_events').select('duration_ms, track_id, artist, album_id, cover_url, played_at, track_title').eq('user_id', userId).gte('played_at', dayStart.toISOString()),
     // "Rate what you played": the viewer's own albums of the last two weeks
     // up to the end of yesterday, most recent first, deduped — so the row
     // changes once a day, not with every track. Filtering out already-rated
@@ -270,5 +271,12 @@ async function build(userId: string, tzMin: number): Promise<FeedResponse> {
   const topTrack = [...trackCounts.values()].sort((a, b) => b.plays - a.plays)[0];
   const onRepeat = topTrack && topTrack.plays >= 2 ? topTrack : null;
 
-  return { hero, events, recentAlbumIds, trending, todayPlays, onRepeat };
+  // Reuse today's session and friend activity, with no extra catalog or
+  // listening request. Friends are bounded to the existing latest 300 plays.
+  const repeatedTracks = aggregateRepeatTracks(mySessionRows || []);
+  const friendsOnRepeat = aggregateFriendsOnRepeat(
+    todayEvents || [], userById, (id) => flags(id).shareLive, userId,
+  );
+
+  return { hero, events, recentAlbumIds, trending, todayPlays, onRepeat, repeatedTracks, friendsOnRepeat };
 }

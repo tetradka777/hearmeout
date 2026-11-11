@@ -18,6 +18,7 @@ import { ConcertsFeed } from '../ConcertsFeed';
 import { RisingArtists } from '../RisingArtists';
 import { MascotIcon } from '../redesign/icons';
 import { cachedJson, peekJson } from '@/lib/cachedJson';
+import { DeferredSection } from '../DeferredSection';
 import { HomeContinuation } from '../HomeContinuation';
 
 // Discover: this is where the old Home/catalog-browser content lives now
@@ -127,13 +128,13 @@ const TOP_STEP = 25;
 // scrolls. Albums outside the catalog are fetched as they come into range.
 function TopRatedShelf({ genre }: { genre: string }) {
   const { t, albums, liveAlbums, failedAlbumIds, albumRatings, spotifyCovers, openAlbum } = useApp();
-  const [limit, setLimit] = useState(50);
+  const [limit, setLimit] = useState(12);
   const ranked = useMemo(() => Object.entries(albumRatings)
     .sort(([, a], [, b]) => Number(b.count >= MIN_RATINGS_FOR_TOP) - Number(a.count >= MIN_RATINGS_FOR_TOP) || b.avg - a.avg || b.count - a.count)
     .map(([id]) => id), [albumRatings]);
   const albumOf = (id: string) => liveAlbums[id] || albums.find((a) => a.id === id || a.spotifyId === id);
   const usable = ranked.filter((id) => !failedAlbumIds[id]);
-  const range = usable.slice(0, (limit + 10) * (genre === 'all' ? 1 : 4));
+  const range = usable.slice(0, (limit + 4) * (genre === 'all' ? 1 : 4));
   useEnsureAlbums(range);
   const list = range
     .map((id) => ({ id, a: albumOf(id) }))
@@ -270,12 +271,12 @@ export function DiscoverScreen(_props: { device: Device }) {
         <>
           {/* Shelves of big cards. */}
           <PopularNowSection genre="all" />
-          <FanClubsForYou />
-          <FanClubReleases />
-          <ComingSoon />
-          <ConcertsFeed />
-          <TopRatedShelf genre="all" />
-          <RisingArtists />
+          <DeferredSection screen="discover" warmUrl="/api/fanclubs?suggest=0"><FanClubsForYou /></DeferredSection>
+          <DeferredSection screen="discover" warmUrl="/api/fanclubs/releases"><FanClubReleases /></DeferredSection>
+          <DeferredSection screen="discover" warmUrl="/api/fanclubs/upcoming"><ComingSoon /></DeferredSection>
+          <DeferredSection screen="discover" warmUrl={`/api/concerts${me?.region ? '?country=' + encodeURIComponent(me.region) : ''}`}><ConcertsFeed /></DeferredSection>
+          <DeferredSection screen="discover"><TopRatedShelf genre="all" /></DeferredSection>
+          <DeferredSection screen="discover" warmUrl="/api/rising"><RisingArtists /></DeferredSection>
           {/* People you may know (it was behind the "people" chip). */}
           {discoverPeople && discoverPeople.length > 0 && (
             <section className="sh14">

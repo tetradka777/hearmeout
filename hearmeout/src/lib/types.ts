@@ -172,12 +172,21 @@ export type FeedEvent = FeedFirstPlayEvent | FeedRatingEvent | FeedSessionEvent;
 export type FeedDisagreement = { friend: ApiUser; albumId: string; mine: number; theirs: number; at: string };
 // Trending in your circle: albums friends rated this week, most raters first.
 export type FeedTrending = { albumId: string; count: number; avg: number };
+export type FeedRepeatTrack = {
+  trackId: string | null; title: string; artist: string;
+  albumId: string | null; cover: string | null; plays: number; at: string;
+};
+export type FeedFriendRepeatTrack = FeedRepeatTrack & { user: ApiUser };
 export type FeedResponse = {
   hero: FeedDisagreement | null; events: FeedEvent[]; recentAlbumIds: string[];
   trending?: FeedTrending[];
   // Your day so far: when each of today's plays happened (the client buckets
   // them by its own hour) and the track played most today.
   todayPlays?: string[]; onRepeat?: { title: string; artist: string; plays: number } | null;
+  // Two or more observed plays today, ranked by count then latest play.
+  // Friends counts stay separate per person and honour share_live.
+  repeatedTracks?: FeedRepeatTrack[];
+  friendsOnRepeat?: FeedFriendRepeatTrack[];
 };
 
 export type RatingRecord = {

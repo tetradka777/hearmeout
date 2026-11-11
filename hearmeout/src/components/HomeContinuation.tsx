@@ -122,9 +122,9 @@ function ContinuationFeed({ surface }: { surface: 'catalog' | 'discover' }) {
   return <section className="home28 home29 sec">
     {blocks.map((block, i) => block.kind === 'reviews' && !block.indices.some(index => known.has(shownReviews[index].albumId)) ? null : <div className="home29block" key={block.key}>
       {block.kind === 'albums' ? block.layout === 'pair' ? <>{(block.genre || block.country || block.heading) && <h2>{block.genre ? t('home.exploreGenre', { genre: block.genre.toLowerCase() }) : block.country ? t('home.exploreCountry', { country: countryName(block.country) }) : t('home.explorePair')}</h2>}<div className="home29pair">{block.indices.map(albumCard)}</div></> :
-        row(block.genre ? t('home.exploreGenre', { genre: block.genre.toLowerCase() }) : block.country ? t('home.exploreCountry', { country: countryName(block.country) }) : undefined, block.indices.map(albumCard)) :
+        row(block.genre ? t('home.exploreGenre', { genre: block.genre.toLowerCase() }) : block.country ? t('home.exploreCountry', { country: countryName(block.country) }) : t('home.trendingNow'), block.indices.map(albumCard)) :
         block.indices.length === 1 ? <div className="home29review">{reviewCard(block.indices[0])}</div> :
-        row(block.heading ? t('discover.reviewsWorthReading') : undefined, block.indices.map(reviewCard), true)}
+        row(undefined, block.indices.map(reviewCard), true)}
       {surface === 'catalog' && i === 0 && <DeferredHomeSection><FanClubReleases /></DeferredHomeSection>}
       {surface === 'catalog' && i === 3 && <DeferredHomeSection><ComingSoon /></DeferredHomeSection>}
     </div>)}

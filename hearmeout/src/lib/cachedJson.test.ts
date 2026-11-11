@@ -1,6 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
-import { cachedJson, peekJson, setJsonCacheOwner, storeJson } from './cachedJson';
+import { cachedJson, cachedPage, peekJson, setJsonCacheOwner, storeJson } from './cachedJson';
 
 function pendingResponse() {
   let resolve!: (response: Response) => void;
@@ -72,4 +72,11 @@ test('a failed refresh preserves the current account copy', async (t) => {
   storeJson('/api/offline-copy', { saved: true });
   assert.deepEqual(await cachedJson('/api/offline-copy', { force: true }), { saved: true });
   setJsonCacheOwner(null);
+});
+
+test('two stale shelf readers share a single background refresh',async(t)=>{
+ let now=10000;t.mock.method(Date,'now',()=>now);setJsonCacheOwner('shelf-account');storeJson('/api/shelf-old',{version:1});now+=7200000;
+ const response=pendingResponse();let calls=0;t.mock.method(globalThis,'fetch',()=>{calls++;return response.promise;});
+ const copies=await Promise.all([cachedPage('/api/shelf-old'),cachedPage('/api/shelf-old')]);response.resolve(Response.json({version:2}));await new Promise(r=>setImmediate(r));
+ assert.deepEqual(copies,[{version:1},{version:1}]);assert.equal(calls,1);assert.deepEqual(peekJson('/api/shelf-old'),{version:2});setJsonCacheOwner(null);
 });

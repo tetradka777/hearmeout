@@ -24,7 +24,7 @@ export function PopularNowSection({ genre }: { genre?: string }) {
     }
     const d = await cachedPage<{ albums: ChartAlbumLite[]; next: number | null }>(`/api/charts/more?page=${page}${region ? `&region=${region}` : ''}`);
     return { items: d.albums.filter(fits), next: d.next };
-  }, (a) => `${a.title}|${a.artist}`.toLowerCase(), [region, genre], 50);
+  }, (a) => `${a.title}|${a.artist}`.toLowerCase(), [region, genre], 12);
 
   const open = async (a: Item) => {
     if (a.spotifyId) { openAlbum(a.spotifyId); return; }
