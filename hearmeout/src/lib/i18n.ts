@@ -9,9 +9,13 @@ export const LANGUAGE_LABEL: Record<Language, string> = {
 };
 
 const en = {
+  'home.trendingNow': "trending now",
+  'home.repeatMine': "on repeat today",
+  'home.repeatFriends': "on repeat with friends",
+  'home.repeatToday': "recent listening today",
   'home.recapDiscoveries': 'you discovered {n} new {n|artist|artists} this week',
-  'home.exploreGenre': "more {genre}",
-  'home.exploreCountry': "in {country}",
+  'home.exploreGenre': "trending in {genre}",
+  'home.exploreCountry': "trending in {country}",
   'home.exploreAlbums': "more albums to explore",
   'home.explorePair': "give these a spin",
   'home.keepExploring': 'keep exploring',

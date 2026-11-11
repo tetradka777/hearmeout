@@ -40,7 +40,7 @@ export function FanClubsForYou() {
   const { items, done, more } = usePaged<FanClub, number>(async (from) => {
     const d = await cachedPage<{ suggested: FanClub[]; next: number | null }>(`/api/fanclubs?suggest=${from ?? 0}`);
     return { items: d.suggested, next: d.next };
-  }, (f) => f.name.toLowerCase(), [], 50);
+  }, (f) => f.name.toLowerCase(), [], 12);
   const [joined, setJoined] = useState<Set<string>>(new Set());
   if (!items.length) return null;
   // Opens the club's page (a chart artist's Spotify id is looked up first).

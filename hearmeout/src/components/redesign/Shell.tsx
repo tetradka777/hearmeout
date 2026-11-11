@@ -11,7 +11,6 @@ import { GroupsIcon } from './icons';
 import { Ticker } from './Ticker';
 import { TopButtons } from './TopButtons';
 import { GlobalPlayer } from '../DockedPlayer';
-import { NowPlayingBar } from './NowPlayingBar';
 import { trackKey, usePlayer } from '@/lib/PlayerContext';
 import { useTrackOnScreen } from '@/lib/useTrackOnScreen';
 import { Toast } from '../ui/Toast';
@@ -82,10 +81,9 @@ export function RedesignShell({ children }: { children: ReactNode }) {
   // The bar folds away while the playing track's own play button is in view.
   const trackInView = useTrackOnScreen(hasPlayer && currentTrack ? trackKey(currentTrack) : null);
   const barShown = hasPlayer && !trackInView;
-  const hasNowPlaying = !!me?.nowPlaying;
 
   return (
-    <div className={`rd${hasPlayer ? ' hasmp' : ''}${hasNowPlaying ? ' hasnp' : ''}`}>
+    <div className={`rd${hasPlayer ? ' hasmp' : ''}`}>
       {/* Keyboard users skip the menus straight to the screen (shown on focus).
           A button, not an #main link: a hash change would add a history
           entry, and back/forward drive the screen here. */}
@@ -152,7 +150,6 @@ export function RedesignShell({ children }: { children: ReactNode }) {
       </nav>
       </div>
 
-      {!hasPlayer && <NowPlayingBar />}
       <Toast />
     </div>
   );
