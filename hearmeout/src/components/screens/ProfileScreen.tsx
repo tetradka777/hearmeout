@@ -1,4 +1,5 @@
 'use client';
+import { MusicDiaryCard } from '../MusicDiaryCard';
 import { AvatarChoices } from '../ui/AvatarChoices';
 
 
@@ -530,6 +531,7 @@ export function ProfileScreen(_props: { device: Device }) {
         <i className="ic ic-chev" aria-hidden="true" />
       </button>
 
+      <MusicDiaryCard />
       <ProfileTopArtists />
       <ProfileTopRated list={list} />
       <ProfileOnRepeat />

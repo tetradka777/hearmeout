@@ -1,4 +1,5 @@
 'use client';
+import { ActiveSwapCard } from '../AlbumSwapCards';
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { blurStyle } from '@/lib/imageColor';
@@ -435,6 +436,7 @@ export function HomeScreen(_props: { device: Device }) {
 
       <ImportNudge />
       <RateQueueCard />
+      <ActiveSwapCard />
 
       <FeedSection />
       <OnRepeatSection />

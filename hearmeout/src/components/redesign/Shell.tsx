@@ -56,6 +56,8 @@ const NAV_GROUP: Record<ScreenName, ScreenName | null> = {
   settings: null,
   states: null,
   later: null,
+  diary: 'profile',
+  swap: 'match',
 };
 
 // Statistics isn't in the menu: it opens from the profile.
@@ -142,7 +144,7 @@ export function RedesignShell({ children }: { children: ReactNode }) {
         ))}
         {/* Your profile, as your photo, at the end of the bar. */}
         {me && (
-          <button className={`tbp${state.activeScreen === 'profile' ? ' on' : ''}`} onClick={() => showScreen('profile')} aria-label={t('nav.profile')}>
+          <button className={`tbp${activeGroup === 'profile' ? ' on' : ''}`} onClick={() => showScreen('profile')} aria-label={t('nav.profile')}>
             <span className="avt" style={{ ...userAvatarStyle(me), backgroundSize: 'cover' }}>{!me.avatarUrl && <Initial name={me.name} />}</span>
             {friendRequests.incoming.length > 0 && <span className="badge" aria-hidden="true">{friendRequests.incoming.length}</span>}
           </button>

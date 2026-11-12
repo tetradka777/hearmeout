@@ -1,4 +1,5 @@
 'use client';
+import { MatchSwapCard } from '../AlbumSwapCards';
 import { Initial } from '../ui/Initial';
 
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
@@ -232,6 +233,7 @@ export function MatchScreen(_props: { device: Device }) {
         </div></div>
         <div className="match25meter" role="meter" aria-label={t('match.title')} aria-valuemin={0} aria-valuemax={100} aria-valuenow={shownPct ?? undefined}><i style={{ width: `${shownPct ?? 0}%` }} /><span>{shownPct != null ? `${shownPct} / 100` : '–'}</span></div>
       </div>
+      {activeId && <MatchSwapCard friendId={activeId} />}
 
       {sharedArt.length > 0 ? (
         <Shelf className="shared25" title={`${t('match.sharedArtistsTitle')} ${sharedArt.length}`}>

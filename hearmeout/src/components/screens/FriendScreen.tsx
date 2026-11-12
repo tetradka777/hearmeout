@@ -1,4 +1,5 @@
 'use client';
+import { MusicDiaryCard } from '../MusicDiaryCard';
 import { Initial } from '../ui/Initial';
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
@@ -296,6 +297,7 @@ export function FriendScreen({ device: _device }: { device: Device }) {
           <BlendButton me={me.id} friend={f.id} friendName={firstName} matchPct={matchScore} className="btn ghost" />
         </div>
       </PairHero>
+      {isFriend && <MusicDiaryCard userId={f.id} />}
 
       {/* What they play now (or last), over its blurred cover. */}
       {lp && (() => {

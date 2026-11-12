@@ -92,7 +92,7 @@ export function RateScreen({ device: _device }: { device: Device }) {
   const {
     state, t, albums, liveAlbums, failedAlbumIds, albumRatings, myRatings, spotifyCovers,
     reviewsVersion, ensureLiveAlbum, lovedItems, toggleLoved, laterItems, toggleLaterAlbum, toggleLaterTrack, me,
-    setRatingValue, publishRating, showToast, viewHistory,
+    setRatingValue, publishRating, showToast, viewHistory, openDiary,
   } = useApp();
   const { playQueue, currentTrack, playing } = usePlayer();
 
@@ -261,6 +261,7 @@ export function RateScreen({ device: _device }: { device: Device }) {
           {a.tracklist.length > 0 && <PreviewButton tracks={trackQueue} index={curIdx >= 0 ? curIdx : 0} size={72} />}
           <button className="ib love" aria-label={t('share.button')} title={t('share.button')} onClick={() => setSharing(true)}><ShareIcon /></button>
         </div>
+        {me && <button className="btn ghost music36-diary" onClick={() => openDiary(a.id)}>{t('diary.addFromAlbum')}<i className="ic ic-plus" aria-hidden="true" /></button>}
         {/* Only the numbers there are (no row of dashes on an album nobody rated). */}
         {(circleAvg || ratingInfo?.count) ? (
           <Phrase parts={[

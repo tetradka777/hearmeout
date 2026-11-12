@@ -52,7 +52,7 @@ type AuthStatus = 'loading' | 'anonymous' | 'ready';
 // history entry and URL, so the browser's own back/forward buttons work
 // everywhere on the site, not just on "content" pages.
 const ALL_SCREENS = new Set<ScreenName>([
-  'catalog', 'rate', 'history', 'recap', 'profile', 'artist', 'friend', 'match', 'stats', 'groups', 'group', 'fanclub', 'concerts', 'discover', 'settings', 'later',
+  'catalog', 'rate', 'history', 'recap', 'profile', 'artist', 'friend', 'match', 'stats', 'groups', 'group', 'fanclub', 'concerts', 'discover', 'settings', 'later', 'diary', 'swap',
 ]);
 
 // What's stored as `history.state` for one entry — enough to restore that
@@ -64,6 +64,10 @@ type ScreenSnapshot = {
   activeScreen: ScreenName;
   hmoDepth: number;
   currentAlbumId?: string;
+  diaryAlbumId?: string;
+  diaryUserId?: string;
+  currentSwapId?: string;
+  swapFriendId?: string;
   viewingUserId?: string;
   viewingGroupId?: string;
   fanClubId?: string;
@@ -86,6 +90,8 @@ function urlForSnapshot(snap: Omit<ScreenSnapshot, 'hmoDepth'>): string {
   switch (snap.activeScreen) {
     case 'catalog': return '/';
     case 'rate': return `/?screen=rate&id=${encodeURIComponent(snap.currentAlbumId || '')}`;
+    case 'diary': return `/?screen=diary${snap.diaryAlbumId ? `&album=${encodeURIComponent(snap.diaryAlbumId)}` : ''}${snap.diaryUserId ? `&user=${encodeURIComponent(snap.diaryUserId)}` : ''}`;
+    case 'swap': return `/?screen=swap${snap.swapFriendId ? `&friend=${encodeURIComponent(snap.swapFriendId)}` : ''}${snap.currentSwapId ? `&id=${encodeURIComponent(snap.currentSwapId)}` : ''}`;
     case 'friend': return `/?screen=friend&id=${encodeURIComponent(snap.viewingUserId || '')}`;
     case 'group': return `/?screen=group&id=${encodeURIComponent(snap.viewingGroupId || '')}`;
     case 'fanclub': return `/?screen=fanclub&id=${encodeURIComponent(snap.fanClubId || '')}&name=${encodeURIComponent(snap.fanClubName || '')}`;
@@ -125,6 +131,10 @@ type AppState = {
   // AppShell reads this once per activeScreen change to decide which.
   navAction: 'push' | 'pop';
   currentAlbumId: string;
+  diaryAlbumId: string;
+  diaryUserId: string;
+  currentSwapId: string;
+  swapFriendId: string;
   viewingUserId: string;
   viewingGroupId: string;
   // The fan club page: the artist's Spotify id and name.
@@ -184,6 +194,8 @@ type AppContextValue = {
   viewHistory: (origin?: 'profile' | 'rate' | null) => void;
   goBack: (name: ScreenName) => void;
   openAlbum: (id: string) => void;
+  openDiary: (albumId?: string, userId?: string) => void;
+  openSwap: (friendId: string, swapId?: string) => void;
   viewFriend: (id: string) => void;
   viewGroup: (id: string) => void;
   openFanClub: (id: string, name: string) => void;
@@ -256,6 +268,10 @@ const initialState: AppState = {
   activeScreen: 'catalog',
   navAction: 'push',
   currentAlbumId: ALBUMS[0]?.id ?? '',
+  diaryAlbumId: '',
+  diaryUserId: '',
+  currentSwapId: '',
+  swapFriendId: '',
   viewingUserId: '',
   viewingGroupId: '',
   viewingFanClub: null,
@@ -707,9 +723,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [patch]);
 
   const showScreen = useCallback((name: ScreenName) => {
-    patch({ activeScreen: name, navAction: 'push' });
+    patch({ activeScreen: name, navAction: 'push', ...(name === 'diary' || name === 'swap' ? { diaryAlbumId: '', diaryUserId: '', currentSwapId: '', swapFriendId: '' } : {}) });
     // Re-clicking the tab you're already on doesn't push a duplicate stop.
-    if (stateRef.current.activeScreen !== name) pushScreenHistory({ activeScreen: name });
+    const previous = stateRef.current;
+    const clearsEntity = (name === 'diary' && Boolean(previous.diaryAlbumId || previous.diaryUserId))
+      || (name === 'swap' && Boolean(previous.currentSwapId || previous.swapFriendId));
+    if (previous.activeScreen !== name || clearsEntity) pushScreenHistory({ activeScreen: name });
   }, [patch]);
   // History doubles as both a top-level nav destination and a screen
   // opened from Profile or Rate — the crumb label, its target and whether
@@ -726,7 +745,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // where there's nothing in our own history to pop back through.
   const goBack = useCallback((name: ScreenName) => {
     if (currentHistoryDepth() > 0) window.history.back();
-    else patch({ activeScreen: name, navAction: 'pop' });
+    else {
+      const previous = stateRef.current;
+      const viewingUserId = previous.activeScreen === 'diary' && name === 'friend' ? previous.diaryUserId : undefined;
+      patch({ activeScreen: name, navAction: 'pop', ...(viewingUserId ? { viewingUserId } : {}) });
+      if (previous.activeScreen === 'diary' || previous.activeScreen === 'swap') replaceScreenHistory({ activeScreen: name, ...(viewingUserId ? { viewingUserId } : {}) });
+    }
   }, [patch]);
   // The prototype has no separate album-browsing screen — vRate() in
   // reference/app.js is the one page that shows the cover, tracklist,
@@ -748,6 +772,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
     pushScreenHistory({ activeScreen: 'rate', currentAlbumId: id });
   }, [myRatings]);
+
+  const openDiary = useCallback((albumId = '', userId = '') => {
+    patch({ activeScreen: 'diary', diaryAlbumId: albumId, diaryUserId: userId, currentSwapId: '', swapFriendId: '', navAction: 'push' });
+    pushScreenHistory({ activeScreen: 'diary', diaryAlbumId: albumId, diaryUserId: userId });
+  }, [patch]);
+
+  const openSwap = useCallback((friendId: string, swapId = '') => {
+    patch({ activeScreen: 'swap', swapFriendId: friendId, currentSwapId: swapId, diaryAlbumId: '', diaryUserId: '', navAction: 'push' });
+    pushScreenHistory({ activeScreen: 'swap', swapFriendId: friendId, currentSwapId: swapId });
+  }, [patch]);
 
   const viewFriend = useCallback((id: string) => {
     patch({ viewingUserId: id, activeScreen: 'friend', navAction: 'push' });
@@ -1245,7 +1279,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // own router patches history.state with its own internal tracking
       // data, and the very first entry (from before this app ever touched
       // history) only has that, not a ScreenSnapshot.
-      if (!snap?.activeScreen) { setState((s) => ({ ...s, activeScreen: 'catalog', navAction: 'pop' })); return; }
+      if (!snap?.activeScreen) { setState((s) => ({ ...s, activeScreen: 'catalog', diaryAlbumId: '', diaryUserId: '', currentSwapId: '', swapFriendId: '', navAction: 'pop' })); return; }
       if (snap.activeScreen === 'artist' && snap.artistId) {
         if (snap.artistSource === 'musicbrainz') openArtist(snap.artistId, snap.artistName || '', true);
         else openSpotifyArtist(snap.artistId, snap.artistName, true);
@@ -1254,6 +1288,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setState((s) => ({
         ...s,
         activeScreen: snap.activeScreen,
+        diaryAlbumId: snap.activeScreen === 'diary' ? snap.diaryAlbumId ?? '' : '',
+        diaryUserId: snap.activeScreen === 'diary' ? snap.diaryUserId ?? '' : '',
+        currentSwapId: snap.activeScreen === 'swap' ? snap.currentSwapId ?? '' : '',
+        swapFriendId: snap.activeScreen === 'swap' ? snap.swapFriendId ?? '' : '',
         currentAlbumId: snap.currentAlbumId ?? s.currentAlbumId,
         viewingUserId: snap.viewingUserId ?? s.viewingUserId,
         viewingGroupId: snap.viewingGroupId ?? s.viewingGroupId,
@@ -1282,10 +1320,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // a group with a user's id, the recap ask for a "user" with a
         // group's id, and so on (404/403s on every deep link).
         const only = (s: ScreenName) => (screen === s ? id : undefined);
-        restore({
+        const snap: ScreenSnapshot = {
           activeScreen: screen,
           hmoDepth: 0,
           currentAlbumId: only('rate'),
+          diaryAlbumId: screen === 'diary' ? params.get('album') ?? '' : '',
+          diaryUserId: screen === 'diary' ? params.get('user') ?? '' : '',
+          currentSwapId: only('swap'),
+          swapFriendId: screen === 'swap' ? params.get('friend') ?? '' : '',
           viewingUserId: only('friend'),
           viewingGroupId: only('group'),
           fanClubId: only('fanclub'),
@@ -1296,7 +1338,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           artistId: only('artist'),
           artistName: params.get('name') ?? undefined,
           artistSource: (params.get('source') as 'spotify' | 'musicbrainz' | null) ?? undefined,
-        });
+        };
+        restore(snap);
+        if (screen === 'diary' || screen === 'swap') replaceScreenHistory(snap);
         // A recap link may name its period (the weekly recap push does).
         const period = params.get('period');
         if (screen === 'recap' && (period === 'day' || period === 'week' || period === 'month' || period === 'season' || period === 'year')) {
@@ -1308,6 +1352,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // instead of relying on the no-activeScreen fallback above.
         replaceScreenHistory({ activeScreen: 'catalog' });
       }
+    } else if ((window.history.state as ScreenSnapshot).activeScreen === 'diary' || (window.history.state as ScreenSnapshot).activeScreen === 'swap') {
+      // Browsers preserve history.state across reloads: restore its entity
+      // fields too, rather than leaving a deep-linked reload on Home.
+      restore(window.history.state as ScreenSnapshot);
     }
 
     return () => window.removeEventListener('popstate', onPopState);
@@ -1322,7 +1370,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AppContextValue>(() => ({
     state, language: state.language, t, albums: ALBUMS, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds,
     myRatings, feed, setFeed, lovedItems, toggleLoved, laterItems, refreshLater, toggleLaterAlbum, toggleLaterTrack, removeLaterItem, removeAllLater, friendRequests, recapCache, recapLocked, reviewsVersion,
-    showScreen, viewHistory, goBack, openAlbum, viewFriend, viewGroup, openFanClub, openConcerts, openRecap, closeRecap,
+    showScreen, viewHistory, goBack, openAlbum, openDiary, openSwap, viewFriend, viewGroup, openFanClub, openConcerts, openRecap, closeRecap,
     setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery, setRecapPeriod, setRecapSeasonKey, setRecapOffset,
     setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, logoutEverywhere, deleteAccount,
@@ -1330,7 +1378,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addFriend, respondToFriendRequest, removeFriend, notifications, markNotificationsRead, sendHi, shareRecapWithFriends, syncSpotify, onSpotifyConnected, importStreamingHistory, openArtist, openSpotifyArtist, ensureLiveAlbum, showToast,
   }), [state, t, me, albumRatings, spotifyCovers, liveAlbums, failedAlbumIds,
     myRatings, feed, setFeed, lovedItems, toggleLoved, laterItems, refreshLater, toggleLaterAlbum, toggleLaterTrack, removeLaterItem, removeAllLater, friendRequests, recapCache, recapLocked, reviewsVersion, showScreen, viewHistory, goBack, openAlbum,
-    setRecapSeasonKey, setRecapOffset,
+    setRecapSeasonKey, setRecapOffset, openDiary, openSwap,
     viewFriend, viewGroup, openFanClub, openConcerts, openRecap, closeRecap, setSearchQuery, setActiveGenre, setSortBy, setHistoryQuery,
     setRecapPeriod, setRatingValue, setRatingDraftText, publishRating, ensureRecap,
     registerWithPassword, dismissOnboarding, replayOnboarding, loginWithPassword, claimAccount, logout, logoutEverywhere, deleteAccount,

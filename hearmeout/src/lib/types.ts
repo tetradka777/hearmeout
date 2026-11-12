@@ -218,6 +218,8 @@ export type ScreenName =
   | 'discover'
   | 'settings'
   | 'states'
+  | 'diary'
+  | 'swap'
   | 'later';
 
 // Stats period model (redesign spec 7.5 / Appendix B): only the current and
