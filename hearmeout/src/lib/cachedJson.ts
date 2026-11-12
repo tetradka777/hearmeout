@@ -16,6 +16,9 @@ const MAX_ENTRY_CHARS = 400_000;
 const MAX_STORE_CHARS = 3_000_000;
 
 type Entry = { at: number; data: unknown };
+type ReadOptions = { force?: boolean; sensitive?: boolean };
+const isDiaryUrl = (url: string) => /^\/api\/diary(?:\?|$)/.test(url);
+const isPrivateMusicUrl = (url: string) => isDiaryUrl(url) || /^\/api\/album-swaps(?:\?|$)/.test(url);
 const mem = new Map<string, Entry>();
 const inflight = new Map<string, Promise<unknown>>();
 const listeners = new Map<string, Set<(data: unknown) => void>>();
@@ -47,7 +50,12 @@ export function setJsonCacheOwner(userId: string | null): void {
     if (!userId) return;
     const raw = ls.getItem(STORE_PREFIX + userId);
     const saved = raw ? (JSON.parse(raw) as Record<string, Entry>) : {};
-    for (const [url, e] of Object.entries(saved)) mem.set(url, e);
+    let removedPrivate = false;
+    for (const [url, e] of Object.entries(saved)) {
+      if (isPrivateMusicUrl(url)) { delete saved[url]; removedPrivate = true; }
+      else mem.set(url, e);
+    }
+    if (removedPrivate) ls.setItem(STORE_PREFIX + userId, JSON.stringify(saved));
   } catch {
     // Unreadable store: start empty.
   }
@@ -63,6 +71,7 @@ function scheduleSave(): void {
     const out: Record<string, Entry> = {};
     let size = 0;
     for (const [url, e] of [...mem.entries()].sort((a, b) => b[1].at - a[1].at)) {
+      if (isPrivateMusicUrl(url)) continue;
       const s = JSON.stringify(e).length;
       if (s > MAX_ENTRY_CHARS || size + s > MAX_STORE_CHARS) continue;
       out[url] = e;
@@ -91,19 +100,37 @@ export function storeJson(url: string, data: unknown): void {
 // Forget answers whose URL starts with this (after a change on the server).
 export function invalidateJson(prefix: string): void {
   for (const url of [...mem.keys()]) if (url.startsWith(prefix)) mem.set(url, { ...mem.get(url)!, at: 0 });
+  // A page requested before diary CRUD must not become a fresh cache hit
+  // after that mutation, even if its mounted caller ignores the old result.
+  for (const url of [...inflight.keys()]) if (isPrivateMusicUrl(url) && url.startsWith(prefix)) inflight.delete(url);
+}
+
+function evictDenied(url: string): void {
+  // Losing access on a later diary page also revokes the already displayed
+  // first page. Cancel pending siblings so an older response cannot restore it.
+  const diaryUser = isDiaryUrl(url) ? new URL(url, 'http://cache.local').searchParams.get('userId') : null;
+  const keys = new Set([...mem.keys(), ...inflight.keys(), ...listeners.keys(), url]);
+  for (const key of keys) {
+    if (key !== url && !(diaryUser && isDiaryUrl(key) && new URL(key, 'http://cache.local').searchParams.get('userId') === diaryUser)) continue;
+    mem.delete(key);
+    inflight.delete(key);
+    listeners.get(key)?.forEach((fn) => fn(null));
+  }
+  scheduleSave();
 }
 
 // The answer: the copy if it's fresh (or `force` is off and a request is
 // already out), otherwise a new request. Resolves to null on failure when
 // there's no copy at all.
-export function cachedJson<T>(url: string, opts: { force?: boolean } = {}): Promise<T | null> {
+export function cachedJson<T>(url: string, opts: ReadOptions = {}): Promise<T | null> {
   const hit = mem.get(url);
-  if (!opts.force && hit && Date.now() - hit.at < FRESH_MS) return Promise.resolve(hit.data as T);
+  if (!opts.force && !opts.sensitive && hit && Date.now() - hit.at < FRESH_MS) return Promise.resolve(hit.data as T);
   const pending = inflight.get(url);
   if (pending && !opts.force) return pending as Promise<T | null>;
   const requestGeneration = generation;
+  let denied = false;
   const p = fetch(url)
-    .then((r) => (r.ok ? (r.json() as Promise<T>) : null))
+    .then((r) => { denied = r.status === 401 || r.status === 403; return r.ok ? (r.json() as Promise<T>) : null; })
     .catch(() => null)
     .then((v) => {
       // An answer started by a different account must neither repopulate
@@ -111,9 +138,13 @@ export function cachedJson<T>(url: string, opts: { force?: boolean } = {}): Prom
       if (requestGeneration !== generation) return null;
       // A forced refresh can finish first. An older answer must not
       // overwrite it or remove the request newer callers are sharing.
-      if (inflight.get(url) !== p) return (mem.get(url)?.data as T | undefined) ?? null;
+      if (inflight.get(url) !== p) return opts.sensitive ? null : (mem.get(url)?.data as T | undefined) ?? null;
       inflight.delete(url);
-      if (v == null) return (mem.get(url)?.data as T | undefined) ?? null;
+      if (opts.sensitive && denied) {
+        evictDenied(url);
+        return null;
+      }
+      if (v == null) return opts.sensitive ? null : (mem.get(url)?.data as T | undefined) ?? null;
       storeJson(url, v);
       return v;
     });
@@ -130,23 +161,26 @@ export function prefetchJson(url: string): Promise<unknown> {
 // answer (and any later refresh another screen triggers). `reload` forces a
 // new request, e.g. after the user changed something. `failed`: the request
 // failed and there's no copy to show.
-export function useCachedJson<T>(url: string | null): { data: T | null; failed: boolean; reload: () => Promise<T | null> } {
-  const [data, setData] = useState<T | null>(() => (url ? peekJson<T>(url) : null));
+export function useCachedJson<T>(url: string | null, opts: { sensitive?: boolean } = {}): { data: T | null; failed: boolean; reload: () => Promise<T | null> } {
+  const sensitive = !!opts.sensitive;
+  const [data, setData] = useState<T | null>(() => (url && !sensitive ? peekJson<T>(url) : null));
+  const [confirmedUrl, setConfirmedUrl] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     let active = true;
     setFailed(false);
+    setConfirmedUrl(null);
     if (!url) { setData(null); return; }
-    setData(peekJson<T>(url));
-    const fn = (d: unknown) => setData(d as T);
+    setData(sensitive ? null : peekJson<T>(url));
+    const fn = (d: unknown) => { setData(d as T); setConfirmedUrl(d != null ? url : null); if (sensitive) setFailed(d == null); };
     const set = listeners.get(url) || new Set();
     set.add(fn);
     listeners.set(url, set);
-    cachedJson<T>(url).then((d) => { if (active) { if (d != null) setData(d); else setFailed(true); } });
+    cachedJson<T>(url, { sensitive, force: sensitive }).then((d) => { if (active) { if (d != null) { setData(d); setConfirmedUrl(url); } else { if (sensitive) setData(null); setFailed(true); } } });
     return () => { active = false; set.delete(fn); };
-  }, [url]);
-  const reload = useCallback(() => (url ? cachedJson<T>(url, { force: true }) : Promise.resolve(null)), [url]);
-  return { data, failed, reload };
+  }, [url, sensitive]);
+  const reload = useCallback(() => (url ? cachedJson<T>(url, { force: true, sensitive }) : Promise.resolve(null)), [url, sensitive]);
+  return { data: sensitive && confirmedUrl !== url ? null : data, failed, reload };
 }
 
 // The last account's copy is loaded as soon as this module runs in the

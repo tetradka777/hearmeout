@@ -32,6 +32,8 @@ const loadSettingsScreen = () => import('./screens/SettingsScreen').then((m) => 
 const loadStatesScreen = () => import('./screens/StatesScreen').then((m) => m.StatesScreen);
 const loadConcertsScreen = () => import('./screens/ConcertsScreen').then((m) => m.ConcertsScreen);
 const loadLaterScreen = () => import('./screens/LaterScreen').then((m) => m.LaterScreen);
+const loadDiaryScreen = () => import('./screens/DiaryScreen').then((m) => m.DiaryScreen);
+const loadAlbumSwapScreen = () => import('./screens/AlbumSwapScreen').then((m) => m.AlbumSwapScreen);
 const HistoryScreen = dynamic(loadHistoryScreen);
 const RecapScreen = dynamic(loadRecapScreen);
 const ProfileScreen = dynamic(loadProfileScreen);
@@ -47,6 +49,8 @@ const SettingsScreen = dynamic(loadSettingsScreen);
 const StatesScreen = dynamic(loadStatesScreen);
 const LaterScreen = dynamic(loadLaterScreen);
 const ConcertsScreen = dynamic(loadConcertsScreen);
+const DiaryScreen = dynamic(loadDiaryScreen);
+const AlbumSwapScreen = dynamic(loadAlbumSwapScreen);
 
 // Every screen mounts the first time it is opened and stays mounted after
 // (shown/hidden, not unmounted/remounted) so in-progress state — draft
@@ -69,6 +73,8 @@ const SCREENS: { name: ScreenName; Component: ComponentType<{ device: Device }> 
   { name: 'settings', Component: SettingsScreen },
   { name: 'states', Component: StatesScreen },
   { name: 'later', Component: LaterScreen },
+  { name: 'diary', Component: DiaryScreen },
+  { name: 'swap', Component: AlbumSwapScreen },
 ];
 
 export function AppShell() {
@@ -93,6 +99,8 @@ export function AppShell() {
   const pageKey = state.justRegistered ? 'onboarding'
     : state.activeScreen === 'rate' ? `rate:${state.currentAlbumId ?? ''}`
     : state.activeScreen === 'friend' ? `friend:${state.viewingUserId ?? ''}`
+    : state.activeScreen === 'diary' ? `diary:${state.diaryUserId}:${state.diaryAlbumId}`
+    : state.activeScreen === 'swap' ? `swap:${state.swapFriendId}:${state.currentSwapId}`
     : state.activeScreen === 'group' ? `group:${state.viewingGroupId ?? ''}`
     : state.activeScreen === 'fanclub' ? `fanclub:${state.viewingFanClub?.id ?? ''}`
     : state.activeScreen === 'concerts' ? `concerts:${state.viewingConcerts?.name ?? ''}`

@@ -1585,3 +1585,68 @@ html,body{margin:0}
 .rd .phd14 .pbt14 .pb:first-child{flex:1 1 240px}
 .rd .phd14 .pbt14 .l{overflow-wrap:normal;white-space:nowrap}
 @media(max-width:600px){.rd .phd14 .pbt14 .pb:first-child{flex-basis:100%}}
+
+/* Music diary and blind album exchanges, 2026-11-12. */
+.rd .diary36,.rd .swap37{max-width:900px;margin-inline:auto;min-width:0}
+.rd .diary36-header,.rd .swap37-header{margin:20px 0 24px}
+.rd .diary36-header h1,.rd .swap37-header h1{font:800 clamp(32px,5vw,52px)/1.05 var(--font-display);margin:12px 0}
+.rd .diary36-card,.rd .diary36-compose,.rd .diary36-entry,.rd .diary36-empty,.rd .swap37-gift,.rd .swap37-form,.rd .swap37-results,.rd .swap37-message,.rd .swap37-confirm{background:var(--paper);color:var(--fg);padding:clamp(18px,3vw,28px);min-width:0;margin-block:18px;border-radius:var(--r)}
+.rd .diary36-card{border:var(--bw) solid var(--fg)}
+.rd .diary36-card h3{font:800 26px/1.1 var(--font-display);margin:8px 0 12px}
+.rd .diary36-eyebrow{color:var(--acct);font-weight:800}
+.rd .diary36 h2,.rd .diary36 h3,.rd .swap37 h2,.rd .swap37 h3{overflow-wrap:anywhere}
+.rd .diary36-compose fieldset{border:0;padding:0;margin:0;min-width:0;display:grid;gap:16px}
+.rd .diary36-field,.rd .swap37-form label,.rd .music36-picker label{display:grid;gap:7px;min-width:0;font-weight:600}
+.rd .diary36-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.rd .diary36 input,.rd .diary36 textarea,.rd .diary36 select,.rd .swap37 input,.rd .swap37 textarea,.rd .music36-picker input{width:100%;max-width:100%;min-width:0;box-sizing:border-box;background:var(--bg);color:var(--fg);border:1px solid var(--tb);border-radius:12px;padding:11px 12px;font:inherit}
+.rd .diary36 textarea,.rd .swap37 textarea{resize:vertical}
+.rd .diary36-actions,.rd .diary36-entryhead{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.rd .diary36-entryhead{justify-content:space-between;font-size:14px;margin-bottom:14px}
+.rd .diary36-entry h2{margin:0 0 18px;font:800 clamp(23px,3vw,30px)/1.15 var(--font-display)}
+.rd .diary36-album{display:flex!important;align-items:center;gap:12px;text-align:left;width:100%;padding:0;background:none;border:0;color:inherit}
+.rd .diary36-album .cov{flex:none;width:64px;height:64px;aspect-ratio:1;border-radius:12px}
+.rd .diary36-album span{min-width:0}
+.rd .diary36-album b,.rd .diary36-album small{display:block;overflow-wrap:anywhere;line-height:1.35}
+.rd .diary36-note,.rd .swap37-note{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6;margin-block:18px}
+.rd .diary36-list{display:grid;gap:16px}
+.rd .diary36-list .tile{margin:0}
+.rd .diary36-entry .diary36-actions{margin-top:18px}
+.rd .music36-picker{display:grid;gap:12px;min-width:0}
+.rd .music36-options{display:grid;gap:4px;max-height:260px;overflow-y:auto;overscroll-behavior:contain;padding:3px}
+.rd .music36-options button,.rd .music36-selected{display:flex!important;align-items:center;gap:12px;text-align:left;min-width:0;padding:10px;border:1px solid transparent;border-radius:12px;color:var(--fg);background:var(--bg)}
+.rd .music36-options button[aria-pressed=true]{border-color:var(--acct);outline:1px solid var(--acct)}
+.rd .music36-options .cov{flex:none;width:44px;height:44px;aspect-ratio:1;border-radius:8px}
+.rd .music36-selected .cov{flex:none;width:64px;height:64px;aspect-ratio:1;border-radius:12px}
+.rd .music36-options span,.rd .music36-selected span{min-width:0;flex:1}
+.rd .music36-options b,.rd .music36-selected b{display:block;white-space:normal;overflow-wrap:anywhere;line-height:1.2;font-size:15px}
+.rd .music36-options small,.rd .music36-selected small{display:block;opacity:.7;font-size:13px;line-height:1.3;margin-top:3px}
+.rd .music36-options .ic{flex:none;width:18px;height:18px}
+.rd .music36-diary{grid-column:2;justify-self:start;max-width:100%;margin-block:10px}
+.rd .swap37-intro,.rd .swap37-blind{max-width:65ch;line-height:1.5}
+.rd .swap37-gifts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:20px}
+.rd .swap37-gift{margin:0}
+.rd .swap37-gift>small{font-weight:800;color:var(--acct)}
+.rd .swap37-gift h2{font:800 22px/1.15 var(--font-display);margin:8px 0 16px}
+.rd .swap37-album{display:flex!important;flex-direction:column;gap:12px;width:100%;padding:0;background:none;border:0;color:inherit;text-align:left;align-items:stretch}
+.rd .swap37-album .cov{width:100%;aspect-ratio:1;height:auto;border-radius:14px}
+.rd .swap37-album b,.rd .swap37-album small{display:block;overflow-wrap:anywhere;line-height:1.25}
+.rd .swap37-album small{opacity:.7;margin-top:5px}
+.rd .swap37-form{display:grid;gap:14px}
+.rd .swap37-form h2,.rd .swap37-results h2{font:800 25px/1.15 var(--font-display);margin:0 0 6px}
+.rd .swap37-form>.btn{justify-self:start;max-width:100%;white-space:normal}
+.rd .swap37-status{font-weight:700;color:var(--acct);margin:20px 0}
+.rd .swap37-card{display:flex!important;align-items:center;gap:16px;width:100%;text-align:left;background:var(--paper);color:var(--fg);border:var(--bw) solid var(--fg);padding:20px;min-width:0;cursor:pointer}
+.rd .swap37-card span{min-width:0;flex:1}
+.rd .swap37-card b{display:block;font:800 23px/1.15 var(--font-display);overflow-wrap:anywhere}
+.rd .swap37-card small{display:block;margin-top:6px;line-height:1.35;font-size:14px}
+.rd .swap37-card .cov{flex:none;width:56px;height:56px;aspect-ratio:1;border-radius:10px}
+.rd .swap37-card>.ic{flex:none;width:24px;height:24px}
+.rd .swap37-confirm .btn{margin:8px 8px 0 0}
+.rd .swap37-history{margin-top:26px}
+.rd .swap37-history-item{display:flex;justify-content:space-between;gap:12px;text-align:left;width:100%;padding:18px;min-width:0}
+.rd .swap37-history-item span{min-width:0;overflow-wrap:anywhere}
+.rd .swap37-history-item small{flex:none;font-size:12px}
+@media(max-width:599px){.rd .diary36-fields{grid-template-columns:minmax(0,1fr)}.rd .music36-diary{grid-column:1/-1}.rd .swap37-gifts{gap:10px}.rd .swap37-gift{padding:14px}.rd .swap37-gift h2{font-size:19px}.rd .swap37-album b{font-size:15px}.rd .swap37-album small{font-size:13px}.rd .swap37-card{padding:18px}.rd .diary36-actions>.btn{max-width:100%;white-space:normal}}
+
+/* Explicit horizontal album action: shared cover buttons default to columns. */
+.rd .diary36-album{flex-direction:row!important;align-items:center!important}

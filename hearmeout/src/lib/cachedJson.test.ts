@@ -1,6 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
-import { cachedJson, cachedPage, peekJson, setJsonCacheOwner, storeJson } from './cachedJson';
+import { cachedJson, cachedPage, invalidateJson, peekJson, setJsonCacheOwner, storeJson } from './cachedJson';
 
 function pendingResponse() {
   let resolve!: (response: Response) => void;
@@ -74,9 +74,91 @@ test('a failed refresh preserves the current account copy', async (t) => {
   setJsonCacheOwner(null);
 });
 
+test('sensitive reads revalidate fresh cache and discard denied answers', async (t) => {
+  setJsonCacheOwner('sensitive-account');
+  const url = '/api/diary?from=0&userId=friend';
+  storeJson(url, { entries: ['old memory'] });
+  let calls = 0;
+  t.mock.method(globalThis, 'fetch', async () => { calls++; return new Response('', { status: 403 }); });
+  assert.equal(await cachedJson(url, { sensitive: true }), null);
+  assert.equal(calls, 1);
+  assert.equal(peekJson(url), null);
+  setJsonCacheOwner(null);
+});
+
+test('sensitive reads do not return old content when access cannot be validated', async (t) => {
+  setJsonCacheOwner('sensitive-offline-account');
+  const url = '/api/diary?from=0&userId=friend';
+  storeJson(url, { entries: ['old memory'] });
+  t.mock.method(globalThis, 'fetch', async () => new Response('', { status: 503 }));
+  assert.equal(await cachedJson(url, { sensitive: true }), null);
+  setJsonCacheOwner(null);
+});
+
+test('denial on a diary page evicts sibling pages and prevents late sibling restoration', async (t) => {
+  setJsonCacheOwner('sensitive-pages-account');
+  const first = '/api/diary?from=0&userId=friend';
+  const more = '/api/diary?from=20&userId=friend';
+  storeJson(first, { entries: ['first page'] });
+  const pending = pendingResponse();
+  t.mock.method(globalThis, 'fetch', (url: string | URL | Request) => String(url) === first ? pending.promise : Promise.resolve(new Response('', { status: 401 })));
+  const old = cachedJson(first, { force: true, sensitive: true });
+  assert.equal(await cachedJson(more, { sensitive: true }), null);
+  assert.equal(peekJson(first), null);
+  pending.resolve(Response.json({ entries: ['late private memory'] }));
+  assert.equal(await old, null);
+  assert.equal(peekJson(first), null);
+  setJsonCacheOwner(null);
+});
+
+test('diary mutation invalidation prevents an old page from repopulating fresh cache', async (t) => {
+  setJsonCacheOwner('diary-mutation-account');
+  const pending = pendingResponse();
+  t.mock.method(globalThis, 'fetch', () => pending.promise);
+  const url = '/api/diary?from=20';
+  const request = cachedJson(url);
+  invalidateJson('/api/diary');
+  pending.resolve(Response.json({ entries: ['deleted memory'] }));
+  assert.equal(await request, null);
+  assert.equal(peekJson(url), null);
+  setJsonCacheOwner(null);
+});
+
+test('diary cache is removed from restored storage and never persisted again', async (t) => {
+  const values = new Map<string, string>([['hmo-json-v1:diary-storage-account', JSON.stringify({
+    '/api/diary?from=0': { at: Date.now(), data: { private: true } },
+    '/api/ordinary': { at: Date.now(), data: { preserved: true } },
+  })]]);
+  const localStorage = {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => values.set(key, value),
+    removeItem: (key: string) => values.delete(key),
+    key: (index: number) => [...values.keys()][index] ?? null,
+    get length() { return values.size; },
+  };
+  const originalWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: { localStorage } });
+  t.after(() => { if (originalWindow) Object.defineProperty(globalThis, 'window', originalWindow); else Reflect.deleteProperty(globalThis, 'window'); });
+  setJsonCacheOwner('diary-storage-account');
+  assert.equal(peekJson('/api/diary?from=0'), null);
+  assert.deepEqual(peekJson('/api/ordinary'), { preserved: true });
+  assert.equal(values.get('hmo-json-v1:diary-storage-account')!.includes('/api/diary'), false);
+  storeJson('/api/diary?summary=1', { total: 1 });
+  await new Promise((resolve) => setTimeout(resolve, 1600));
+  assert.equal(values.get('hmo-json-v1:diary-storage-account')!.includes('/api/diary'), false);
+  setJsonCacheOwner(null);
+});
+
 test('two stale shelf readers share a single background refresh',async(t)=>{
  let now=10000;t.mock.method(Date,'now',()=>now);setJsonCacheOwner('shelf-account');storeJson('/api/shelf-old',{version:1});now+=7200000;
  const response=pendingResponse();let calls=0;t.mock.method(globalThis,'fetch',()=>{calls++;return response.promise;});
  const copies=await Promise.all([cachedPage('/api/shelf-old'),cachedPage('/api/shelf-old')]);response.resolve(Response.json({version:2}));await new Promise(r=>setImmediate(r));
  assert.deepEqual(copies,[{version:1},{version:1}]);assert.equal(calls,1);assert.deepEqual(peekJson('/api/shelf-old'),{version:2});setJsonCacheOwner(null);
+});
+
+test('a late swap GET cannot overwrite an authoritative mutation result', async(t)=>{
+ setJsonCacheOwner('swap-mutation-account');const response=pendingResponse();t.mock.method(globalThis,'fetch',()=>response.promise);
+ const url='/api/album-swaps?id=test';const pending=cachedJson(url);
+ invalidateJson('/api/album-swaps');storeJson(url,{completed:true});response.resolve(Response.json({completed:false}));
+ assert.deepEqual(await pending,{completed:true});assert.deepEqual(peekJson(url),{completed:true});setJsonCacheOwner(null);
 });
