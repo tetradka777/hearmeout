@@ -7,27 +7,25 @@ import { useWheelRows } from '@/lib/hooks';
 import type { Device, ScreenName } from '@/lib/types';
 import { RedesignShell } from './redesign/Shell';
 import { HomeScreen } from './screens/HomeScreen';
-const RateScreen = dynamic(() => import('./screens/RateScreen').then(m => m.RateScreen));
+import { loadRateScreen, loadMatchScreen, loadGroupsScreen, loadDiscoverScreen, loadProfileScreen } from './screenModules';
+const RateScreen = dynamic(loadRateScreen);
 // The welcome tour is shown once per account: its own chunk too.
 const OnboardingScreen = dynamic(() => import('./OnboardingScreen').then((m) => m.OnboardingScreen));
 import { LaterReminderHost } from './LaterReminder';
 import { markNav } from '@/lib/navQuiet';
 import { useScrollMemory } from '@/lib/scrollMemory';
+import { useSharedFeed } from '@/lib/useSharedFeed';
 
 // Home is in the first bundle; every other screen is
 // its own chunk, requested on first opening. Visited screens stay mounted
 // so navigation back preserves their data without preloading private pages.
 const loadHistoryScreen = () => import('./screens/HistoryScreen').then((m) => m.HistoryScreen);
 const loadRecapScreen = () => import('./screens/RecapScreen').then((m) => m.RecapScreen);
-const loadProfileScreen = () => import('./screens/ProfileScreen').then((m) => m.ProfileScreen);
 const loadArtistScreen = () => import('./screens/ArtistScreen').then((m) => m.ArtistScreen);
 const loadFriendScreen = () => import('./screens/FriendScreen').then((m) => m.FriendScreen);
 const loadStatsScreen = () => import('./screens/StatsScreen').then((m) => m.StatsScreen);
-const loadMatchScreen = () => import('./screens/MatchScreen').then((m) => m.MatchScreen);
-const loadGroupsScreen = () => import('./screens/GroupsScreen').then((m) => m.GroupsScreen);
 const loadGroupScreen = () => import('./screens/GroupScreen').then((m) => m.GroupScreen);
 const loadFanClubScreen = () => import('./screens/FanClubScreen').then((m) => m.FanClubScreen);
-const loadDiscoverScreen = () => import('./screens/DiscoverScreen').then((m) => m.DiscoverScreen);
 const loadSettingsScreen = () => import('./screens/SettingsScreen').then((m) => m.SettingsScreen);
 const loadStatesScreen = () => import('./screens/StatesScreen').then((m) => m.StatesScreen);
 const loadConcertsScreen = () => import('./screens/ConcertsScreen').then((m) => m.ConcertsScreen);
@@ -80,13 +78,14 @@ const SCREENS: { name: ScreenName; Component: ComponentType<{ device: Device }> 
 export function AppShell() {
   const { state, t } = useApp();
   useWheelRows();
+  useSharedFeed();
 
   // A screen mounts the first time it's opened and then stays mounted
   // (hidden), so its state still survives switching away and back. Mounting
   // all fourteen at start-up made every one of them load its data at once
-  // (dozens of requests) while only Home was on screen. Home is always
-  // there: the activity strip reads the feed it loads.
-  const [visited, setVisited] = useState<Set<ScreenName>>(() => new Set<ScreenName>(['catalog', state.activeScreen]));
+  // (dozens of requests) while only one screen was visible. The shared
+  // feed above serves the activity strip without mounting a hidden Home.
+  const [visited, setVisited] = useState<Set<ScreenName>>(() => new Set<ScreenName>([state.activeScreen]));
   useEffect(() => {
     markNav();
     setVisited((v) => (v.has(state.activeScreen) ? v : new Set(v).add(state.activeScreen)));

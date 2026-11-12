@@ -14,6 +14,7 @@ import { GlobalPlayer } from '../DockedPlayer';
 import { trackKey, usePlayer } from '@/lib/PlayerContext';
 import { useTrackOnScreen } from '@/lib/useTrackOnScreen';
 import { Toast } from '../ui/Toast';
+import { warmScreen } from '../screenModules';
 
 // The redesign's app shell (spec 2.4, 3.9, 4, 15.1, 17.1): one top menu
 // bar structure shared by both designs — they only ever differ in skin,
@@ -96,7 +97,7 @@ export function RedesignShell({ children }: { children: ReactNode }) {
         <button className="logo" onClick={() => showScreen('catalog')}><span className="mk" />hearmeout</button>
         <nav aria-label={t('nav.main')}>
           {navItems.map((item) => (
-            <button key={item.screen} className={activeGroup === item.screen ? 'on' : ''} onClick={() => goToNavItem(item.screen)}>
+            <button key={item.screen} onPointerEnter={() => warmScreen(item.screen)} onPointerDown={() => warmScreen(item.screen)} onFocus={() => warmScreen(item.screen)} className={activeGroup === item.screen ? 'on' : ''} onClick={() => goToNavItem(item.screen)}>
               {t(item.labelKey)}
             </button>
           ))}
@@ -104,6 +105,7 @@ export function RedesignShell({ children }: { children: ReactNode }) {
         {/* Prototype: the search sits between the menu and .topr, and Enter
             (not every keystroke) opens Discover with the query. */}
         <input
+          onFocus={() => warmScreen('discover')}
           className="search"
           placeholder={t('search.placeholder')}
           aria-label={t('discover.searchAria')}
@@ -137,14 +139,14 @@ export function RedesignShell({ children }: { children: ReactNode }) {
       {/* Mobile tab bar: 5 tabs and your profile photo */}
       <nav className="tabbar" aria-label={t('nav.main')}>
         {TAB_SCREENS.map((screen) => (
-          <button key={screen} className={activeGroup === screen ? 'on' : ''} onClick={() => showScreen(screen)}>
+          <button key={screen} onPointerEnter={() => warmScreen(screen)} onPointerDown={() => warmScreen(screen)} onFocus={() => warmScreen(screen)} className={activeGroup === screen ? 'on' : ''} onClick={() => showScreen(screen)}>
             {TAB_ICON[screen]}
             <span>{t(TAB_LABEL[screen]!)}</span>
           </button>
         ))}
         {/* Your profile, as your photo, at the end of the bar. */}
         {me && (
-          <button className={`tbp${activeGroup === 'profile' ? ' on' : ''}`} onClick={() => showScreen('profile')} aria-label={t('nav.profile')}>
+          <button onPointerEnter={() => warmScreen('profile')} onPointerDown={() => warmScreen('profile')} onFocus={() => warmScreen('profile')} className={`tbp${activeGroup === 'profile' ? ' on' : ''}`} onClick={() => showScreen('profile')} aria-label={t('nav.profile')}>
             <span className="avt" style={{ ...userAvatarStyle(me), backgroundSize: 'cover' }}>{!me.avatarUrl && <Initial name={me.name} />}</span>
             {friendRequests.incoming.length > 0 && <span className="badge" aria-hidden="true">{friendRequests.incoming.length}</span>}
           </button>

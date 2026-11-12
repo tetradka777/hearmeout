@@ -2,6 +2,46 @@ import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 import { cachedJson, cachedPage, invalidateJson, peekJson, setJsonCacheOwner, storeJson } from './cachedJson';
 
+test('persistence yields to idle time and cancelled account writes cannot restore storage', async t => {
+  const values = new Map<string, string>();
+  let idle: (() => void) | undefined;
+  let cancelled = 0;
+  const localStorage = {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => values.set(key, value),
+    removeItem: (key: string) => values.delete(key),
+    key: (i: number) => [...values.keys()][i] ?? null,
+    get length() { return values.size; },
+  };
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'window');
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: {
+    localStorage, requestIdleCallback: (callback: () => void) => { idle = callback; return 1; },
+    cancelIdleCallback: () => cancelled++,
+  } });
+  t.after(() => { setJsonCacheOwner(null); if (original) Object.defineProperty(globalThis, 'window', original); else Reflect.deleteProperty(globalThis, 'window'); });
+  setJsonCacheOwner('idle-account');
+  storeJson('/api/ordinary', { title: 'quoted " title' });
+  storeJson('/api/me', { id: 'idle-account', bannerUrl: 'x'.repeat(700_000) });
+  storeJson('/api/oversized-ordinary', { text: 'x'.repeat(700_000) });
+  await new Promise(resolve => setTimeout(resolve, 1600));
+  assert.equal(values.has('hmo-json-v1:idle-account'), false);
+  assert.ok(idle);
+  idle();
+  assert.deepEqual(JSON.parse(values.get('hmo-json-v1:idle-account')!)['/api/ordinary'].data, { title: 'quoted " title' });
+  const saved = JSON.parse(values.get('hmo-json-v1:idle-account')!);
+  assert.equal(saved['/api/me'].data.bannerUrl.length, 700_000);
+  assert.equal(saved['/api/oversized-ordinary'], undefined);
+  assert.ok(values.get('hmo-json-v1:idle-account')!.length <= 3_000_000);
+  storeJson('/api/ordinary', { title: 'private old account' });
+  await new Promise(resolve => setTimeout(resolve, 1600));
+  const oldWrite = idle!;
+  setJsonCacheOwner('another-account');
+  assert.equal(cancelled, 1);
+  oldWrite();
+  assert.equal(values.has('hmo-json-v1:idle-account'), false);
+  assert.equal(values.has('hmo-json-v1:another-account'), false);
+});
+
 function pendingResponse() {
   let resolve!: (response: Response) => void;
   const promise = new Promise<Response>((done) => { resolve = done; });

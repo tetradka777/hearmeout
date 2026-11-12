@@ -13,6 +13,9 @@ const FRESH_MS = 30000;
 const STORE_PREFIX = 'hmo-json-v1:';
 const OWNER_KEY = 'hmo-json-owner';
 const MAX_ENTRY_CHARS = 400_000;
+// Inline profile photos/banner can exceed the ordinary response limit.
+// Keep the bootstrap within the same total device-storage budget.
+const MAX_BOOTSTRAP_CHARS = 2_000_000;
 const MAX_STORE_CHARS = 3_000_000;
 
 type Entry = { at: number; data: unknown };
@@ -25,6 +28,7 @@ const listeners = new Map<string, Set<(data: unknown) => void>>();
 let owner: string | null = null;
 let generation = 0;
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
+let saveIdle: number | null = null;
 
 function storage(): Storage | null {
   try { return typeof window === 'undefined' ? null : window.localStorage; } catch { return null; }
@@ -36,6 +40,7 @@ export function setJsonCacheOwner(userId: string | null): void {
   if (userId === owner) return;
   generation++;
   if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  if (saveIdle != null) { window.cancelIdleCallback(saveIdle); saveIdle = null; }
   mem.clear();
   inflight.clear();
   owner = userId;
@@ -62,22 +67,34 @@ export function setJsonCacheOwner(userId: string | null): void {
 }
 
 function scheduleSave(): void {
-  if (saveTimer || !owner) return;
-  saveTimer = setTimeout(() => {
-    saveTimer = null;
+  if (saveTimer || saveIdle != null || !owner) return;
+  const scheduledGeneration = generation;
+  const save = () => {
+    saveIdle = null;
+    if (generation !== scheduledGeneration) return;
     const ls = storage();
     if (!ls || !owner) return;
     // Newest first, until the size budget runs out.
-    const out: Record<string, Entry> = {};
-    let size = 0;
-    for (const [url, e] of [...mem.entries()].sort((a, b) => b[1].at - a[1].at)) {
+    const out: string[] = [];
+    let size = 2;
+    for (const [url, e] of [...mem.entries()].sort((a, b) => Number(b[0] === '/api/me') - Number(a[0] === '/api/me') || b[1].at - a[1].at)) {
       if (isPrivateMusicUrl(url)) continue;
-      const s = JSON.stringify(e).length;
-      if (s > MAX_ENTRY_CHARS || size + s > MAX_STORE_CHARS) continue;
-      out[url] = e;
-      size += s;
+      const serialized = JSON.stringify(e);
+      const item = `${JSON.stringify(url)}:${serialized}`;
+      const cost = item.length + (out.length ? 1 : 0);
+      if (serialized.length > (url === '/api/me' ? MAX_BOOTSTRAP_CHARS : MAX_ENTRY_CHARS) || size + cost > MAX_STORE_CHARS) continue;
+      out.push(item);
+      size += cost;
     }
-    try { ls.setItem(STORE_PREFIX + owner, JSON.stringify(out)); } catch { /* full or blocked */ }
+    try { ls.setItem(STORE_PREFIX + owner, `{${out.join(',')}}`); } catch { /* full or blocked */ }
+  };
+  saveTimer = setTimeout(() => {
+    saveTimer = null;
+    // Serialization and synchronous storage must yield to scrolling and taps.
+    // The timeout still saves during a busy page; Safari has the timer fallback.
+    if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+      saveIdle = window.requestIdleCallback(save, { timeout: 2000 });
+    } else save();
   }, 1500);
 }
 

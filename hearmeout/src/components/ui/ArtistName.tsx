@@ -1,11 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from 'react';
+import { useCallback, type CSSProperties, type KeyboardEvent, type MouseEvent } from 'react';
 import { normalizeArtistName } from '@/lib/artistIdentity';
 import { useApp } from '@/lib/AppContext';
 import { useArtistPhoto } from '@/lib/artistPhotos';
 import { sizedImage } from '@/lib/imageSize';
 import { prefetchArtist } from '@/lib/prefetchPages';
+import { useNearViewport } from '@/lib/useNearViewport';
 
 // Opens an artist's page from just a name (most rows only carry the name):
 // the Spotify id is looked up on click. A known id skips the lookup.
@@ -23,30 +24,12 @@ export function useOpenArtist() {
   }, [t, openSpotifyArtist, showToast]);
 }
 
-// True once the element has been on screen (and stays true), so avatars on
-// hidden screens or far down a list don't ask for photos yet.
-function useSeen<T extends Element>() {
-  const ref = useRef<T | null>(null);
-  const [seen, setSeen] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || seen) return;
-    if (typeof IntersectionObserver === 'undefined') { setSeen(true); return; }
-    const io = new IntersectionObserver((entries) => {
-      if (entries.some((e) => e.isIntersecting)) { setSeen(true); io.disconnect(); }
-    }, { rootMargin: '200px' });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [seen]);
-  return [ref, seen] as const;
-}
-
 // A round artist photo, or the first letter until (or unless) there is one.
 export function ArtistAvatar({ name, id, size = 18, photo: known, style }: { name: string; id?: string | null; size?: number; photo?: string | null; style?: CSSProperties }) {
-  const [ref, seen] = useSeen<HTMLSpanElement>();
+  const [ref, seen] = useNearViewport<HTMLSpanElement>();
   const looked = useArtistPhoto(name, seen && !known, id);
   const photo = known || looked || null;
-  const url = photo ? sizedImage(photo, size) : null;
+  const url = seen && photo ? sizedImage(photo, size) : null;
   return (
     <span
       ref={ref}

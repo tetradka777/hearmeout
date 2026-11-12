@@ -105,28 +105,40 @@ async function recentGenres(admin: SupabaseClient, userId: string): Promise<{ ge
   return rows;
 }
 
+// Only /api/me supplies these request-scoped promises. They are ignored
+// for other viewers, so they cannot bypass the public-profile boundary.
+export type SelfProfileRows = {
+  user: PromiseLike<{ data: { id: string; name: string; handle: string; avatar_url: string | null; created_at: string } | null; error: unknown }>;
+  isOpenProfile: PromiseLike<boolean>;
+  pinnedAlbums: PromiseLike<string[] | null>;
+  friends: PromiseLike<ApiUser[]>;
+};
+
 export async function getUserProfile(
   admin: SupabaseClient,
   userId: string,
-  viewerId?: string | null
+  viewerId?: string | null,
+  selfRows?: SelfProfileRows
 ): Promise<PublicProfile | null> {
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
 
   const isSelf = !!viewerId && viewerId === userId;
+  const shared = isSelf ? selfRows : undefined;
   const [{ data: user, error: userErr }, { data: ratings }, { data: genreRows }, { data: todayRows }, lastPlay, isOpenProfile, isMutualFriend, privacyMap, { data: pinnedRow }] = await Promise.all([
-    admin.from('users').select('id, name, handle, avatar_url, created_at').eq('id', userId).maybeSingle(),
+    shared?.user ?? admin.from('users').select('id, name, handle, avatar_url, created_at').eq('id', userId).maybeSingle(),
     admin.from('ratings').select('album_id, stars, review, tags, created_at, is_private').eq('user_id', userId).order('created_at', { ascending: false }),
     // Genre shares (taste fingerprint, match %) from the 5000 most recent
     // plays, paged: one request returns at most 1000 rows.
     recentGenres(admin, userId).then((rows) => ({ data: rows })),
     admin.from('listening_events').select('duration_ms').eq('user_id', userId).gte('played_at', startOfDay.toISOString()),
     fetchLastPlay(admin, userId),
-    fetchIsOpenProfile(admin, userId),
+    shared?.isOpenProfile ?? fetchIsOpenProfile(admin, userId),
     !isSelf && viewerId ? isFriendOf(admin, userId, viewerId) : Promise.resolve(false),
     isSelf ? Promise.resolve(null) : fetchPrivacy(admin, [userId]),
     // The top 4 they picked themselves (migration 031; an error = none).
-    admin.from('users').select('pinned_albums').eq('id', userId).maybeSingle(),
+    shared ? Promise.resolve(shared.pinnedAlbums).then((pinned_albums) => ({ data: { pinned_albums } }))
+      : admin.from('users').select('pinned_albums').eq('id', userId).maybeSingle(),
   ]);
 
   if (userErr) throw userErr;
@@ -230,18 +242,17 @@ export async function getUserProfile(
       isPrivate: !!r.is_private,
       previousStars: null,
     }));
-    const [{ data: friendRows }, since] = await Promise.all([
-      admin.from('friendships').select('friend:friend_id(id, name, handle, avatar_url)').eq('user_id', userId),
+    const [friends, since] = await Promise.all([
+      shared?.friends ?? Promise.resolve(admin.from('friendships').select('friend:friend_id(id, name, handle, avatar_url)').eq('user_id', userId)).then(({ data: friendRows }) => (friendRows || [])
+        .map((row): ApiUser | null => {
+          const f = row.friend as unknown as { id: string; name: string; handle: string; avatar_url: string | null } | null;
+          return f ? { id: f.id, name: f.name, handle: f.handle, avatarUrl: f.avatar_url } : null;
+        }).filter((f): f is ApiUser => f !== null)),
       !isSelf && viewerId
         ? admin.from('friendships').select('created_at').eq('user_id', viewerId).eq('friend_id', userId).maybeSingle()
         : Promise.resolve({ data: null }),
     ]);
-    profile.friends = (friendRows || [])
-      .map((row) => {
-        const f = row.friend as unknown as { id: string; name: string; handle: string; avatar_url: string | null } | null;
-        return f ? { id: f.id, name: f.name, handle: f.handle, avatarUrl: f.avatar_url } : null;
-      })
-      .filter((f): f is ApiUser => f !== null);
+    profile.friends = friends;
 
     if (!isSelf) {
       profile.lastPlayed = showListening ? lastPlay.last : null;

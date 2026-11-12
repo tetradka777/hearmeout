@@ -16,6 +16,7 @@ import { blurStyle } from '@/lib/imageColor';
 import { useArtistPhoto } from '@/lib/artistPhotos';
 import { SocialBar } from './Social';
 import { socialKey } from '@/lib/socialClient';
+import { useNearViewport } from '@/lib/useNearViewport';
 
 type Person = { id?: string; name: string; avatarUrl: string | null };
 
@@ -31,9 +32,11 @@ export function DarkCard({ cover, head, right, children, onOpen, footLeft, class
   aside?: ReactNode; extra?: ReactNode;
 }) {
   const { t } = useApp();
-  const bg = cover ? sizedImage(cover, 150) : null;
+  const [ref, near] = useNearViewport<HTMLElement>();
+  const bg = near && cover ? sizedImage(cover, 150) : null;
   return (
     <article
+      ref={ref}
       className={`dkc13 ${aside ? 'has-asd ' : ''}${onOpen ? 'tap ' : ''}${className}`.trim()}
       style={bg ? ({ ['--cvbg' as string]: `url('${bg}')` } as CSSProperties) : undefined}
       // The whole card opens it; its own buttons and links (and windows
@@ -154,12 +157,20 @@ export function Shelf({ title, sub, right, top, children, onMore, done = true, c
     const row = rowRef.current;
     const end = endRef.current;
     if (!endless || !row || !end || typeof IntersectionObserver === 'undefined') return;
+    let near = false;
     const io = new IntersectionObserver((entries) => {
       // A row with no width (a hidden screen) would count as "at the end".
-      if (row.clientWidth > 0 && entries.some((e) => e.isIntersecting)) moreRef.current?.();
+      if (near && row.clientWidth > 0 && entries.some((e) => e.isIntersecting)) moreRef.current?.();
     }, { root: row, rootMargin: '0px 900px 0px 900px' });
-    io.observe(end);
-    return () => io.disconnect();
+    // A horizontal observer alone also intersects shelves far below the
+    // viewport. Keep it attached only while the shelf approaches the page.
+    const viewport = new IntersectionObserver(entries => {
+      near = entries.some(entry => entry.isIntersecting);
+      if (near) io.observe(end);
+      else io.unobserve(end);
+    }, { rootMargin: '800px 0px' });
+    viewport.observe(row);
+    return () => { viewport.disconnect(); io.disconnect(); };
   }, [endless, count]);
   return (
     <section className={`sh14 ${className}`.trim()}>
@@ -201,8 +212,9 @@ export function AlbumShelfCard({ cover, title, artist, artistId, albumId, meta, 
 export function ArtistShelfCard({ name, id, photo: known, sub, onClick, action }: { name: string; id?: string | null; photo?: string | null; sub?: ReactNode; onClick: () => void; action?: ReactNode }) {
   const looked = useArtistPhoto(name, false, id);
   const photo = known || looked || null;
+  const [ref, near] = useNearViewport<HTMLDivElement>();
   return (
-    <div className="ac23" style={blurStyle(photo)}>
+    <div ref={ref} className="ac23" style={blurStyle(near ? photo : null)}>
       <div className="apw">
         <button className="ap" onClick={onClick} aria-label={name}>
           <ArtistAvatar name={name} id={id} photo={photo} size={200} />

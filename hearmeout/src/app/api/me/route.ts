@@ -3,7 +3,8 @@ import { LANGUAGES, normalizeLanguage } from '@/lib/i18n';
 import { cookies } from 'next/headers';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getCurrentUserId, IDENTITY_COOKIE } from '@/lib/identity';
-import { getUserProfile, fetchIsOpenProfile } from '@/lib/userProfile';
+import { getUserProfile } from '@/lib/userProfile';
+import { readMeProfileRows } from '@/lib/meProfileRows';
 import { slugifyHandle } from '@/lib/slug';
 import type { ApiUser, Me } from '@/lib/types';
 import { isInternalEmail } from '@/lib/authInternalEmail';
@@ -19,35 +20,34 @@ export async function GET() {
   if (!userId) return NextResponse.json({ error: 'not_registered' }, { status: 401 });
 
   const admin = supabaseAdmin();
-  // Everything at once: the play count, invite code and notification
-  // switches used to be read one after another after this.
-  const [profile, { data: prefs }, { data: conns }, { data: friendRows }, isOpenProfile, regionAuto, { count: playsCount }, { data: codeRow }, { data: notifyRow }, { data: pinnedRow }] = await Promise.all([
-    getUserProfile(admin, userId, userId),
-    admin.from('users').select('language, region, auth_user_id, banner_url, design, mode, palette, ticker_enabled, motion_enabled, time_format, week_start, ratings_visible, share_live, public_reviews, discoverable').eq('id', userId).maybeSingle(),
+  // Profile and account settings reuse the same rows within this request.
+  // These shared rows live only for this request.
+  const rows = readMeProfileRows(admin, userId);
+  const friendsP = Promise.resolve(admin.from('friendships').select('friend:friend_id(id, name, handle, avatar_url)').eq('user_id', userId))
+    .then(({ data: friendRows }): ApiUser[] => (friendRows || []).map((row): ApiUser | null => {
+      const f = row.friend as unknown as { id: string; name: string; handle: string; avatar_url: string | null } | null;
+      return f ? { id: f.id, name: f.name, handle: f.handle, avatarUrl: f.avatar_url } : null;
+    })
+    .filter((f): f is ApiUser => f !== null));
+  const [profile, meRows, { data: conns }, friends, { count: playsCount }] = await Promise.all([
+    getUserProfile(admin, userId, userId, {
+      user: rows.then((r) => r.user),
+      isOpenProfile: rows.then((r) => r.isOpenProfile),
+      pinnedAlbums: rows.then((r) => (r.profilePinnedRow.data?.pinned_albums as string[] | null) ?? null),
+      friends: friendsP,
+    }),
+    rows,
     admin.from('connections').select('provider').eq('user_id', userId),
-    admin.from('friendships').select('friend:friend_id(id, name, handle, avatar_url)').eq('user_id', userId),
-    fetchIsOpenProfile(admin, userId),
-    fetchRegionAuto(admin, userId),
+    friendsP,
     // How many plays the account has (Home suggests importing the Spotify
     // history while it's small).
     admin.from('listening_events').select('id', { count: 'exact', head: true }).eq('user_id', userId),
-    admin.from('users').select('invite_code').eq('id', userId).maybeSingle(),
-    // Release notification switches (migration 028), apart so a missing
-    // column can't break the rest of the account.
-    admin.from('users').select('notify_releases_mine, notify_releases_popular').eq('id', userId).maybeSingle(),
-    // Pinned top 4 (migration 031), apart for the same reason.
-    admin.from('users').select('pinned_albums, tz_offset').eq('id', userId).maybeSingle(),
   ]);
 
   if (!profile) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
+  const { prefs: { data: prefs }, isOpenProfile, regionAuto, codeRow: { data: codeRow }, notifyRow: { data: notifyRow }, pinnedRow: { data: pinnedRow } } = meRows;
   const connSet = new Set((conns || []).map((c) => c.provider as string));
-  const friends: ApiUser[] = (friendRows || [])
-    .map((row): ApiUser | null => {
-      const f = row.friend as unknown as { id: string; name: string; handle: string; avatar_url: string | null } | null;
-      return f ? { id: f.id, name: f.name, handle: f.handle, avatarUrl: f.avatar_url } : null;
-    })
-    .filter((f): f is ApiUser => f !== null);
 
   let email: string | null = null;
   if (prefs?.auth_user_id) {
