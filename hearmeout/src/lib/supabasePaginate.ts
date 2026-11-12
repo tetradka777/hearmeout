@@ -8,10 +8,12 @@
 // through with .range() until a page comes back short, so callers get the
 // real row count instead of one page of it.
 //
-// `concurrency` > 1 asks for that many pages at once (in waves), for big
-// reads where one page after another took seconds; the query must have a
-// stable order (e.g. .order('played_at').order('id')) for pages not to
-// overlap.
+// Probe the first page alone: most day/week/ratings reads fit in it, so
+// fetching a whole parallel wave would mostly ask for empty pages.
+// Once that page is full, `concurrency` > 1 asks for that many pages at
+// once (in waves), for big reads where one page after another took
+// seconds; the query must have a stable order (e.g.
+// .order('played_at').order('id')) for pages not to overlap.
 const PAGE_SIZE = 1000;
 
 export async function fetchAllRows<T>(
@@ -22,7 +24,7 @@ export async function fetchAllRows<T>(
   const rows: T[] = [];
   let offset = 0;
   while (offset < maxRows) {
-    const wave = Math.max(1, Math.min(concurrency, Math.ceil((maxRows - offset) / PAGE_SIZE)));
+    const wave = offset === 0 ? 1 : Math.max(1, Math.min(concurrency, Math.ceil((maxRows - offset) / PAGE_SIZE)));
     const pages = await Promise.all(
       Array.from({ length: wave }, (_, i) => buildQuery(offset + i * PAGE_SIZE, offset + (i + 1) * PAGE_SIZE - 1))
     );

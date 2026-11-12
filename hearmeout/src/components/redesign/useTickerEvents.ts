@@ -7,8 +7,8 @@ import type { TickerNewsItem } from '@/lib/tickerNews';
 import type { TickerNewsResponse } from '@/app/api/ticker/route';
 
 // Activity-strip events (spec 3.8/7.9). First the viewer's and friends' own
-// activity from the same /api/feed data Home already fetches (HomeScreen's
-// effect fills AppContext's `feed`, and every screen stays mounted): today's
+// activity from the shared /api/feed data (AppShell loads it independently
+// of the active screen and fills AppContext's `feed`): today's
 // biggest disagreement, then first plays, reviews and the viewer's session,
 // newest first, at most 6. Then news from /api/ticker, so the strip isn't
 // empty for someone whose friends are quiet: records, new and announced

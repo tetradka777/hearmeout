@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
-import { usePlayer } from '@/lib/PlayerContext';
+import { usePlayer, usePlayerProgress } from '@/lib/PlayerContext';
 import { ArtistName } from './ui/ArtistName';
 import { useApp } from '@/lib/AppContext';
 import { PreviewButton } from './redesign/PreviewButton';
@@ -12,6 +12,12 @@ import { useNextAlbum } from '@/lib/useNextAlbum';
 function formatTime(sec: number) {
   if (!Number.isFinite(sec) || sec < 0) sec = 0;
   return `0:${Math.floor(sec).toString().padStart(2, '0')}`;
+}
+
+function PlayerElapsed({ unavailable }: { unavailable: boolean }) {
+  const { t } = useApp();
+  const progress = usePlayerProgress();
+  return <span className="mp-time">{unavailable ? t('player.unavailable') : `${formatTime(progress * 30)} / 0:30`}</span>;
 }
 
 const SWIPE = 56;   // px to switch the track
@@ -27,7 +33,7 @@ const FLICK = 0.35; // or a fast flick, px/ms (from 24px)
 // album.
 export function GlobalPlayer({ shown = true }: { shown?: boolean }) {
   const { t, openAlbum } = useApp();
-  const { currentTrack, quiet, status, progress, queue, index, next, prev, close, playQueue } = usePlayer();
+  const { currentTrack, quiet, status, queue, index, next, prev, close, playQueue } = usePlayer();
   const atEnd = queue.length > 0 && index >= queue.length - 1;
   const nextAlbum = useNextAlbum(currentTrack, atEnd);
   const bar = useRef<HTMLDivElement>(null);
@@ -36,7 +42,6 @@ export function GlobalPlayer({ shown = true }: { shown?: boolean }) {
   // Quiet playback (the recap's song of the period) has no bar.
   if (!currentTrack || quiet) return null;
   const openSpotifyUrl = currentTrack.spotifyId ? `https://open.spotify.com/album/${currentTrack.spotifyId}` : null;
-  const elapsed = formatTime(progress * 30);
   // Next track, or the next album after the last one; false when there's none.
   const forward = () => {
     if (!atEnd) { next(); return true; }
@@ -114,7 +119,7 @@ export function GlobalPlayer({ shown = true }: { shown?: boolean }) {
           </div>
           <div className="mp-ctl">
             <PreviewButton tracks={[currentTrack]} size={46} />
-            <span className="mp-time">{status === 'unavailable' ? t('player.unavailable') : `${elapsed} / 0:30`}</span>
+            <PlayerElapsed unavailable={status === 'unavailable'} />
           </div>
           <div className="mp-act">
             <button className="ib" onClick={() => forward()} aria-label={t('player.next')}><NextIcon /></button>

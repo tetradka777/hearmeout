@@ -11,7 +11,7 @@ import { SocialBar } from '../ui/Social';
 import { socialKey } from '@/lib/socialClient';
 import { fmt1 } from '@/lib/numberFormat';
 import { useApp } from '@/lib/AppContext';
-import type { ApiUser, Device, FeedEvent, FeedResponse, PublicProfile, RecapData } from '@/lib/types';
+import type { ApiUser, Device, FeedEvent, PublicProfile, RecapData } from '@/lib/types';
 import { CoverArt } from '../ui/CoverArt';
 import { formatRelative } from '@/lib/format';
 import { MascotIcon } from '../redesign/icons';
@@ -19,7 +19,7 @@ import { MATCH_FRIEND_EVENT } from '@/lib/uiEvents';
 import { useFriendScores } from '@/lib/useFriendScores';
 import { toLocale, quoted, type Language, type TranslationKey } from '@/lib/i18n';
 import { completedWeekRange, isoWeekNumber } from '@/lib/weeks';
-import { cachedJson, peekJson, useCachedJson } from '@/lib/cachedJson';
+import { useCachedJson } from '@/lib/cachedJson';
 import { computeMatch } from '@/lib/matchScore';
 import { DEMO_PROFILES } from '@/lib/demoAccounts';
 import { RECAP_SEEN_EVENT, recapSeenWeek } from '@/lib/recapSeen';
@@ -394,18 +394,7 @@ function YearCard() {
 }
 
 export function HomeScreen(_props: { device: Device }) {
-  const { t, me, setFeed, ensureRecap, recapCache } = useApp();
-  const feedUrl = `/api/feed?tz=${new Date().getTimezoneOffset()}`;
-
-  useEffect(() => {
-    if (!me) return;
-    let cancelled = false;
-    // The stored copy first (lib/cachedJson), then the fresh feed.
-    const stored = peekJson<FeedResponse>(feedUrl);
-    if (stored) setFeed(stored);
-    cachedJson<FeedResponse>(feedUrl).then((d) => { if (!cancelled && d) setFeed(d); });
-    return () => { cancelled = true; };
-  }, [me, setFeed, feedUrl]);
+  const { t, me, ensureRecap, recapCache } = useApp();
 
   useEffect(() => { if (me) ensureRecap('me', 'week'); }, [me, ensureRecap]);
   const [seenWeek, setSeenWeek] = useState<string | null>(null);

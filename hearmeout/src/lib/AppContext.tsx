@@ -385,6 +385,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     if (!res.ok) return;
     const data: Me = await res.json();
+    if (peekJson<Me>('/api/me')?.id !== data.id) {
+      // An old persisted account may paint while the cookie is confirmed.
+      // Its collections must not survive confirmation of a different owner.
+      setMyRatings([]);
+      setLovedItems([]);
+      setLaterItems([]);
+      setAlbumRatings({});
+      setFeed(null);
+      setFriendRequests({ incoming: [], outgoing: [] });
+      setNotifications({ items: [], unread: 0 });
+      setRecapCache({});
+      setRecapLocked({});
+      requestedRecapKeys.current.clear();
+      clearStatsCache();
+    }
     setJsonCacheOwner(data.id);
     storeJson('/api/me', data);
     setMe(data);
@@ -394,34 +409,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (data.tzOffset !== tz) fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tzOffset: tz }) }).catch(() => {});
   }, [patch]);
 
-  const refreshAlbumRatings = useCallback(async () => {
+  const refreshAlbumRatings = useCallback(async (force = true) => {
     // Server-side (the view is closed to the browser's anon key, migration 022).
     // A failed request keeps the averages on screen instead of blanking them.
-    const res = await fetch('/api/albums/summary').catch(() => null);
-    if (!res?.ok) return;
-    const data: { album_id: string; avg_stars: number; ratings_count: number }[] = await res.json().catch(() => null);
+    const data = await cachedJson<{ album_id: string; avg_stars: number; ratings_count: number }[]>('/api/albums/summary', { force });
     if (!Array.isArray(data)) return;
     const map: Record<string, AlbumRatingInfo> = {};
     for (const row of data) {
       map[row.album_id as string] = { avg: Number(row.avg_stars), count: Number(row.ratings_count) };
     }
-    storeJson('/api/albums/summary', data);
     setAlbumRatings(map);
   }, []);
 
-  const refreshMyRatings = useCallback(async () => {
-    const res = await fetch('/api/ratings/mine');
-    if (!res.ok) return;
-    const data = await res.json();
-    storeJson('/api/ratings/mine', data);
+  const refreshMyRatings = useCallback(async (force = true) => {
+    const data = await cachedJson<RatingRecord[]>('/api/ratings/mine', { force });
+    if (!data) return;
     setMyRatings(data);
   }, []);
 
-  const refreshLovedItems = useCallback(async () => {
-    const res = await fetch('/api/loved');
-    if (!res.ok) return;
-    const data = await res.json();
-    storeJson('/api/loved', data);
+  const refreshLovedItems = useCallback(async (force = true) => {
+    const data = await cachedJson<{ items?: LovedItem[] }>('/api/loved', { force });
+    if (!data) return;
     setLovedItems(data.items || []);
   }, []);
 
@@ -435,11 +443,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await refreshLovedItems();
   }, [refreshLovedItems]);
 
-  const refreshLater = useCallback(async () => {
-    const res = await fetch('/api/later');
-    if (!res.ok) return;
-    const data = await res.json();
-    storeJson('/api/later', data);
+  const refreshLater = useCallback(async (force = true) => {
+    const data = await cachedJson<{ items?: LaterItem[] }>('/api/later', { force });
+    if (!data) return;
     setLaterItems(data.items || []);
   }, []);
 
@@ -528,7 +534,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     refreshMe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  useEffect(() => { refreshAlbumRatings(); }, [refreshAlbumRatings]);
+  useEffect(() => { if (state.authStatus === 'ready') void refreshAlbumRatings(false); }, [state.authStatus, me?.id, refreshAlbumRatings]);
   useEffect(() => {
     // The catalogue's covers hardly ever change: a copy under 6 h is kept.
     const age = jsonAge('/api/spotify/covers');
@@ -537,11 +543,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     cachedJson<Record<string, string>>('/api/spotify/covers')
       .then((d) => { if (d) setSpotifyCovers(d); })
       .catch(() => {});
-  }, [state.authStatus]);
+  }, [state.authStatus, me?.id]);
 
-  useEffect(() => { if (state.authStatus === 'ready') refreshMyRatings(); }, [state.authStatus, refreshMyRatings]);
-  useEffect(() => { if (state.authStatus === 'ready') refreshLovedItems(); }, [state.authStatus, refreshLovedItems]);
-  useEffect(() => { if (state.authStatus === 'ready') refreshLater(); }, [state.authStatus, refreshLater]);
+  useEffect(() => { if (state.authStatus === 'ready') void refreshMyRatings(false); }, [state.authStatus, me?.id, refreshMyRatings]);
+  useEffect(() => { if (state.authStatus === 'ready') void refreshLovedItems(false); }, [state.authStatus, me?.id, refreshLovedItems]);
+  useEffect(() => { if (state.authStatus === 'ready') void refreshLater(false); }, [state.authStatus, me?.id, refreshLater]);
 
   // <html lang> follows the interface language (screen readers, hyphenation,
   // quotes); the server layout starts it from Accept-Language.

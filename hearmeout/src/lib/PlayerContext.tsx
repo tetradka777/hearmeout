@@ -1,6 +1,7 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { createPlayerProgress } from './playerProgress';
 import { fetchTrackPreview, prefetchTrackPreview } from './deezer';
 import { useApp } from './AppContext';
 
@@ -23,7 +24,7 @@ type PlayerValue = {
   queue: QueueTrack[];
   index: number;
   playing: boolean;
-  progress: number; // 0..1 of the current 30s preview (a few times a second)
+  subscribeProgress: (listener: () => void) => () => void;
   // The exact position right now, read from the audio element: for the
   // ring, which redraws every frame without re-rendering anything.
   getProgress: () => number;
@@ -43,6 +44,13 @@ type PlayerValue = {
 };
 
 const PlayerContext = createContext<PlayerValue | null>(null);
+const ProgressContext = createContext<ReturnType<typeof createPlayerProgress> | null>(null);
+
+export function usePlayerProgress(): number {
+  const progress = useContext(ProgressContext);
+  if (!progress) throw new Error('usePlayerProgress must be used within PlayerProvider');
+  return useSyncExternalStore(progress.subscribe, progress.getSnapshot, () => 0);
+}
 
 // What a play control for a track carries as data-pl, so the bar can tell
 // whether the playing track's own control is on screen (useTrackOnScreen).
@@ -62,7 +70,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [queue, setQueue] = useState<QueueTrack[]>([]);
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [progressStore] = useState(createPlayerProgress);
   const [status, setStatus] = useState<Status>('idle');
   const [quiet, setQuiet] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -84,7 +92,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     if (!track || !audio) return;
     const myToken = ++requestToken.current;
     setStatus('loading');
-    setProgress(0);
+    progressStore.set(0);
     fetchTrackPreview(track.artist, track.title, albumOf(track))
       .then((tr) => {
         if (requestToken.current !== myToken) return;
@@ -138,7 +146,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setIndex(0);
     setPlaying(false);
     setQuiet(false);
-  }, []);
+    progressStore.set(0);
+  }, [progressStore]);
 
   // Leaving the site stops the music: switching to another tab or app, or
   // locking the phone, pauses it (the bar stays, so it can be resumed);
@@ -163,22 +172,23 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<PlayerValue>(() => ({
-    queue, index, playing, progress, getProgress, status, currentTrack, quiet, playQueue, toggle, next, prev, close,
-  }), [queue, index, playing, progress, getProgress, status, currentTrack, quiet, playQueue, toggle, next, prev, close]);
+    queue, index, playing, subscribeProgress: progressStore.subscribe, getProgress, status, currentTrack, quiet, playQueue, toggle, next, prev, close,
+  }), [queue, index, playing, progressStore, getProgress, status, currentTrack, quiet, playQueue, toggle, next, prev, close]);
 
   return (
-    <PlayerContext.Provider value={value}>
+    <PlayerContext.Provider value={value}><ProgressContext.Provider value={progressStore}>
       {children}
       <audio
         ref={audioRef}
         onPlay={() => setPlaying(true)}
-        onPause={() => setPlaying(false)}
+        onPause={() => { progressStore.set(getProgress()); setPlaying(false); }}
+        onSeeked={() => progressStore.set(getProgress())}
         onEnded={() => advance()}
         onTimeUpdate={(e) => {
           const el = e.currentTarget;
-          if (el.duration) setProgress(el.currentTime / el.duration);
+          if (el.duration) progressStore.set(el.currentTime / el.duration);
         }}
       />
-    </PlayerContext.Provider>
+    </ProgressContext.Provider></PlayerContext.Provider>
   );
 }
