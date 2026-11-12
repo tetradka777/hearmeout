@@ -1650,3 +1650,11 @@ html,body{margin:0}
 
 /* Explicit horizontal album action: shared cover buttons default to columns. */
 .rd .diary36-album{flex-direction:row!important;align-items:center!important}
+
+/* Seasonal track shelf: existing preview cards, palette accents and carousel. */
+.rd .christmas38 .christmas38card{width:280px;flex-basis:280px}
+.rd .christmas38spotify{display:inline-flex;align-items:center;gap:7px;color:inherit;font-size:13px;font-weight:700;flex:none;text-decoration:none}
+.rd .christmas38spotify svg{width:18px;height:18px;flex:none}
+.rd .christmas38 .repeat35title{display:block;color:inherit;text-decoration:none;overflow-wrap:anywhere}
+.rd .christmas38 .repeat35body{align-items:flex-start}
+.rd .christmas38 .repeat35text small{overflow-wrap:anywhere}

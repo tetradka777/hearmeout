@@ -3,6 +3,9 @@ import type { Dict } from '../i18n';
 // Loaded on demand (loadLanguage in i18n.ts): only the reader's language
 // reaches the browser.
 const de: Dict = {
+  'christmas.title': "christmas all around",
+  'christmas.subtitle': "i feel it in my fingers / i feel it in my toes",
+  'christmas.openTrack': "{title} in Spotify öffnen",
   'diary.addFromAlbum': "zum musiktagebuch hinzufügen",
   'swap.saveGiftFirst': "speichere album und nachricht vor dem abschließen",
   'swap.albumChanged': "das erhaltene album wurde geändert. höre es an und gib vor dem abschließen eine neue wertung ein.",

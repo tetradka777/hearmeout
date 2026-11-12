@@ -1,5 +1,6 @@
 'use client';
 import { ActiveSwapCard } from '../AlbumSwapCards';
+import { ChristmasSection } from '../ChristmasSection';
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { blurStyle } from '@/lib/imageColor';
@@ -442,6 +443,7 @@ export function HomeScreen(_props: { device: Device }) {
       <OnRepeatSection />
 
       <FriendsList />
+      <ChristmasSection />
 
       <div className="sec two home29two">
         <DayTile />
