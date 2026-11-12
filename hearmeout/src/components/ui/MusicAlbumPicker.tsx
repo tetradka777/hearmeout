@@ -1,13 +1,17 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
-import { useAlbum } from '@/lib/useAlbum';
 import { CoverArt } from './CoverArt';
 
 export function MusicAlbumPicker({ value, onChange, disabled = false }: { value: string; onChange: (id: string) => void; disabled?: boolean }) {
-  const { albums, liveAlbums, t } = useApp();
-  const selected = useAlbum(value || null);
+  const { albums, liveAlbums, ensureLiveAlbum, t } = useApp();
+  const selected = liveAlbums[value] || albums.find(a => a.id === value || a.spotifyId === value);
+  // Existing choices already contain everything this picker displays. Only an
+  // explicit deep link to an unknown Spotify album needs one detail request.
+  useEffect(() => {
+    if (value && !selected && /^[a-zA-Z0-9]{22}$/.test(value)) ensureLiveAlbum(value);
+  }, [value, selected, ensureLiveAlbum]);
   const [query, setQuery] = useState('');
   const options = useMemo(() => {
     const all = [...new Map([...albums, ...Object.values(liveAlbums)].map(a => [a.id, a])).values()];
