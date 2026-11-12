@@ -85,5 +85,201 @@ export const CHRISTMAS_TRACKS = [
     "artist": "Chris Rea",
     "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02f3c8c2e17214de799269221a",
     "url": "https://open.spotify.com/track/33Jz7kuoUna0k7C1EFb0m1"
+  },
+  {
+    "trackId": "10t0xoAgbViSZz66mrYsnk",
+    "title": "Wonderful Christmastime",
+    "artist": "Paul McCartney",
+    "cover": "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e0234356af1bb0daa100abfb04c",
+    "url": "https://open.spotify.com/track/10t0xoAgbViSZz66mrYsnk"
+  },
+  {
+    "trackId": "3BfuGBvSBkj0wiDwipWehp",
+    "title": "Let It Snow! Let It Snow! Let It Snow!",
+    "artist": "Dean Martin",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e021958c5ba9238059051baa755",
+    "url": "https://open.spotify.com/track/3BfuGBvSBkj0wiDwipWehp"
+  },
+  {
+    "trackId": "53vZ1tQqsQ2JvIYnB6YUqE",
+    "title": "It's the Most Wonderful Time of the Year",
+    "artist": "Andy Williams",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02497d53d2ef8acfbf910e726b",
+    "url": "https://open.spotify.com/track/53vZ1tQqsQ2JvIYnB6YUqE"
+  },
+  {
+    "trackId": "1vAOLODjpssHjEIp2V4SgB",
+    "title": "Happy Xmas (War Is Over)",
+    "artist": "John Lennon, Yoko Ono",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02ebe1722f0733751ef10c0232",
+    "url": "https://open.spotify.com/track/1vAOLODjpssHjEIp2V4SgB"
+  },
+  {
+    "trackId": "6kGF1dhIK1uGhcrWeuLLMv",
+    "title": "White Christmas",
+    "artist": "Bing Crosby",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02cec5f1d86cf3884ffb1f7406",
+    "url": "https://open.spotify.com/track/6kGF1dhIK1uGhcrWeuLLMv"
+  },
+  {
+    "trackId": "2raM8EcWwpet0NYHfmENJ2",
+    "title": "The Christmas Song",
+    "artist": "Nat King Cole",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02cecff9caec13dbdd23e6ff3c",
+    "url": "https://open.spotify.com/track/2raM8EcWwpet0NYHfmENJ2"
+  },
+  {
+    "trackId": "1vTbZnionnHB5KgxOcTcpD",
+    "title": "Have Yourself A Merry Little Christmas",
+    "artist": "Frank Sinatra",
+    "cover": "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e02f9cdbd375811b4b16516c811",
+    "url": "https://open.spotify.com/track/1vTbZnionnHB5KgxOcTcpD"
+  },
+  {
+    "trackId": "4bzgbFPtEqrxmljHW1vo2T",
+    "title": "Santa Baby",
+    "artist": "Eartha Kitt",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02f48a8b9a3fb16d0960c98a21",
+    "url": "https://open.spotify.com/track/4bzgbFPtEqrxmljHW1vo2T"
+  },
+  {
+    "trackId": "76HM1r0QjlJST2ktnZeNvJ",
+    "title": "Sleigh Ride",
+    "artist": "The Ronettes",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e0204b909a70702ef96cca4f2f7",
+    "url": "https://open.spotify.com/track/76HM1r0QjlJST2ktnZeNvJ"
+  },
+  {
+    "trackId": "46pF1zFimM582ss1PrMy68",
+    "title": "Christmas (Baby Please Come Home)",
+    "artist": "Darlene Love",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e020899a5627109fbfd913f1727",
+    "url": "https://open.spotify.com/track/46pF1zFimM582ss1PrMy68"
+  },
+  {
+    "trackId": "2pnPe4pJtq7689i5ydzvJJ",
+    "title": "Run Rudolph Run",
+    "artist": "Chuck Berry",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e0239807cff601735a3dec9e24c",
+    "url": "https://open.spotify.com/track/2pnPe4pJtq7689i5ydzvJJ"
+  },
+  {
+    "trackId": "3QiAAp20rPC3dcAtKtMaqQ",
+    "title": "Blue Christmas",
+    "artist": "Elvis Presley",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02a2a6d54759001ebdfe9a37a1",
+    "url": "https://open.spotify.com/track/3QiAAp20rPC3dcAtKtMaqQ"
+  },
+  {
+    "trackId": "0247StOpd3AkeBQzANX4Zf",
+    "title": "Do They Know It's Christmas? - 1984 Version",
+    "artist": "Band Aid",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e022f77772e5c981e44fc347e22",
+    "url": "https://open.spotify.com/track/0247StOpd3AkeBQzANX4Zf"
+  },
+  {
+    "trackId": "2TE4xW3ImvpltVU0cPcKUn",
+    "title": "Merry Christmas Everyone",
+    "artist": "Shakin' Stevens",
+    "cover": "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e02d962f3b4235f8c6429a829fb",
+    "url": "https://open.spotify.com/track/2TE4xW3ImvpltVU0cPcKUn"
+  },
+  {
+    "trackId": "0z5jr9YE1siursT3dJUwDV",
+    "title": "Merry Xmas Everybody",
+    "artist": "Slade",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02f3962165e86fe7558a6af7f8",
+    "url": "https://open.spotify.com/track/0z5jr9YE1siursT3dJUwDV"
+  },
+  {
+    "trackId": "44Z86MXKHbv7NYtz1oaY9U",
+    "title": "I Wish It Could Be Christmas Everyday",
+    "artist": "Wizzard",
+    "cover": "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e028c5d0e3697c5c9191cc8c1bf",
+    "url": "https://open.spotify.com/track/44Z86MXKHbv7NYtz1oaY9U"
+  },
+  {
+    "trackId": "1ylkKFSUIR6SPYlhsza454",
+    "title": "Santa Claus Is Coming To Town",
+    "artist": "The Jackson 5",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02e7f78c207075b7208255ad90",
+    "url": "https://open.spotify.com/track/1ylkKFSUIR6SPYlhsza454"
+  },
+  {
+    "trackId": "5I2Zw1tJXoswUSnKkJSuwX",
+    "title": "What Christmas Means To Me",
+    "artist": "Stevie Wonder",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e022927b9b73a25a824b92aaef3",
+    "url": "https://open.spotify.com/track/5I2Zw1tJXoswUSnKkJSuwX"
+  },
+  {
+    "trackId": "7aDAyCX3XSBT4NxF4lnUbx",
+    "title": "Mistletoe",
+    "artist": "Justin Bieber",
+    "cover": "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e020a1d2aab5999d1663844098c",
+    "url": "https://open.spotify.com/track/7aDAyCX3XSBT4NxF4lnUbx"
+  },
+  {
+    "trackId": "3daJaC4VGX6ps9FXW6aGTr",
+    "title": "Cozy Little Christmas",
+    "artist": "Katy Perry",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02b2cc75d3e57410e58effcb35",
+    "url": "https://open.spotify.com/track/3daJaC4VGX6ps9FXW6aGTr"
+  },
+  {
+    "trackId": "6JqoTm9c3NJaZnpqhC9x0E",
+    "title": "Christmas Tree Farm",
+    "artist": "Taylor Swift",
+    "cover": "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e0271b09fc1477d88f83047cbd7",
+    "url": "https://open.spotify.com/track/6JqoTm9c3NJaZnpqhC9x0E"
+  },
+  {
+    "trackId": "78pn8k7RogKo2oxl0DyX6d",
+    "title": "One More Sleep",
+    "artist": "Leona Lewis",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02b9eeb2705c983089c2412a80",
+    "url": "https://open.spotify.com/track/78pn8k7RogKo2oxl0DyX6d"
+  },
+  {
+    "trackId": "1Td2rGdUtpSeepcWCU1IwC",
+    "title": "You Make It Feel Like Christmas (feat. Blake Shelton)",
+    "artist": "Gwen Stefani, Blake Shelton",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02af78b00fefd6c806fdf793e8",
+    "url": "https://open.spotify.com/track/1Td2rGdUtpSeepcWCU1IwC"
+  },
+  {
+    "trackId": "1OjmlSFuzYflWjSMTCyTJv",
+    "title": "Like It's Christmas",
+    "artist": "Jonas Brothers",
+    "cover": "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e02e393950ed26cf61970d1e798",
+    "url": "https://open.spotify.com/track/1OjmlSFuzYflWjSMTCyTJv"
+  },
+  {
+    "trackId": "7AUOgbCYpcinYBsfJkkKR6",
+    "title": "Step Into Christmas",
+    "artist": "Elton John",
+    "cover": "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e022c40fda47597536aa18f4ca8",
+    "url": "https://open.spotify.com/track/7AUOgbCYpcinYBsfJkkKR6"
+  },
+  {
+    "trackId": "6klwKQDoPimh3c9BEOZhSB",
+    "title": "Fairytale of New York",
+    "artist": "The Pogues, Kirsty MacColl",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e028c5d0e3697c5c9191cc8c1bf",
+    "url": "https://open.spotify.com/track/6klwKQDoPimh3c9BEOZhSB"
+  },
+  {
+    "trackId": "5kM45IOa4I87DI97QRqFXv",
+    "title": "Home For The Holidays",
+    "artist": "Perry Como",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02d03dfe7ac1fdaed0f141db04",
+    "url": "https://open.spotify.com/track/5kM45IOa4I87DI97QRqFXv"
+  },
+  {
+    "trackId": "0Os0i5x2edR3hsjZmP2elh",
+    "title": "It's Not Christmas 'Til You Come Home - Recorded At Spotify Studios NYC",
+    "artist": "Norah Jones",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02284d274d8eceaf4e9c7b407b",
+    "url": "https://open.spotify.com/track/0Os0i5x2edR3hsjZmP2elh"
   }
 ] as const;
