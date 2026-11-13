@@ -150,7 +150,7 @@ function TopRatedShelf({ genre }: { genre: string }) {
     );
   }
   return (
-    <Shelf title={t('catalog.topRated')} onMore={() => setLimit((n) => n + TOP_STEP)} done={done}>
+    <Shelf loop title={t('catalog.topRated')} onMore={() => setLimit((n) => n + TOP_STEP)} done={done}>
       {list.map(({ id, a }) => (
         <AlbumShelfCard
           key={id}

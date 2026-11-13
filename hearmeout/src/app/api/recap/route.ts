@@ -102,7 +102,8 @@ export async function GET(request: NextRequest) {
   // A whole year of plays is a lot more rows than a week.
   }, period === 'year' ? 150000 : 50000, period === 'year' ? 8 : 6);
   if (error) return NextResponse.json({ error }, { status: 500 });
-  const minutes = Math.round(rows.reduce((s, r) => s + (r.duration_ms || 0), 0) / 60000);
+  const listeningMs = rows.reduce((s, r) => s + (r.duration_ms || 0), 0);
+  const minutes = Math.round(listeningMs / 60000);
   const uniqueArtists = new Set(rows.map((r) => r.artist_id || r.artist).filter(Boolean)).size;
 
   type ArtistAgg = { id: string | null; name: string; cover: string | null; count: number };
@@ -171,7 +172,7 @@ export async function GET(request: NextRequest) {
   const avgScore = visibleRatings.length ? Math.round((visibleRatings.reduce((s, r) => s + Number(r.stars), 0) / visibleRatings.length) * 10) / 10 : null;
 
   const recap: RecapData = {
-    topAlbum: leadingAlbum(rows), topArtists, topSongs, topGenres, minutes, uniqueArtists, trackCount: rows.length,
+    topAlbum: leadingAlbum(rows), topArtists, topSongs, topGenres, minutes, listeningMs, uniqueArtists, trackCount: rows.length,
     newArtists, avgScore, awards, range: labelRange, daily,
   };
   if (RECAP_MEMO.size > 500) for (const [k, v] of RECAP_MEMO) if (Date.now() - v.at > MEMO_TTL_MS) RECAP_MEMO.delete(k);

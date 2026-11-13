@@ -10,6 +10,7 @@ import { clearStatsCache } from './statsClientCache';
 import { cachedJson, jsonAge, peekJson, setJsonCacheOwner, storeJson } from './cachedJson';
 import { laterRemindReady, openLaterReminder } from './laterRemind';
 import { storeAlbums, storedAlbums } from './albumStore';
+import { listeningDayLabel } from './homePresentation';
 import { completedWeekRange } from './weeks';
 import type {
   Album, AlbumRatingInfo, AppNotification, ArtistState, Device, FeedResponse, FriendRequest, LaterItem, LovedItem, LovedItemType, Me, RatingRecord, RecapData, RecapPeriod, ScreenName, SpotifyArtistAlbum,
@@ -847,8 +848,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const targetId = userId === 'me' ? me?.id : userId;
     if (!targetId) return;
     const key = `${targetId}:${period}${seasonKey ? ':' + seasonKey : offset ? ':' + offset : ''}`;
-    if (requestedRecapKeys.current.has(key)) return;
-    requestedRecapKeys.current.add(key);
+    const dayQS = period === 'day' ? `&day=${listeningDayLabel()}` : '';
+    const requestKey = key + dayQS;
+    if (requestedRecapKeys.current.has(requestKey)) return;
+    requestedRecapKeys.current.add(requestKey);
     const seasonQS = seasonKey ? `&season=${encodeURIComponent(seasonKey)}` : offset ? `&offset=${offset}` : '';
     // Weeks follow the *viewer's* week-start setting, so a friend's recap
     // chips line up with your own.
@@ -858,7 +861,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const weekQS = period === 'week'
       ? `&weekStart=${me?.weekStart ?? 'mon'}&wk=${completedWeekRange(offset, me?.weekStart ?? 'mon').start.toISOString().slice(0, 10)}`
       : '';
-    const url = `/api/recap?period=${period}&userId=${targetId}${seasonQS}${weekQS}&tz=${new Date().getTimezoneOffset()}`;
+    const url = `/api/recap?period=${period}&userId=${targetId}${seasonQS}${weekQS}${dayQS}&tz=${new Date().getTimezoneOffset()}`;
     // The stored copy shows at once; the request below refreshes it.
     const stored = peekJson<RecapData>(url);
     if (stored) setRecapCache((s) => ({ ...s, [key]: stored }));
@@ -873,9 +876,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       })
       .then((data: RecapData | null) => {
         if (data) { storeJson(url, data); setRecapCache((s) => ({ ...s, [key]: data })); }
-        else requestedRecapKeys.current.delete(key);
+        else requestedRecapKeys.current.delete(requestKey);
       })
-      .catch(() => requestedRecapKeys.current.delete(key));
+      .catch(() => requestedRecapKeys.current.delete(requestKey));
   }, [me]);
 
   // Posting/saving-privately never navigates away (the prototype's own

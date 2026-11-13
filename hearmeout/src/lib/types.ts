@@ -46,6 +46,7 @@ export type RecapData = {
   topSongs: RecapTrackRef[];
   topGenres: RecapGenreShare[];
   minutes: number;
+  listeningMs?: number;
   uniqueArtists: number;
   trackCount: number;
   // Story card (spec 6.12): artists first heard in this window, average of

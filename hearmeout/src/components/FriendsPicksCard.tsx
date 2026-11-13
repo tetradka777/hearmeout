@@ -18,7 +18,7 @@ export function FriendsPicksCard() {
   const list = (data || []).filter(r => !rated.has(r.albumId) && r.fans.length > 0).slice(0, 10);
   const known = useAlbums(list.map(x => x.albumId));
   if (!known.length) return null;
-  return <Shelf title={t('home.friendsLovedTitle')} className="picks29">
+  return <Shelf loop title={t('home.friendsLovedTitle')} className="picks29">
     {known.map(({ id, album }) => {
       const pick = list.find(x => x.albumId === id)!;
       const first = pick.fans[0];
