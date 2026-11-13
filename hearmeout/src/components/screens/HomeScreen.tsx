@@ -29,6 +29,7 @@ import { ImportNudge } from '../ConnectionBlocks';
 import { RateQueueCard } from '../RateQueue';
 import { AddFriendCard, FriendPlayerCard } from '../FriendPlayerCard';
 import { OnRepeatSection } from '../OnRepeatSection';
+import { showListeningDay, listeningDayLabel } from '@/lib/homePresentation';
 import { HomeContinuation } from '../HomeContinuation';
 import { FriendsPicksCard } from '../FriendsPicksCard';
 import { PROFILE_TAB_EVENT } from '@/lib/uiEvents';
@@ -263,7 +264,16 @@ function DemoAwareCard({ user, demo, pct, myGenres }: { user: ApiUser; demo: boo
 // with the busiest hour and the track on repeat under them.
 function DayTile() {
   const { me, t, language, feed, ensureRecap, recapCache, openAlbum } = useApp();
-  useEffect(() => { if (me) ensureRecap('me', 'day'); }, [me, ensureRecap]);
+  const [today, setToday] = useState(listeningDayLabel);
+  useEffect(() => {
+    const now = new Date();
+    const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const update = () => setToday(listeningDayLabel());
+    const timer = setTimeout(update, midnight.getTime() - now.getTime() + 50);
+    document.addEventListener('visibilitychange', update);
+    return () => { clearTimeout(timer); document.removeEventListener('visibilitychange', update); };
+  }, [today]);
+  useEffect(() => { if (me) ensureRecap('me', 'day'); }, [me, today, ensureRecap]);
   const r = me ? recapCache[`${me.id}:day`] : undefined;
   const peak = useMemo(() => {
     const h = new Array(24).fill(0) as number[];
@@ -281,7 +291,7 @@ function DayTile() {
     const key = s.albumId || s.cover || s.title;
     if (!covers.some((c) => c.key === key)) covers.push({ key, cover: s.cover, albumId: s.albumId, title: s.title, artist: s.artist });
   }
-  if (!r || r.trackCount === 0) return null;
+  if (!showListeningDay(r, today)) return null;
   return (
     // The day over its covers, blurred (the first one), white text.
     <div className={`tile day13${covers[0]?.cover ? ' bh15' : ''}`} style={blurStyle(covers[0]?.cover ? sizedImage(covers[0].cover, 150) ?? covers[0].cover : null)}>
@@ -317,7 +327,7 @@ function RateTile() {
     <div className="sec rt16">
       <div className="hd10"><h2 style={{ margin: 0 }}>{t('home.rateWhatPlayed')}</h2></div>
       {unrated.length ? (
-        <CoverWall row items={unrated.map(({ id, album }) => ({ key: id, cover: spotifyCovers[album.id] || album.cover, title: album.title, artist: album.artist, artistId: album.artistId, onClick: () => openAlbum(album.id) }))} />
+        <CoverWall row loop items={unrated.map(({ id, album }) => ({ key: id, cover: spotifyCovers[album.id] || album.cover, title: album.title, artist: album.artist, artistId: album.artistId, onClick: () => openAlbum(album.id) }))} />
       ) : <p className="muted">{t('home.rateWhatPlayedEmpty')}</p>}
     </div>
   );
@@ -335,7 +345,7 @@ function TrendingSection() {
   const known = loaded.filter(({ album }) => { const k = `${album.title}|${album.artist}`.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; });
   if (!known.length) return null;
   return (
-    <Shelf title={t('home.trendingTitle')}>
+    <Shelf loop title={t('home.trendingTitle')}>
       {known.map(({ id, album }) => {
         const x = list.find((y) => y.albumId === id)!;
         return (

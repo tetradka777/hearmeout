@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useApp } from '@/lib/AppContext';
-import { toLocale } from '@/lib/i18n';
 import { uniqueDiscovery } from '@/lib/homeDiscovery';
 import { buildDiscoveryBlocks } from '@/lib/homeDiscoveryLayout';
 import type { Recommendation } from '@/app/api/recommendations/route';
@@ -35,7 +34,7 @@ export function HomeContinuation({ surface = 'catalog' }: { surface?: 'catalog' 
 }
 
 function ContinuationFeed({ surface }: { surface: 'catalog' | 'discover' }) {
-  const { t, me, language, state, openAlbum, showToast, albums, liveAlbums, feed } = useApp();
+  const { t, me, state, openAlbum, showToast, albums, liveAlbums, feed } = useApp();
   const [visible, setVisible] = useState(16);
   const [loadingMore, setLoadingMore] = useState(false);
   const lock = useRef(false);
@@ -113,16 +112,15 @@ function ContinuationFeed({ surface }: { surface: 'catalog' | 'discover' }) {
     return <AlbumShelfCard key={`${a.title}|${a.artist}`} title={a.title} artist={a.artist} cover={a.cover} onClick={() => void open(a)} />;
   };
   const reviewCard = (index: number) => known.has(shownReviews[index].albumId) ? <ReviewCard key={`${shownReviews[index].user.id}|${shownReviews[index].albumId}`} {...shownReviews[index]} /> : null;
-  const countryName = (code: string) => { try { return new Intl.DisplayNames([toLocale(language)], { type: 'region' }).of(code.toUpperCase()) ?? code; } catch { return code; } };
   const hasContent = displayedAlbums.length > 0 || shownReviews.some(r => known.has(r.albumId));
   const row = (title: string | undefined, children: ReactNode, reviews = false) => title
-    ? <Shelf title={title} className={reviews ? 'home29reviews' : ''}>{children}</Shelf>
-    : <div className={`sh14 home32row${reviews ? ' home29reviews' : ''}`}><div className="hrow sr14">{children}</div></div>;
+    ? <Shelf loop={!reviews} title={title} className={reviews ? 'home29reviews' : ''}>{children}</Shelf>
+    : <Shelf loop={!reviews} className={reviews ? 'home29reviews' : 'home32row'}>{children}</Shelf>;
   if (exhausted && !hasContent) return null;
   return <section className="home28 home29 sec">
-    {blocks.map((block, i) => block.kind === 'reviews' && !block.indices.some(index => known.has(shownReviews[index].albumId)) ? null : <div className="home29block" key={block.key}>
-      {block.kind === 'albums' ? block.layout === 'pair' ? <>{(block.genre || block.country || block.heading) && <h2>{block.genre ? t('home.exploreGenre', { genre: block.genre.toLowerCase() }) : block.country ? t('home.exploreCountry', { country: countryName(block.country) }) : t('home.explorePair')}</h2>}<div className="home29pair">{block.indices.map(albumCard)}</div></> :
-        row(block.genre ? t('home.exploreGenre', { genre: block.genre.toLowerCase() }) : block.country ? t('home.exploreCountry', { country: countryName(block.country) }) : t('home.trendingNow'), block.indices.map(albumCard)) :
+    {hasContent && <h2>{t('home.trendingNow')}</h2>}
+    {blocks.map((block, i) => block.kind === 'reviews' && !block.indices.some(index => known.has(shownReviews[index].albumId)) ? null : <div className={`home29block${i > 0 ? ' divided39' : ''}`} key={block.key}>
+      {block.kind === 'albums' ? row(undefined, block.indices.map(albumCard)) :
         block.indices.length === 1 ? <div className="home29review">{reviewCard(block.indices[0])}</div> :
         row(undefined, block.indices.map(reviewCard), true)}
       {surface === 'catalog' && i === 0 && <DeferredHomeSection><FanClubReleases /></DeferredHomeSection>}

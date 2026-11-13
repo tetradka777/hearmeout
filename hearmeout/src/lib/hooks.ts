@@ -23,6 +23,9 @@ export function useWheelRows() {
       if (e.ctrlKey || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
       const row = (e.target as Element | null)?.closest?.('.hrow, .stabs');
       if (!(row instanceof HTMLElement) || row.scrollWidth <= row.clientWidth) return;
+      // A circular shelf has no end at which vertical wheel scrolling can
+      // escape. Keep the page wheel native; sideways gestures still loop.
+      if (row.classList.contains('loop39')) return;
       const max = row.scrollWidth - row.clientWidth;
       if ((e.deltaY < 0 && row.scrollLeft <= 0) || (e.deltaY > 0 && row.scrollLeft >= max - 1)) return;
       e.preventDefault();

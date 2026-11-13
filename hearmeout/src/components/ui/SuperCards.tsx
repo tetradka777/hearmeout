@@ -1,4 +1,5 @@
 'use client';
+import { LoopRow } from './LoopRow';
 import { Initial } from './Initial';
 
 import { Children, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
@@ -142,14 +143,14 @@ function ReviewPlay({ title, artist, cover, albumId, tracks }: { title: string; 
 // A titled shelf of big cards you swipe through.
 // With `onMore` the shelf is endless: it's called whenever the end of the
 // row comes near (scrolling sideways), until `done`.
-export function Shelf({ title, sub, right, top, children, onMore, done = true, className = '' }: {
-  title: string; sub?: ReactNode; right?: ReactNode; top?: ReactNode; children: ReactNode; onMore?: () => void; done?: boolean; className?: string;
+export function Shelf({ title, sub, right, top, children, onMore, done = true, className = '', loop = false }: {
+  title?: string; sub?: ReactNode; right?: ReactNode; top?: ReactNode; children: ReactNode; onMore?: () => void; done?: boolean; className?: string; loop?: boolean;
 }) {
   const rowRef = useRef<HTMLDivElement | null>(null);
   const endRef = useRef<HTMLSpanElement | null>(null);
   const moreRef = useRef(onMore);
   useEffect(() => { moreRef.current = onMore; });
-  const endless = !!onMore && !done;
+  const endless = !loop && !!onMore && !done;
   // Re-observed after each page, so a short page that leaves the end in view
   // still asks for the next one.
   const count = Children.count(children);
@@ -174,13 +175,13 @@ export function Shelf({ title, sub, right, top, children, onMore, done = true, c
   }, [endless, count]);
   return (
     <section className={`sh14 ${className}`.trim()}>
-      <div className="hd"><h2>{title}</h2>{right}</div>
+      {title && <div className="hd"><h2>{title}</h2>{right}</div>}
       {sub && <p className="muted sb">{sub}</p>}
       {top}
-      <div className="hrow sr14" ref={rowRef}>
+      {loop ? <LoopRow className="sr14">{children}</LoopRow> : <div className="hrow sr14" ref={rowRef}>
         {children}
         {endless && <span className="sn15" ref={endRef} aria-hidden="true"><span className="spin15" /></span>}
-      </div>
+      </div>}
     </section>
   );
 }

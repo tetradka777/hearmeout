@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { userAvatarStyle } from '@/lib/format';
+import { LoopRow } from './LoopRow';
 import { CoverArt } from './CoverArt';
 import { ArtistName } from './ArtistName';
 import { Initial } from './Initial';
@@ -24,7 +25,8 @@ export type WallItem = {
 // Albums or tracks as a grid of covers: 3 across on a phone, more on a
 // computer; a score sits on the cover's corner.
 // `row`: one line you swipe through instead of a grid.
-export function CoverWall({ items, small, row }: { items: WallItem[]; small?: boolean; row?: boolean }) {
+export function CoverWall({ items, small, row, loop }: { items: WallItem[]; small?: boolean; row?: boolean; loop?: boolean }) {
+  if (row && loop) return <LoopRow className={`cw15 row${small ? ' sm' : ''}`}>{items.map(it => <WallCell key={it.key} it={it} small={small} />)}</LoopRow>;
   return (
     <div className={`cw15${small ? ' sm' : ''}${row ? ' hrow row' : ''}`}>
       {items.map((it) => <WallCell key={it.key} it={it} small={small} />)}
