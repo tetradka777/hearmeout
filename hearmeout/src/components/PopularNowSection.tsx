@@ -42,7 +42,7 @@ export function PopularNowSection({ genre }: { genre?: string }) {
     );
   }
   return (
-    <Shelf loop title={t('catalog.popularNow')} onMore={more} done={done}>
+    <Shelf title={t('catalog.popularNow')} onMore={more} done={done}>
       {items.map((a) => {
         const community = a.spotifyId ? albumRatings[a.spotifyId] : undefined;
         return (

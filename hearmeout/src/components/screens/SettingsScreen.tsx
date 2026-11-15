@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 import type { Device } from '@/lib/types';
 import { regionDisplayName, toLocale, LANGUAGES, LANGUAGE_LABEL, type Language, type TranslationKey } from '@/lib/i18n';
@@ -19,19 +19,21 @@ type Section = 'appearance' | 'language' | 'account' | 'connections' | 'privacy'
 // segmented row is segc() — title + hint on the left, control on the right.
 
 function Sw({ title, hint, on, onToggle, disabled }: { title: string; hint: string; on: boolean; onToggle: () => void; disabled?: boolean }) {
+  const description = useId();
   return (
     <div className="setrow">
-      <div><b>{title}</b><small className="muted">{hint}</small></div>
-      <button className="sw" role="switch" aria-checked={on} aria-label={title} disabled={disabled} onClick={onToggle}><i /></button>
+      <div><b>{title}</b><span className="sr" id={description}>{hint}</span></div>
+      <button className="sw" role="switch" aria-checked={on} aria-label={title} aria-describedby={description} disabled={disabled} onClick={onToggle}><i /></button>
     </div>
   );
 }
 
 export function Segc<T extends string>({ title, hint, value, options, onPick }: { title: string; hint: string; value: T; options: [T, string][]; onPick: (v: T) => void }) {
+  const description = useId();
   return (
     <div className="setrow">
-      <div><b>{title}</b><small className="muted">{hint}</small></div>
-      <div className="seg" role="group" aria-label={title}>
+      <div><b>{title}</b><span className="sr" id={description}>{hint}</span></div>
+      <div className="seg" role="group" aria-label={title} aria-describedby={description}>
         {options.map(([v, label]) => (
           <button key={v} className={value === v ? 'on' : ''} aria-pressed={value === v} onClick={() => onPick(v)}>{label}</button>
         ))}
@@ -77,14 +79,12 @@ function AppearanceTab() {
     <>
       <div className="tile">
         <h2>{t('settings.design')}</h2>
-        <p className="muted" style={{ margin: '-4px 0 16px', fontWeight: 600 }}>{t('settings.designHint')}</p>
         <div className="optgrid" role="radiogroup" aria-label={t('settings.design')}>
           {DESIGNS.map(([id, name, hint]) => (
-            <button key={id} className="optcard" role="radio" aria-checked={me.design === id} onClick={() => updateAppearance({ design: id })}>
+            <button key={id} className="optcard" role="radio" aria-describedby={`design-hint-${id}`} aria-checked={me.design === id} onClick={() => updateAppearance({ design: id })}>
               <span className="chk"><i className="ic ic-check" /></span>
               <DesignPreview design={id} mode={effectiveMode} />
-              <b>{name}</b>
-              <small className="muted" style={{ fontWeight: 600 }}>{t(hint)}</small>
+              <b>{name}</b><span className="sr" id={`design-hint-${id}`}>{t(hint)}</span>
             </button>
           ))}
         </div>
@@ -99,7 +99,6 @@ function AppearanceTab() {
 
       <div className="tile" style={{ marginTop: 14 }}>
         <h2>{t('settings.colorPalette')}</h2>
-        <p className="muted" style={{ margin: '-4px 0 16px', fontWeight: 600 }}>{t('settings.paletteHint')}</p>
         <div className="palgrid" role="radiogroup" aria-label={t('settings.colorPalette')}>{PALETTES.map(palBtn)}</div>
       </div>
 
@@ -130,7 +129,6 @@ function LanguageTab() {
     <>
       <div className="tile">
         <h2>{t('settings.language')}</h2>
-        <p className="muted" style={{ margin: '-4px 0 6px', fontWeight: 600 }}>{t('settings.languageHint')}</p>
         <div className="chips" style={{ marginTop: 12 }} role="radiogroup" aria-label={t('settings.language')}>
           {LANGUAGES.map((l) => (
             <button key={l} className={`chip${language === l ? ' on' : ''}`} role="radio" aria-checked={language === l} onClick={() => updateLanguage(l)}>{LANGUAGE_LABEL[l]}</button>
@@ -154,7 +152,6 @@ function LanguageTab() {
 
       <div className="tile" style={{ marginTop: 14 }}>
         <h2>{t('profile.region')}</h2>
-        <p className="muted" style={{ margin: '-4px 0 6px', fontWeight: 600 }}>{t('settings.regionHint')}</p>
         <Sw title={t('settings.regionAuto')} hint={autoHint} on={me.regionAuto} onToggle={() => updateRegionAuto(!me.regionAuto)} />
         <div className="setrow">
           <div style={{ flex: 1 }}>

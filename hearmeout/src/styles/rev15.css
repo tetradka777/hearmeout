@@ -1665,3 +1665,37 @@ html,body{margin:0}
 
 .rd .rt16 .cw15.hrow.row.loop39{display:flex;overflow-x:auto;overflow-y:hidden}
 .rd .rt16 .cw15.hrow.row.loop39>.wall28{display:block;width:clamp(150px,25vw,190px);flex:none}
+
+/* Round 40: steady personal shelves and an album-backed profile masthead. */
+.rd .loop39{isolation:isolate}
+.rd .phd14.ph16.profile40{background:var(--paper);color:var(--fg);--bb:var(--fg);--bf:var(--paper);outline:1px solid color-mix(in srgb,var(--fg) 12%,transparent);gap:14px 16px;padding:20px}
+.rd .phd14.ph16.profile40::before,.rd .phd14.ph16.profile40::after{content:none}
+.rd .profile40 .profile40art{grid-column:1/-1;display:flex;justify-content:flex-end;align-items:center;gap:8px;height:112px;margin:-20px -20px 0;padding:12px;background:var(--pick);overflow:hidden}
+.rd .profile40art .cov{width:clamp(52px,16vw,88px);height:clamp(52px,16vw,88px);border-radius:12px;flex:none}
+.rd .phd14.profile40 .avwrap{padding:0;border:0;background:none;align-self:start;margin-top:-40px;position:relative;z-index:1}
+.rd .phd14.profile40 .lgA{width:84px;height:84px;box-shadow:0 0 0 5px var(--paper);border:2px solid var(--pick)}
+.rd .phd14.profile40 .pname{font-size:clamp(24px,6vw,36px);color:inherit;border:0;padding:0;margin:0;font-weight:800;line-height:1.15}
+.rd .phd14.profile40 .phandle{color:inherit;opacity:.65;margin:4px 0 0}
+.rd .phd14.profile40 .phandle input{color:inherit;border:0;padding:0;min-width:0}
+.rd .phd14.profile40 .ploc{font-size:12px;font-weight:500;line-height:1.4;opacity:.65}
+.rd .phd14.profile40 .pbt14{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.rd .phd14.profile40 .pbt14 .pb{grid-column:1/-1;width:100%;background:color-mix(in srgb,var(--pick) 12%,var(--paper));color:inherit;padding:12px 14px}
+.rd .phd14.profile40 .pbt14 .btn{min-width:0;font-size:14px;padding:12px 14px}
+.rd .phd14.profile40 .pbt14 .btn:not(.ghost){background:var(--ink);color:var(--cream)}
+.rd .phd14.profile40 .btn.ghost{color:inherit;border-color:currentColor;outline-color:currentColor}
+.rd .phd14.profile40 .pcnt{grid-template-columns:repeat(4,minmax(0,1fr));gap:16px 8px;border-top:1px solid color-mix(in srgb,var(--fg) 12%,transparent);padding-top:16px}
+.rd .phd14.ph16.profile40 .pcnt .num{color:inherit;font-size:26px}
+.rd .phd14.ph16.profile40 small{color:inherit}
+.rd .phd14.profile40 .pcnt small{font-size:11px;font-weight:500;opacity:.65}
+.rd .phd14.profile40 .pub{font-size:12px;font-weight:500;opacity:.7}
+.rd .avatar40dialog{position:relative;width:min(460px,calc(100vw - 40px));border-radius:var(--r);padding:16px;background:var(--paper)}
+.rd .avatar40image{display:block;width:100%;aspect-ratio:1;border-radius:calc(var(--r) - 8px);overflow:hidden}
+.rd .avatar40image>svg{width:100%;height:100%}
+.rd .avatar40dialog .ib{position:absolute;z-index:2;width:44px;height:44px;padding:10px;background:var(--paper);color:var(--fg);border:1px solid color-mix(in srgb,var(--fg) 20%,transparent);border-radius:50%}
+.rd .avatar40dialog .ib svg{width:100%;height:100%}
+.rd .avatar40close{top:12px;right:12px}
+.rd .avatar40edit{bottom:12px;right:12px}
+.rd .orp14 .g3{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+.rd .phd14.profile40 textarea.pname{display:block;min-height:0;max-height:none;resize:none;overflow:hidden;white-space:normal;background:none;font-family:var(--font-display)}
+.rd .avatar40image{background-color:var(--pick)}

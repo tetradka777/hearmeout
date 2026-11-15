@@ -11,6 +11,7 @@ import type { Device } from '@/lib/types';
 import type { FanClubMember, FanClubPage } from '@/app/api/fanclubs/[id]/route';
 import { ArtistAvatar } from '../ui/ArtistName';
 import { CoverWall } from '../ui/Visual';
+import { qualifyingRepeats } from '@/lib/repeatSelection';
 import { RankRows } from '../ui/RankRows';
 
 const TOP = 5;
@@ -31,6 +32,7 @@ export function FanClubScreen(_props: { device: Device }) {
   const data = page.data;
   const name = data?.artist.name || club.name;
   const photo = data?.artist.photo ?? null;
+  const repeated = qualifyingRepeats(data?.tracks.map(track => ({ ...track, artist: name })));
 
   const toggle = async () => {
     if (!data || busy) return;
@@ -76,15 +78,13 @@ export function FanClubScreen(_props: { device: Device }) {
 
       {page.failed && !data ? <p className="muted" style={{ fontWeight: 600 }}>{t('fanclub.loadError')}</p> : data && (
         <>
-          <div className="sec">
+          {repeated.length > 0 && <div className="sec">
             <h2>{t('fanclub.onRepeat')}</h2>
-            {data.tracks.length ? (
-              <CoverWall row items={data.tracks.map((tr, i) => ({
-                key: `${i}-${tr.title}`, cover: tr.cover, title: tr.title, sub: t('fanclub.listenersN', { n: tr.listeners }),
-                onClick: () => playQueue(data.tracks.map((x) => ({ title: x.title, artist: name, cover: x.cover, albumId: x.albumId })), i),
-              }))} />
-            ) : <p className="muted" style={{ fontWeight: 600 }}>{t('fanclub.nothingYet')}</p>}
-          </div>
+            <CoverWall row items={repeated.map((track, i) => ({
+              key: `${i}-${track.title}`, cover: track.cover, title: track.title, sub: t('fanclub.listenersN', { n: track.listeners }),
+              onClick: () => playQueue(repeated.map(x => ({ title: x.title, artist: name, cover: x.cover, albumId: x.albumId })), i),
+            }))} />
+          </div>}
 
           <div className="sec two fc23">
             <div className="tile nt23">

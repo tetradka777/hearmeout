@@ -30,8 +30,6 @@ export function ImportTile() {
   return (
     <div className="tile t-soft2 imp">
       <h3>{t('profile.importTitle')}</h3>
-      <p className="muted" style={{ fontWeight: 600, marginTop: 4 }}>{t('settings.importLead')}</p>
-      <p className="muted" style={{ fontWeight: 600, marginTop: 8 }}>{t('import.why')}</p>
       <ol>
         <li>
           {t('settings.importStep1')}{' '}
@@ -77,7 +75,6 @@ export function ImportNudge() {
   return (
     <div className="tile t-pop" style={{ marginTop: 14 }}>
       <h3>{t('import.nudgeTitle')}</h3>
-      <p style={{ fontWeight: 600, marginTop: 6 }}>{t('import.nudgeBody')}</p>
       <div className="acts" style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button className="btn" onClick={() => { showScreen('settings'); window.dispatchEvent(new CustomEvent(SETTINGS_SECTION_EVENT, { detail: 'connections' })); }}>{t('import.nudgeCta')}</button>
         <button className="btn ghost" onClick={dismiss}>{t('import.nudgeLater')}</button>

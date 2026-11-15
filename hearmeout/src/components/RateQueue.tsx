@@ -136,7 +136,6 @@ export function RateQueueCard() {
         </span>
         <span className="g">
           <b>{t('queue.cardTitle', { n: queue.length })}</b>
-          <small>{t('queue.cardSub')}</small>
         </span>
         <span className="op">{t('queue.start')} →</span>
       </button>

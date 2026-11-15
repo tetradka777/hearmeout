@@ -91,7 +91,6 @@ export function DiaryScreen(_props: { device: Device }) {
       <header className="diary36-header">
         <span className="diary36-eyebrow">{t(shared ? 'diary.sharedTitle' : 'diary.eyebrow')}</span>
         <h1>{t('diary.title')}</h1>
-        <p className="muted">{t(shared ? 'diary.sharedHint' : 'diary.subtitle')}</p>
         {!shared && !composing && <button className="btn primary" onClick={() => reset(newDraft())}>{t('diary.add')}</button>}
       </header>
       {!shared && composing && <DiaryComposer draft={draft} busy={busy} editing={!!editingId} error={error}

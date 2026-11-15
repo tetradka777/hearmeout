@@ -238,7 +238,6 @@ function FriendsList() {
         <div className="tile t-ac" style={{ margin: '12px 0 14px', display: 'flex', gap: 14, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
           <div>
             <h3>{t('friends.inviteBannerTitle')}</h3>
-            <p style={{ fontWeight: 700, marginTop: 4 }}>{t('friends.inviteBannerSub')}</p>
           </div>
           <button className="btn" onClick={openFriendsTab}>{t('friends.inviteBannerBtn')}</button>
         </div>

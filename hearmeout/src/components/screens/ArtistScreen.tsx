@@ -339,7 +339,6 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
         <div className={`tile ${art.photo ? 'bh15' : 't-ink glow'}`} style={{ ...blurStyle(art.photo), display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
           <CoverArt url={art.photo ?? undefined} fallbackLetter={art.name[0] || '?'} className="ph" />
           <div style={{ flex: 1, minWidth: 200 }}>
-            <p className="eyebrow muted" style={{ margin: 0 }}>{t('artist.subtitleSpotify')}</p>
             <h1 className="big" style={{ margin: 0, fontSize: 'clamp(34px,7vw,60px)' }}>{art.name}</h1>
             {art.fans != null && art.fans > 0 && (
               <p className="muted" style={{ fontWeight: 600, marginTop: 4 }}>

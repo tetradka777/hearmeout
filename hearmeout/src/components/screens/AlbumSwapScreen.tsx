@@ -128,7 +128,6 @@ export function AlbumSwapScreen({ device }: { device: Device }) {
         : id && !swap ? <p>{t('swap.loadError')}</p>
           : !swap && !friend ? <p>{t('swap.chooseFriend')}</p>
             : <>
-              <p className="swap37-intro">{t('swap.blindHint')}</p>
               {swap && <>
                 <div className="swap37-gifts"><Gift side={swap.me} label={t('swap.youGive')} /><Gift side={swap.friend} label={t('swap.youReceive')} /></div>
                 <p role="status" className="swap37-status">{t(swap.cancelledAt ? 'swap.cancelled' : swap.completedAt ? 'swap.completed' : swap.me.finishedAt ? 'swap.waitingFriend' : swap.friend.finishedAt ? 'swap.friendFinished' : 'swap.activeHint')}</p>

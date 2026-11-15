@@ -1,15 +1,15 @@
 'use client';
 import { MusicDiaryCard } from '../MusicDiaryCard';
-import { AvatarChoices } from '../ui/AvatarChoices';
+import { AvatarViewer } from '../ui/AvatarViewer';
+import { qualifyingRepeats } from '@/lib/repeatSelection';
 
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArtistAvatar, useOpenArtist } from '../ui/ArtistName';
 import { fmt1, fmtHours } from '@/lib/numberFormat';
 import { PROFILE_TAB_EVENT, takeRecentEvent } from '@/lib/uiEvents';
 import { useApp } from '@/lib/AppContext';
-import { squareImageDataUrl } from '@/lib/imageResize';
 import { invitePath } from '@/lib/pendingInvite';
 import type { Device, RatingRecord, RecapData, StatsData } from '@/lib/types';
 import { userAvatarStyle, formatJoinDate, formatRelative } from '@/lib/format';
@@ -25,7 +25,7 @@ import { Initial } from '../ui/Initial';
 import { AddFriendCard, FriendPlayerCard } from '../FriendPlayerCard';
 import { cachedJson, peekJson, useCachedJson } from '@/lib/cachedJson';
 import { AwardGallery } from '../AwardGallery';
-import { CoverWall, GenreMix, PersonCards, Phrase, ScoreBars, usePersonColor } from '../ui/Visual';
+import { CoverWall, GenreMix, PersonCards, Phrase, ScoreBars } from '../ui/Visual';
 
 type ProfileTab = 'ratings' | 'reviews' | 'loved' | 'later' | 'taste' | 'awards' | 'listening' | 'friends';
 const TAB_ORDER: ProfileTab[] = ['ratings', 'reviews', 'loved', 'later', 'taste', 'awards', 'listening', 'friends'];
@@ -204,7 +204,6 @@ function Top4Picker({ list, initial, onClose }: { list: RatingRecord[]; initial:
     <div className="modalbg" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="modal tile t4p19" role="dialog" aria-modal="true" aria-labelledby="t4pt">
         <h2 id="t4pt" style={{ marginBottom: 4 }}>{t('top4.pickTitle')}</h2>
-        <p className="muted" style={{ fontWeight: 600, marginBottom: 12 }}>{t('top4.pickHint', { n: sel.length })}</p>
         <div className="grd">
           {albums.map((r) => {
             const a = albumOf(r.albumId);
@@ -410,7 +409,6 @@ function FriendsTab() {
           <div className="qrw">
             {/* eslint-disable-next-line @next/next/no-img-element -- a locally generated data: URI */}
             <img src={qr} alt={t('friends.qrAlt')} className="qr" />
-            <small style={{ fontWeight: 700, display: 'block', marginTop: 6 }}>{t('friends.qrHint')}</small>
           </div>
         )}
         <a className="link" href={invitePath(me)} target="_blank" rel="noreferrer" style={{ marginTop: 12, display: 'inline-block' }}>{t('friends.previewInvite')}</a>
@@ -420,11 +418,27 @@ function FriendsTab() {
 }
 
 export function ProfileScreen(_props: { device: Device }) {
-  const { t, language, me, myRatings, updateProfileName, updateProfileHandle, updateAvatar, showScreen, friendRequests, showToast } = useApp();
+  const { t, language, me, myRatings, updateProfileName, updateProfileHandle, showScreen, friendRequests, showToast, albums, liveAlbums, spotifyCovers } = useApp();
   const weekStats = useCachedJson<StatsData>(me ? `/api/stats?period=week&weekStart=${me.weekStart}&offset=0` : null).data;
-  // The header in your colour, your photo blurred over it.
-  const myColor = usePersonColor(me ?? { id: '', name: '?', avatarUrl: null });
   const [tab, setTab] = useState<ProfileTab>('ratings');
+  const [viewingAvatar, setViewingAvatar] = useState(false);
+  const closeAvatar = useCallback(() => setViewingAvatar(false), []);
+  const nameInput = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const field = nameInput.current;
+    if (!field) return;
+    let width = 0;
+    const measure = () => {
+      if (!field.clientWidth) return;
+      field.style.height = 'auto'; field.style.height = field.scrollHeight + 'px';
+    };
+    measure();
+    const observer = new ResizeObserver(() => {
+      if (field.clientWidth && field.clientWidth !== width) { width = field.clientWidth; measure(); }
+    });
+    observer.observe(field);
+    return () => observer.disconnect();
+  }, [me?.name]);
   const tabsRef = useRef<HTMLDivElement>(null);
   const openFriends = () => { setTab('friends'); tabsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
   const incomingRequests = friendRequests.incoming.length;
@@ -460,33 +474,29 @@ export function ProfileScreen(_props: { device: Device }) {
       <h1 className="sr">{me.name}</h1>
       {/* Header: a coloured block with the photo, name, handle and region,
           then friends / edit profile / share. */}
-      <div className="phd14 ph16" style={{ ['--g1' as string]: myColor, ['--a1' as string]: me.avatarUrl ? `url('${me.avatarUrl}')` : 'none' } as React.CSSProperties}>
-        <label className="avwrap" aria-label={t('profile.uploadPhoto')}>
+      <div className="phd14 ph16 profile40">
+        <div className="profile40art" aria-hidden="true">
+          {(me.pinnedAlbums?.length ? me.pinnedAlbums : list.slice(0, 4).map(r => r.albumId)).slice(0, 4).map(id => {
+            const album = liveAlbums[id] || albums.find(a => a.id === id || a.spotifyId === id);
+            return album ? <CoverArt key={id} url={spotifyCovers[album.id] || album.cover} fallbackLetter={album.artist[0] || '?'} className="cov" px={160} /> : null;
+          })}
+        </div>
+        <button className="avwrap" onClick={() => setViewingAvatar(true)} aria-label={t('profile.viewPhoto')}>
           <span className="avt lgA" style={{ ...userAvatarStyle(me), backgroundSize: 'cover' }}>{!me.avatarUrl && <Initial name={me.name} />}</span>
-          <input
-            type="file"
-            accept="image/*"
-            hidden
-            onChange={async (e) => {
-              const file = e.target.files?.[0];
-              e.target.value = '';
-              if (!file) return;
-              const dataUrl = await squareImageDataUrl(file);
-              if (dataUrl) updateAvatar(dataUrl);
-            }}
-          />
-          <span className="avhint">{t('profile.changePhoto')}</span>
-        </label>
+        </button>
         <div className="pinfo">
           <label className="sr" htmlFor="pname">{t('profile.displayName')}</label>
-          <input
+          <textarea
             className="pname"
             id="pname"
+            rows={1}
+            ref={nameInput}
+            onChange={event => { event.currentTarget.style.height = 'auto'; event.currentTarget.style.height = event.currentTarget.scrollHeight + 'px'; }}
             maxLength={24}
             defaultValue={me.name}
             key={`n-${me.name}`}
             onBlur={async (e) => { if (e.target.value.trim() !== me.name && !(await updateProfileName(e.target.value))) e.target.value = me.name; }}
-            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
           />
           <div className="phandle">
             <span>@</span>
@@ -524,7 +534,7 @@ export function ProfileScreen(_props: { device: Device }) {
         </div>
       </div>
 
-      <AvatarChoices />
+      {viewingAvatar && <AvatarViewer onClose={closeAvatar} />}
       <button className="tile t-c5 sst14" onClick={() => showScreen('stats')}>
         <i className="ic ic-bolt" aria-hidden="true" />
         <span className="g"><b>{t('profile.quickStats')}</b>{weekStats && weekStats.hours > 0 && <small>{t('profile.hoursWeek', { h: fmtHours(weekStats.hours) })}</small>}</span>
@@ -605,22 +615,22 @@ function ProfileTopRated({ list }: { list: RatingRecord[] }) {
   );
 }
 
-// "Last week · on repeat": the week's three most played songs, and the way
+// "On repeat": at least four repeated songs from last week, and the way
 // into the full recap.
 function ProfileOnRepeat() {
   const { t, language, me, ensureRecap, recapCache, openRecap, openAlbum } = useApp();
   useEffect(() => { if (me) ensureRecap('me', 'week'); }, [me, ensureRecap]);
   const r = me ? recapCache[`${me.id}:week`] : undefined;
-  if (!r || !r.topSongs.length) return null;
+  const repeated = qualifyingRepeats(r?.topSongs);
+  if (!r || !repeated.length) return null;
   const start = new Date(r.range.start);
   const end = new Date((r.range.end ? new Date(r.range.end).getTime() : start.getTime() + 7 * 86400000) - 86400000);
   const fmt = (d: Date) => d.toLocaleDateString(toLocale(language), { day: 'numeric', month: 'short', timeZone: 'UTC' });
   return (
     <section className="sh14 orp14">
-      <div className="hd"><h2>{t('stats.lastWeek')}</h2><small className="muted">{fmt(start)} – {fmt(end)} · {fmtHours(Math.round((r.minutes / 60) * 10) / 10)}{t('unit.h')}</small></div>
-      <p className="k"><i className="ic ic-repeat" aria-hidden="true" /> {t('profile.onRepeat')}</p>
+      <div className="hd"><h2>{t('profile.onRepeat')}</h2><small className="muted">{fmt(start)} – {fmt(end)} · {fmtHours(Math.round((r.minutes / 60) * 10) / 10)}{t('unit.h')}</small></div>
       <div className="g3">
-        {r.topSongs.slice(0, 3).map((s, i) => (
+        {repeated.slice(0, 4).map((s, i) => (
           <button key={`${s.title}-${i}`} onClick={() => s.albumId && openAlbum(s.albumId)}>
             <span className="rn">{i + 1}</span>
             <CoverArt url={s.cover ?? undefined} fallbackLetter={s.artist[0] || '?'} className="cov" px={160} style={{ width: '100%', aspectRatio: '1' }} />
