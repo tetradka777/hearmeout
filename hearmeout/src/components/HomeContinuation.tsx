@@ -114,8 +114,8 @@ function ContinuationFeed({ surface }: { surface: 'catalog' | 'discover' }) {
   const reviewCard = (index: number) => known.has(shownReviews[index].albumId) ? <ReviewCard key={`${shownReviews[index].user.id}|${shownReviews[index].albumId}`} {...shownReviews[index]} /> : null;
   const hasContent = displayedAlbums.length > 0 || shownReviews.some(r => known.has(r.albumId));
   const row = (title: string | undefined, children: ReactNode, reviews = false) => title
-    ? <Shelf loop={!reviews} title={title} className={reviews ? 'home29reviews' : ''}>{children}</Shelf>
-    : <Shelf loop={!reviews} className={reviews ? 'home29reviews' : 'home32row'}>{children}</Shelf>;
+    ? <Shelf title={title} className={reviews ? 'home29reviews' : ''}>{children}</Shelf>
+    : <Shelf className={reviews ? 'home29reviews' : 'home32row'}>{children}</Shelf>;
   if (exhausted && !hasContent) return null;
   return <section className="home28 home29 sec">
     {hasContent && <h2>{t('home.trendingNow')}</h2>}

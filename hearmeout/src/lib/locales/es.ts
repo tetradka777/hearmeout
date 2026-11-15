@@ -671,6 +671,9 @@ const es: Dict = {
   'recap.trackFew': 'canciones',
   'recap.trackMany': 'canciones',
 
+  "profile.viewPhoto": "ver foto de perfil",
+  "profile.closePhoto": "cerrar foto",
+  "profile.photoFailed": "no se pudo actualizar la foto. prueba otra imagen.",
   'profile.changePhoto': 'cambiar foto',
   'profile.tabRatings': 'valoraciones',
   'profile.tabReviews': 'reseñas',

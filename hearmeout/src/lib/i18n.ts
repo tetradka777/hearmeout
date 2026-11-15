@@ -677,6 +677,9 @@ const en = {
   'recap.trackFew': 'tracks',
   'recap.trackMany': 'tracks',
 
+  "profile.viewPhoto": "view profile photo",
+  "profile.closePhoto": "close photo",
+  "profile.photoFailed": "could not update photo. try another image.",
   'profile.changePhoto': 'change photo',
   'profile.tabRatings': 'ratings',
   'profile.tabReviews': 'reviews',

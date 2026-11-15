@@ -4,6 +4,7 @@ import { useApp } from '@/lib/AppContext';
 import { CHRISTMAS_TRACKS } from '@/lib/christmasTracks';
 import type { QueueTrack } from '@/lib/PlayerContext';
 import { Shelf } from './ui/SuperCards';
+import { blurStyle } from '@/lib/imageColor';
 import { CoverArt } from './ui/CoverArt';
 import { SpotifyLogo } from './ui/Icons';
 import { PreviewButton } from './redesign/PreviewButton';
@@ -16,8 +17,8 @@ const queues: QueueTrack[][] = CHRISTMAS_TRACKS.map(({ title, artist, cover }) =
 
 export function ChristmasTracks() {
   const { t } = useApp();
-  return <Shelf title={t('christmas.title')} sub={t('christmas.subtitle')} className="repeat35 christmas38">
-    {CHRISTMAS_TRACKS.map((track, index) => <article key={track.trackId} className="tile t-ink repeat35card christmas38card">
+  return <Shelf title={t('christmas.title')} className="repeat35 christmas38">
+    {CHRISTMAS_TRACKS.map((track, index) => <article key={track.trackId} className="tile bh15 repeat35card christmas38card" style={blurStyle(track.cover)}>
       <div className="repeat35body">
         <CoverArt url={track.cover} fallbackLetter={track.artist[0]} className="cov" px={80} style={{ width: 64, height: 64, flex: 'none' }} />
         <div className="repeat35text"><a href={track.url} target="_blank" rel="noopener noreferrer" className="repeat35title"><span>{track.title}</span></a><small>{track.artist}</small></div>

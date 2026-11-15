@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { sizedImage } from '@/lib/imageSize';
 import { coverImages } from '@/lib/coverImages';
 import { whenNear } from '@/lib/nearViewport';
+import { RowImagesContext } from '@/lib/RowImagesContext';
 
 type Props = {
   url?: string;
@@ -33,7 +34,8 @@ export function CoverArt({ url: rawUrl, fallbackLetter, className = '', style, f
   const [, changed] = useState(0);
   const ref = useRef<HTMLDivElement | null>(null);
   const result = url ? coverImages.read(url) : undefined;
-  const near = !!url && (nearUrl === url || result === 'loaded' || result === 'loading');
+  const rowReady = useContext(RowImagesContext);
+  const near = !!url && (rowReady || nearUrl === url || result === 'loaded' || result === 'loading');
 
   useEffect(() => {
     const el = ref.current;

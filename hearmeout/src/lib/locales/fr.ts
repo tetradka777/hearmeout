@@ -671,6 +671,9 @@ const fr: Dict = {
   'recap.trackFew': 'titres',
   'recap.trackMany': 'titres',
 
+  "profile.viewPhoto": "voir la photo de profil",
+  "profile.closePhoto": "fermer la photo",
+  "profile.photoFailed": "impossible de modifier la photo. essayez une autre image.",
   'profile.changePhoto': 'changer de photo',
   'profile.tabRatings': 'notes',
   'profile.tabReviews': 'avis',

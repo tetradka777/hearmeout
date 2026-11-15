@@ -227,7 +227,7 @@ type AppContextValue = {
   deleteAccount: () => Promise<boolean>;
   updateProfileName: (name: string) => Promise<boolean>;
   updateProfileHandle: (handle: string) => Promise<boolean>;
-  updateAvatar: (dataUrl: string) => Promise<void>;
+  updateAvatar: (dataUrl: string) => Promise<boolean>;
   updateBanner: (dataUrl: string) => Promise<void>;
   updateLanguage: (language: Language) => Promise<void>;
   updateRegion: (region: string | null) => Promise<void>;
@@ -945,8 +945,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [refreshMe, showToast, t]);
 
   const updateAvatar = useCallback(async (dataUrl: string) => {
-    await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ avatarUrl: dataUrl }) });
+    const response = await fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ avatarUrl: dataUrl }) }).catch(() => null);
+    if (!response?.ok) return false;
     await refreshMe();
+    return true;
   }, [refreshMe]);
 
   const updateBanner = useCallback(async (dataUrl: string) => {
