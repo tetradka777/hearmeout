@@ -42,7 +42,7 @@ export function GroupVoteCard({ vote, title, ends, onVote }: {
     return (
       <section className="sh14 gv22">
         {head}
-        <div className="tile t-ink glow"><p className="muted" style={{ fontWeight: 600, margin: 0 }}>{t('groups.noCandidates')}</p></div>
+        <div className="tile t-ink glow group41empty"><p className="muted" style={{ fontWeight: 600, margin: 0 }}>{t('groups.noCandidates')}</p></div>
       </section>
     );
   }

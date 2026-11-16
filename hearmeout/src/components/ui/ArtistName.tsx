@@ -4,8 +4,8 @@ import { useCallback, type CSSProperties, type KeyboardEvent, type MouseEvent } 
 import { normalizeArtistName } from '@/lib/artistIdentity';
 import { useApp } from '@/lib/AppContext';
 import { useArtistPhoto } from '@/lib/artistPhotos';
-import { sizedImage } from '@/lib/imageSize';
 import { prefetchArtist } from '@/lib/prefetchPages';
+import { CoverArt } from './CoverArt';
 import { useNearViewport } from '@/lib/useNearViewport';
 
 // Opens an artist's page from just a name (most rows only carry the name):
@@ -29,17 +29,9 @@ export function ArtistAvatar({ name, id, size = 18, photo: known, style }: { nam
   const [ref, seen] = useNearViewport<HTMLSpanElement>();
   const looked = useArtistPhoto(name, seen && !known, id);
   const photo = known || looked || null;
-  const url = seen && photo ? sizedImage(photo, size) : null;
-  return (
-    <span
-      ref={ref}
-      className="aav"
-      aria-hidden="true"
-      style={{ width: size, height: size, fontSize: Math.max(9, Math.round(size * 0.48)), ...(url ? { backgroundImage: `url('${url}')` } : null), ...style }}
-    >
-      {!url && (name.trim()[0] || '?')}
-    </span>
-  );
+  return <CoverArt as="span" url={photo ?? undefined} px={size} fallbackLetter={name.trim()[0] || '?'}
+    className="aav" style={{ width: size, height: size, fontSize: Math.max(9, Math.round(size * 0.48)), ...style }}
+    elementRef={ref} ariaHidden />;
 }
 
 // An artist's name with their photo before it, opening their page. Made of

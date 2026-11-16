@@ -117,7 +117,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
 
       {/* Hero: the group's name, members and numbers over its cover (its own
           picture, or the best album of the month), blurred. */}
-      <div className={`tile bh15 gh23${heroBg ? '' : ' np'}`} style={blurStyle(heroBg, 300)}>
+      <div className={`tile bh15 gh23 group41${heroBg ? '' : ' np'}`} style={blurStyle(heroBg, 300)}>
         <div className="top">
           <span className="k">{t('groups.privateGroup')} · {t('groups.since', { date: sinceLabel(detail.createdAt, language) })}</span>
           <button className="ce" onClick={() => setCoverOpen(true)}><i className="ic ic-pic" aria-hidden="true" /> {t('groups.coverEdit')}</button>

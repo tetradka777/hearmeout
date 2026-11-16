@@ -17,7 +17,7 @@ import { fmt1 } from '@/lib/numberFormat';
 export type WallItem = {
   key: string; cover?: string | null; title: string; artist?: string | null; artistId?: string | null;
   // A small round badge on the cover (a score), and one line under the artist.
-  badge?: ReactNode; sub?: ReactNode; onClick?: () => void;
+  badge?: ReactNode; sub?: ReactNode; inlineMeta?: ReactNode; onClick?: () => void;
   // A small control over the cover's top corner (e.g. un-love).
   corner?: ReactNode;
 };
@@ -48,6 +48,7 @@ function WallCell({ it, small }: { it: WallItem; small?: boolean }) {
         <b>{it.title}</b>
         <span className="by26">
           {it.artist && <small><ArtistName name={it.artist} id={it.artistId} noAvatar /></small>}
+          {it.inlineMeta && <small className="inline41meta">{it.inlineMeta}</small>}
           {it.badge != null && <small className="score25">{typeof it.badge === 'string' && /^\d+([.,]\d+)?$/.test(it.badge) && <i className="ic ic-star" aria-hidden="true" />}{it.badge}</small>}
         </span>
       </span>
