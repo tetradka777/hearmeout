@@ -55,7 +55,7 @@ export function FanClubScreen(_props: { device: Device }) {
   return (
     <>
       <button className="crumb" onClick={() => goBack('groups')}>‹ {t('fanclub.back')}</button>
-      <div className="tile bh15 fh23" style={blurStyle(photo, 300)}>
+      <div className="tile bh15 fh23 club41" style={blurStyle(photo, 300)}>
         <ArtistAvatar name={name} id={club.id} photo={photo} size={132} />
         <div className="g">
           <p className="k">{t('fanclub.eyebrow')}</p>
@@ -81,7 +81,7 @@ export function FanClubScreen(_props: { device: Device }) {
           {repeated.length > 0 && <div className="sec">
             <h2>{t('fanclub.onRepeat')}</h2>
             <CoverWall row items={repeated.map((track, i) => ({
-              key: `${i}-${track.title}`, cover: track.cover, title: track.title, sub: t('fanclub.listenersN', { n: track.listeners }),
+              key: `${i}-${track.title}`, cover: track.cover, title: track.title, inlineMeta: t('fanclub.listenersN', { n: track.listeners }),
               onClick: () => playQueue(repeated.map(x => ({ title: x.title, artist: name, cover: x.cover, albumId: x.albumId })), i),
             }))} />
           </div>}

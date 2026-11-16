@@ -1699,3 +1699,58 @@ html,body{margin:0}
 
 .rd .phd14.profile40 textarea.pname{display:block;min-height:0;max-height:none;resize:none;overflow:hidden;white-space:normal;background:none;font-family:var(--font-display)}
 .rd .avatar40image{background-color:var(--pick)}
+
+/* Community layouts (2026-11-17): stable photo boxes and balanced detail pages. */
+.rd .picks29 .pick29>.asd .cvb{display:block!important;position:relative;aspect-ratio:1;width:100%;height:auto;padding:0;border:0;background:transparent;overflow:hidden;border-radius:14px}
+.rd .picks29 .pick29>.asd .cvb>.cov{position:absolute;inset:0;width:100%!important;height:100%!important;aspect-ratio:auto;flex:none}
+.rd .shared25 .ac23 .at{height:27%;min-height:0;box-sizing:border-box;justify-content:center;padding:8px 10px;overflow:hidden}
+.rd .shared25 .ac23 .at b{font-size:16px;line-height:1.15;-webkit-line-clamp:2}
+.rd .shared25 .ac23 .at::before{inset:0;transform:scale(1.15)}
+.rd .aav.cover-fallback .fallback-letter{font-size:inherit;color:inherit}
+.rd .club41 .st15>div,.rd .group41 .st15>div{text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:14px 8px}
+.rd .club41 .st15 small,.rd .group41 .st15 small{font-size:12px;line-height:1.35;max-width:13ch}
+.rd .club41 .acts,.rd .group41 .acts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.rd .club41 .acts .btn,.rd .group41 .acts .btn{width:100%;min-width:0;margin:0;white-space:normal;justify-content:center;font-size:13px;padding:10px 12px}
+.rd .club41 .g h1{overflow-wrap:anywhere;line-height:1.08}
+.rd .wall28 .by26 .inline41meta{display:block;font-size:11px;line-height:1.2;opacity:.85;white-space:nowrap}
+.rd .match41{width:100%;box-sizing:border-box;margin-bottom:0;max-width:720px}
+.rd .match41swap{margin:16px 0 28px;max-width:720px;min-width:0}
+.rd .match41swap .swap37-card{box-sizing:border-box;border-radius:var(--r);padding:14px 16px;gap:12px}
+.rd .match41swap .swap37-card b{font-size:19px;line-height:1.25}
+.rd .match41 .match25head{align-items:flex-start;flex-wrap:wrap;gap:10px}
+.rd .match41 .match25head h2{flex:1 1 180px;overflow-wrap:anywhere}
+.rd .match41 .match25head .btn{max-width:100%;font-size:11px;padding:6px 10px}
+.rd .compare41shelf .hrow>.compare41{width:min(330px,calc(100vw - 48px));flex:none}
+.rd .compare41{border-radius:20px;background:var(--paper);color:var(--fg);padding:14px;min-width:0;box-sizing:border-box}
+.rd .compare41album{display:grid!important;grid-template-columns:76px minmax(0,1fr);gap:12px;align-items:center;text-align:left;width:100%;min-width:0;padding:0;background:none;color:inherit}
+.rd .compare41album .cov{width:76px;height:76px;aspect-ratio:1;border-radius:10px}
+.rd .compare41album>span{min-width:0}.rd .compare41album b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font:800 18px/1.15 var(--font-display);overflow-wrap:anywhere}
+.rd .compare41album small{display:block;font-size:13px;line-height:1.3;margin-top:5px;opacity:.7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd .compare41 .matchscores28{margin-top:14px;padding-top:12px;border-top:1px solid color-mix(in srgb,var(--fg) 14%,transparent);gap:12px}
+.rd .compare41 .matchscores28>span{padding:0;border-radius:0;background:none}.rd .compare41 .matchscores28>span+span{padding-left:12px;border-left:1px solid color-mix(in srgb,var(--fg) 14%,transparent)}
+.rd .compare41 .matchscores28 small{font-size:12px}.rd .compare41 .matchscores28 b{font-size:20px;line-height:1.2}
+.rd .group41 .mid{display:grid;grid-template-columns:88px minmax(0,1fr);gap:14px;align-items:center}
+.rd .group41 .cvb .cov{width:88px;height:88px;border-radius:14px}.rd .group41 h1{font-size:clamp(26px,5vw,40px);line-height:1.1}
+.rd .group41 .top{align-items:flex-start}.rd .group41 .k{font-size:11px;font-weight:600;max-width:65%;line-height:1.4}
+.rd .group41 .ce{font-size:11px;padding:7px 10px;flex:none}.rd .group41 .avs .avt{width:27px;height:27px}.rd .group41 .g{gap:6px}
+.rd .calendar41{padding:20px!important;min-width:0}.rd .calendar41 h2{font-size:clamp(23px,5vw,32px);line-height:1.15;margin-bottom:10px}
+.rd .calendar41 .calendar25period{font-size:13px;opacity:.75;margin:0 0 12px}.rd .calendar41 .calendar25summary{line-height:1.4}
+.rd .calendar41 .calscroll{overflow:visible;margin:0;padding:3px}.rd .calendar41months{display:grid;grid-template-columns:minmax(0,1fr);gap:20px}
+.rd .calendar41month{min-width:0}.rd .calendar41month h3{font:700 15px/1.25 var(--font-display);margin:0 0 10px;color:inherit}
+.rd .calendar41weekdays,.rd .calendar41grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.rd .calendar41weekdays{margin-bottom:8px;text-align:center;font-size:10px;opacity:.65;font-weight:600}
+.rd .calendar41 .calendar41grid .cd{width:100%;height:auto;aspect-ratio:1;border-radius:9px;box-sizing:border-box;min-width:0;font-size:12px}
+.rd .calendar41 .calendar41grid .cd .n{font-size:12px;display:block}.rd .calendar41 .calendar41grid .cd.sel{border-radius:9px;outline-offset:1px}
+.rd .calendar41 .calread{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;min-height:0;padding:14px;margin-top:18px}
+.rd .calendar41 .calread .d{font-size:13px;opacity:.8}.rd .calendar41 .calread .d::after{content:none}.rd .calendar41 .calread .big{font-size:25px;line-height:1.15;margin:0}.rd .calendar41 .calread .muted{font-size:12px;line-height:1.4;overflow-wrap:anywhere}
+.rd .calendar41 .callegend{justify-content:flex-start;gap:16px;font-size:10px;margin-top:16px}.rd .calendar41 .callegend>span{display:none}.rd .calendar41 .callegend .cd{width:16px;height:16px;border-radius:5px}
+@media(min-width:640px){.rd .calendar41months.season{grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.rd .club41 .g h1{margin-bottom:16px}}
+@media(max-width:640px){.rd .tile.club41{display:grid;grid-template-columns:72px minmax(0,1fr);gap:14px;padding:20px}.rd .tile.club41>.aav{width:72px!important;height:72px!important}.rd .club41 .g{display:contents}.rd .club41 .k{align-self:end}.rd .club41 .g h1{grid-column:2;margin:-10px 0 0;font-size:30px}.rd .club41 .st15,.rd .club41 .acts{grid-column:1/-1}.rd .club41 .st15{margin:2px 0 0}.rd .club41>.aav{grid-row:1/3;align-self:center}.rd .group41 .st15 b{font-size:26px}}
+
+.rd .calendar41months.season{display:flex;overflow-x:auto;scroll-snap-type:x proximity;overscroll-behavior-x:contain;padding:3px;gap:16px}
+.rd .calendar41months.season>.calendar41month{flex:0 0 calc(100% - 16px);scroll-snap-align:start}
+.rd .gg22 .gv22 .tile.group41empty{flex:0 0 auto;min-height:0;padding:22px}
+@media(min-width:640px){.rd .calendar41months.season{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));overflow:visible}.rd .calendar41months.season>.calendar41month{min-width:0}}
+
+.rd .compare41cover{display:block!important;padding:0;width:76px;height:76px;min-width:0;border-radius:10px;overflow:hidden}
+.rd .compare41title{display:block!important;text-align:left;padding:0;width:100%;color:inherit}

@@ -1,12 +1,15 @@
 'use client';
 
-import { useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { sizedImage } from '@/lib/imageSize';
 import { coverImages } from '@/lib/coverImages';
 import { whenNear } from '@/lib/nearViewport';
 import { RowImagesContext } from '@/lib/RowImagesContext';
 
 type Props = {
+  as?: 'div' | 'span';
+  elementRef?: RefObject<HTMLElement | null>;
+  ariaHidden?: boolean;
   url?: string;
   fallbackLetter: string;
   className?: string;
@@ -27,12 +30,14 @@ type Props = {
 // clips its cards, so the page alone can't tell).
 // Mirrors the prototype's attachImageFallback(): probe the image, and if it
 // 404s/errors, fall back to the gradient + first-letter treatment instead.
-export function CoverArt({ url: rawUrl, fallbackLetter, className = '', style, fallbackStyle, children, onClick, px }: Props) {
+export function CoverArt({ as: Tag = 'div', elementRef, ariaHidden, url: rawUrl, fallbackLetter, className = '', style, fallbackStyle, children, onClick, px }: Props) {
   const size = px ?? (typeof style?.width === 'number' ? style.width : undefined);
-  const url = size ? sizedImage(rawUrl, size) : rawUrl;
+  const variant = size ? sizedImage(rawUrl, size) : rawUrl;
+  // Some CDN size variants disappear while the source image remains valid.
+  const url = variant && variant !== rawUrl && coverImages.read(variant) === 'failed' ? rawUrl : variant;
   const [nearUrl, setNearUrl] = useState<string | undefined>(undefined);
   const [, changed] = useState(0);
-  const ref = useRef<HTMLDivElement | null>(null);
+  const ref = useRef<HTMLElement | null>(null);
   const result = url ? coverImages.read(url) : undefined;
   const rowReady = useContext(RowImagesContext);
   const near = !!url && (rowReady || nearUrl === url || result === 'loaded' || result === 'loading');
@@ -70,14 +75,15 @@ export function CoverArt({ url: rawUrl, fallbackLetter, className = '', style, f
 
   const showFallback = !url || result === 'failed';
   return (
-    <div
-      ref={ref}
+    <Tag
+      ref={element => { ref.current = element; if (elementRef) elementRef.current = element; }}
+      aria-hidden={ariaHidden}
       className={`${className} ${showFallback ? 'cover-fallback' : ''}`.trim()}
       style={showFallback || !near ? style : { backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', ...style, backgroundColor: 'transparent', backgroundImage: `url('${url}')` }}
       onClick={onClick}
     >
       {showFallback && <span className="fallback-letter" style={fallbackStyle}>{fallbackLetter}</span>}
       {children}
-    </div>
+    </Tag>
   );
 }

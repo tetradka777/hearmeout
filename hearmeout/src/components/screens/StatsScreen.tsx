@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { recapToneStyle } from '@/lib/recapTone';
 import { blurStyle } from '@/lib/imageColor';
 import { ArtistAvatar, ArtistName, useOpenArtist } from '../ui/ArtistName';
@@ -18,6 +18,7 @@ import { formatHour, formatRelative } from '@/lib/format';
 import { recapLine } from '@/lib/recapLine';
 import { completedWeekRange, isoWeekNumber } from '@/lib/weeks';
 import { Phrase } from '../ui/Visual';
+import { calendarMonths } from '@/lib/calendarLayout';
 import { cachedStats, storeStats } from '@/lib/statsClientCache';
 
 type T = ReturnType<typeof useApp>['t'];
@@ -25,7 +26,6 @@ type T = ReturnType<typeof useApp>['t'];
 // Day / month names and durations in the interface language (the API's own
 // labels are English placeholders).
 const wdShort = (d: Date, lang: Language) => d.toLocaleDateString(toLocale(lang), { weekday: 'short', timeZone: 'UTC' });
-const monShort = (d: Date, lang: Language) => d.toLocaleDateString(toLocale(lang), { month: 'short', timeZone: 'UTC' });
 const dayLabelOf = (d: Date, lang: Language) => d.toLocaleDateString(toLocale(lang), { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
 function durLong(min: number, t: T): string {
   const h = Math.floor(min / 60), m = min % 60;
@@ -50,8 +50,6 @@ function parseDay(iso: string): Date {
 
 function ListeningCalendar({ data, t, language, weekStart }: { data: StatsData; t: T; language: Language; weekStart: WeekStart }) {
   const { periodType, calendar } = data;
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const calRef = useRef<HTMLDivElement>(null);
   const [selected, setSelected] = useState<string | null>(null);
   useEffect(() => setSelected(null), [data.periodLabel, periodType]);
 
@@ -67,26 +65,6 @@ function ListeningCalendar({ data, t, language, weekStart }: { data: StatsData; 
   const readoutDay: StatsCalendarDay | { date: string; minutes: number; tracks: number; topArtist: string | null } | null =
     (selected && calendar.days.find((d) => d.date === selected)) || fallbackReadout || null;
 
-  const fit = () => {
-    const sc = scrollRef.current, cal = calRef.current;
-    if (!sc || !cal) return;
-    const w = Number(sc.dataset.w || 0);
-    if (!w) return;
-    const gap = window.innerWidth < 1000 ? 3 : 4;
-    const mx = Number(sc.dataset.max || 34);
-    const avail = sc.clientWidth;
-    const cs = Math.max(12, Math.min(mx, Math.floor((avail - (w - 1) * gap) / w)));
-    cal.style.setProperty('--cs', `${cs}px`);
-    cal.style.setProperty('--cg', `${gap}px`);
-    cal.classList.toggle('nonum', cs < 26);
-  };
-  useEffect(() => {
-    fit();
-    window.addEventListener('resize', fit);
-    return () => window.removeEventListener('resize', fit);
-     
-  }, [data]);
-
   const dayLabel = (d: Date) => dayLabelOf(d, language);
   const dayBtn = (d: StatsCalendarDay, cls: string, inner: React.ReactNode) => (
     <button
@@ -101,8 +79,6 @@ function ListeningCalendar({ data, t, language, weekStart }: { data: StatsData; 
   );
 
   let gridEl: React.ReactNode;
-  let gridW = 0;
-  let gridMax = 34;
 
   if (periodType === 'week') {
     gridEl = (
@@ -116,40 +92,23 @@ function ListeningCalendar({ data, t, language, weekStart }: { data: StatsData; 
       </div>
     );
   } else {
-    const first = parseDay(calendar.days[0].date);
-    const firstDow = weekStart === 'mon' ? (first.getUTCDay() + 6) % 7 : first.getUTCDay();
-    const leading = firstDow;
-    gridW = Math.ceil((leading + calendar.days.length) / 7);
-    gridMax = periodType === 'month' ? 40 : 34;
-    const months: { col: number; label: string }[] = [];
-    const cells: React.ReactNode[] = [];
-    for (let i = 0; i < leading; i++) cells.push(<i key={`lead-${i}`} className="cd o" />);
-    calendar.days.forEach((d, idx) => {
-      const col = Math.floor((leading + idx) / 7) + 1;
-      const date = parseDay(d.date);
-      if (date.getUTCDate() === 1 && periodType === 'season') months.push({ col, label: monShort(date, language) });
-      if (d.future) { cells.push(<i key={d.date} className="cd fut"><span className="n">{date.getUTCDate()}</span></i>); return; }
-      cells.push(dayBtn(d, '', <span className="n">{date.getUTCDate()}</span>));
-    });
-    gridEl = (
-      <>
-        {months.length > 0 && (
-          <div className="calmonths" style={{ gridTemplateColumns: `repeat(${gridW},var(--cs))` }} aria-hidden="true">
-            {months.map((m, i) => <span key={i} style={{ gridColumn: m.col }}>{m.label}</span>)}
-          </div>
-        )}
-        <div className="calgrid" style={{ gridTemplateColumns: `repeat(${gridW},var(--cs))` }}>{cells}</div>
-      </>
-    );
+    const weekdays = Array.from({ length: 7 }, (_, i) => wdShort(new Date(Date.UTC(2026, 10, (weekStart === 'mon' ? 2 : 1) + i)), language));
+    gridEl = <div className={'calendar41months ' + (periodType === 'season' ? 'season' : '')}>
+      {calendarMonths(calendar.days, weekStart).map(month => <section className="calendar41month" key={month.key} aria-label={month.date.toLocaleDateString(toLocale(language), { month: 'long', year: 'numeric', timeZone: 'UTC' })}>
+        {periodType === 'season' && <h3>{month.date.toLocaleDateString(toLocale(language), { month: 'long', timeZone: 'UTC' })}</h3>}
+        <div className="calendar41weekdays" aria-hidden="true">{weekdays.map((day, i) => <span key={i}>{day}</span>)}</div>
+        <div className="calendar41grid">{month.cells.map((d, i) => !d ? <span key={i} className="calendar41blank" /> : d.future ? <span key={d.date} className="cd fut"><span className="n">{parseDay(d.date).getUTCDate()}</span></span> : dayBtn(d, '', <span className="n">{parseDay(d.date).getUTCDate()}</span>))}</div>
+      </section>)}
+    </div>;
   }
 
   return (
-    <div className="tile t-ink s3 cal11 calendar25">
+    <div className="tile t-ink s3 cal11 calendar25 calendar41">
       <h2>{t('stats.calendarTitle')}</h2>
       <span className="calendar25period">{data.periodLabel}</span>
-      <div className="cal" ref={calRef}>
+      <div className="cal">
         <p className="calendar25summary">{calendar.activeDays} / {calendar.totalDays} {t('stats.calDaysListened')} · {calendar.longestStreak} {t('stats.calLongestStreak')}</p>
-        <div className="calscroll" ref={scrollRef} data-w={gridW} data-max={gridMax}>{gridEl}</div>
+        <div className="calscroll">{gridEl}</div>
         <div className="calread" aria-live="polite">
           {readoutDay ? (
             readoutDay.minutes === 0 ? (

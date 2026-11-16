@@ -1,5 +1,6 @@
 'use client';
 import { MatchSwapCard } from '../AlbumSwapCards';
+import { CoverArt } from '../ui/CoverArt';
 import { Initial } from '../ui/Initial';
 
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
@@ -15,8 +16,8 @@ import { MascotIcon } from '../redesign/icons';
 import { RankRows } from '../ui/RankRows';
 import { MATCH_FRIEND_EVENT, takeRecentEvent } from '@/lib/uiEvents';
 import { PersonCards } from '../ui/Visual';
-import { AlbumShelfCard, ArtistShelfCard, Shelf } from '../ui/SuperCards';
-import { useOpenArtist } from '../ui/ArtistName';
+import { ArtistShelfCard, Shelf } from '../ui/SuperCards';
+import { ArtistName, useOpenArtist } from '../ui/ArtistName';
 import { PROFILE_TAB_EVENT } from '@/lib/uiEvents';
 
 type RawInfo = { profile: PublicProfile | null; stats6m: StatsData | null; weekHours: number | null };
@@ -186,19 +187,18 @@ export function MatchScreen(_props: { device: Device }) {
   const albumCard = (g: { albumId: string; mine: number; theirs: number }) => {
     const a = liveAlbums[g.albumId] || albums.find((x) => x.id === g.albumId);
     return (
-      <div className="matchalbum28" key={g.albumId}>
-      <AlbumShelfCard
-        cover={a ? spotifyCovers[a.id] || a.cover : null}
-        title={a?.title ?? '…'}
-        artist={a?.artist ?? ''}
-        artistId={a?.artistId}
-        onClick={() => openAlbum(g.albumId)}
-      />
+      <article className="compare41" key={g.albumId}>
+      <div className="compare41album">
+        <button className="compare41cover" onClick={() => openAlbum(g.albumId)} aria-label={a?.title ?? g.albumId}>
+        <CoverArt url={a ? spotifyCovers[a.id] || a.cover : undefined} fallbackLetter={a?.artist[0] || '?'} className="cov" px={100} />
+        </button>
+        <span><button className="compare41title" onClick={() => openAlbum(g.albumId)}><b>{a?.title ?? '…'}</b></button><small>{a && <ArtistName name={a.artist} id={a.artistId} albumId={a.id} noAvatar />}</small></span>
+      </div>
       <div className="matchscores28">
         <span><small>{t('friend.you')}</small><b><i className="ic ic-star" />{fmt1(g.mine)}</b></span>
         <span><small>{active?.name}</small><b><i className="ic ic-star" />{fmt1(g.theirs)}</b></span>
       </div>
-      </div>
+      </article>
     );
   };
 
@@ -225,7 +225,7 @@ export function MatchScreen(_props: { device: Device }) {
       </div>
 
       {/* The two of you over a picture: both faces, the %, how it moved. */}
-      <div className="tile t-paper match25">
+      <div className="tile t-paper match25 match41">
         <div className="match25head"><h2>{t('match.youAndName', { name: active?.name ?? '' })}</h2><button className="btn ghost" onClick={() => active && viewFriend(active.id)}>{t('match.viewProfile', { name: active?.name ?? '' })}<i className="ic ic-chev" /></button></div>
         <div className="duo">{[me, active].map((u, i) => u && <span key={i} className="avt" style={{ ...userAvatarStyle(u), backgroundSize: 'cover' }}>{!u.avatarUrl && <Initial name={u.name} />}</span>)}</div>
         <div className="match25numbers"><div><b className="num">{shownPct ?? '–'}{shownPct != null && '%'}</b><span>{t('match.title')}</span></div><div><b>{sharedArt.length}</b><span>{t('match.sharedArtistsTitle')}</span>
@@ -233,7 +233,7 @@ export function MatchScreen(_props: { device: Device }) {
         </div></div>
         <div className="match25meter" role="meter" aria-label={t('match.title')} aria-valuemin={0} aria-valuemax={100} aria-valuenow={shownPct ?? undefined}><i style={{ width: `${shownPct ?? 0}%` }} /><span>{shownPct != null ? `${shownPct} / 100` : '–'}</span></div>
       </div>
-      {activeId && <MatchSwapCard friendId={activeId} />}
+      {activeId && <div className="match41swap"><MatchSwapCard friendId={activeId} /></div>}
 
       {sharedArt.length > 0 ? (
         <Shelf className="shared25" title={`${t('match.sharedArtistsTitle')} ${sharedArt.length}`}>
@@ -246,9 +246,9 @@ export function MatchScreen(_props: { device: Device }) {
         <div className="sec"><h2>{t('match.sharedArtistsTitle')}</h2><p className="muted" style={{ fontWeight: 600 }}>{t('match.noSharedArtists')}</p></div>
       )}
 
-      {agree.length > 0 && <Shelf title={t('match.agreeTitle')}>{agree.slice(0, 12).map(albumCard)}</Shelf>}
+      {agree.length > 0 && <Shelf className="compare41shelf" title={t('match.agreeTitle')}>{agree.slice(0, 12).map(albumCard)}</Shelf>}
       {disagree.length > 0
-        ? <Shelf title={t('match.whereYouDisagree')}>{disagree.slice(0, 12).map(albumCard)}</Shelf>
+        ? <Shelf className="compare41shelf" title={t('match.whereYouDisagree')}>{disagree.slice(0, 12).map(albumCard)}</Shelf>
         : !agree.length && (
           <div className="sec"><h2>{t('match.whereYouDisagree')}</h2><p className="muted" style={{ fontWeight: 600 }}>{t('match.notEnoughForGaps')}</p><button className="btn ghost" onClick={() => showScreen('catalog')}>{t('nav.discover')}<i className="ic ic-chev" /></button></div>
         )}
