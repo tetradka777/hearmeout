@@ -202,3 +202,12 @@ test('a late swap GET cannot overwrite an authoritative mutation result', async(
  invalidateJson('/api/album-swaps');storeJson(url,{completed:true});response.resolve(Response.json({completed:false}));
  assert.deepEqual(await pending,{completed:true});assert.deepEqual(peekJson(url),{completed:true});setJsonCacheOwner(null);
 });
+
+test('catalog readers honor a longer freshness window without changing default or invalidation', async t => {
+  let now=1000; t.mock.method(Date,'now',()=>now); setJsonCacheOwner('catalog-age');t.after(()=>setJsonCacheOwner(null));
+  let calls=0; t.mock.method(globalThis,'fetch',async()=>Response.json({version:++calls}));
+  await cachedJson('/api/catalog-age');now+=60000;
+  assert.deepEqual(await cachedJson('/api/catalog-age',{maxAgeMs:900000}),{version:1});assert.equal(calls,1);
+  assert.deepEqual(await cachedJson('/api/catalog-age'),{version:2});
+  invalidateJson('/api/catalog-age');assert.deepEqual(await cachedJson('/api/catalog-age',{maxAgeMs:900000}),{version:3});
+});

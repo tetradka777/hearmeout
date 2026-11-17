@@ -144,6 +144,8 @@ const fr: Dict = {
   'stats.genreSplit': 'genres',
   'stats.calendarTitle': 'calendrier d’écoute',
   'stats.calendarHelp': 'chaque carré est un jour. plus il est foncé, plus tu as écouté. touche un jour pour voir le détail.',
+  "stats.activeDaysCompact": "{n} {n|jour actif|jours actifs}",
+  "stats.streakCompact": "{n} {n|jour|jours} d’affilée",
   'stats.calDaysListened': 'jours d’écoute',
   'stats.calLongestStreak': 'jours d’affilée, ton record',
   'stats.calBestDay': 'meilleur jour',

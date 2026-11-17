@@ -144,6 +144,8 @@ const es: Dict = {
   'stats.genreSplit': 'géneros',
   'stats.calendarTitle': 'calendario de escucha',
   'stats.calendarHelp': 'cada cuadrado es un día. cuanto más oscuro, más escuchaste. toca un día para ver el detalle.',
+  "stats.activeDaysCompact": "{n} {n|día activo|días activos}",
+  "stats.streakCompact": "{n} {n|día|días} seguidos",
   'stats.calDaysListened': 'días con música',
   'stats.calLongestStreak': 'días seguidos, tu récord',
   'stats.calBestDay': 'mejor día',

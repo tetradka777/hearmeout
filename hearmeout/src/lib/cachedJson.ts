@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 
 // The browser's copy of GET API answers (stale-while-revalidate). Any screen
 // shows the last known answer at once and refreshes it in the background,
@@ -19,7 +19,7 @@ const MAX_BOOTSTRAP_CHARS = 2_000_000;
 const MAX_STORE_CHARS = 3_000_000;
 
 type Entry = { at: number; data: unknown };
-type ReadOptions = { force?: boolean; sensitive?: boolean };
+type ReadOptions = { force?: boolean; sensitive?: boolean; maxAgeMs?: number };
 const isDiaryUrl = (url: string) => /^\/api\/diary(?:\?|$)/.test(url);
 const isPrivateMusicUrl = (url: string) => isDiaryUrl(url) || /^\/api\/album-swaps(?:\?|$)/.test(url);
 const mem = new Map<string, Entry>();
@@ -27,6 +27,10 @@ const inflight = new Map<string, Promise<unknown>>();
 const listeners = new Map<string, Set<(data: unknown) => void>>();
 let owner: string | null = null;
 let generation = 0;
+const ownerListeners = new Set<() => void>();
+const subscribeOwner = (fn: () => void) => { ownerListeners.add(fn); return () => { ownerListeners.delete(fn); }; };
+const ownerVersion = () => generation;
+const serverOwnerVersion = () => 0;
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 let saveIdle: number | null = null;
 
@@ -45,7 +49,7 @@ export function setJsonCacheOwner(userId: string | null): void {
   inflight.clear();
   owner = userId;
   const ls = storage();
-  if (!ls) return;
+  if (!ls) { ownerListeners.forEach(fn => fn()); return; }
   try {
     if (userId) ls.setItem(OWNER_KEY, userId); else ls.removeItem(OWNER_KEY);
     for (let i = ls.length - 1; i >= 0; i--) {
@@ -63,7 +67,7 @@ export function setJsonCacheOwner(userId: string | null): void {
     if (removedPrivate) ls.setItem(STORE_PREFIX + userId, JSON.stringify(saved));
   } catch {
     // Unreadable store: start empty.
-  }
+  } finally { ownerListeners.forEach(fn => fn()); }
 }
 
 function scheduleSave(): void {
@@ -141,7 +145,7 @@ function evictDenied(url: string): void {
 // there's no copy at all.
 export function cachedJson<T>(url: string, opts: ReadOptions = {}): Promise<T | null> {
   const hit = mem.get(url);
-  if (!opts.force && !opts.sensitive && hit && Date.now() - hit.at < FRESH_MS) return Promise.resolve(hit.data as T);
+  if (!opts.force && !opts.sensitive && hit && hit.at > 0 && Date.now() - hit.at < (opts.maxAgeMs ?? FRESH_MS)) return Promise.resolve(hit.data as T);
   const pending = inflight.get(url);
   if (pending && !opts.force) return pending as Promise<T | null>;
   const requestGeneration = generation;
@@ -178,26 +182,32 @@ export function prefetchJson(url: string): Promise<unknown> {
 // answer (and any later refresh another screen triggers). `reload` forces a
 // new request, e.g. after the user changed something. `failed`: the request
 // failed and there's no copy to show.
-export function useCachedJson<T>(url: string | null, opts: { sensitive?: boolean } = {}): { data: T | null; failed: boolean; reload: () => Promise<T | null> } {
+export function useCachedJson<T>(url: string | null, opts: { sensitive?: boolean; maxAgeMs?: number } = {}): { data: T | null; failed: boolean; reload: () => Promise<T | null> } {
   const sensitive = !!opts.sensitive;
-  const [data, setData] = useState<T | null>(() => (url && !sensitive ? peekJson<T>(url) : null));
-  const [confirmedUrl, setConfirmedUrl] = useState<string | null>(null);
-  const [failed, setFailed] = useState(false);
+  const maxAgeMs = opts.maxAgeMs;
+  const version = useSyncExternalStore(subscribeOwner, ownerVersion, serverOwnerVersion);
+  type View = { url: string | null; version: number; data: T | null; confirmed: boolean; failed: boolean };
+  const [view, setView] = useState<View>(() => ({ url, version, data: url && !sensitive ? peekJson<T>(url) : null, confirmed: false, failed: false }));
   useEffect(() => {
     let active = true;
-    setFailed(false);
-    setConfirmedUrl(null);
-    if (!url) { setData(null); return; }
-    setData(sensitive ? null : peekJson<T>(url));
-    const fn = (d: unknown) => { setData(d as T); setConfirmedUrl(d != null ? url : null); if (sensitive) setFailed(d == null); };
-    const set = listeners.get(url) || new Set();
-    set.add(fn);
-    listeners.set(url, set);
-    cachedJson<T>(url, { sensitive, force: sensitive }).then((d) => { if (active) { if (d != null) { setData(d); setConfirmedUrl(url); } else { if (sensitive) setData(null); setFailed(true); } } });
-    return () => { active = false; set.delete(fn); };
-  }, [url, sensitive]);
-  const reload = useCallback(() => (url ? cachedJson<T>(url, { force: true, sensitive }) : Promise.resolve(null)), [url, sensitive]);
-  return { data: sensitive && confirmedUrl !== url ? null : data, failed, reload };
+    setView({ url, version, data: url && !sensitive ? peekJson<T>(url) : null, confirmed: false, failed: false });
+    if (!url) return;
+    const receive = (d: unknown) => { if (active) setView({ url, version, data: d as T | null, confirmed: d != null, failed: d == null }); };
+    const set = listeners.get(url) || new Set(); set.add(receive); listeners.set(url, set);
+    void cachedJson<T>(url, { sensitive, force: sensitive, maxAgeMs }).then(receive);
+    return () => { active = false; set.delete(receive); if (!set.size) listeners.delete(url); };
+  }, [url, sensitive, version, maxAgeMs]);
+  const reload = useCallback(async () => {
+    if (!url) return null;
+    setView(previous => previous.url === url && previous.version === version ? { ...previous, failed: false } : previous);
+    const data = await cachedJson<T>(url, { force: true, sensitive, maxAgeMs });
+    setView(previous => previous.url === url && previous.version === version ? { url, version, data, confirmed: data != null, failed: data == null } : previous);
+    return data;
+  }, [url, sensitive, version, maxAgeMs]);
+  // A changed URL/account must never render the previous resource, even for
+  // the commit before its effect runs (which could expose stale action ids).
+  const current = view.url === url && view.version === version;
+  return { data: current ? (sensitive && !view.confirmed ? null : view.data) : url && !sensitive ? peekJson<T>(url) : null, failed: current && view.failed, reload };
 }
 
 // The last account's copy is loaded as soon as this module runs in the

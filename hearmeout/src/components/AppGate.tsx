@@ -45,14 +45,16 @@ function useSplashPhase(ready: boolean): 'on' | 'out' | 'gone' {
 }
 
 export function AppGate() {
-  const { state } = useApp();
+  const { state, t } = useApp();
   const loadingPhrase = useLoadingPhrase();
   const splash = useSplashPhase(state.authStatus !== 'loading');
 
   let content = null;
   if (state.authStatus === 'anonymous') {
     content = <RegisterModal />;
-  } else if (state.authStatus !== 'loading') {
+  } else if (state.authStatus === 'error') {
+    content = <div className="rd startup42" role="status"><p>{t('generic.loadError')}</p><button className="btn" onClick={() => window.location.reload()}>{t('crash.retry')}</button></div>;
+  } else if (state.authStatus === 'ready') {
     content = (
       <>
         <AppShell />

@@ -40,7 +40,7 @@ export function GroupScreen({ device: _device }: { device: Device }) {
   if (!detail) return (
     <>
       <button className="crumb" onClick={() => goBack('groups')}>‹ {t('groups.allGroups')}</button>
-      <p className="muted">{t('groups.loading')}</p>
+      {groupQuery.failed ? <div className="tile t-paper" role="status"><p>{t('generic.loadError')}</p><button className="btn" onClick={() => groupQuery.reload()}>{t('crash.retry')}</button></div> : <p className="muted">{t('groups.loading')}</p>}
     </>
   );
 
