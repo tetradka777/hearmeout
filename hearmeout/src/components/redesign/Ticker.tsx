@@ -71,7 +71,7 @@ export function Ticker() {
 
   if (!enabled || !events.length) return null;
   const messages = events.map(item => <span key={item.id}><b>{item.name}</b> {highlightTickerText(item.text,item.highlights ?? []).map((part,i)=>part.highlight ? <em key={i}>{part.text}</em> : part.text)}</span>);
-  return <div className="ticker tk32" ref={root} tabIndex={0} aria-live="off"
+  return <div className="ticker tk32 tk43" ref={root} tabIndex={0} aria-live="off"
     onMouseEnter={() => { pause.current.hover = true; refresh.current?.(); }}
     onMouseLeave={() => { pause.current.hover = false; refresh.current?.(); }}
     onFocus={() => { pause.current.focus = true; refresh.current?.(); }}

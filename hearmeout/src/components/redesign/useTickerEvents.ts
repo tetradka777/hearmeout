@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { useApp } from '@/lib/AppContext';
 import { useCachedJson } from '@/lib/cachedJson';
-import { toLocale, type Language } from '@/lib/i18n';
 import { shortTitle } from '@/lib/format';
 import type { TickerNewsItem } from '@/lib/tickerNews';
 import type { TickerNewsResponse } from '@/app/api/ticker/route';
@@ -14,7 +13,8 @@ import type { TickerNewsResponse } from '@/app/api/ticker/route';
 // empty for someone whose friends are quiet: records, new and announced
 // albums and concerts of the artists they listen to, then of the most
 // popular artists. Empty only when there's nothing real at all.
-export type TickerEvent = { id: string; name: string; text: string; highlights?: string[] };
+export type { TickerEvent } from '@/lib/tickerEvent';
+import { newsTickerEvent, type TickerEvent } from '@/lib/tickerEvent';
 
 const EMPTY_NEWS: TickerNewsItem[] = [];
 const OWN_MAX = 6;
@@ -26,19 +26,6 @@ function useTickerNews(enabled: boolean, region: string | null): TickerNewsItem[
   const url = enabled ? `/api/ticker${region ? `?country=${encodeURIComponent(region)}` : ''}` : null;
   const items = useCachedJson<TickerNewsResponse>(url).data?.items;
   return enabled && items ? items : EMPTY_NEWS;
-}
-
-function shortDate(iso: string, language: Language): string {
-  const [y, m, d] = iso.split('-').map(Number);
-  return new Intl.DateTimeFormat(toLocale(language), { day: 'numeric', month: 'short' }).format(new Date(y, (m || 1) - 1, d || 1));
-}
-
-function placeOf(city: string | null, country: string | null, language: Language): string {
-  let countryName = country;
-  if (country) {
-    try { countryName = new Intl.DisplayNames([toLocale(language)], { type: 'region' }).of(country) ?? country; } catch { /* keep the code */ }
-  }
-  return [city, countryName].filter(Boolean).join(', ');
 }
 
 export function useTickerEvents(): TickerEvent[] {
@@ -61,29 +48,17 @@ export function useTickerEvents(): TickerEvent[] {
       events.push({ id: `fp-${e.user.id}-${e.at}-${e.trackTitle}`, highlights: [shortTitle(e.trackTitle)], name: e.user.name, text: t('ticker.firstPlay', { track: shortTitle(e.trackTitle) }) });
     } else if (e.type === 'rating_review') {
       const title = albumTitle(e.albumId);
-      if (title) events.push({ id: `rr-${e.user.id}-${e.albumId}-${e.at}`, highlights: [title], name: e.user.name, text: t('ticker.rated', { album: title, stars: e.stars.toFixed(1) }) });
+      if (title) events.push({ id: `rr-${e.user.id}-${e.albumId}-${e.at}`, highlights: [title, e.stars.toFixed(1)], name: e.user.name, text: t('ticker.rated', { album: title, stars: e.stars.toFixed(1) }) });
     } else if (e.type === 'session') {
-      events.push({ id: `se-${e.at}`, name: t('ticker.youSubject'), text: t('ticker.session', { minutes: e.minutes }) });
+      events.push({ id: `se-${e.at}`, highlights: [String(e.minutes)], name: t('ticker.youSubject'), text: t('ticker.session', { minutes: e.minutes }) });
     }
   }
 
   let added = 0;
   for (const n of news) {
     if (added >= NEWS_MAX) break;
-    let ev: TickerEvent | null = null;
-    if (n.kind === 'release') ev = { id: n.id, name: n.artist, text: t('ticker.release', { album: shortTitle(n.title) }) };
-    else if (n.kind === 'upcoming') ev = { id: n.id, name: n.artist, text: t('ticker.upcoming', { album: shortTitle(n.title), date: shortDate(n.date, language) }) };
-    else if (n.kind === 'concert') ev = { id: n.id, name: n.artist, text: t('ticker.concert', { date: shortDate(n.date, language), place: placeOf(n.city, n.country, language) }) };
-    else if (n.kind === 'dayRecord') ev = { id: n.id, name: t('ticker.recordLabel'), text: t('ticker.dayRecord', { minutes: n.minutes }) };
-    else if (n.kind === 'milestone') {
-      ev = n.name
-        ? { id: n.id, name: n.name, text: t('ticker.milestoneFriend', { count: n.count }) }
-        : { id: n.id, name: t('ticker.youSubject'), text: t('ticker.milestoneMe', { count: n.count }) };
-    } else if (n.kind === 'albumOfWeek') {
-      const title = albumTitle(n.albumId);
-      if (title) ev = { id: n.id, name: t('ticker.albumOfWeekLabel'), text: t('ticker.albumOfWeek', { album: title, count: n.count }) };
-    }
-    if (ev) { if ('title' in n) ev.highlights = [shortTitle(n.title)]; if (n.kind === 'albumOfWeek') ev.highlights = [albumTitle(n.albumId) ?? '']; events.push(ev); added++; }
+    const ev = newsTickerEvent(n, language, t, albumTitle);
+    if (ev) { events.push(ev); added++; }
   }
 
   return events;

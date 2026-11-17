@@ -9,7 +9,7 @@ export const LANGUAGE_LABEL: Record<Language, string> = {
 };
 
 const en = {
-  'christmas.title': "christmas all around",
+  'christmas.title': "feel it in your fingers",
   'christmas.subtitle': "i feel it in my fingers / i feel it in my toes",
   'christmas.openTrack': "open {title} in Spotify",
   'diary.addFromAlbum': "add to music diary",

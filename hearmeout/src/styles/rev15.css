@@ -1776,3 +1776,8 @@ html,body{margin:0}
 @media(hover:hover){.rd .calendar42 .calendar41grid button:hover{background:color-mix(in srgb,var(--cream) 6%,transparent)}}
 
 .rd .calendar42 .calendar41grid .cd.fut,.rd .calendar42 .calweek .cd.fut{color:color-mix(in srgb,var(--cream) 45%,transparent)}.rd .calendar42 .cd.fut .n{opacity:1}
+
+/* Ticker 43: chosen-colour text on ink, without badges or extra height. */
+.rd .ticker.tk32.tk43{--tk43-accent:color-mix(in srgb,var(--pick) 50%,var(--cream));background:var(--ink);color:var(--cream);outline:1px solid color-mix(in srgb,var(--pick) 55%,var(--ink));outline-offset:-1px;box-shadow:none}
+.rd .ticker.tk32.tk43 b,.rd .ticker.tk32.tk43 em{color:var(--tk43-accent);background:transparent;padding:0;border-radius:0;font-style:normal;font-weight:800}
+.rd .ticker.tk32.tk43 .grp>span::before{content:"";display:inline-block;width:4px;height:4px;vertical-align:middle;margin-right:14px;border-radius:50%;background:var(--tk43-accent)}
