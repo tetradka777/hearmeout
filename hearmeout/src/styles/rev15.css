@@ -1754,3 +1754,25 @@ html,body{margin:0}
 
 .rd .compare41cover{display:block!important;padding:0;width:76px;height:76px;min-width:0;border-radius:10px;overflow:hidden}
 .rd .compare41title{display:block!important;text-align:left;padding:0;width:100%;color:inherit}
+
+/* First-visit network recovery: no indefinite splash. */
+.rd.startup42{min-height:100svh;display:grid;place-content:center;justify-items:center;padding:24px;gap:16px;text-align:center}
+.rd.startup42 p{margin:0;font-weight:700}.rd.startup42 .btn{min-width:140px}
+
+/* Calendar 42: fixed geometry; selection never uses the global select .sel. */
+.rd .calendar42summary{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0 0 18px;font-size:11px;line-height:1.4;color:color-mix(in srgb,var(--cream) 72%,transparent)}
+.rd .calendar42 .calendar41weekdays{font-size:11px;margin-bottom:10px}.rd .calendar42 .calendar41grid{gap:7px}
+.rd .calendar42 .calendar41grid .cd,.rd .calendar42 .calweek .cd{position:relative;padding:0;background:transparent;background-image:none;color:var(--cream);border:0;box-shadow:none;outline:0;border-radius:10px}
+.rd .calendar42 .calendar41grid .cd{min-height:34px}.rd .calendar42 .calendar41grid .cd .n{font-size:13px;font-weight:700;line-height:1;transform:translateY(-3px)}
+.rd .calendar42 .cd.l0{--day42tone:color-mix(in srgb,var(--cream) 15%,var(--surface25,var(--ink)))}.rd .calendar42 .cd.l1{--day42tone:color-mix(in srgb,var(--pick) 25%,var(--cream))}.rd .calendar42 .cd.l2{--day42tone:color-mix(in srgb,var(--pick) 45%,var(--cream))}.rd .calendar42 .cd.l3{--day42tone:color-mix(in srgb,var(--pick) 70%,var(--cream))}.rd .calendar42 .cd.l4{--day42tone:var(--pick)}
+.rd .calendar42 .calendar41grid .cd::after,.rd .calendar42 .calweek .cd::after{content:"";position:absolute;bottom:5px;left:22%;right:22%;height:4px;border-radius:3px;background:var(--day42tone)}
+.rd .calendar42 .calendar41grid .cd.fut,.rd .calendar42 .calweek .cd.fut{color:color-mix(in srgb,var(--cream) 32%,transparent)}.rd .calendar42 .cd.fut::after{display:none}
+.rd .calendar42 .calendar41grid .cd.chosen42,.rd .calendar42 .calweek .cd.chosen42{outline:1.5px solid var(--cream);outline-offset:0;box-shadow:none;background-image:none}
+.rd .calendar42 .calendar41grid .cd.today:not(.chosen42),.rd .calendar42 .calweek .cd.today:not(.chosen42){outline:1px dashed color-mix(in srgb,var(--cream) 50%,transparent);outline-offset:0}
+.rd .calendar42 .calweek .cd{padding:8px 2px 16px;min-height:86px}.rd .calendar42 .calweek .cd .dn{font-size:22px}
+.rd .calendar42 .calread{height:120px;min-height:120px;box-sizing:border-box;grid-template-rows:18px 29px 34px;gap:4px;border-radius:14px;padding:14px;margin-top:16px}
+.rd .calendar42 .calread .d{line-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rd .calendar42 .calread .big{line-height:29px}.rd .calendar42 .calread .muted{line-height:17px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.rd .calendar42 .callegend{gap:18px;margin-top:14px}.rd .calendar42 .callegend .cd{height:4px;width:22px;border-radius:3px;background:var(--day42tone)}
+@media(hover:hover){.rd .calendar42 .calendar41grid button:hover{background:color-mix(in srgb,var(--cream) 6%,transparent)}}
+
+.rd .calendar42 .calendar41grid .cd.fut,.rd .calendar42 .calweek .cd.fut{color:color-mix(in srgb,var(--cream) 45%,transparent)}.rd .calendar42 .cd.fut .n{opacity:1}

@@ -19,6 +19,7 @@ import { recapLine } from '@/lib/recapLine';
 import { completedWeekRange, isoWeekNumber } from '@/lib/weeks';
 import { Phrase } from '../ui/Visual';
 import { calendarMonths } from '@/lib/calendarLayout';
+import { cachedJson } from '@/lib/cachedJson';
 import { cachedStats, storeStats } from '@/lib/statsClientCache';
 
 type T = ReturnType<typeof useApp>['t'];
@@ -69,7 +70,7 @@ function ListeningCalendar({ data, t, language, weekStart }: { data: StatsData; 
   const dayBtn = (d: StatsCalendarDay, cls: string, inner: React.ReactNode) => (
     <button
       key={d.date}
-      className={`cd ${cls} l${level(d.minutes)}${d.date === todayKey ? ' today' : ''}${readoutDay?.date === d.date ? ' sel' : ''}`}
+      className={`cd ${cls} l${level(d.minutes)}${d.date === todayKey ? ' today' : ''}${readoutDay?.date === d.date ? ' chosen42' : ''}`}
       onClick={() => setSelected(d.date)}
       aria-pressed={readoutDay?.date === d.date}
       aria-label={`${dayLabel(parseDay(d.date))}: ${d.minutes ? durLong(d.minutes, t) : t('stats.calNoListening')}`}
@@ -103,20 +104,16 @@ function ListeningCalendar({ data, t, language, weekStart }: { data: StatsData; 
   }
 
   return (
-    <div className="tile t-ink s3 cal11 calendar25 calendar41">
+    <div className="tile t-ink s3 cal11 calendar25 calendar41 calendar42">
       <h2>{t('stats.calendarTitle')}</h2>
       <span className="calendar25period">{data.periodLabel}</span>
       <div className="cal">
-        <p className="calendar25summary">{calendar.activeDays} / {calendar.totalDays} {t('stats.calDaysListened')} · {calendar.longestStreak} {t('stats.calLongestStreak')}</p>
+        <div className="calendar42summary"><span>{t('stats.activeDaysCompact', { n: calendar.activeDays })}</span><span>{t('stats.streakCompact', { n: calendar.longestStreak })}</span></div>
         <div className="calscroll">{gridEl}</div>
         <div className="calread" aria-live="polite">
-          {readoutDay ? (
-            readoutDay.minutes === 0 ? (
-              <><span className="d">{dayLabel(parseDay(readoutDay.date))}</span><span className="muted">{t('stats.calNoListening')}</span></>
-            ) : (
-              <><span className="d">{dayLabel(parseDay(readoutDay.date))}</span><span className="big">{durLong(readoutDay.minutes, t)}</span><span className="muted">{t('stats.calTracksMostPlayed', { tracks: readoutDay.tracks, artist: readoutDay.topArtist || '—' })}</span></>
-            )
-          ) : <span className="muted">{t('stats.calNoListening')}</span>}
+          <span className="d">{readoutDay ? dayLabel(parseDay(readoutDay.date)) : data.periodLabel}</span>
+          <span className="big">{readoutDay ? durLong(readoutDay.minutes, t) : '—'}</span>
+          <span className="muted">{readoutDay?.minutes ? t('stats.calTracksMostPlayed', { tracks: readoutDay.tracks, artist: readoutDay.topArtist || '—' }) : t('stats.calNoListening')}</span>
         </div>
         <div className="callegend">
           <span>{t('stats.calLegendLabel')}</span>
@@ -162,6 +159,8 @@ export function StatsScreen(_props: { device: Device }) {
   const [offset, setOffset] = useState(0);
   const [seasonKey, setSeasonKey] = useState<StatsSeasonKey | null>(null);
   const [data, setData] = useState<StatsData | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => { setOffset(0); setSeasonKey(null); }, [periodType]);
 
@@ -194,10 +193,11 @@ export function StatsScreen(_props: { device: Device }) {
     const key = paramsFor(seasonKey);
     const hit = cachedStats(key);
     setData(hit ? hit.data : null);
+    setFailed(false);
     if (hit) pickSeason(hit.data);
     if (hit?.fresh) return;
-    fetch(`/api/stats?${key}`).then((r) => (r.ok ? r.json() : null)).then((d: StatsData | null) => {
-      if (!d) return;
+    cachedJson<StatsData>(`/api/stats?${key}`, { maxAgeMs: 60000 }).then((d) => {
+      if (!d) { if (!cancelled) setFailed(true); return; }
       // Kept even if you've already switched away, so coming back is instant.
       storeStats(key, d);
       if (cancelled) return;
@@ -206,7 +206,7 @@ export function StatsScreen(_props: { device: Device }) {
     });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [periodType, offset, seasonKey, me?.id, weekStartPref]);
+  }, [periodType, offset, seasonKey, me?.id, weekStartPref, retry]);
 
   if (!me) return null;
 
@@ -288,7 +288,7 @@ export function StatsScreen(_props: { device: Device }) {
       </div>
 
       {!data ? (
-        <p className="muted" style={{ fontWeight: 600 }}>{t('stats.loading')}</p>
+        failed ? <div className="tile t-paper" role="status"><p>{t('generic.loadError')}</p><button className="btn" onClick={() => setRetry(n => n + 1)}>{t('crash.retry')}</button></div> : <p className="muted" style={{ fontWeight: 600 }}>{t('stats.loading')}</p>
       ) : (
         <>
           <div className="bento b3">
@@ -417,23 +417,16 @@ export function StatsScreen(_props: { device: Device }) {
             <ListeningCalendar data={data} t={t} language={language} weekStart={me.weekStart ?? 'mon'} />
           </div>
 
-          <div className="sec">
+          {weekRecap && weekRecap.trackCount > 0 && <div className="sec">
             <button className="tile t-rc" style={{ ...recapToneStyle({ topGenres: data.genreSplit, topArtists: data.topArtists }), textAlign: 'left', width: '100%', display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }} onClick={() => openRecap('me', 'week')}>
               <div>
                 <span className="pill">{t('stats.recapLinkEyebrow')}</span>
-                {weekRecap && weekRecap.trackCount > 0 ? (
-                  <>
-                    <h2 style={{ margin: '14px 0 4px' }}>{t('stats.recapWeekTitle', { n: isoWeekNumber(completedWeekRange(0, me.weekStart).start) })}</h2>
-                    {weekRecapLine && <p style={{ fontWeight: 700 }}>{quoted(language, `${weekRecapLine.lead}${weekRecapLine.em ? ` ${weekRecapLine.em}` : ''}`)}</p>}
-                  </>
-                ) : (
-                  // No plays last week: say when it will appear, not "ready".
-                  <h2 style={{ margin: '14px 0 4px' }}>{t('recap.emptyTeaser')}</h2>
-                )}
+                <h2 style={{ margin: '14px 0 4px' }}>{t('stats.recapWeekTitle', { n: isoWeekNumber(completedWeekRange(0, me.weekStart).start) })}</h2>
+                {weekRecapLine && <p style={{ fontWeight: 700 }}>{quoted(language, `${weekRecapLine.lead}${weekRecapLine.em ? ` ${weekRecapLine.em}` : ''}`)}</p>}
               </div>
               <span style={{ fontWeight: 800 }}>{t('stats.recapLinkCta')} →</span>
             </button>
-          </div>
+          </div>}
         </>
       )}
     </>

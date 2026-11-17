@@ -178,12 +178,12 @@ export function DiscoverScreen(_props: { device: Device }) {
 
   useEffect(() => {
     setMbFound(null);
-    if (!showLive) { setPeople(null); return; }
+    setPeople(null);
+    if (!showLive) return;
     let cancelled = false;
     const timer = setTimeout(() => {
-      fetch(`/api/users/search?q=${encodeURIComponent(query.trim())}`)
-        .then((r) => (r.ok ? r.json() : []))
-        .then((d) => { if (!cancelled) setPeople(d); });
+      cachedJson<PersonResult[]>(`/api/users/search?q=${encodeURIComponent(query.trim())}`)
+        .then((d) => { if (!cancelled) setPeople(d ?? []); });
     }, 220);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [query, showLive]);

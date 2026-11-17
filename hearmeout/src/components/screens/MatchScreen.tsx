@@ -80,24 +80,32 @@ export function MatchScreen(_props: { device: Device }) {
   // the friend list changes, not on every refresh of `me` (the friend
   // request check refreshes it every minute and used to restart the load).
   const friendIdsKey = me ? me.friends.map((f) => f.id).join(',') : '';
+  const genresKey = JSON.stringify(me?.genres ?? []);
   useEffect(() => {
     const ids = friendIdsKey ? friendIdsKey.split(',') : [];
     setRawInfo({});
     if (!ids.length) return;
     let cancelled = false;
     const patch = (id: string, part: Partial<RawInfo>) => { if (!cancelled) setRawInfo((prev) => ({ ...prev, [id]: { ...EMPTY_INFO, ...prev[id], ...part } })); };
+    const profiles: Promise<{ id: string; profile: PublicProfile | null }>[] = [];
     for (const id of ids) {
       patch(id, {
         profile: peekJson<PublicProfile>(`/api/users/${id}`),
         stats6m: peekJson<StatsData>(`/api/stats?range=6m&userId=${id}`),
         weekHours: peekJson<StatsData>(`/api/stats?period=week&userId=${id}`)?.hours ?? null,
       });
-      cachedJson<PublicProfile>(`/api/users/${id}`).then((profile) => patch(id, { profile }));
-      cachedJson<StatsData>(`/api/stats?range=6m&userId=${id}`).then((stats6m) => patch(id, { stats6m }));
+      profiles.push(cachedJson<PublicProfile>(`/api/users/${id}`).then((profile) => { patch(id, { profile }); return { id, profile }; }));
       cachedJson<StatsData>(`/api/stats?period=week&userId=${id}`).then((week) => patch(id, { weekHours: week ? week.hours : null }));
     }
+    void Promise.all(profiles).then(rows => {
+      if (cancelled) return;
+      const genres = JSON.parse(genresKey) as PublicProfile['genres'];
+      const score = (row: typeof rows[number]) => row.profile ? computeMatch(genres, row.profile.genres) ?? -1 : -1;
+      rows.sort((a, b) => score(b) - score(a));
+      setSelectedId(current => current && ids.includes(current) ? current : rows[0]?.id ?? null);
+    });
     return () => { cancelled = true; };
-  }, [friendIdsKey]);
+  }, [friendIdsKey, me?.id, genresKey]);
   // The % follows your current genres without refetching anyone.
   const myGenres = me?.genres;
   const info = useMemo(() => {
@@ -117,12 +125,22 @@ export function MatchScreen(_props: { device: Device }) {
   const activeId = (selectedId && ranked.some((f) => f.id === selectedId)) ? selectedId : (ranked[0]?.id ?? null);
   const active = activeId ? ranked.find((f) => f.id === activeId) ?? null : null;
   const activeInfo = activeId ? info[activeId] ?? null : null;
+  // Only the selected comparison needs six months of detailed listening.
+  // Keep prior selections in the shared cache without querying every friend.
+  useEffect(() => {
+    if (!activeId || !isActiveScreen || selectedId !== activeId) return;
+    let cancelled = false;
+    const key = '/api/stats?range=6m&userId=' + activeId;
+    const patch = (stats6m: StatsData | null) => { if (!cancelled) setRawInfo(previous => ({ ...previous, [activeId]: { ...EMPTY_INFO, ...previous[activeId], stats6m } })); };
+    void cachedJson<StatsData>(key).then(patch);
+    return () => { cancelled = true; };
+  }, [activeId, isActiveScreen, selectedId, me?.id]);
   // All screens stay mounted, so key the replay on the screen becoming
   // visible too — otherwise it would only ever animate off-screen at load.
   const shownPct = useCountUp(activeInfo?.score ?? null, isActiveScreen ? activeId : null);
 
   const openArtist = useOpenArtist();
-  const history = useCachedJson<{ history: { pct: number; date: string }[] }>(activeId ? `/api/match/${activeId}/history` : null).data?.history ?? null;
+  const history = useCachedJson<{ history: { pct: number; date: string }[] }>(activeId && selectedId === activeId ? `/api/match/${activeId}/history` : null).data?.history ?? null;
 
   if (!me) return null;
 

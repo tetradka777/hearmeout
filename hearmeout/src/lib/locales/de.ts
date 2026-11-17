@@ -144,6 +144,8 @@ const de: Dict = {
   'stats.genreSplit': 'genres',
   'stats.calendarTitle': 'hörkalender',
   'stats.calendarHelp': 'jedes Kästchen ist ein Tag. je dunkler, desto mehr hast du gehört. tippe auf einen Tag für Details.',
+  "stats.activeDaysCompact": "{n} {n|aktiver tag|aktive tage}",
+  "stats.streakCompact": "{n} {n|Tag|Tage} in folge",
   'stats.calDaysListened': 'tage mit Musik',
   'stats.calLongestStreak': 'tage am Stück, Rekord',
   'stats.calBestDay': 'bester Tag',

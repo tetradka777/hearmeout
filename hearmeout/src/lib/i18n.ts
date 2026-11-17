@@ -150,6 +150,8 @@ const en = {
   'stats.genreSplit': 'genres',
   'stats.calendarTitle': 'listening calendar',
   'stats.calendarHelp': 'each square is one day. darker means more time listening. tap a day for details.',
+  "stats.activeDaysCompact": "{n} active {n|day|days}",
+  "stats.streakCompact": "{n}-day streak",
   'stats.calDaysListened': 'days you listened',
   'stats.calLongestStreak': 'day streak, longest',
   'stats.calBestDay': 'best day',

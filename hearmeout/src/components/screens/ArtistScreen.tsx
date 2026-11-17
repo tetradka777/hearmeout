@@ -83,8 +83,7 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
     const storeKey = `/api/artist/${art.id}/top-tracks`;
     const stored = peekJson<{ tracks: ArtistTopTrack[] }>(storeKey);
     setTopTracks(stored ? stored.tracks : null);
-    fetch(`${storeKey}?name=${encodeURIComponent(art.name)}`)
-      .then((r) => (r.ok ? r.json() : null))
+    cachedJson<{ tracks: ArtistTopTrack[]; limited?: boolean }>(`${storeKey}?name=${encodeURIComponent(art.name)}`, { maxAgeMs: 15 * 60000 })
       .then((d: { tracks: ArtistTopTrack[]; limited?: boolean } | null) => {
         if (cancelled) return;
         if (d && !d.limited) storeJson(storeKey, d);

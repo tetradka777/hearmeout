@@ -47,7 +47,7 @@ function albumDetailToAlbum(d: AlbumDetail, overrideId?: string): Album {
 }
 
 type SortBy = 'year' | 'genre' | 'artist';
-type AuthStatus = 'loading' | 'anonymous' | 'ready';
+type AuthStatus = 'loading' | 'anonymous' | 'ready' | 'error';
 
 // Every screen — the 7 top-level tabs included — gets a real browser-
 // history entry and URL, so the browser's own back/forward buttons work
@@ -375,39 +375,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [patch]);
 
   const refreshMe = useCallback(async () => {
-    const res = await fetch('/api/me');
-    if (res.status === 401 || res.status === 404) {
-      setJsonCacheOwner(null);
-      setMe(null);
-      // Signed out: the language the server picked from the browser (<html lang>),
-      // not always English.
-      patch({ authStatus: 'anonymous', language: pickLanguage([serverLang.current || navigator.language]) });
-      return;
+    try {
+      const res = await fetch('/api/me');
+      if (res.status === 401 || res.status === 404) {
+        setJsonCacheOwner(null);
+        setMe(null);
+        // Signed out: the language the server picked from the browser (<html lang>),
+        // not always English.
+        patch({ authStatus: 'anonymous', language: pickLanguage([serverLang.current || navigator.language]) });
+        return;
+      }
+      if (!res.ok) { if (!peekJson<Me>('/api/me')) patch({ authStatus: 'error' }); return; }
+      const data: Me = await res.json();
+      if (peekJson<Me>('/api/me')?.id !== data.id) {
+        // An old persisted account may paint while the cookie is confirmed.
+        // Its collections must not survive confirmation of a different owner.
+        setMyRatings([]);
+        setLovedItems([]);
+        setLaterItems([]);
+        setAlbumRatings({});
+        setFeed(null);
+        setFriendRequests({ incoming: [], outgoing: [] });
+        setNotifications({ items: [], unread: 0 });
+        setRecapCache({});
+        setRecapLocked({});
+        requestedRecapKeys.current.clear();
+        clearStatsCache();
+      }
+      setJsonCacheOwner(data.id);
+      storeJson('/api/me', data);
+      setMe(data);
+      patch({ authStatus: 'ready', language: data.language });
+      // Keep the account's time zone current (the evening streak reminder).
+      const tz = new Date().getTimezoneOffset();
+      if (data.tzOffset !== tz) fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tzOffset: tz }) }).catch(() => {});
+    } catch {
+      // A returning visitor keeps the saved app; a first visit gets a
+      // recoverable error instead of an endless splash/unhandled promise.
+      if (!peekJson<Me>('/api/me')) patch({ authStatus: 'error' });
     }
-    if (!res.ok) return;
-    const data: Me = await res.json();
-    if (peekJson<Me>('/api/me')?.id !== data.id) {
-      // An old persisted account may paint while the cookie is confirmed.
-      // Its collections must not survive confirmation of a different owner.
-      setMyRatings([]);
-      setLovedItems([]);
-      setLaterItems([]);
-      setAlbumRatings({});
-      setFeed(null);
-      setFriendRequests({ incoming: [], outgoing: [] });
-      setNotifications({ items: [], unread: 0 });
-      setRecapCache({});
-      setRecapLocked({});
-      requestedRecapKeys.current.clear();
-      clearStatsCache();
-    }
-    setJsonCacheOwner(data.id);
-    storeJson('/api/me', data);
-    setMe(data);
-    patch({ authStatus: 'ready', language: data.language });
-    // Keep the account's time zone current (the evening streak reminder).
-    const tz = new Date().getTimezoneOffset();
-    if (data.tzOffset !== tz) fetch('/api/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tzOffset: tz }) }).catch(() => {});
   }, [patch]);
 
   const refreshAlbumRatings = useCallback(async (force = true) => {
@@ -493,8 +499,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const outgoingIdsRef = useRef<Set<number>>(new Set());
   const refreshFriendRequests = useCallback(async () => {
-    const res = await fetch('/api/friends/requests');
-    if (!res.ok) return;
+    const res = await fetch('/api/friends/requests').catch(() => null);
+    if (!res?.ok) return;
     const data: { incoming: FriendRequest[]; outgoing: FriendRequest[] } = await res.json();
     // An outgoing request that disappeared was accepted (or declined) on
     // the other side — reload `me` so a new friend shows up without a reload.
