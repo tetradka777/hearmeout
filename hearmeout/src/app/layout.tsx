@@ -18,18 +18,34 @@ export async function generateMetadata(): Promise<Metadata> {
   return siteMetadata(previewLang((await headers()).get("accept-language")));
 }
 
-// Pinch-zoom must stay available for low-vision users — every text input's
-// font-size is now >=16px (the actual fix for iOS's auto-zoom-on-focus,
-// which was previously worked around by blocking zoom outright).
+// Keep the app at its intended touch scale, including while it hydrates.
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  minimumScale: 1,
+  maximumScale: 1,
+  userScalable: false,
   // The phone's status bar / browser chrome in the site's background colour.
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#F6EFE0" },
     { media: "(prefers-color-scheme: dark)", color: "#15120F" },
   ],
 };
+
+// Safari can ignore viewport zoom limits. Register before hydration; ordinary
+// one-finger scrolling, horizontal shelves and input selection remain native.
+const TOUCH_VIEWPORT_SCRIPT = `
+(function () {
+  function stopGesture(event) {
+    if (event.cancelable) event.preventDefault();
+  }
+  document.addEventListener('gesturestart', stopGesture, { passive: false });
+  document.addEventListener('gesturechange', stopGesture, { passive: false });
+  document.addEventListener('touchmove', function (event) {
+    if (event.touches.length > 1) stopGesture(event);
+  }, { passive: false });
+})();
+`;
 
 const THEME_INIT_SCRIPT = `
 try {
@@ -68,6 +84,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang={lang}
+      style={{ touchAction: "pan-x pan-y" }}
       data-design="cream-pop"
       data-mode="light"
       data-palette="lemons"
@@ -76,6 +93,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         {process.env.NODE_ENV === "development" && <script dangerouslySetInnerHTML={{ __html: DEV_HOST_SCRIPT }} />}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: TOUCH_VIEWPORT_SCRIPT }} />
         {/* Covers and 30-second previews come from these hosts: the
             connection is opened while the page starts, not at the first
             picture or the first press of play. */}
