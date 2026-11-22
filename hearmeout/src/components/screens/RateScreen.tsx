@@ -170,7 +170,7 @@ export function RateScreen({ device: _device }: { device: Device }) {
 
   if (!a) {
     const failed = !!failedAlbumIds[state.currentAlbumId];
-    return <>{chips}<div className="tile empty"><p>{failed ? t('album.loadError') : t('album.loading')}</p></div></>;
+    return <>{chips}<div className="tile empty"><p>{failed ? t('album.loadError') : t('album.loading')}</p>{failed && <button className="btn" onClick={() => ensureLiveAlbum(state.currentAlbumId)}>{t('crash.retry')}</button>}</div></>;
   }
 
   const ratingInfo = albumRatings[a.id];

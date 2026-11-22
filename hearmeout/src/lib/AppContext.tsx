@@ -1174,6 +1174,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const ensureLiveAlbum = useCallback((id: string, spotifyId?: string) => {
     if (!id || requestedAlbumIds.current.has(id) || knownAlbumIds.current.has(id)) return;
+    setFailedAlbumIds(s => { if (!s[id]) return s; const next = { ...s }; delete next[id]; return next; });
     // A catalog slug is fetched by its Spotify id (callers often pass only
     // the slug); anything else that isn't a Spotify id can't be fetched.
     const target = spotifyId || ALBUMS.find((x) => x.id === id)?.spotifyId || id;

@@ -418,7 +418,7 @@ function FriendsTab() {
 }
 
 export function ProfileScreen(_props: { device: Device }) {
-  const { t, language, me, myRatings, updateProfileName, updateProfileHandle, showScreen, friendRequests, showToast, albums, liveAlbums, spotifyCovers } = useApp();
+  const { t, language, me, myRatings, updateProfileName, updateProfileHandle, showScreen, friendRequests, showToast } = useApp();
   const weekStats = useCachedJson<StatsData>(me ? `/api/stats?period=week&weekStart=${me.weekStart}&offset=0` : null).data;
   const [tab, setTab] = useState<ProfileTab>('ratings');
   const [viewingAvatar, setViewingAvatar] = useState(false);
@@ -475,11 +475,8 @@ export function ProfileScreen(_props: { device: Device }) {
       {/* Header: a coloured block with the photo, name, handle and region,
           then friends / edit profile / share. */}
       <div className="phd14 ph16 profile40">
-        <div className="profile40art" aria-hidden="true">
-          {(me.pinnedAlbums?.length ? me.pinnedAlbums : list.slice(0, 4).map(r => r.albumId)).slice(0, 4).map(id => {
-            const album = liveAlbums[id] || albums.find(a => a.id === id || a.spotifyId === id);
-            return album ? <CoverArt key={id} url={spotifyCovers[album.id] || album.cover} fallbackLetter={album.artist[0] || '?'} className="cov" px={160} /> : null;
-          })}
+        <div className="profile40art profile44art" aria-hidden="true">
+          <span className="profile44photo" style={userAvatarStyle(me)}>{!me.avatarUrl && <Initial name={me.name} />}</span>
         </div>
         <button className="avwrap" onClick={() => setViewingAvatar(true)} aria-label={t('profile.viewPhoto')}>
           <span className="avt lgA" style={{ ...userAvatarStyle(me), backgroundSize: 'cover' }}>{!me.avatarUrl && <Initial name={me.name} />}</span>

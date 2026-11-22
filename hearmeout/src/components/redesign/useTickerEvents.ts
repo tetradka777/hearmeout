@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useApp } from '@/lib/AppContext';
-import { useCachedJson } from '@/lib/cachedJson';
+import { cachedJson, useCachedJson } from '@/lib/cachedJson';
 import { shortTitle } from '@/lib/format';
 import type { TickerNewsItem } from '@/lib/tickerNews';
 import type { TickerNewsResponse } from '@/app/api/ticker/route';
@@ -25,6 +25,20 @@ const NEWS_MAX = 10;
 function useTickerNews(enabled: boolean, region: string | null): TickerNewsItem[] {
   const url = enabled ? `/api/ticker${region ? `?country=${encodeURIComponent(region)}` : ''}` : null;
   const items = useCachedJson<TickerNewsResponse>(url).data?.items;
+  useEffect(() => {
+    if (!url) return;
+    let last = Date.now();
+    const refresh = () => {
+      if (document.hidden || Date.now() - last < 30000) return;
+      last = Date.now();
+      void cachedJson<TickerNewsResponse>(url, { maxAgeMs: 300000 });
+    };
+    window.addEventListener('online', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    // Retry a failed initial load without a tight polling loop.
+    const timer = !items?.length ? setInterval(refresh, 60000) : null;
+    return () => { if (timer) clearInterval(timer); window.removeEventListener('online', refresh); document.removeEventListener('visibilitychange', refresh); };
+  }, [url, items?.length]);
   return enabled && items ? items : EMPTY_NEWS;
 }
 
@@ -32,17 +46,17 @@ export function useTickerEvents(): TickerEvent[] {
   const { t, language, me, feed, albums, liveAlbums } = useApp();
   const news = useTickerNews(!!me?.tickerEnabled, me?.region ?? null);
   return useMemo(() => {
-  if (!feed) return [];
+
 
   const albumTitle = (albumId: string) => (liveAlbums[albumId] || albums.find((a) => a.id === albumId))?.title ?? null;
   const events: TickerEvent[] = [];
 
-  if (feed.hero) {
+  if (feed?.hero) {
     const title = albumTitle(feed.hero.albumId);
     if (title) events.push({ id: 'hero', highlights: [feed.hero.friend.name, title], name: t('friend.you'), text: t('ticker.disagree', { friend: feed.hero.friend.name, album: title }) });
   }
 
-  for (const e of feed.events) {
+  for (const e of feed?.events ?? []) {
     if (events.length >= OWN_MAX) break;
     if (e.type === 'first_play') {
       events.push({ id: `fp-${e.user.id}-${e.at}-${e.trackTitle}`, highlights: [shortTitle(e.trackTitle)], name: e.user.name, text: t('ticker.firstPlay', { track: shortTitle(e.trackTitle) }) });

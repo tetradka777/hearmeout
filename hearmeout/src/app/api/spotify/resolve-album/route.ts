@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserId } from '@/lib/identity';
 import { upstreamErrorResponse } from '@/lib/upstreamError';
 import { resolveSpotifyAlbumId } from '@/lib/spotifyCatalog';
-import { withSpotifyCache } from '@/lib/spotifyCache';
+import { peekSpotifyCache, storeSpotifyCache, withSpotifyCache } from '@/lib/spotifyCache';
+
+class AlbumNotFound extends Error {}
 
 export async function GET(request: NextRequest) {
   // Signed-in only: this calls Spotify/Deezer/Ticketmaster on the server, and
@@ -16,10 +18,19 @@ export async function GET(request: NextRequest) {
   if (!title || !artist) return NextResponse.json({ error: 'missing_params' }, { status: 400 });
 
   try {
-    const id = await withSpotifyCache(`resolve-album:v4:${title.toLowerCase()}:${artistId || artist.toLowerCase()}`, 180 * 86400, () => resolveSpotifyAlbumId(title, artist, artistId));
+    const key = `resolve-album:v4:${title.toLowerCase()}:${artistId || artist.toLowerCase()}`;
+    // Keep successful mappings. A miss must not poison the shared cache for six months.
+    const known = await peekSpotifyCache<string>(key);
+    const id = known || await withSpotifyCache(key + ':retry', 180 * 86400, async () => {
+      const found = await resolveSpotifyAlbumId(title, artist, artistId);
+      if (!found) throw new AlbumNotFound();
+      return found;
+    });
+    if (!known && id) await storeSpotifyCache(key, id, 180 * 86400);
     if (!id) return NextResponse.json({ error: 'not_found' }, { status: 404 });
     return NextResponse.json({ id }, { headers: { 'Cache-Control': 's-maxage=3600, stale-while-revalidate=86400' } });
   } catch (err) {
+    if (err instanceof AlbumNotFound) return NextResponse.json({ error: 'not_found' }, { status: 404 });
     return upstreamErrorResponse(err, '/api/spotify/resolve-album');
   }
 }

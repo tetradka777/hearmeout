@@ -991,6 +991,7 @@ const en = {
   'toast.syncNoNew': 'no new tracks',
   'toast.syncFailed': "couldn't sync Spotify",
   'toast.albumOpenFailed': "couldn't find this album on Spotify",
+  'toast.albumUnavailable': 'Spotify is temporarily unavailable — try again shortly',
   'toast.artistOpenFailed': "couldn't find this artist on Spotify",
   'toast.importFailed': "couldn't upload history",
   'toast.importFileTooLarge': 'file {file} is too large (40MB max) — split it into smaller parts',
