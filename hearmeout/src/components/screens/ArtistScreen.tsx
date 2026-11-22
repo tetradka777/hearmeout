@@ -1,5 +1,7 @@
 'use client';
 
+import { resolveAlbum } from '@/lib/resolveAlbum';
+
 import { useEffect, useMemo, useState } from 'react';
 import { sizedImage } from '@/lib/imageSize';
 import { blurStyle } from '@/lib/imageColor';
@@ -114,12 +116,11 @@ export function ArtistScreen({ device: _device }: { device: Device }) {
     if (resolvingGroup) return;
     setResolvingGroup(groupId);
     try {
-      const res = await fetch(`/api/spotify/resolve-album?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artistName)}`);
-      if (!res.ok) { showToast(t('toast.albumOpenFailed')); return; }
-      const { id } = await res.json();
-      openAlbum(id);
+      const result = await resolveAlbum(title, artistName);
+      if (!result.id) { showToast(t(result.error === 'not_found' ? 'toast.albumOpenFailed' : 'toast.albumUnavailable')); return; }
+      openAlbum(result.id);
     } catch {
-      showToast(t('toast.albumOpenFailed'));
+      showToast(t('toast.albumUnavailable'));
     } finally {
       setResolvingGroup(null);
     }

@@ -985,6 +985,7 @@ const es: Dict = {
   'toast.syncNoNew': 'no hay canciones nuevas',
   'toast.syncFailed': 'no se pudo sincronizar Spotify',
   'toast.albumOpenFailed': 'no encontramos este álbum en Spotify',
+  'toast.albumUnavailable': 'Spotify no está disponible temporalmente — inténtalo de nuevo pronto',
   'toast.artistOpenFailed': 'no encontramos a este artista en Spotify',
   'toast.importFailed': 'no se pudo subir el historial',
   'toast.importFileTooLarge': 'el archivo {file} es demasiado grande (máximo 40 MB): divídelo en partes más pequeñas',

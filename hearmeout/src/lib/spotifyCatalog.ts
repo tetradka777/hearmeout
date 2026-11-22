@@ -1,6 +1,7 @@
+import { albumSearchTitle, selectAlbumMatch } from './albumResolution';
 import { getSpotifyAppToken } from './spotifyAppAuth';
 import { bucketForGenres } from './genreBuckets';
-import { deezerArtistFor, deezerArtistGenres, deezerGenresById, normalizeTitle } from './deezerServer';
+import { deezerArtistFor, deezerArtistGenres, deezerGenresById } from './deezerServer';
 import { storeSpotifyCache, withSpotifyCache } from './spotifyCache';
 import { RateLimitError, retryAfterSeconds } from './upstreamError';
 import { logServerError } from './errorLog';
@@ -117,32 +118,25 @@ export function isFunctionalAudio(title: string, artist: string): boolean {
 // that has no Spotify id of its own) to a real Spotify album id, so results
 // from non-Spotify sources (library search, an artist's MusicBrainz
 // discography) can still open a real album page instead of being a dead
-// click. limit=1 dodges the "Invalid limit" cap confirmed on this app's tier.
+// click. Search stays within the development-mode limit of ten results.
 //
 // Only an album that credits an artist with exactly this name (any of the
 // credited artists, or the main one of "A & B" / "A, B") and has this title
 // (ignoring "(Deluxe)", "- Remastered" and the like) — no match is null,
 // never the first search hit, which used to open someone else's album.
 export async function resolveSpotifyAlbumId(title: string, artist: string, artistId?: string | null): Promise<string | null> {
-  const params: Record<string, string> = { q: `album:${title} artist:${artist}`, type: 'album', limit: '10' };
-  const data = await spotifyGet('/search', params);
-  const items = (data.albums?.items || []) as SpotifyAlbumSearchItem[];
-  const wantTitle = normalizeTitle(title);
-  const wantArtist = normalizeArtistName(artist);
-  // Credits are structured in Spotify. Compare whole names or the whole
-  // joined credit, never fragments of a name containing punctuation.
-  const byArtist = items.filter((a) => artistId ? a.artists?.some((x) => x.id === artistId) : a.artists?.some((x) => normalizeArtistName(x.name) === wantArtist)
-    || normalizeArtistName(a.artists?.map((x) => x.name).join(', ') || '') === wantArtist
-    || normalizeArtistName(a.artists?.map((x) => x.name).join(' & ') || '') === wantArtist);
-  const matches = byArtist.filter((a) => normalizeTitle(a.name) === wantTitle);
-  if (!artistId) {
-    const identities = new Set(matches.map((a) => {
-      const exact = a.artists.filter((x) => normalizeArtistName(x.name) === wantArtist);
-      return (exact.length ? exact : a.artists).map((x) => x.id).sort().join(',');
-    }));
-    if (identities.size > 1) return null;
+  const cleanTitle = albumSearchTitle(title);
+  const quoted = (value: string) => '"' + value.replace(/"/g, ' ') + '"';
+  const queries = [`album:${quoted(cleanTitle)} artist:${quoted(artist)}`, cleanTitle + ' ' + artist];
+  const candidates: SpotifyAlbumSearchItem[] = [];
+  for (const q of queries) {
+    const data = await spotifyGet('/search', { q, type: 'album', limit: '10' });
+    const items = (data.albums?.items || []) as SpotifyAlbumSearchItem[];
+    candidates.push(...items);
+    const id = selectAlbumMatch(candidates, title, artist, artistId);
+    if (id) return id;
   }
-  return matches[0]?.id ?? null;
+  return null;
 }
 
 // An album of this artist by title: search results (at most 10 in

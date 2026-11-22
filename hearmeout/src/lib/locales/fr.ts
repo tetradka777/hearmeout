@@ -985,6 +985,7 @@ const fr: Dict = {
   'toast.syncNoNew': 'aucun nouveau titre',
   'toast.syncFailed': 'impossible de synchroniser Spotify',
   'toast.albumOpenFailed': 'album introuvable sur Spotify',
+  'toast.albumUnavailable': 'Spotify est temporairement indisponible — réessayez bientôt',
   'toast.artistOpenFailed': 'artiste introuvable sur Spotify',
   'toast.importFailed': 'impossible d’importer l’historique',
   'toast.importFileTooLarge': 'le fichier {file} est trop volumineux (40 Mo max) : découpe-le en plusieurs parties',

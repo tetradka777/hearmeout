@@ -10,9 +10,9 @@ const TK = { owner: '', pixels: 0, id: '', inset: 0 };
 const SPEED = 32;
 
 export function Ticker() {
-  const { me, feed } = useApp();
+  const { me } = useApp();
   const events = useTickerEvents();
-  const enabled = !!me?.tickerEnabled && !!feed;
+  const enabled = !!me?.tickerEnabled;
   const root = useRef<HTMLDivElement>(null);
   const track = useRef<HTMLDivElement>(null);
   const group = useRef<HTMLDivElement>(null);
@@ -50,7 +50,7 @@ export function Ticker() {
         animation = moving.animate([{ transform: 'translate3d(0,0,0)' }, { transform: 'translate3d(' + -width + 'px,0,0)' }], { duration: width / SPEED * 1000, iterations: Infinity });
         animation.currentTime = (TK.pixels % width) / SPEED * 1000;
       }
-      if (document.hidden || pause.current.focus || (canHover && pause.current.hover)) animation.pause();
+      if (document.hidden || (pause.current.focus && element.contains(document.activeElement)) || (canHover && pause.current.hover)) animation.pause();
       else animation.play();
     }
     refresh.current = sync;
@@ -59,12 +59,14 @@ export function Ticker() {
     const motion = new MutationObserver(sync);
     motion.observe(document.documentElement, { attributes: true, attributeFilter: ['data-motion'] });
     document.addEventListener('visibilitychange', sync);
+    window.addEventListener('pageshow', sync);
     reduced.addEventListener('change', sync);
     sync();
     return () => {
       remember(); animation?.cancel(); refresh.current = null;
       resize.disconnect(); motion.disconnect();
       document.removeEventListener('visibilitychange', sync);
+      window.removeEventListener('pageshow', sync);
       reduced.removeEventListener('change', sync);
     };
   }, [enabled, events, me?.id]);
@@ -74,7 +76,8 @@ export function Ticker() {
   return <div className="ticker tk32 tk43" ref={root} tabIndex={0} aria-live="off"
     onMouseEnter={() => { pause.current.hover = true; refresh.current?.(); }}
     onMouseLeave={() => { pause.current.hover = false; refresh.current?.(); }}
-    onFocus={() => { pause.current.focus = true; refresh.current?.(); }}
+    onPointerDown={() => { pause.current.focus = false; refresh.current?.(); }}
+    onFocus={event => { pause.current.focus = event.currentTarget.matches(':focus-visible'); refresh.current?.(); }}
     onBlur={() => { pause.current.focus = false; refresh.current?.(); }}>
     <div className="mq"><div className="track" ref={track}>
       <div className="grp" ref={group}>{messages}</div><div className="grp tk32-copy" aria-hidden="true">{messages}</div>

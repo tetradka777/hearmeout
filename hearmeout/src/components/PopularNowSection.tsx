@@ -1,5 +1,7 @@
 'use client';
 
+import { resolveAlbum } from '@/lib/resolveAlbum';
+
 import { useApp } from '@/lib/AppContext';
 import { cachedJson, cachedPage } from '@/lib/cachedJson';
 import { usePaged } from '@/lib/usePaged';
@@ -28,9 +30,9 @@ export function PopularNowSection({ genre }: { genre?: string }) {
 
   const open = async (a: Item) => {
     if (a.spotifyId) { openAlbum(a.spotifyId); return; }
-    const res = await fetch(`/api/spotify/resolve-album?title=${encodeURIComponent(a.title)}&artist=${encodeURIComponent(a.artist)}`).catch(() => null);
-    if (!res?.ok) { showToast(t('toast.albumOpenFailed')); return; }
-    openAlbum((await res.json()).id);
+    const result = await resolveAlbum(a.title, a.artist);
+    if (!result.id) { showToast(t(result.error === 'not_found' ? 'toast.albumOpenFailed' : 'toast.albumUnavailable')); return; }
+    openAlbum(result.id);
   };
 
   if (!items.length) {

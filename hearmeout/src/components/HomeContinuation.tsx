@@ -1,5 +1,7 @@
 'use client';
 
+import { resolveAlbum } from '@/lib/resolveAlbum';
+
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useApp } from '@/lib/AppContext';
 import { uniqueDiscovery } from '@/lib/homeDiscovery';
@@ -103,9 +105,9 @@ function ContinuationFeed({ surface }: { surface: 'catalog' | 'discover' }) {
     return () => observer.disconnect();
   }, [exhausted, failed, loadingMore, rawCount, state.activeScreen, loadMore, surface, sourceVersion]);
   const open = async (album: ChartAlbumLite) => {
-    const res = await fetch(`/api/spotify/resolve-album?title=${encodeURIComponent(album.title)}&artist=${encodeURIComponent(album.artist)}`).catch(() => null);
-    if (!res?.ok) { showToast(t('toast.albumOpenFailed')); return; }
-    openAlbum((await res.json()).id);
+    const result = await resolveAlbum(album.title, album.artist);
+    if (!result.id) { showToast(t(result.error === 'not_found' ? 'toast.albumOpenFailed' : 'toast.albumUnavailable')); return; }
+    openAlbum(result.id);
   };
   const albumCard = (index: number) => {
     const a = displayedAlbums[index];

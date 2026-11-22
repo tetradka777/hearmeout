@@ -1,5 +1,7 @@
 'use client';
 
+import { resolveAlbum } from '@/lib/resolveAlbum';
+
 import { useApp } from '@/lib/AppContext';
 import { useCachedJson } from '@/lib/cachedJson';
 import { formatRelative } from '@/lib/format';
@@ -14,9 +16,9 @@ export function FanClubReleases() {
   const { data } = useCachedJson<FanClubRelease[]>('/api/fanclubs/releases');
   if (!data?.length) return null;
   const open = async (r: FanClubRelease) => {
-    const res = await fetch(`/api/spotify/resolve-album?title=${encodeURIComponent(r.title)}&artist=${encodeURIComponent(r.artist)}&artistId=${encodeURIComponent(r.artistId)}`).catch(() => null);
-    if (!res?.ok) { showToast(t('toast.albumOpenFailed')); return; }
-    openAlbum((await res.json()).id);
+    const result = await resolveAlbum(r.title, r.artist, r.artistId);
+    if (!result.id) { showToast(t(result.error === 'not_found' ? 'toast.albumOpenFailed' : 'toast.albumUnavailable')); return; }
+    openAlbum(result.id);
   };
   return (
     <Shelf title={t('fanclub.releasesTitle')}>

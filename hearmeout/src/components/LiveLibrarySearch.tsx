@@ -1,5 +1,7 @@
 'use client';
 
+import { resolveAlbum } from '@/lib/resolveAlbum';
+
 import { useEffect, useState } from 'react';
 import { ArtistAvatar } from './ui/ArtistName';
 import { useApp } from '@/lib/AppContext';
@@ -16,12 +18,11 @@ export function LiveLibrarySearch({ query, onResult }: { query: string; onResult
     if (resolving) return;
     setResolving(groupId);
     try {
-      const res = await fetch(`/api/spotify/resolve-album?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`);
-      if (!res.ok) { showToast(t('toast.albumOpenFailed')); return; }
-      const { id } = await res.json();
-      openAlbum(id);
+      const result = await resolveAlbum(title, artist);
+      if (!result.id) { showToast(t(result.error === 'not_found' ? 'toast.albumOpenFailed' : 'toast.albumUnavailable')); return; }
+      openAlbum(result.id);
     } catch {
-      showToast(t('toast.albumOpenFailed'));
+      showToast(t('toast.albumUnavailable'));
     } finally {
       setResolving(null);
     }
